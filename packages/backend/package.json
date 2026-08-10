@@ -5,7 +5,7 @@
     "dev": "tsx watch src/server.ts",
     "start": "node dist/bundle.cjs",
     "build": "tsc",
-    "bundle": "esbuild src/server.ts --bundle --platform=node --outfile=dist/bundle.cjs --external:sharp --external:dotenv && cp ../db/node_modules/sql.js/dist/sql-wasm.wasm dist/",
+    "bundle": "esbuild src/server.ts --bundle --platform=node --outfile=dist/bundle.cjs --external:sharp --external:dotenv \"--banner:js=var __importMetaUrl = require('url').pathToFileURL(__filename).href;\" --define:import.meta.url=__importMetaUrl && cp ../db/node_modules/sql.js/dist/sql-wasm.wasm dist/",
     "test": "mocha",
     "test:watch": "mocha --watch",
     "test:coverage": "c8 --reporter=text --reporter=lcov pnpm test",

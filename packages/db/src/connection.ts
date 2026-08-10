@@ -5,6 +5,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { Buffer } from "buffer";
 
+// Extracted for clarity; in the CJS bundle esbuild replaces import.meta.url
+// via --define (see backend's bundle script), so this always resolves correctly.
+const _thisDir: string = dirname(fileURLToPath(import.meta.url));
+
 const DB_PATH = process.env.DB_PATH || "./data/music.db";
 
 const dataDir = dirname(DB_PATH);
@@ -137,7 +141,7 @@ export async function initDb(): Promise<DatabaseWrapper> {
 
           // pnpm monorepo: check db package's own node_modules
           const dbNodeModules = resolve(
-            dirname(fileURLToPath(import.meta.url)),
+            _thisDir,
             "..",
             "node_modules",
             "sql.js",
