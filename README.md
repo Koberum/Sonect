@@ -1,93 +1,125 @@
-# Sonect
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Koberum/Sonect/main/packages/frontend/public/sonect-logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Koberum/Sonect/main/packages/frontend/public/sonect-logo-light.svg">
+    <img src="https://raw.githubusercontent.com/Koberum/Sonect/main/packages/frontend/public/sonect-logo-light.svg" alt="Sonect" width="420">
+  </picture>
+</p>
 
-[![CI](https://github.com/Koberum/Sonect/actions/workflows/ci.yml/badge.svg)](https://github.com/Koberum/Sonect/actions/workflows/ci.yml)
-[![Release](https://github.com/Koberum/Sonect/actions/workflows/release.yml/badge.svg)](https://github.com/Koberum/Sonect/actions/workflows/release.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+<p align="center">
+  <em>Self-hosted music streaming, powered by <a href="https://www.musicpd.org/">Music Player Daemon</a>.</em>
+</p>
 
-A self-hosted music streaming application powered by [Music Player Daemon (MPD)](https://www.musicpd.org/). Browse your music library, control playback, and manage albums and artists through a modern React interface.
+<p align="center">
+  <a href="https://sonect.dev"><img alt="Website" src="https://img.shields.io/badge/sonect.dev-Website-orange?style=flat-square"></a>
+  <a href="https://github.com/Koberum/Sonect/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Koberum/Sonect/actions/workflows/ci.yml/badge.svg?style=flat-square"></a>
+  <a href="https://github.com/Koberum/Sonect/actions/workflows/release.yml"><img alt="Release" src="https://github.com/Koberum/Sonect/actions/workflows/release.yml/badge.svg?style=flat-square"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square"></a>
+</p>
+
+---
+
+Sonect wraps MPD in a modern React interface. Browse your library by album,
+artist, or genre, control playback in real time, and never depend on a
+streaming service again. Everything runs on your own hardware — no telemetry,
+no subscriptions, no limits.
+
+---
 
 ## Features
 
-- Browse music library by artist, album, and track
-- Real-time playback control via MPD
-- Album artwork extraction and serving with browser caching
-- Smart queue management (album → artist → genre strategy)
-- Playback modes: repeat, random, consume, single
-- Dark / light theme
-- Internationalization (i18n) support
-- WebSocket-driven live playback state updates
-- Audio output configuration and MPD config editing via the Settings page
+- **MPD-powered playback** — Gapless, battle-tested, supports virtually any
+  audio format. Repeat, random, consume, and single modes are all first-class.
+- **Live WebSocket state** — Playback changes reflect instantly across every
+  open tab. MPD idle events are pushed to all connected clients in real time.
+- **Smart queue strategy** — Album, artist, then genre fallback fills your
+  queue intelligently. No more dead air between tracks.
+- **Album art pipeline** — Artwork is extracted from your audio files, resized
+  to 500x500 JPEG, served over HTTP, and cached in the browser for 30 days.
+- **In-browser MPD config** — Edit audio outputs and MPD settings from the
+  Settings page. Save once, MPD restarts automatically — no SSH needed.
+- **One-line Raspberry Pi install** — A single `curl | bash` command turns a
+  Pi 2B into a dedicated music appliance. See below.
+
+---
+
+## 3D Printed Case
+
+A custom two-part case designed for the **Raspberry Pi 2B**, turning your Pi
+into a compact, self-contained Sonect appliance.
+
+![Sonect 3D case](assets/screenshots/case_v1.png)
+
+| Part     | File                                                                                                         |
+| -------- | ------------------------------------------------------------------------------------------------------------ |
+| Interior | [`assets/screenshots/stls/sonect_case_interior_v3.stl`](assets/screenshots/stls/sonect_case_interior_v3.stl) |
+| Exterior | [`assets/screenshots/stls/sonect_case_exterior_v3.stl`](assets/screenshots/stls/sonect_case_exterior_v3.stl) |
+
+Print in PLA or PETG, supports required.
+
+---
+
+## Quick Start
+
+### Development (local machine)
+
+```bash
+git clone https://github.com/Koberum/Sonect
+cd Sonect
+pnpm install
+
+# Configure your music directory
+cat > packages/backend/.env << EOF
+MPD_HOST=localhost
+MPD_PORT=6600
+MUSIC_DIR=/home/you/Music
+COVERS_DIR=./data/covers
+EOF
+
+# Start everything
+pnpm dev
+```
+
+Open `http://localhost:5173` and trigger a library scan from the Settings page.
+
+### Raspberry Pi (production)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Koberum/Sonect/main/installer.sh | sudo bash
+```
+
+This installs Node.js, MPD, and all dependencies, downloads the latest
+prebuilt release, creates a systemd service, and starts Sonect on port 3000.
+Your music goes in `/opt/sonect/music/`.
+
+---
 
 ## Architecture
 
 ```
 sonect/
 ├── packages/
-│   ├── backend/       # Express 5 API server + WebSocket server (port 3000)
-│   ├── frontend/      # React 19 + Vite SPA (port 5173)
-│   ├── db/            # SQLite database layer
-│   └── types/         # Shared TypeScript types
-├── music/             # Mount point for your music files
-├── data/              # MPD state, sticker DB, tag cache, playlists
-└── conf/              # MPD configuration
+│   ├── backend/       Express 5 API + WebSocket server (port 3000)
+│   ├── frontend/      React 19 + Vite SPA (port 5173 in dev)
+│   ├── @repo/db/      SQLite schema, migrations, query helpers
+│   └── @repo/types/   Shared TypeScript types (no runtime deps)
+├── assets/            Screenshots and 3D print files
+├── conf/              MPD configuration
+├── data/              MPD state, sticker DB, tag cache, playlists
+└── music/             Mount point for your music library
 ```
-
-### Request flow
 
 ```
 Browser ──HTTP──► Express API ──► MPD (port 6600)
         ──WS───► WebSocket server ──► MPD idle listener
 ```
 
-## Requirements
+The backend maintains two TCP connections to MPD: a command client for
+playback control and a polling client for status updates. The in-memory cache
+is refreshed every 2 seconds during play (10 s during pause/stop) and
+immediately after user-initiated commands.
 
-- Node.js 20+
-- pnpm 9+
-- A running MPD instance
-
-## Getting Started
-
-```bash
-# Install dependencies
-pnpm install
-
-# Start everything in development mode
-pnpm dev
-
-# Or start services individually
-pnpm frontend:dev   # React dev server on :5173
-pnpm backend:dev    # Express API on :3000
-```
-
-### Environment variables
-
-Create a `.env` file in `packages/backend/`:
-
-| Variable          | Default                           | Description                               |
-| ----------------- | --------------------------------- | ----------------------------------------- |
-| `MPD_HOST`        | `localhost`                       | MPD server hostname or IP                 |
-| `MPD_PORT`        | `6600`                            | MPD server port                           |
-| `MUSIC_DIR`       | `/music`                          | Root directory of the music library       |
-| `COVERS_DIR`      | —                                 | Path where cover JPEGs are saved          |
-| `DB_PATH`         | `./data/music.db`                 | SQLite database file path                 |
-| `MPD_CONFIG_PATH` | `/opt/sonect/data/mpd-audio.conf` | User-editable MPD config drop-in          |
-| `MPD_LOG_PATH`    | `/var/lib/mpd/mpd.log`            | MPD log file (for per-file sync progress) |
-| `PORT`            | `3000`                            | Backend HTTP server port                  |
-| `FRONTEND_DIST`   | `../frontend/dist`                | Path to built frontend static files       |
-
-### MPD configuration
-
-Sonect uses an `include` directive to separate concerns:
-
-- **`/etc/mpd.conf`** — root-owned boilerplate (music_directory, bind_to_address, port, log_file)
-- **`/opt/sonect/data/mpd-audio.conf`** — service-user-owned drop-in for all user-editable settings
-
-Audio output and advanced MPD config are edited from the Settings page in the web UI.
-When you click Save, the drop-in is written and MPD is restarted automatically.
-
-**The `log_file` directive is required** for real-time per-file progress during library sync.
-The installer adds `log_file "/var/lib/mpd/mpd.log"` to `/etc/mpd.conf` automatically.
-If you manually configure MPD, ensure a `log_file` is set and readable by the backend process.
+---
 
 ## API Overview
 
@@ -99,48 +131,51 @@ If you manually configure MPD, ensure a `log_file` is set and readable by the ba
 | GET    | `/library/artists`            | List all artists         |
 | GET    | `/library/artists/:id/albums` | Albums for an artist     |
 | POST   | `/library/scan`               | Trigger library re-scan  |
-| POST   | `/mpd/play`                   | Play a track             |
+| POST   | `/mpd/play`                   | Play a track or resume   |
 | POST   | `/mpd/pause`                  | Toggle pause             |
-| POST   | `/mpd/next` / `/mpd/previous` | Skip track               |
+| POST   | `/mpd/next`                   | Next track               |
+| POST   | `/mpd/previous`               | Previous track           |
 | PATCH  | `/mpd/volume`                 | Set volume (0–100)       |
-| GET    | `ws://…`                      | WebSocket playback state |
+| GET    | `ws://host:3000`              | WebSocket playback state |
+
+### Environment variables
+
+Configure via `packages/backend/.env`:
+
+| Variable          | Default                           | Description                    |
+| ----------------- | --------------------------------- | ------------------------------ |
+| `MPD_HOST`        | `localhost`                       | MPD server hostname or IP      |
+| `MPD_PORT`        | `6600`                            | MPD server port                |
+| `MUSIC_DIR`       | `/music`                          | Root of your music library     |
+| `COVERS_DIR`      | —                                 | Where cover JPEGs are cached   |
+| `DB_PATH`         | `./data/music.db`                 | SQLite database path           |
+| `MPD_CONFIG_PATH` | `/opt/sonect/data/mpd-audio.conf` | MPD config drop-in             |
+| `MPD_LOG_PATH`    | `/var/lib/mpd/mpd.log`            | MPD log file for sync progress |
+| `PORT`            | `3000`                            | Backend HTTP port              |
+| `FRONTEND_DIST`   | `../frontend/dist`                | Built frontend static files    |
+
+---
 
 ## Build & Deploy
 
 ```bash
-# Build all packages
-pnpm build
+pnpm build          # Compile all packages
+pnpm lint           # Lint all packages
+pnpm backend:test   # Run backend tests
+pnpm backend:bundle # Bundle backend for production
+pnpm frontend:build # Build frontend for production
 ```
 
 ### Releases
 
-- Version numbers follow [SemVer](https://semver.org) and are managed by
-  [release-please](https://github.com/googleapis/release-please): merge
-  Conventional Commit messages to `main` (`feat:`, `fix:`, `chore:`, …) and a
-  Release PR bumps the version in `CHANGELOG.md`, then a tagged GitHub release
-  (`v1.2.3`) is published with a single `sonect.tar.gz` asset.
-- CI (`ci.yml`) runs lint, build, and the backend test suite as a mandatory
-  gate on every PR/push to `main`.
+Versions follow [SemVer](https://semver.org) and are managed by
+[release-please](https://github.com/googleapis/release-please). Merge
+Conventional Commit messages (`feat:`, `fix:`, `chore:`, …) to `main` and a
+Release PR bumps the version, updates `CHANGELOG.md`, and publishes a tagged
+release with a single `sonect.tar.gz` asset.
 
-### Installing / updating on a Raspberry Pi
+---
 
-No GitHub token is required:
+## License
 
-```bash
-sudo bash installer.sh
-```
-
-The installer downloads the latest public release asset
-(`https://github.com/Koberum/Sonect/releases/latest/download/sonect.tar.gz`),
-preserves your database and MPD config, and restarts the service. To pin a
-specific version, download `…/releases/download/vX.Y.Z/sonect.tar.gz` yourself
-and run the installer steps for extracting it (or re-run `installer.sh`). The
-running version is reported by `GET /system/status` as `version`.
-
-## Roadmap
-
-- [ ] Library Settings – directory management
-- [ ] Search function
-- [ ] Albums section view
-- [ ] Genre section
-- [ ] Improve artwork creation pipeline
+[Apache2.0](LICENSE)

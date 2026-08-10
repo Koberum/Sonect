@@ -33,8 +33,9 @@ export function PlaybackControls({
   showAllControls,
 }: PlaybackControls): React.ReactElement {
   const btnBase =
-    "text-muted-foreground hover:text-foreground transition-colors p-1";
-  const btnActive = "text-primary hover:text-primary";
+    "text-muted-foreground hover:text-foreground hover:bg-transparent dark:hover:bg-transparent transition-colors p-1";
+  const btnActive =
+    "text-primary hover:text-primary hover:bg-transparent dark:hover:bg-transparent";
   const showAlways = showAllControls ? "" : "hidden md:block";
 
   return (
