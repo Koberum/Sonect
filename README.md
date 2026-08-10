@@ -55,7 +55,7 @@ into a compact, self-contained Sonect appliance.
 | Interior | [`assets/screenshots/stls/sonect_case_interior_v3.stl`](assets/screenshots/stls/sonect_case_interior_v3.stl) |
 | Exterior | [`assets/screenshots/stls/sonect_case_exterior_v3.stl`](assets/screenshots/stls/sonect_case_exterior_v3.stl) |
 
-Print in PLA or PETG. No supports required. Assembles with 4x M2.5 screws.
+Print in PLA or PETG, supports required.
 
 ---
 
@@ -178,4 +178,4 @@ release with a single `sonect.tar.gz` asset.
 
 ## License
 
-[MIT](LICENSE)
+[Apache2.0](LICENSE)
