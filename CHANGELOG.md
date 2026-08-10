@@ -3,6 +3,14 @@
 ## 1.0.0 (2026-08-10)
 
 
+### Bug Fixes
+
+* packages, tests ([8600b92](https://github.com/Koberum/Sonect/commit/8600b9231c9589351dcf278cb8b7f68642164528))
+* resolve import.meta.url in esbuild CJS bundle without warning ([1a2f52b](https://github.com/Koberum/Sonect/commit/1a2f52b63f52fdf5c08f0fa140a105707a163d65))
+
+## 1.0.0 (2026-08-10)
+
+
 ### Features
 
 * add always-visible Debug tab to Settings ([ecabd15](https://github.com/Koberum/local-streamer/commit/ecabd156fd413839fe461d347e1b84d1e6c81737))
