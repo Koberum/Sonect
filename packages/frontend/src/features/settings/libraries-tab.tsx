@@ -32,14 +32,30 @@ import {
   type StorageSource,
   type MountInfo,
 } from "@/features/apis/systemApis";
-import { StorageSourceForm } from "@/features/storage/storage-source-form";
+import { LibrariesTypeSelect, type SourceType } from "./libraries-type-select";
+import { LibrariesForm } from "./libraries-form";
 
-export function StorageTab() {
+const typeIcons: Record<SourceType, typeof Server> = {
+  smb: Server,
+  nfs: HardDrive,
+  local: Folder,
+};
+
+const typeBadgeLabels: Record<SourceType, string> = {
+  smb: "SMB",
+  nfs: "NFS",
+  local: "Local",
+};
+
+type DialogStep = "closed" | "select-type" | "form";
+
+export function LibrariesTab() {
   const { t } = useTranslation();
   const [sources, setSources] = useState<StorageSource[]>([]);
   const [mounts, setMounts] = useState<MountInfo[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [dialogStep, setDialogStep] = useState<DialogStep>("closed");
+  const [selectedType, setSelectedType] = useState<SourceType>("smb");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingSource, setEditingSource] = useState<StorageSource | undefined>(
     undefined,
@@ -57,7 +73,7 @@ export function StorageTab() {
       setMounts(mnt);
     } catch {
       toast.error(
-        t("settings.storage.loadError", "Failed to load storage data"),
+        t("settings.libraries.loadError", "Failed to load library data"),
       );
     }
   };
@@ -73,7 +89,7 @@ export function StorageTab() {
         setMounts(mnt);
       } catch {
         toast.error(
-          t("settings.storage.loadError", "Failed to load storage data"),
+          t("settings.libraries.loadError", "Failed to load library data"),
         );
       }
       setLoading(false);
@@ -84,18 +100,29 @@ export function StorageTab() {
   const openAddDialog = () => {
     setEditingId(null);
     setEditingSource(undefined);
-    setDialogOpen(true);
+    setSelectedType("smb");
+    setDialogStep("select-type");
   };
 
   const startEdit = (src: StorageSource) => {
     setEditingId(src.id);
     setEditingSource(src);
-    setDialogOpen(true);
+    setSelectedType(src.type as SourceType);
+    setDialogStep("form");
+  };
+
+  const handleTypeSelect = (type: SourceType) => {
+    setSelectedType(type);
+    setDialogStep("form");
+  };
+
+  const handleFormBack = () => {
+    setDialogStep("select-type");
   };
 
   const handleSave = async (data: {
     name: string;
-    type: "smb" | "nfs" | "local";
+    type: SourceType;
     uri: string;
     mount_path: string;
     username?: string;
@@ -104,21 +131,18 @@ export function StorageTab() {
     try {
       if (editingId) {
         await updateStorageSource(editingId, data);
-        toast.success(t("settings.storage.updated", "Storage source updated"));
+        toast.success(t("settings.libraries.updated", "Library updated"));
       } else {
         await createStorageSource(data);
-        toast.success(t("settings.storage.created", "Storage source created"));
+        toast.success(t("settings.libraries.created", "Library created"));
       }
-      setDialogOpen(false);
+      setDialogStep("closed");
       reloadStorage();
     } catch {
       toast.error(
         editingId
-          ? t("settings.storage.updateError", "Failed to update storage source")
-          : t(
-              "settings.storage.createError",
-              "Failed to create storage source",
-            ),
+          ? t("settings.libraries.updateError", "Failed to update library")
+          : t("settings.libraries.createError", "Failed to create library"),
       );
     }
   };
@@ -126,13 +150,13 @@ export function StorageTab() {
   const handleDelete = async (id: number) => {
     try {
       await deleteStorageSource(id);
-      toast.success(t("settings.storage.deleted", "Storage source deleted"));
+      toast.success(t("settings.libraries.deleted", "Library deleted"));
       setDeletingId(null);
       setDeletingName("");
       reloadStorage();
     } catch {
       toast.error(
-        t("settings.storage.deleteError", "Failed to delete storage source"),
+        t("settings.libraries.deleteError", "Failed to delete library"),
       );
     }
   };
@@ -141,27 +165,27 @@ export function StorageTab() {
     try {
       const result = await mountStorageSource(id);
       if (result.success) {
-        toast.success(t("settings.storage.mounted", "Mounted"));
+        toast.success(t("settings.libraries.mounted", "Mounted"));
         reloadStorage();
       } else {
         toast.error(
-          result.error ?? t("settings.storage.mountError", "Mount failed"),
+          result.error ?? t("settings.libraries.mountError", "Mount failed"),
         );
       }
     } catch {
-      toast.error(t("settings.storage.mountError", "Failed to mount"));
+      toast.error(t("settings.libraries.mountError", "Failed to mount"));
     }
   };
 
   const handleUnmount = async (id: number) => {
     try {
       await unmountStorageSource(id);
-      toast.success(t("settings.storage.unmounted", "Unmounted"));
+      toast.success(t("settings.libraries.unmounted", "Unmounted"));
       reloadStorage();
     } catch (err) {
       toast.error(
         (err instanceof Error && err.message) ||
-          t("settings.storage.unmountError", "Failed to unmount"),
+          t("settings.libraries.unmountError", "Failed to unmount"),
       );
     }
   };
@@ -169,18 +193,23 @@ export function StorageTab() {
   const isMounted = (mountPath: string) =>
     mounts.some((m) => m.path === mountPath);
 
-  const typeIcons = {
-    smb: Server,
-    nfs: HardDrive,
-    local: Folder,
-  } as const;
+  const getSourceDescription = (src: StorageSource) => {
+    const mountSubpath = src.mount_path.replace(/^\/opt\/sonect\/music\/?/, "");
+    if (src.type === "local") {
+      return `${src.uri} → /opt/sonect/music/${mountSubpath}`;
+    }
+    return `${src.uri} → /opt/sonect/music/${mountSubpath}`;
+  };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("settings.storage.title", "Storage")}</CardTitle>
+        <CardTitle>{t("settings.libraries.title", "Libraries")}</CardTitle>
         <CardDescription>
-          {t("settings.storage.description", "Manage SMB/NFS music sources.")}
+          {t(
+            "settings.libraries.description",
+            "Manage your music library sources.",
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -191,23 +220,23 @@ export function StorageTab() {
         ) : sources.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-8 text-center">
             <p className="text-muted-foreground text-sm">
-              {t("settings.storage.noSources", "No storage sources configured")}
+              {t("settings.libraries.noSources", "No libraries configured")}
             </p>
             <p className="text-muted-foreground text-xs">
               {t(
-                "settings.storage.noSourcesDescription",
-                "Add an SMB, NFS, or local source to expand your music library.",
+                "settings.libraries.noSourcesDescription",
+                "Add an SMB, NFS, or local source for your music library.",
               )}
             </p>
             <Button variant="outline" onClick={openAddDialog} className="mt-2">
               <Plus className="mr-2 h-4 w-4" />
-              {t("settings.storage.addSource", "Add Source")}
+              {t("settings.libraries.addSource", "Add Library")}
             </Button>
           </div>
         ) : (
           <>
             {sources.map((src) => {
-              const TypeIcon = typeIcons[src.type];
+              const TypeIcon = typeIcons[src.type as SourceType] ?? Folder;
               const mounted = isMounted(src.mount_path);
               return (
                 <div
@@ -216,16 +245,19 @@ export function StorageTab() {
                 >
                   <TypeIcon className="text-muted-foreground h-5 w-5 shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="truncate font-medium">{src.name}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {typeBadgeLabels[src.type as SourceType] ?? src.type}
+                      </Badge>
                       <Badge variant={mounted ? "default" : "secondary"}>
                         {mounted
-                          ? t("settings.storage.mounted", "Mounted")
-                          : t("settings.storage.unmounted", "Unmounted")}
+                          ? t("settings.libraries.mounted", "Mounted")
+                          : t("settings.libraries.unmounted", "Unmounted")}
                       </Badge>
                     </div>
                     <div className="text-muted-foreground truncate text-xs">
-                      {src.type.toUpperCase()} — {src.uri} → {src.mount_path}
+                      {getSourceDescription(src)}
                     </div>
                   </div>
                   <div className="flex shrink-0 gap-1">
@@ -235,7 +267,7 @@ export function StorageTab() {
                         size="sm"
                         onClick={() => handleUnmount(src.id)}
                       >
-                        {t("settings.storage.unmount", "Unmount")}
+                        {t("settings.libraries.unmount", "Unmount")}
                       </Button>
                     ) : (
                       <Button
@@ -243,7 +275,7 @@ export function StorageTab() {
                         size="sm"
                         onClick={() => handleMount(src.id)}
                       >
-                        {t("settings.storage.mount", "Mount")}
+                        {t("settings.libraries.mount", "Mount")}
                       </Button>
                     )}
                     <Button
@@ -251,7 +283,7 @@ export function StorageTab() {
                       size="sm"
                       onClick={() => startEdit(src)}
                     >
-                      {t("settings.storage.edit", "Edit")}
+                      {t("settings.libraries.edit", "Edit")}
                     </Button>
                     <Button
                       variant="ghost"
@@ -269,19 +301,29 @@ export function StorageTab() {
             })}
             <Button variant="outline" onClick={openAddDialog}>
               <Plus className="mr-2 h-4 w-4" />
-              {t("settings.storage.addSource", "Add Source")}
+              {t("settings.libraries.addSource", "Add Library")}
             </Button>
           </>
         )}
       </CardContent>
 
-      <StorageSourceForm
-        key={editingId ?? "new"}
-        open={dialogOpen}
+      <LibrariesTypeSelect
+        open={dialogStep === "select-type"}
         onOpenChange={(open) => {
-          if (!open) setDialogOpen(false);
+          if (!open) setDialogStep("closed");
+        }}
+        onSelect={handleTypeSelect}
+      />
+
+      <LibrariesForm
+        key={editingId ?? `new-${selectedType}`}
+        open={dialogStep === "form"}
+        onOpenChange={(open) => {
+          if (!open) setDialogStep("closed");
         }}
         onSave={handleSave}
+        onBack={handleFormBack}
+        sourceType={selectedType}
         initialValues={editingSource}
         editingId={editingId}
       />
@@ -298,10 +340,10 @@ export function StorageTab() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {t("settings.storage.deleteTitle", "Delete Storage Source?")}
+              {t("settings.libraries.deleteTitle", "Delete Library?")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {t("settings.storage.deleteConfirm", {
+              {t("settings.libraries.deleteConfirm", {
                 name: deletingName,
               })}
             </AlertDialogDescription>
@@ -314,7 +356,7 @@ export function StorageTab() {
               onClick={() => deletingId && handleDelete(deletingId)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t("settings.storage.deleteButton", "Delete")}
+              {t("settings.libraries.deleteButton", "Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
