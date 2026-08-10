@@ -155,7 +155,7 @@ export function StorageSourceForm({
               onBlur={() => handleFieldBlur("uri")}
               placeholder={t(
                 "settings.storage.uriPlaceholder",
-                "smb://server/share",
+                "//192.168.0.1/share",
               )}
               className={fieldClass("uri")}
             />

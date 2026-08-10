@@ -12,6 +12,7 @@ import {
   Disc3,
   RefreshCw,
   AudioLines,
+  Settings,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { usePlaylistContext } from "@/components/playlist-context";
@@ -174,6 +175,21 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
             >
               <BarChart3 className="mr-2 h-4 w-4" />
               {t("sidebar.statistics")}
+            </Button>
+          </div>
+        </div>
+        <div className="px-3 py-2">
+          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
+            {t("sidebar.settings")}
+          </h2>
+          <div className="space-y-1">
+            <Button
+              onClick={() => handleNavigation("/settings")}
+              variant={isMenuActive("/settings") ? "secondary" : "ghost"}
+              className="w-full justify-start"
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              {t("sidebar.settings")}
             </Button>
           </div>
         </div>
