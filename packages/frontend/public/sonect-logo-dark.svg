@@ -1,0 +1,16 @@
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 140" width="480" height="140">
+  <rect x="0" y="14" width="112" height="112" rx="28" fill="#f97316"/>
+  <rect x="22" y="74" width="12" height="36" rx="6" fill="white" opacity="0.45"/>
+  <rect x="42" y="54" width="12" height="56" rx="6" fill="white" opacity="0.7"/>
+  <rect x="62" y="36" width="12" height="74" rx="6" fill="white"/>
+  <rect x="82" y="58" width="12" height="52" rx="6" fill="white" opacity="0.55"/>
+  <text
+    x="138"
+    y="95"
+    font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif"
+    font-weight="500"
+    font-size="72"
+    letter-spacing="-2"
+    fill="#f8f8f8"
+  >Sonect</text>
+</svg>

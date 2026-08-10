@@ -1,0 +1,55 @@
+{
+  "name": "Sonect Dev (Raspberry Pi OS Compatible)",
+  "dockerComposeFile": ["docker-compose.yml"],
+  "service": "sonect",
+  "workspaceFolder": "/workspace",
+
+  // Ports: 3000 (backend), 5173 (Vite), 6600 (MPD)
+  "forwardPorts": [3000, 5173, 6600],
+  "portsAttributes": {
+    "3000": {
+      "label": "Backend API",
+      "onAutoForward": "notify"
+    },
+    "5173": {
+      "label": "Frontend Dev Server",
+      "onAutoForward": "notify"
+    },
+    "6600": {
+      "label": "MPD Server",
+      "onAutoForward": "silent"
+    }
+  },
+
+  "shutdownAction": "stopCompose",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-azuretools.vscode-docker",
+        "ms-vscode.vscode-typescript-next",
+        "bradlc.vscode-tailwindcss"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "js/ts.tsdk.path": "node_modules/typescript/lib",
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+
+  // Run as node user
+  "remoteUser": "root",
+
+  // Environment variables
+  "remoteEnv": {
+    "NODE_ENV": "development",
+    "DB_PATH": "/db/music.db"
+  }
+}

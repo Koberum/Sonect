@@ -1,0 +1,26 @@
+services:
+  sonect:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sonect-dev
+    privileged: true
+
+    volumes:
+      - ..:/workspace
+      - ../music:/music
+      - ../conf/mpd.conf:/etc/mpd.conf
+      - ../data:/var/lib/mpd
+      - sonect-db:/db
+      - /dev/snd:/dev/snd
+
+    ports:
+      - "3000:3000" # backend
+      - "5173:5173" # frontend (Vite)
+      - "6600:6600" # MPD
+
+    command: sleep infinity
+
+volumes:
+  mpd-data:
+  sonect-db:

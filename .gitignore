@@ -1,0 +1,93 @@
+# ===============================
+# Node / JavaScript
+# ===============================
+node_modules/
+**/node_modules/
+
+.pnpm-store/
+.pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+build/
+out/
+coverage/
+.tmp/
+.cache/
+
+# ===============================
+# Frontend (React / Vite / Next)
+# ===============================
+.vite/
+.next/
+.svelte-kit/
+
+# ===============================
+# TypeScript
+# ===============================
+*.tsbuildinfo
+
+# ===============================
+# Environment / secrets
+# ===============================
+.env
+.env.*
+!.env.example
+
+# ===============================
+# Logs
+# ===============================
+logs/
+*.log
+
+# ===============================
+# OS / Editor
+# ===============================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# ===============================
+# Docker / DevContainer
+# ===============================
+.devcontainer/.cache
+.devcontainer/**/.cache
+docker-data/
+*.pid
+
+# ===============================
+# Audio / runtime data
+# ===============================
+music/*
+!music/.keep
+
+mpd/log
+mpd/cache
+mpd/state
+
+# ===============================
+# Misc
+# ===============================
+*.swp
+*.swo
+*.bak
+*~
+packages/backend/data
+data/covers/*
+data/playlists/*
+packages/backend/.version
+TODO.md
+
+# ===============================
+# Dev tooling (agent/plans, local-only)
+# ===============================
+.superpowers/
+.opencode/plans/
+.opencode/skills/*.local.md
+docs/superpowers

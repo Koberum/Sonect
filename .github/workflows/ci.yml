@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build shared packages
+        run: |
+          pnpm --filter @repo/types build
+          pnpm --filter @repo/db build
+
+      - name: Bundle backend
+        run: pnpm --filter backend bundle
+
+      - name: Build frontend
+        run: pnpm --filter frontend build
+        env:
+          VITE_BACKEND_URL: ""
+          VITE_COVER_PATH: /covers
+          VITE_DEBUG: "false"
+
+      - name: Backend tests
+        run: pnpm --filter backend test

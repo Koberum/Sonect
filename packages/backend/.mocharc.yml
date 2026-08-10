@@ -1,0 +1,5 @@
+spec: src/__tests__/**/*.test.ts
+node-option:
+  - import=tsx/esm
+timeout: 10000
+  

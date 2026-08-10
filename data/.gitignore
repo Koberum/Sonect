@@ -1,0 +1,8 @@
+# Data directory
+# This folder contains the shared SQLite database
+music.db
+music.db-shm
+music.db-wal
+sticker.sql
+tag_cache
+state

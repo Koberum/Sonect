@@ -1,0 +1,25 @@
+{
+  "name": "sonect",
+  "private": true,
+  "version": "1.0.0",
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "start": "pnpm --filter backend start",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "frontend:dev": "pnpm --filter frontend dev",
+    "frontend:build": "pnpm --filter frontend build",
+    "backend:dev": "pnpm --filter backend dev",
+    "backend:start": "pnpm --filter backend start",
+    "backend:test": "pnpm --filter backend test",
+    "backend:test:watch": "pnpm --filter backend test:watch",
+    "backend:test:coverage": "pnpm --filter backend test:coverage",
+    "clean": "pnpm -r exec rm -rf node_modules dist build"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.1",
+    "prettier": "^3.8.1",
+    "prettier-plugin-tailwindcss": "^0.7.2"
+  }
+}

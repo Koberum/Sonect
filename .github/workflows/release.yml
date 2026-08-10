@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  build-and-upload:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared packages
+        run: |
+          pnpm --filter @repo/types build
+          pnpm --filter @repo/db build
+
+      - name: Bundle backend
+        run: pnpm --filter backend bundle
+
+      - name: Build frontend
+        run: pnpm --filter frontend build
+        env:
+          VITE_BACKEND_URL: ""
+          VITE_COVER_PATH: /covers
+          VITE_DEBUG: "false"
+
+      - name: Write version file
+        run: echo "${TAG_NAME#v}" > packages/backend/.version
+        env:
+          TAG_NAME: ${{ needs.release-please.outputs.tag_name }}
+
+      - name: Assemble release archive
+        run: |
+          set -euxo pipefail
+          VERSION="${TAG_NAME#v}"
+          mkdir -p artifact/backend artifact/frontend
+          cp packages/backend/dist/bundle.cjs artifact/backend/bundle.cjs
+          cp packages/backend/dist/sql-wasm.wasm artifact/backend/sql-wasm.wasm
+          cp packages/backend/start-backend.sh artifact/backend/start-backend.sh
+          chmod +x artifact/backend/start-backend.sh
+          cp packages/backend/.version artifact/backend/.version
+          cp pnpm-lock.yaml artifact/backend/pnpm-lock.yaml
+          cat > artifact/backend/package.json << PKGJSON
+          {
+            "name": "sonect-backend",
+            "private": true,
+            "version": "${VERSION}",
+            "dependencies": {
+              "sharp": "^0.34.5",
+              "dotenv": "^17.2.4"
+            }
+          }
+          PKGJSON
+          cp -r packages/frontend/dist/. artifact/frontend/
+          tar -czf sonect.tar.gz -C artifact .
+          tar -tzf sonect.tar.gz
+        env:
+          TAG_NAME: ${{ needs.release-please.outputs.tag_name }}
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ needs.release-please.outputs.tag_name }}
+          files: sonect.tar.gz
