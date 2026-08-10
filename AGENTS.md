@@ -91,6 +91,17 @@ Single Node process on port 3000:
 - Use `tsx` for running TypeScript in development; compile with `tsc` for production.
 - Cross-package imports use workspace aliases: `@repo/db`, `@repo/types`, etc.
 - React components use `.tsx` extension; everything else uses `.ts`.
+- **TypeScript version:** 7.0.2. The project uses the native Go-based TS 7 compiler for all
+  builds (`tsc` binary = TypeScript 7.0.2). However, TypeScript 7.0 ships with no JavaScript
+  programmatic API, which breaks `typescript-eslint`. The frontend uses a **two-version
+  side-by-side setup** to work around this:
+  - `"@typescript/native": "npm:typescript@7.0.2"` — provides the `tsc` binary (TS 7)
+  - `"typescript": "npm:@typescript/typescript6@6.0.2"` — provides the TS 6 JS API that
+    `typescript-eslint` imports at runtime
+  - Backend, db, and types packages use `typescript@7.0.2` directly (no typescript-eslint dep).
+  - This setup is temporary. When typescript-eslint gains native TS 7 support (blocked on TS
+    7.1 shipping a new programmatic API), remove both aliases from
+    `packages/frontend/package.json` and restore `"typescript": "npm:typescript@^7.x"`.
 
 ### Backend
 
