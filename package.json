@@ -18,8 +18,8 @@
     "clean": "pnpm -r exec rm -rf node_modules dist build"
   },
   "devDependencies": {
-    "eslint": "^9.39.1",
+    "eslint": "^10.8.0",
     "prettier": "^3.8.1",
-    "prettier-plugin-tailwindcss": "^0.7.2"
+    "prettier-plugin-tailwindcss": "^0.8.1"
   }
 }

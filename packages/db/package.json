@@ -20,9 +20,9 @@
     "sql.js": "^1.14.1"
   },
   "devDependencies": {
-    "@types/node": "^25.2.0",
+    "@types/node": "^26.1.2",
     "@types/sql.js": "^1.4.11",
-    "tsx": "4.21.0",
-    "typescript": "5.9.3"
+    "tsx": "4.23.10",
+    "typescript": "7.0.2"
   }
 }
