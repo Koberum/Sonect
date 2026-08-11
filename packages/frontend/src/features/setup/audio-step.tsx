@@ -3,6 +3,11 @@ import { useTranslation } from "react-i18next";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  SelectableRow,
+  SelectableRowDescription,
+  SelectableRowTitle,
+} from "@/components/ui/selectable-row";
 import { toast } from "sonner";
 import {
   getAudioDevices,
@@ -88,39 +93,38 @@ export function AudioStep({ onNext, onSkip }: AudioStepProps) {
       ) : (
         <div className="space-y-2">
           {devices.map((device) => (
-            <label
-              key={device.card}
-              className="hover:bg-accent flex cursor-pointer items-center gap-3 rounded-lg border p-3"
-            >
-              <input
-                type="radio"
-                name="wizard-audio"
-                value={device.card}
-                checked={selected === device.card}
-                onChange={() => setSelected(device.card)}
-                className="h-4 w-4"
-              />
-              <div className="flex-1">
-                <div className="font-medium">
-                  {device.description || device.name}
+            <SelectableRow key={device.card} asChild>
+              <label>
+                <input
+                  type="radio"
+                  name="wizard-audio"
+                  value={device.card}
+                  checked={selected === device.card}
+                  onChange={() => setSelected(device.card)}
+                  className="h-4 w-4"
+                />
+                <div className="flex-1">
+                  <SelectableRowTitle>
+                    {device.description || device.name}
+                  </SelectableRowTitle>
+                  <SelectableRowDescription>
+                    {device.card}
+                  </SelectableRowDescription>
                 </div>
-                <div className="text-muted-foreground text-sm">
-                  {device.card}
+                <div className="flex items-center gap-2">
+                  {currentCard === device.card && (
+                    <Badge className="border-transparent bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                      {t("settings.audio.currentlyActive")}
+                    </Badge>
+                  )}
+                  {device.usb && (
+                    <Badge className="border-transparent bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                      {t("settings.audio.usbDac")}
+                    </Badge>
+                  )}
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {currentCard === device.card && (
-                  <Badge className="border-transparent bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                    {t("settings.audio.currentlyActive")}
-                  </Badge>
-                )}
-                {device.usb && (
-                  <Badge className="border-transparent bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                    {t("settings.audio.usbDac")}
-                  </Badge>
-                )}
-              </div>
-            </label>
+              </label>
+            </SelectableRow>
           ))}
         </div>
       )}

@@ -4,6 +4,11 @@ import { Loader2, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  SelectableRow,
+  SelectableRowDescription,
+  SelectableRowTitle,
+} from "@/components/ui/selectable-row";
 import { toast } from "sonner";
 import {
   scanWifi,
@@ -98,35 +103,36 @@ export function NetworkStep({ onNext, onSkip }: NetworkStepProps) {
       {networks.length > 0 && (
         <div className="space-y-2">
           {networks.map((net) => (
-            <label
+            <SelectableRow
               key={net.ssid}
-              className={`hover:bg-accent flex cursor-pointer items-center gap-3 rounded-lg border p-3 ${
-                selectedSsid === net.ssid ? "border-primary" : ""
-              }`}
+              asChild
+              className={selectedSsid === net.ssid ? "border-primary" : ""}
             >
-              <input
-                type="radio"
-                name="wizard-wifi"
-                value={net.ssid}
-                checked={selectedSsid === net.ssid}
-                onChange={() => {
-                  setSelectedSsid(net.ssid);
-                  setPassword("");
-                }}
-                className="h-4 w-4"
-              />
-              <div className="flex-1">
-                <div className="font-medium">{net.ssid}</div>
-                <div className="text-muted-foreground text-xs">
-                  {t("settings.network.signal")}: {net.signal}%
+              <label>
+                <input
+                  type="radio"
+                  name="wizard-wifi"
+                  value={net.ssid}
+                  checked={selectedSsid === net.ssid}
+                  onChange={() => {
+                    setSelectedSsid(net.ssid);
+                    setPassword("");
+                  }}
+                  className="h-4 w-4"
+                />
+                <div className="flex-1">
+                  <SelectableRowTitle>{net.ssid}</SelectableRowTitle>
+                  <SelectableRowDescription className="text-xs">
+                    {t("settings.network.signal")}: {net.signal}%
+                  </SelectableRowDescription>
                 </div>
-              </div>
-              {net.secured && (
-                <Badge variant="secondary">
-                  {t("settings.network.secured")}
-                </Badge>
-              )}
-            </label>
+                {net.secured && (
+                  <Badge variant="secondary">
+                    {t("settings.network.secured")}
+                  </Badge>
+                )}
+              </label>
+            </SelectableRow>
           ))}
         </div>
       )}

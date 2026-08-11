@@ -13,6 +13,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
+  SelectableRow,
+  SelectableRowDescription,
+  SelectableRowTitle,
+} from "@/components/ui/selectable-row";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -213,23 +218,22 @@ export function NetworkTab() {
             {networks.length > 0 && (
               <div className="space-y-2">
                 {networks.map((net) => (
-                  <div
+                  <SelectableRow
                     key={net.ssid}
-                    className="hover:bg-accent flex cursor-pointer items-center gap-3 rounded-lg border p-3"
                     onClick={() => openConnectDialog(net.ssid)}
                   >
                     <div className="flex-1">
-                      <div className="font-medium">{net.ssid}</div>
-                      <div className="text-muted-foreground text-xs">
+                      <SelectableRowTitle>{net.ssid}</SelectableRowTitle>
+                      <SelectableRowDescription className="text-xs">
                         {t("settings.network.signal")}: {net.signal}%
-                      </div>
+                      </SelectableRowDescription>
                     </div>
                     {net.secured && (
                       <Badge variant="secondary">
                         {t("settings.network.secured")}
                       </Badge>
                     )}
-                  </div>
+                  </SelectableRow>
                 ))}
               </div>
             )}

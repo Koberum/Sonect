@@ -7,6 +7,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  SelectableRow,
+  SelectableRowDescription,
+  SelectableRowIcon,
+  SelectableRowTitle,
+} from "@/components/ui/selectable-row";
 
 export type SourceType = "smb" | "nfs" | "local";
 
@@ -65,22 +71,19 @@ export function LibrariesTypeSelect({
         </DialogHeader>
         <div className="grid gap-3">
           {typeConfig.map(({ value, icon: Icon, titleKey, descKey }) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => onSelect(value)}
-              className="hover:bg-accent flex items-center gap-4 rounded-lg border p-4 text-left transition-colors"
-            >
-              <div className="bg-muted flex h-10 w-10 shrink-0 items-center justify-center rounded-md">
-                <Icon className="text-muted-foreground h-5 w-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="font-medium">{t(titleKey)}</div>
-                <div className="text-muted-foreground text-sm">
-                  {t(descKey)}
+            <SelectableRow key={value} asChild className="gap-4 p-4 text-left">
+              <button type="button" onClick={() => onSelect(value)}>
+                <SelectableRowIcon>
+                  <Icon className="h-5 w-5" />
+                </SelectableRowIcon>
+                <div className="min-w-0 flex-1">
+                  <SelectableRowTitle>{t(titleKey)}</SelectableRowTitle>
+                  <SelectableRowDescription>
+                    {t(descKey)}
+                  </SelectableRowDescription>
                 </div>
-              </div>
-            </button>
+              </button>
+            </SelectableRow>
           ))}
         </div>
       </DialogContent>
