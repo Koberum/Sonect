@@ -42,15 +42,16 @@ After making changes:
 
 ## Environment variables (packages/backend/.env)
 
-| Variable        | Default                | Purpose                                    |
-| --------------- | ---------------------- | ------------------------------------------ |
-| `MPD_HOST`      | `localhost`            | MPD daemon hostname                        |
-| `MPD_PORT`      | `6600`                 | MPD daemon port                            |
-| `COVERS_DIR`    | —                      | Path where cover JPEGs are saved           |
-| `MUSIC_DIR`     | `/music`               | Root directory of the music library        |
-| `PORT`          | `3000`                 | Backend HTTP server port                   |
-| `FRONTEND_DIST` | `../frontend/dist`     | Path to built frontend static files (prod) |
-| `MPD_LOG_PATH`  | `/var/lib/mpd/mpd.log` | MPD log file (for per-file sync progress)  |
+| Variable           | Default                                                        | Purpose                                                             |
+| ------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `MPD_HOST`         | `localhost`                                                    | MPD daemon hostname                                                 |
+| `MPD_PORT`         | `6600`                                                         | MPD daemon port                                                     |
+| `COVERS_DIR`       | —                                                              | Path where cover JPEGs are saved                                    |
+| `MUSIC_DIR`        | `/music`                                                       | Root directory of the music library                                 |
+| `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta` | Audio extensions counted as music files in per-source library stats |
+| `PORT`             | `3000`                                                         | Backend HTTP server port                                            |
+| `FRONTEND_DIST`    | `../frontend/dist`                                             | Path to built frontend static files (prod)                          |
+| `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | MPD log file (for per-file sync progress)                           |
 
 ## Production deployment (Raspberry Pi)
 
@@ -224,6 +225,23 @@ After every write, MPD is restarted so changes take effect. Both services use
 
 **Writing new MPD config code:** always read/write the drop-in (not `/etc/mpd.conf`).
 Use `fs.readFileSync`/`fs.writeFileSync` directly — no sudo needed.
+
+### Local library sources & per-source stats
+
+- **Local sources** are exposed to MPD via a **service-user-owned symlink** under
+  `MUSIC_DIR` (default `/opt/sonect/music`, symlink at `/opt/sonect/music/<folder-name>`)
+  pointing to a local folder outside the music directory — **no `sudo mount --bind`**.
+  `storageService.ts` creates/replaces/removes the symlink on source
+  create/update/delete and mount/unmount.
+- **`follow_outside_symlinks "yes"`** is ensured in the MPD drop-in
+  (`process.env.MPD_CONFIG_PATH`) by `configService.ensureFollowOutsideSymlinks()`
+  so MPD can follow the symlink. Local folders must live outside `MUSIC_DIR`
+  (validated in `storageService.ts`).
+- Per-source stats (`file_count` / `dir_count` / `total_size`) are computed by
+  `storageStats.scanStorageStats()` at the end of every `scanLibrary()` and saved
+  via `storageDb.updateStats()`; they are shown in Settings → Libraries.
+  `MUSIC_EXTENSIONS` (comma-separated; default `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta`)
+  selects which audio extensions are counted as music files.
 
 ### MPD log file for sync progress
 
