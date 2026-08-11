@@ -1,4 +1,4 @@
-import { execSync } from "child_process";
+import childProcess from "child_process";
 import fs from "fs";
 import path from "path";
 import { storageDb } from "@repo/db";
@@ -221,13 +221,32 @@ export async function mountSource(
   const source = storageDb.getById(id);
   if (!source) return { success: false, error: "Source not found" };
 
+  const musicDir = path.resolve(process.env.MUSIC_DIR ?? "/opt/sonect/music");
+  if (!source.mount_path.startsWith(musicDir)) {
+    return { success: false, error: `Mount path must be under ${musicDir}` };
+  }
+
+  if (source.type === "local") {
+    try {
+      ensureLocalSymlink(source);
+      storageHooks.ensureSymlinksAllowed();
+      mpdConnectionManager.executeCommand("update").catch(() => {});
+      storageHooks
+        .scanLibrary()
+        .catch((err) =>
+          console.error(
+            "[Storage] Library scan after local mount failed:",
+            err,
+          ),
+        );
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  }
+
   try {
     const mountPoint = source.mount_path;
-
-    const musicDir = path.resolve(MUSIC_DIR);
-    if (!mountPoint.startsWith(musicDir)) {
-      return { success: false, error: `Mount path must be under ${musicDir}` };
-    }
 
     fs.mkdirSync(mountPoint, { recursive: true });
 
@@ -243,10 +262,6 @@ export async function mountSource(
       }
       case "nfs": {
         await mountNfs(sourceDev, mountPoint);
-        break;
-      }
-      case "local": {
-        await mountBind(sourceDev, mountPoint);
         break;
       }
     }
@@ -268,6 +283,11 @@ export async function unmountSource(
   const source = storageDb.getById(id);
   if (!source) return { success: false, error: "Source not found" };
 
+  if (source.type === "local") {
+    removeLocalSymlink(source.mount_path);
+    return { success: true };
+  }
+
   const mountPath = source.mount_path;
 
   const mounts = listMounts();
@@ -275,7 +295,7 @@ export async function unmountSource(
   if (!isMounted) return { success: true };
 
   try {
-    execSync(`sudo umount "${mountPath}"`, {
+    childProcess.execSync(`sudo umount "${mountPath}"`, {
       stdio: "pipe",
       timeout: 15000,
     });
@@ -284,7 +304,7 @@ export async function unmountSource(
     const stderr = err.stderr?.toString() || "";
     if (stderr.includes("busy") || stderr.includes("target is busy")) {
       try {
-        execSync(`sudo umount -l "${mountPath}"`, {
+        childProcess.execSync(`sudo umount -l "${mountPath}"`, {
           stdio: "pipe",
           timeout: 15000,
         });
@@ -304,7 +324,7 @@ export async function unmountSource(
 export function listMounts(): MountInfo[] {
   try {
     const musicDir = path.resolve(MUSIC_DIR);
-    const raw = execSync("cat /proc/mounts", {
+    const raw = childProcess.execSync("cat /proc/mounts", {
       encoding: "utf-8",
       timeout: 5000,
     });
@@ -330,24 +350,31 @@ export async function mountAllEnabled(): Promise<void> {
   let mounted = 0;
   for (const source of sources) {
     try {
-      const mountPoint = source.mount_path;
-      fs.mkdirSync(mountPoint, { recursive: true });
+      if (source.type === "local") {
+        ensureLocalSymlink(source);
+        storageHooks.ensureSymlinksAllowed();
+      } else {
+        const mountPoint = source.mount_path;
+        fs.mkdirSync(mountPoint, { recursive: true });
 
-      const sourceDev = source.uri;
-      const plainPassword = source.password
-        ? decryptPassword(source.password) || undefined
-        : undefined;
+        const sourceDev = source.uri;
+        const plainPassword = source.password
+          ? decryptPassword(source.password) || undefined
+          : undefined;
 
-      switch (source.type) {
-        case "smb":
-          await mountSmb(sourceDev, mountPoint, source.username, plainPassword);
-          break;
-        case "nfs":
-          await mountNfs(sourceDev, mountPoint);
-          break;
-        case "local":
-          await mountBind(sourceDev, mountPoint);
-          break;
+        switch (source.type) {
+          case "smb":
+            await mountSmb(
+              sourceDev,
+              mountPoint,
+              source.username,
+              plainPassword,
+            );
+            break;
+          case "nfs":
+            await mountNfs(sourceDev, mountPoint);
+            break;
+        }
       }
       mounted++;
     } catch {
@@ -355,9 +382,14 @@ export async function mountAllEnabled(): Promise<void> {
     }
   }
   if (mounted > 0) {
-    scanLibrary().catch((err) =>
-      console.error("[Storage] Library scan after startup mounts failed:", err),
-    );
+    storageHooks
+      .scanLibrary()
+      .catch((err) =>
+        console.error(
+          "[Storage] Library scan after startup mounts failed:",
+          err,
+        ),
+      );
   }
 }
 
@@ -377,33 +409,35 @@ async function mountSmb(
     fs.writeFileSync(credsPath, creds.join("\n") + "\n", { mode: 0o600 });
     opts += `,credentials="${credsPath}"`;
     try {
-      execSync(`sudo mount -t cifs "${uri}" "${mountPoint}" -o "${opts}"`, {
-        stdio: "ignore",
-        timeout: 30000,
-      });
+      childProcess.execSync(
+        `sudo mount -t cifs "${uri}" "${mountPoint}" -o "${opts}"`,
+        {
+          stdio: "ignore",
+          timeout: 30000,
+        },
+      );
     } finally {
       try {
         fs.unlinkSync(credsPath);
       } catch {}
     }
   } else {
-    execSync(`sudo mount -t cifs "${uri}" "${mountPoint}" -o "${opts}"`, {
-      stdio: "ignore",
-      timeout: 30000,
-    });
+    childProcess.execSync(
+      `sudo mount -t cifs "${uri}" "${mountPoint}" -o "${opts}"`,
+      {
+        stdio: "ignore",
+        timeout: 30000,
+      },
+    );
   }
 }
 
 async function mountNfs(uri: string, mountPoint: string): Promise<void> {
-  execSync(`sudo mount -t nfs "${uri}" "${mountPoint}" -o "nolock,hard,intr"`, {
-    stdio: "ignore",
-    timeout: 30000,
-  });
-}
-
-async function mountBind(source: string, mountPoint: string): Promise<void> {
-  execSync(`sudo mount --bind "${source}" "${mountPoint}"`, {
-    stdio: "ignore",
-    timeout: 15000,
-  });
+  childProcess.execSync(
+    `sudo mount -t nfs "${uri}" "${mountPoint}" -o "nolock,hard,intr"`,
+    {
+      stdio: "ignore",
+      timeout: 30000,
+    },
+  );
 }

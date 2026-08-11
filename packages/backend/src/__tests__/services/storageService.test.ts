@@ -168,4 +168,85 @@ describe("Storage Service (local sources)", () => {
       expect(updateStub.calledOnce).to.be.true;
     });
   });
+
+  describe("mountSource (local)", () => {
+    it("should create the symlink idempotently without any mount command", async () => {
+      const source = localSource({
+        uri: targetDir,
+        mount_path: path.join(musicDir, "mounted"),
+      });
+      getByIdStub.returns(source);
+
+      const first = await storageService.mountSource(1);
+      const second = await storageService.mountSource(1);
+
+      expect(first.success).to.be.true;
+      expect(second.success).to.be.true;
+      expect(fs.lstatSync(source.mount_path).isSymbolicLink()).to.be.true;
+      const mountCalls = execSyncStub
+        .getCalls()
+        .filter((c) => c.args[0].includes("mount"));
+      expect(mountCalls).to.have.length(0);
+      expect(
+        storageService.storageHooks.scanLibrary.callCount,
+      ).to.be.greaterThan(0);
+    });
+
+    it("should return an error when the local folder is missing", async () => {
+      const source = localSource({
+        uri: path.join(targetDir, "missing"),
+        mount_path: path.join(musicDir, "mounted"),
+      });
+      getByIdStub.returns(source);
+
+      const result = await storageService.mountSource(1);
+
+      expect(result.success).to.be.false;
+      expect(result.error).to.include("does not exist");
+      expect(execSyncStub.calledWith(sinon.match(/mount/))).to.be.false;
+    });
+  });
+
+  describe("unmountSource (local)", () => {
+    it("should remove the symlink idempotently", async () => {
+      fs.symlinkSync(targetDir, path.join(musicDir, "mounted"));
+      getByIdStub.returns(
+        localSource({
+          uri: targetDir,
+          mount_path: path.join(musicDir, "mounted"),
+        }),
+      );
+
+      const result = await storageService.unmountSource(1);
+
+      expect(result.success).to.be.true;
+      expect(fs.existsSync(path.join(musicDir, "mounted"))).to.be.false;
+      expect(execSyncStub.called).to.be.false;
+    });
+  });
+
+  describe("mountAllEnabled", () => {
+    it("should symlink enabled local sources and mount smb/nfs via sudo", async () => {
+      const local = localSource({
+        id: 1,
+        type: "local",
+        name: "Local",
+        uri: targetDir,
+        mount_path: path.join(musicDir, "L"),
+      });
+      const smb = localSource({
+        id: 2,
+        type: "smb",
+        name: "Smb",
+        uri: "//server/share",
+        mount_path: path.join(musicDir, "S"),
+      });
+      getAllStub.returns([local, smb]);
+
+      await storageService.mountAllEnabled();
+
+      expect(fs.lstatSync(local.mount_path).isSymbolicLink()).to.be.true;
+      expect(execSyncStub.calledWith(sinon.match(/cifs/))).to.be.true;
+    });
+  });
 });
