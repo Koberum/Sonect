@@ -5,8 +5,17 @@ import { storageDb } from "@repo/db";
 import { mpdConnectionManager } from "./mpdConnectionManager";
 import { encryptPassword, decryptPassword } from "./crypto";
 import { scanLibrary } from "./libraryService";
+import { ensureFollowOutsideSymlinks } from "./configService";
+import { ValidationError } from "../middleware/errorHandler";
 
 const MUSIC_DIR = process.env.MUSIC_DIR ?? "/opt/sonect/music";
+
+// Object indirection so unit tests can stub these named exports (esmock
+// cannot replace relative modules in this repo).
+export const storageHooks = {
+  ensureSymlinksAllowed: ensureFollowOutsideSymlinks,
+  scanLibrary,
+};
 
 export interface MountInfo {
   path: string;
@@ -31,11 +40,32 @@ export function createStorageSource(data: {
   enabled?: boolean;
 }) {
   const fullPath = buildMountPath(data.mount_path);
+
+  // Validate and create the symlink BEFORE inserting the DB row, so a bad
+  // local folder cannot leave a half-created source behind.
+  if (data.type === "local") {
+    ensureLocalSymlink({ uri: data.uri, mount_path: fullPath });
+  }
+
   const id = storageDb.create({
     ...data,
     mount_path: fullPath,
     password: data.password ? encryptPassword(data.password) : data.password,
   });
+
+  if (data.type === "local") {
+    storageHooks.ensureSymlinksAllowed();
+    mpdConnectionManager.executeCommand("update").catch(() => {});
+    storageHooks
+      .scanLibrary()
+      .catch((err) =>
+        console.error(
+          "[Storage] Library scan after local source create failed:",
+          err,
+        ),
+      );
+  }
+
   return storageDb.getById(id);
 }
 
@@ -51,6 +81,7 @@ export function updateStorageSource(
     enabled?: boolean;
   },
 ) {
+  const existing = storageDb.getById(id);
   const updateData = { ...data };
   if (data.mount_path) {
     updateData.mount_path = buildMountPath(data.mount_path);
@@ -58,22 +89,123 @@ export function updateStorageSource(
   if (data.password) {
     updateData.password = encryptPassword(data.password);
   }
+
+  const wasLocal = existing?.type === "local";
+  const isLocal = (data.type ?? existing?.type) === "local";
+
   storageDb.update(id, updateData);
+
+  if (existing && wasLocal && !isLocal) {
+    removeLocalSymlink(existing.mount_path);
+  }
+
+  if (existing && isLocal) {
+    const source = storageDb.getById(id);
+    if (source) {
+      if (wasLocal && source.mount_path !== existing.mount_path) {
+        removeLocalSymlink(existing.mount_path);
+      }
+      ensureLocalSymlink(source);
+      storageHooks.ensureSymlinksAllowed();
+    }
+  }
+
   return storageDb.getById(id);
 }
 
 export function deleteStorageSource(id: number) {
   const source = storageDb.getById(id);
   if (!source) return false;
+  if (source.type === "local") {
+    removeLocalSymlink(source.mount_path);
+  }
   storageDb.delete(id);
   return true;
 }
 
 function buildMountPath(input: string): string {
-  const musicDir = path.resolve(MUSIC_DIR);
+  const musicDir = path.resolve(process.env.MUSIC_DIR ?? "/opt/sonect/music");
   const normalized = input.replace(/\\/g, "/");
-  if (normalized.startsWith(musicDir)) return normalized;
-  return path.join(musicDir, normalized);
+  let full: string;
+  if (normalized.startsWith(musicDir)) {
+    full = normalized;
+  } else {
+    full = path.join(musicDir, normalized);
+  }
+  const resolved = path.resolve(full);
+  const musicDirPrefix = musicDir.endsWith("/") ? musicDir : musicDir + "/";
+  if (resolved === musicDir || !resolved.startsWith(musicDirPrefix)) {
+    throw new ValidationError(
+      "Mount path must be a subfolder under the music directory",
+      {
+        mount_path: input,
+      },
+    );
+  }
+  return resolved;
+}
+
+function resolveLocalTarget(uri: string): string {
+  const target = path.resolve(uri.replace(/\\/g, "/"));
+  const musicDir = path.resolve(process.env.MUSIC_DIR ?? "/opt/sonect/music");
+  if (target === musicDir || target.startsWith(musicDir + "/")) {
+    throw new ValidationError(
+      "Local folder must be outside the music directory",
+      {
+        uri,
+      },
+    );
+  }
+  return target;
+}
+
+function ensureLocalSymlink(source: { uri: string; mount_path: string }): void {
+  const target = resolveLocalTarget(source.uri);
+  if (!fs.existsSync(target)) {
+    throw new ValidationError(`Local folder does not exist: ${target}`, {
+      uri: source.uri,
+    });
+  }
+  if (!fs.statSync(target).isDirectory()) {
+    throw new ValidationError(`Local folder is not a directory: ${target}`, {
+      uri: source.uri,
+    });
+  }
+
+  const mountPoint = source.mount_path;
+  fs.mkdirSync(path.dirname(mountPoint), { recursive: true });
+
+  let stats: fs.Stats | null = null;
+  try {
+    stats = fs.lstatSync(mountPoint);
+  } catch {
+    stats = null;
+  }
+  if (stats) {
+    if (stats.isSymbolicLink()) {
+      if (path.resolve(fs.readlinkSync(mountPoint)) === target) return;
+      fs.unlinkSync(mountPoint);
+    } else if (stats.isDirectory()) {
+      throw new ValidationError(`A folder already exists at ${mountPoint}`, {
+        mount_path: mountPoint,
+      });
+    } else {
+      throw new ValidationError(`A file already exists at ${mountPoint}`, {
+        mount_path: mountPoint,
+      });
+    }
+  }
+
+  fs.symlinkSync(target, mountPoint);
+}
+
+function removeLocalSymlink(mountPoint: string): void {
+  try {
+    const stats = fs.lstatSync(mountPoint);
+    if (stats.isSymbolicLink()) fs.unlinkSync(mountPoint);
+  } catch {
+    // not present
+  }
 }
 
 export function sanitizeSource(source: Record<string, unknown>) {
