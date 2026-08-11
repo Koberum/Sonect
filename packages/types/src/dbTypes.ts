@@ -58,6 +58,9 @@ export type DBStorageSource = {
   username?: string;
   password?: string;
   enabled: number;
+  file_count?: number;
+  dir_count?: number;
+  total_size?: number;
   created_at?: string;
   updated_at?: string;
 };

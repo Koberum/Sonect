@@ -843,6 +843,17 @@ export const storageDb = {
   delete(id: number): void {
     db().prepare("DELETE FROM storage_sources WHERE id = ?").run(id);
   },
+
+  updateStats(
+    id: number,
+    stats: { file_count: number; dir_count: number; total_size: number },
+  ): void {
+    db()
+      .prepare(
+        "UPDATE storage_sources SET file_count = ?, dir_count = ?, total_size = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      )
+      .run(stats.file_count, stats.dir_count, stats.total_size, id);
+  },
 };
 
 // Setup progress operations

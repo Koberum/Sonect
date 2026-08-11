@@ -114,6 +114,9 @@ export async function initDatabase() {
       username TEXT,
       password TEXT,
       enabled INTEGER DEFAULT 1,
+      file_count INTEGER DEFAULT 0,
+      dir_count INTEGER DEFAULT 0,
+      total_size INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -125,6 +128,22 @@ export async function initDatabase() {
   } catch {}
   try {
     db().exec("ALTER TABLE storage_sources ADD COLUMN password TEXT");
+  } catch {}
+  // Migration: add per-source library stats (existing installs)
+  try {
+    db().exec(
+      "ALTER TABLE storage_sources ADD COLUMN file_count INTEGER DEFAULT 0",
+    );
+  } catch {}
+  try {
+    db().exec(
+      "ALTER TABLE storage_sources ADD COLUMN dir_count INTEGER DEFAULT 0",
+    );
+  } catch {}
+  try {
+    db().exec(
+      "ALTER TABLE storage_sources ADD COLUMN total_size INTEGER DEFAULT 0",
+    );
   } catch {}
 
   // Migration: merge case-insensitive duplicate artists
