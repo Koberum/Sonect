@@ -21,11 +21,14 @@ export interface StorageSource {
   id: number;
   name: string;
   type: "smb" | "nfs" | "local";
-  uri: string;
-  mount_path: string;
+  uri: string; // address or path
+  mount_path: string; // local mount path
   username?: string;
   password?: string;
   enabled: number;
+  file_count?: number;
+  dir_count?: number;
+  total_size?: number;
   created_at?: string;
   updated_at?: string;
 }

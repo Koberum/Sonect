@@ -428,6 +428,7 @@
       "create": "Create",
       "mounted": "Mounted",
       "unmounted": "Unmounted",
+      "stats": "{{files}} files · {{folders}} folders · {{size}}",
       "mount": "Mount",
       "unmount": "Unmount",
       "created": "Library created",

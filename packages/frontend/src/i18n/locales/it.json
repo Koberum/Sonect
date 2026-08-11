@@ -381,6 +381,9 @@
       "noSources": "Nessuna fonte di archiviazione configurata",
       "noSourcesDescription": "Aggiungi una fonte SMB, NFS o locale per espandere la tua libreria musicale."
     },
+    "libraries": {
+      "stats": "{{files}} file · {{folders}} cartelle · {{size}}"
+    },
     "config": {
       "title": "Config MPD",
       "description": "Modifica direttamente mpd.conf. Una configurazione non valida potrebbe impedire l'avvio di MPD.",

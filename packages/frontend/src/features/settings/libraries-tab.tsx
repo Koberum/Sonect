@@ -47,6 +47,19 @@ const typeBadgeLabels: Record<SourceType, string> = {
   local: "Local",
 };
 
+const formatCount = (n: number): string => n.toLocaleString();
+
+function formatBytes(bytes: number): string {
+  if (!bytes) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.min(
+    units.length - 1,
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+  );
+  const value = bytes / 1024 ** i;
+  return `${value >= 10 || i === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[i]}`;
+}
+
 type DialogStep = "closed" | "select-type" | "form";
 
 export function LibrariesTab() {
@@ -62,6 +75,8 @@ export function LibrariesTab() {
   );
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deletingName, setDeletingName] = useState("");
+
+  const supportsMount = (src: StorageSource) => src.type !== "local";
 
   const reloadStorage = async () => {
     try {
@@ -250,34 +265,47 @@ export function LibrariesTab() {
                       <Badge variant="outline" className="text-xs">
                         {typeBadgeLabels[src.type as SourceType] ?? src.type}
                       </Badge>
-                      <Badge variant={mounted ? "default" : "secondary"}>
-                        {mounted
-                          ? t("settings.libraries.mounted", "Mounted")
-                          : t("settings.libraries.unmounted", "Unmounted")}
-                      </Badge>
+
+                      {supportsMount(src) && (
+                        <Badge variant={mounted ? "default" : "secondary"}>
+                          {mounted
+                            ? t("settings.libraries.mounted", "Mounted")
+                            : t("settings.libraries.unmounted", "Unmounted")}
+                        </Badge>
+                      )}
                     </div>
                     <div className="text-muted-foreground truncate text-xs">
                       {getSourceDescription(src)}
                     </div>
+                    {typeof src.file_count === "number" && (
+                      <div className="text-muted-foreground truncate text-xs">
+                        {t("settings.libraries.stats", {
+                          files: formatCount(src.file_count),
+                          folders: formatCount(src.dir_count ?? 0),
+                          size: formatBytes(src.total_size ?? 0),
+                        })}
+                      </div>
+                    )}
                   </div>
                   <div className="flex shrink-0 gap-1">
-                    {mounted ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleUnmount(src.id)}
-                      >
-                        {t("settings.libraries.unmount", "Unmount")}
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleMount(src.id)}
-                      >
-                        {t("settings.libraries.mount", "Mount")}
-                      </Button>
-                    )}
+                    {supportsMount(src) &&
+                      (mounted ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleUnmount(src.id)}
+                        >
+                          {t("settings.libraries.unmount", "Unmount")}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleMount(src.id)}
+                        >
+                          {t("settings.libraries.mount", "Mount")}
+                        </Button>
+                      ))}
                     <Button
                       variant="ghost"
                       size="sm"

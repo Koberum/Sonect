@@ -428,6 +428,7 @@
       "create": "Crear",
       "mounted": "Montada",
       "unmounted": "Desmontada",
+      "stats": "{{files}} archivos · {{folders}} carpetas · {{size}}",
       "mount": "Montar",
       "unmount": "Desmontar",
       "created": "Biblioteca creada",
