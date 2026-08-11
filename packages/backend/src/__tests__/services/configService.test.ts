@@ -118,4 +118,41 @@ describe("Config Service", () => {
       expect(result.warning).to.include("Restart MPD manually");
     });
   });
+
+  describe("ensureFollowOutsideSymlinks", () => {
+    it("should append the option and restart MPD when missing", () => {
+      fsExistsSyncStub.returns(true);
+      fsReadStub.returns('audio_output {\n  type "alsa"\n}\n');
+      execSyncStub.withArgs("which systemctl").returns("/usr/bin/systemctl");
+
+      const result = configService.ensureFollowOutsideSymlinks();
+
+      expect(result.success).to.be.true;
+      const written = fsWriteStub.getCall(0).args[1] as string;
+      expect(written).to.include('follow_outside_symlinks "yes"');
+      expect(execSyncStub.calledWith("sudo systemctl restart mpd")).to.be.true;
+    });
+
+    it("should not write or restart when the option is already present", () => {
+      fsExistsSyncStub.returns(true);
+      fsReadStub.returns('follow_outside_symlinks "yes"\n');
+
+      const result = configService.ensureFollowOutsideSymlinks();
+
+      expect(result.success).to.be.true;
+      expect(fsWriteStub.called).to.be.false;
+      expect(execSyncStub.calledWith("sudo systemctl restart mpd")).to.be.false;
+    });
+
+    it("should return failure when the drop-in is not writable", () => {
+      fsExistsSyncStub.returns(true);
+      fsReadStub.returns("");
+      fsWriteStub.throws(new Error("EACCES"));
+
+      const result = configService.ensureFollowOutsideSymlinks();
+
+      expect(result.success).to.be.false;
+      expect(result.warning).to.include("Check file permissions");
+    });
+  });
 });

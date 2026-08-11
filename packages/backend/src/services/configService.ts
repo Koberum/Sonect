@@ -40,6 +40,50 @@ export function updateConfig(content: string): {
     };
   }
 
+  return restartMpdInternal();
+}
+
+const FOLLOW_OUTSIDE_SYMLINKS = 'follow_outside_symlinks "yes"';
+
+export function ensureFollowOutsideSymlinks(): {
+  success: boolean;
+  warning?: string;
+} {
+  const { content } = getConfig();
+  if (content.includes("follow_outside_symlinks")) {
+    return { success: true };
+  }
+
+  const trimmed = content ? content.replace(/\s+$/, "") + "\n" : "";
+  const updated = `${trimmed}# Allow MPD to follow symlinks to local storage folders (managed by Sonect)\n${FOLLOW_OUTSIDE_SYMLINKS}\n`;
+
+  try {
+    fs.mkdirSync(path.dirname(MPD_CONFIG_PATH), { recursive: true });
+    fs.writeFileSync(MPD_CONFIG_PATH, updated, "utf-8");
+  } catch {
+    return {
+      success: false,
+      warning: `Cannot write to ${MPD_CONFIG_PATH}. Check file permissions.`,
+    };
+  }
+
+  return restartMpdInternal();
+}
+
+export function getConfigPath(): string {
+  return MPD_CONFIG_PATH;
+}
+
+function checkTool(name: string): boolean {
+  try {
+    execSync(`which ${name}`, { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function restartMpdInternal(): { success: boolean; warning?: string } {
   if (checkTool("systemctl")) {
     try {
       execSync("sudo systemctl restart mpd", {
@@ -71,17 +115,4 @@ export function updateConfig(content: string): {
     success: true,
     warning: "Config saved. Restart MPD manually for changes to take effect.",
   };
-}
-
-export function getConfigPath(): string {
-  return MPD_CONFIG_PATH;
-}
-
-function checkTool(name: string): boolean {
-  try {
-    execSync(`which ${name}`, { stdio: "ignore" });
-    return true;
-  } catch {
-    return false;
-  }
 }
