@@ -4,6 +4,7 @@ import { AudioTab } from "@/features/settings/audio-tab";
 import { NetworkTab } from "@/features/settings/network-tab";
 import { LibrariesTab } from "@/features/settings/libraries-tab";
 import { MpdConfigTab } from "@/features/settings/mpd-config-tab";
+import { AppearanceTab } from "@/features/settings/appearance-tab";
 import { DebugTab } from "@/features/settings/debug-tab";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
 
@@ -18,13 +19,16 @@ export function Settings() {
       />
 
       <Tabs defaultValue="audio" className="w-full">
-        <TabsList className="w-full sm:w-auto">
+        <TabsList className="w-full overflow-x-auto sm:w-auto">
           <TabsTrigger value="audio">{t("settings.tabs.audio")}</TabsTrigger>
           <TabsTrigger value="network">
             {t("settings.tabs.network")}
           </TabsTrigger>
           <TabsTrigger value="libraries">
             {t("settings.tabs.libraries")}
+          </TabsTrigger>
+          <TabsTrigger value="appearance">
+            {t("settings.tabs.appearance")}
           </TabsTrigger>
           <TabsTrigger value="config">{t("settings.tabs.config")}</TabsTrigger>
           <TabsTrigger value="debug">{t("settings.tabs.debug")}</TabsTrigger>
@@ -38,6 +42,9 @@ export function Settings() {
         </TabsContent>
         <TabsContent value="libraries">
           <LibrariesTab />
+        </TabsContent>
+        <TabsContent value="appearance">
+          <AppearanceTab />
         </TabsContent>
         <TabsContent value="config">
           <MpdConfigTab />
