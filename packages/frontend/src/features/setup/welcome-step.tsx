@@ -43,7 +43,7 @@ export function WelcomeStep({ onNext, onSkip }: WelcomeStepProps) {
         <img
           src={logoSrc}
           alt={t("common.appName", "Sonect")}
-          className="mx-auto h-10 w-auto"
+          className="mx-auto h-15 w-auto"
         />
         <p className="text-muted-foreground max-w-sm text-sm">
           {t(
