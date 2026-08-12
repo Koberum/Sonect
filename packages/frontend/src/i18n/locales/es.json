@@ -519,6 +519,7 @@
     "welcome": {
       "description": "Bienvenido a Sonect, tu reproductor de música autoalojado.",
       "language": "Idioma",
+      "theme": "Tema",
       "getStarted": "Comenzar"
     },
     "storage": {

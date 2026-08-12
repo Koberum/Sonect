@@ -449,6 +449,7 @@
     "welcome": {
       "description": "Benvenuto in Sonect, il tuo streamer musicale self-hosted.",
       "language": "Lingua",
+      "theme": "Tema",
       "getStarted": "Inizia"
     },
     "storage": {

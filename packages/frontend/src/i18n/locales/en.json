@@ -278,6 +278,7 @@
     "tracks": "Tracks"
   },
   "common": {
+    "appName": "Sonect",
     "cover": "Cover",
     "cancel": "Cancel",
     "saving": "Saving...",
@@ -519,6 +520,7 @@
     "welcome": {
       "description": "Welcome to Sonect — your self-hosted music streamer.",
       "language": "Language",
+      "theme": "Theme",
       "getStarted": "Get Started"
     },
     "storage": {
