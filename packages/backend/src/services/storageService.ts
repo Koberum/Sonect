@@ -6,6 +6,7 @@ import { mpdConnectionManager } from "./mpdConnectionManager";
 import { encryptPassword, decryptPassword } from "./crypto";
 import { scanLibrary } from "./libraryService";
 import { ensureFollowOutsideSymlinks } from "./configService";
+import { markSetupCompleted } from "./setupService";
 import { ValidationError } from "../middleware/errorHandler";
 
 const MUSIC_DIR = process.env.MUSIC_DIR ?? "/opt/sonect/music";
@@ -52,6 +53,8 @@ export function createStorageSource(data: {
     mount_path: fullPath,
     password: data.password ? encryptPassword(data.password) : data.password,
   });
+
+  markSetupCompleted();
 
   if (data.type === "local") {
     storageHooks.ensureSymlinksAllowed();
@@ -142,6 +145,7 @@ function buildMountPath(input: string): string {
       },
     );
   }
+  console.log(`[Storage] Resolved mount path: ${input} -> ${resolved}`);
   return resolved;
 }
 

@@ -21,7 +21,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { getMpdStatus, restartMpd, stopMpd } from "@/features/apis/systemApis";
+import {
+  getMpdStatus,
+  restartMpd,
+  resetSetup,
+  stopMpd,
+} from "@/features/apis/systemApis";
 import { HardwareMonitor } from "@/components/hardware-monitor";
 
 export function DebugTab() {
@@ -33,6 +38,8 @@ export function DebugTab() {
   const [mpdChecking, setMpdChecking] = useState(false);
   const [restartDialogOpen, setRestartDialogOpen] = useState(false);
   const [stopDialogOpen, setStopDialogOpen] = useState(false);
+  const [resetSetupDialogOpen, setResetSetupDialogOpen] = useState(false);
+  const [resettingSetup, setResettingSetup] = useState(false);
 
   const checkMpdStatus = async () => {
     setMpdChecking(true);
@@ -94,6 +101,30 @@ export function DebugTab() {
               onClick={() => setStopDialogOpen(true)}
             >
               {t("settings.debug.stopMpd")}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("settings.debug.setup")}</CardTitle>
+          <CardDescription>
+            {t("settings.debug.setupDescription")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setResetSetupDialogOpen(true)}
+              disabled={resettingSetup}
+            >
+              {resettingSetup && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {t("settings.debug.resetSetup")}
             </Button>
           </div>
         </CardContent>
@@ -195,6 +226,45 @@ export function DebugTab() {
               }}
             >
               {t("settings.debug.stopMpd")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={resetSetupDialogOpen}
+        onOpenChange={setResetSetupDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("settings.debug.resetSetupConfirmTitle")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("settings.debug.resetSetupConfirm")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {t("common.cancel", "Cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                setResettingSetup(true);
+                try {
+                  await resetSetup();
+                  setResetSetupDialogOpen(false);
+                  sessionStorage.removeItem("setup-skipped");
+                  toast.success(t("settings.debug.setupResetted"));
+                  window.location.reload();
+                } catch {
+                  toast.error(t("settings.debug.resetSetupError"));
+                } finally {
+                  setResettingSetup(false);
+                }
+              }}
+            >
+              {t("settings.debug.resetSetup")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -505,7 +505,47 @@
       "restartConfirmTitle": "¿Reiniciar MPD?",
       "restartConfirm": "Esto reiniciará MPD e interrumpirá la reproducción. ¿Continuar?",
       "stopConfirmTitle": "¿Detener MPD?",
-      "stopConfirm": "Esto detendrá MPD. ¿Continuar?"
+      "stopConfirm": "Esto detendrá MPD. ¿Continuar?",
+      "setup": "Asistente de configuración",
+      "setupDescription": "Restablece el asistente de configuración para que vuelva a aparecer en la próxima carga.",
+      "resetSetup": "Restablecer asistente",
+      "resetSetupConfirmTitle": "¿Restablecer el asistente de configuración?",
+      "resetSetupConfirm": "Esto marcará cada paso de configuración como incompleto y el asistente volverá a aparecer en la próxima carga de página.",
+      "setupResetted": "Asistente de configuración restablecido",
+      "resetSetupError": "No se pudo restablecer el asistente de configuración"
+    }
+  },
+  "setup": {
+    "welcome": {
+      "description": "Bienvenido a Sonect, tu reproductor de música autoalojado.",
+      "language": "Idioma",
+      "getStarted": "Comenzar"
+    },
+    "storage": {
+      "title": "Almacenamiento",
+      "description": "Añade una fuente de red o local para tu biblioteca de música.",
+      "info": "Puedes añadir fuentes SMB/CIFS, NFS o locales. Omita este paso para configurar el almacenamiento más tarde en Ajustes.",
+      "addAndContinue": "Añadir y continuar"
+    },
+    "audio": {
+      "applyAndContinue": "Aplicar y continuar"
+    },
+    "sync": {
+      "title": "Sincronización de biblioteca",
+      "description": "Tu biblioteca de música está lista para escanearse. Sonect sincronizará tu música desde MPD. Puedes iniciar una sincronización completa en cualquier momento.",
+      "finish": "Finalizar configuración"
+    },
+    "stepNames": {
+      "welcome": "Bienvenida",
+      "storage": "Almacenamiento",
+      "audio": "Audio",
+      "sync": "Sincronización"
+    },
+    "wizard": {
+      "stepLabel": "Paso {{current}} de {{total}} — {{step}}",
+      "back": "Atrás",
+      "skippedToast": "Configuración omitida.",
+      "completeToast": "Configuración completada."
     }
   }
 }

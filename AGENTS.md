@@ -189,9 +189,16 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 ### Cover art pipeline
 
 1. `coverService.ts` (`services/coverService.ts`) handles cover extraction using `music-metadata` for embedded art.
-2. Filesystem covers (`cover.jpg`, `folder.jpg`, etc.) are checked first; embedded art is used as fallback.
-3. Covers are resized to **500×500 JPEG** with `sharp`, saved to `COVERS_DIR` as `SHA1(artist+album).jpg`.
-4. Backend serves them under `/covers` with `Cache-Control: immutable` (30 days).
+2. Filesystem covers (`cover.jpg`, `folder.jpg`, etc.) are checked first; embedded art is used as fallback. Covers are resized to **500×500 JPEG** with `sharp`, saved to `COVERS_DIR` as `SHA1(artist+album).jpg`.
+3. Backend serves them under `/covers` with `Cache-Control: immutable` (30 days).
+
+### First-run setup wizard
+
+- Route: `/setup`, guarded by `SetupGuard` (`components/setup-guard.tsx`), which wraps the whole app in `MainLayout`. On mount it calls `GET /system/setup/progress` and redirects to `/setup` when `complete` is false (unless the current session dismissed it via `sessionStorage["setup-skipped"]`).
+- The gate is **not** "all steps done": setup is considered complete only when a permanent done flag is set. The flag is a pseudo-step `complete` in the `setup_progress` table, written by `setupService.markSetupCompleted()` — called whenever any setup step is marked complete via `POST /system/setup/progress` and whenever a storage source is created (`storageService.createStorageSource`). `isSetupComplete()` does **not** consider existing storage sources — a stored `complete` flag is the single source of truth. `POST /system/setup/reset` (also exposed as the "Reset setup wizard" button in Settings → Debug) clears every `setup_progress` flag (including `complete`) without touching `storage_sources`, so the wizard reappears while keeping configured libraries intact.
+- `getSetupProgress()` (`services/setupService.ts`) reports steps in order `["storage", "audio", "sync"]`; the `storage` step's `completed` flag is **derived** from `storageDb.getAll().length > 0` (not stored), while `audio`/`sync` flags come from `setup_progress` rows.
+- Frontend wizard steps: Welcome → Storage → Audio → Sync. On a fresh install it starts at Welcome; if any step is already completed it resumes at the first incomplete step (`getStepIndex` in `SetupWizard.tsx`).
+- `SetupWizard` uses sessionStorage `setup-skipped` to dismiss the wizard for the current tab session only.
 
 ### MPD config handling
 
@@ -225,6 +232,12 @@ After every write, MPD is restarted so changes take effect. Both services use
 
 **Writing new MPD config code:** always read/write the drop-in (not `/etc/mpd.conf`).
 Use `fs.readFileSync`/`fs.writeFileSync` directly — no sudo needed.
+
+**Dev container:** the `.devcontainer` reproduces this exact wiring — `conf/mpd.conf`
+is bind-mounted to `/etc/mpd.conf` and includes the drop-in at `/opt/sonect/data/mpd-audio.conf`,
+which `postCreate.sh` creates before starting MPD. Do not remove the `include` directive
+from `conf/mpd.conf`; keep the drop-in at the code default path (`MPD_CONFIG_PATH`) so
+dev behavior matches production.
 
 ### Local library sources & per-source stats
 

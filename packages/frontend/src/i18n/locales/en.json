@@ -505,7 +505,47 @@
       "restartConfirmTitle": "Restart MPD?",
       "restartConfirm": "This will restart MPD and interrupt playback. Continue?",
       "stopConfirmTitle": "Stop MPD?",
-      "stopConfirm": "This will stop MPD. Continue?"
+      "stopConfirm": "This will stop MPD. Continue?",
+      "setup": "Setup wizard",
+      "setupDescription": "Reset the setup wizard so it appears again on the next load.",
+      "resetSetup": "Reset setup wizard",
+      "resetSetupConfirmTitle": "Reset the setup wizard?",
+      "resetSetupConfirm": "This will mark every setup step as incomplete and the wizard will appear again on the next page load.",
+      "setupResetted": "Setup wizard reset",
+      "resetSetupError": "Failed to reset the setup wizard"
+    }
+  },
+  "setup": {
+    "welcome": {
+      "description": "Welcome to Sonect — your self-hosted music streamer.",
+      "language": "Language",
+      "getStarted": "Get Started"
+    },
+    "storage": {
+      "title": "Storage",
+      "description": "Add a network or local source for your music library.",
+      "info": "You can add SMB/CIFS, NFS, or local storage sources. Skip this step to configure storage later in Settings.",
+      "addAndContinue": "Add & Continue"
+    },
+    "audio": {
+      "applyAndContinue": "Apply & Continue"
+    },
+    "sync": {
+      "title": "Library Sync",
+      "description": "Your music library is ready to scan. Sonect will sync your music from MPD. You can trigger a full sync at any time.",
+      "finish": "Finish Setup"
+    },
+    "stepNames": {
+      "welcome": "Welcome",
+      "storage": "Storage",
+      "audio": "Audio",
+      "sync": "Sync"
+    },
+    "wizard": {
+      "stepLabel": "Step {{current}} of {{total}} — {{step}}",
+      "back": "Back",
+      "skippedToast": "Setup skipped!",
+      "completeToast": "Setup complete!"
     }
   }
 }

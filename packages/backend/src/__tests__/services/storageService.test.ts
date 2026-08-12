@@ -18,6 +18,7 @@ describe("Storage Service (local sources)", () => {
   let deleteStub: sinon.SinonStub;
   let updateStub: sinon.SinonStub;
   let getAllStub: sinon.SinonStub;
+  let setupCompletedStub: sinon.SinonStub;
 
   const localSource = (overrides: Record<string, unknown> = {}) => ({
     id: 1,
@@ -47,6 +48,7 @@ describe("Storage Service (local sources)", () => {
     deleteStub = sinon.stub(dbModule.storageDb, "delete");
     updateStub = sinon.stub(dbModule.storageDb, "update");
     getAllStub = sinon.stub(dbModule.storageDb, "getAll");
+    setupCompletedStub = sinon.stub(dbModule.setupDb, "setCompleted");
 
     storageService = await import("../../services/storageService.ts");
     sinon.stub(storageService.storageHooks, "scanLibrary").resolves(undefined);
@@ -88,6 +90,7 @@ describe("Storage Service (local sources)", () => {
         .true;
       expect(storageService.storageHooks.scanLibrary.calledOnce).to.be.true;
       expect(executeCommandStub.calledWith("update")).to.be.true;
+      expect(setupCompletedStub.calledWith("complete")).to.be.true;
     });
 
     it("should reject a local uri that does not exist", () => {

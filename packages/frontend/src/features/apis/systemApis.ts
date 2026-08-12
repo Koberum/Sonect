@@ -215,6 +215,12 @@ export async function updateSetupProgress(
   if (!res.ok) throw new Error("Failed to update setup progress");
 }
 
+export async function resetSetup(): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/setup/reset`, { method: "POST" });
+  if (!res.ok) throw new Error("Failed to reset setup");
+  return res.json();
+}
+
 export interface AudioStatusResponse {
   card: string;
   name: string;

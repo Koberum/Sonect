@@ -435,7 +435,47 @@
       "restartConfirmTitle": "Riavviare MPD?",
       "restartConfirm": "Questo riavvierà MPD e interromperà la riproduzione. Continuare?",
       "stopConfirmTitle": "Fermare MPD?",
-      "stopConfirm": "Questo fermerà MPD. Continuare?"
+      "stopConfirm": "Questo fermerà MPD. Continuare?",
+      "setup": "Procedura guidata",
+      "setupDescription": "Azzerare la procedura guidata di configurazione così riappare al prossimo caricamento.",
+      "resetSetup": "Azzera procedura guidata",
+      "resetSetupConfirmTitle": "Azzerare la procedura guidata?",
+      "resetSetupConfirm": "Ogni passaggio di configurazione verrà segnato come incompleto e la procedura guidata riapparirà al prossimo caricamento della pagina.",
+      "setupResetted": "Procedura guidata azzerata",
+      "resetSetupError": "Impossibile azzerare la procedura guidata"
+    }
+  },
+  "setup": {
+    "welcome": {
+      "description": "Benvenuto in Sonect, il tuo streamer musicale self-hosted.",
+      "language": "Lingua",
+      "getStarted": "Inizia"
+    },
+    "storage": {
+      "title": "Storage",
+      "description": "Aggiungi una sorgente di rete o locale per la tua libreria musicale.",
+      "info": "Puoi aggiungere sorgenti SMB/CIFS, NFS o locali. Salta questo passaggio per configurare lo storage più tardi nelle Impostazioni.",
+      "addAndContinue": "Aggiungi e continua"
+    },
+    "audio": {
+      "applyAndContinue": "Applica e continua"
+    },
+    "sync": {
+      "title": "Sincronizzazione Libreria",
+      "description": "La tua libreria musicale è pronta per la scansione. Sonect sincronizzerà la musica da MPD. Puoi avviare una sincronizzazione completa in qualsiasi momento.",
+      "finish": "Completa configurazione"
+    },
+    "stepNames": {
+      "welcome": "Benvenuto",
+      "storage": "Storage",
+      "audio": "Audio",
+      "sync": "Sincronizzazione"
+    },
+    "wizard": {
+      "stepLabel": "Passo {{current}} di {{total}} — {{step}}",
+      "back": "Indietro",
+      "skippedToast": "Configurazione saltata!",
+      "completeToast": "Configurazione completata!"
     }
   }
 }
