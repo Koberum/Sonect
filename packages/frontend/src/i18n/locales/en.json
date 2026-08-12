@@ -525,7 +525,9 @@
       "title": "Storage",
       "description": "Add a network or local source for your music library.",
       "info": "You can add SMB/CIFS, NFS, or local storage sources. Skip this step to configure storage later in Settings.",
-      "addAndContinue": "Add & Continue"
+      "addSourceSubmit": "Create & Continue",
+      "creating": "Creating...",
+      "backToTypes": "Back to types"
     },
     "audio": {
       "applyAndContinue": "Apply & Continue"

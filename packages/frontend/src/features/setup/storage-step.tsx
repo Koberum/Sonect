@@ -6,6 +6,11 @@ import {
   createStorageSource,
   mountStorageSource,
 } from "@/features/apis/systemApis";
+import {
+  LibrarySourcePicker,
+  type SourceType,
+} from "@/features/settings/library-source-picker";
+import { LibrarySourceForm } from "@/features/settings/library-source-form";
 
 interface StorageStepProps {
   onNext: () => void;
@@ -14,17 +19,16 @@ interface StorageStepProps {
 
 export function StorageStep({ onNext, onSkip }: StorageStepProps) {
   const { t } = useTranslation();
-  const [saving, setSaving] = useState(false);
+  const [selectedType, setSelectedType] = useState<SourceType | null>(null);
 
   const handleSave = async (data: {
     name: string;
-    type: "smb" | "nfs" | "local";
+    type: SourceType;
     uri: string;
     mount_path: string;
     username?: string;
     password?: string;
   }) => {
-    setSaving(true);
     try {
       const source = await createStorageSource(data);
       const result = await mountStorageSource(source.id);
@@ -40,8 +44,6 @@ export function StorageStep({ onNext, onSkip }: StorageStepProps) {
       toast.error(
         t("settings.storage.createError", "Failed to create storage source"),
       );
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -59,99 +61,64 @@ export function StorageStep({ onNext, onSkip }: StorageStepProps) {
         </p>
       </div>
 
-      <div className="text-muted-foreground space-y-3 text-sm">
-        <p>
-          {t(
-            "setup.storage.info",
-            "You can add SMB/CIFS, NFS, or local storage sources. Skip this step to configure storage later in Settings.",
-          )}
-        </p>
-      </div>
-
-      <form
-        className="space-y-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const form = e.currentTarget;
-          const data = new FormData(form);
-          handleSave({
-            name: data.get("name") as string,
-            type: (data.get("type") || "smb") as "smb" | "nfs" | "local",
-            uri: data.get("uri") as string,
-            mount_path: data.get("mount_path") as string,
-            username: (data.get("username") as string) || undefined,
-            password: (data.get("password") as string) || undefined,
-          });
-        }}
-      >
-        <div className="space-y-2">
-          <label className="text-sm font-medium">
-            {t("settings.storage.name", "Name")}
-          </label>
-          <input
-            name="name"
-            required
-            className="bg-background file:text-foreground placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-base shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-            placeholder={t("settings.storage.namePlaceholder", "My NAS")}
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">
-            {t("settings.storage.type", "Type")}
-          </label>
-          <select
-            name="type"
-            className="bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-base shadow-xs transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-          >
-            <option value="smb">
-              {t("settings.storage.typeSmb", "SMB / CIFS")}
-            </option>
-            <option value="nfs">{t("settings.storage.typeNfs", "NFS")}</option>
-            <option value="local">
-              {t("settings.storage.typeLocal", "Local")}
-            </option>
-          </select>
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">
-            {t("settings.storage.uri", "URI")}
-          </label>
-          <input
-            name="uri"
-            required
-            className="bg-background file:text-foreground placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-base shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-            placeholder={t("settings.storage.uriPlaceholder", "//server/share")}
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">
-            {t("settings.storage.mountPath", "Mount Path")}
-          </label>
-          <input
-            name="mount_path"
-            required
-            className="bg-background file:text-foreground placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-base shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-            placeholder={t("settings.storage.mountPathPlaceholder", "NAS")}
-          />
-          <p className="text-muted-foreground text-xs">
-            {t(
-              "settings.storage.mountPathHint",
-              "Subpath under /opt/sonect/music",
+      {selectedType === null ? (
+        <>
+          <div className="text-muted-foreground space-y-3 text-sm">
+            <p>
+              {t(
+                "setup.storage.info",
+                "You can add SMB/CIFS, NFS, or local storage sources. Skip this step to configure storage later in Settings.",
+              )}
+            </p>
+          </div>
+          <LibrarySourcePicker onSelect={setSelectedType} />
+          <div className="flex justify-between pt-2">
+            <Button variant="ghost" type="button" onClick={onSkip}>
+              {t("common.skip", "Skip")}
+            </Button>
+          </div>
+        </>
+      ) : (
+        <div className="space-y-4">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold">
+              {t("settings.libraries.addSource", "Add Library")}
+            </h3>
+            <p className="text-muted-foreground mt-1 text-sm">
+              {t(
+                "settings.libraries.formDescription",
+                "Fill in the details for your library source.",
+              )}
+            </p>
+          </div>
+          <LibrarySourceForm
+            key={selectedType}
+            sourceType={selectedType}
+            onSave={handleSave}
+            renderFooter={({ saving, submit }) => (
+              <div className="flex items-center justify-between pt-2">
+                <Button variant="ghost" type="button" onClick={onSkip}>
+                  {t("common.skip", "Skip")}
+                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    type="button"
+                    onClick={() => setSelectedType(null)}
+                  >
+                    {t("setup.storage.backToTypes", "Back to types")}
+                  </Button>
+                  <Button type="button" onClick={submit} disabled={saving}>
+                    {saving
+                      ? t("setup.storage.creating", "Creating...")
+                      : t("setup.storage.addSourceSubmit", "Create & Continue")}
+                  </Button>
+                </div>
+              </div>
             )}
-          </p>
+          />
         </div>
-
-        <div className="flex justify-between pt-2">
-          <Button type="button" variant="ghost" onClick={onSkip}>
-            {t("common.skip", "Skip")}
-          </Button>
-          <Button type="submit" disabled={saving}>
-            {saving
-              ? t("settings.storage.creating", "Creating...")
-              : t("setup.storage.addAndContinue", "Add & Continue")}
-          </Button>
-        </div>
-      </form>
+      )}
     </div>
   );
 }

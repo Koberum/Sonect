@@ -525,7 +525,9 @@
       "title": "Almacenamiento",
       "description": "Añade una fuente de red o local para tu biblioteca de música.",
       "info": "Puedes añadir fuentes SMB/CIFS, NFS o locales. Omita este paso para configurar el almacenamiento más tarde en Ajustes.",
-      "addAndContinue": "Añadir y continuar"
+      "addSourceSubmit": "Crear y continuar",
+      "creating": "Creando...",
+      "backToTypes": "Volver a los tipos"
     },
     "audio": {
       "applyAndContinue": "Aplicar y continuar"

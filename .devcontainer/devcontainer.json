@@ -6,6 +6,9 @@
 
   // Ports: 3000 (backend), 5173 (Vite), 6600 (MPD)
   "forwardPorts": [3000, 5173, 6600],
+
+  // Post-creation hook
+  "postCreateCommand": ".devcontainer/postCreate.sh",
   "portsAttributes": {
     "3000": {
       "label": "Backend API",

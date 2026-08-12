@@ -1,15 +1,6 @@
 #!/bin/bash
 set -e
 
-echo "🎧 Installing dependencies with pnpm workspace..."
-
-# install for all packages
-pnpm install
-
-# Ensure MPD directories exist
-mkdir -p /workspace/music /var/lib/mpd/playlists /var/lib/mpd
-touch /var/lib/mpd/tag_cache /var/lib/mpd/state /var/lib/mpd/sticker.sql
-
 # Create the user-editable MPD drop-in (included by /etc/mpd.conf) so MPD has a
 # default audio output in dev. Mirrors what installer.sh does in production.
 mkdir -p /opt/sonect/data
