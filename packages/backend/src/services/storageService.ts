@@ -5,6 +5,7 @@ import { storageDb } from "@repo/db";
 import { mpdConnectionManager } from "./mpdConnectionManager";
 import { encryptPassword, decryptPassword } from "./crypto";
 import { scanLibrary } from "./libraryService";
+import { computeSourceStats } from "./storageStats";
 import { ensureFollowOutsideSymlinks } from "./configService";
 import { markSetupCompleted } from "./setupService";
 import { ValidationError } from "../middleware/errorHandler";
@@ -35,12 +36,27 @@ export function createStorageSource(data: {
   name: string;
   type: "smb" | "nfs" | "local";
   uri: string;
-  mount_path: string;
+  mount_path?: string;
   username?: string;
   password?: string;
   enabled?: boolean;
 }) {
-  const fullPath = buildMountPath(data.mount_path);
+  let segment = data.mount_path?.trim();
+
+  // For local sources, mount_path is an internal symlink under MUSIC_DIR. When
+  // omitted, generate a safe, unique folder name from the library name.
+  if (data.type === "local" && !segment) {
+    const base = slugifyName(data.name);
+    segment = generateUniqueMountSegment(base);
+  }
+
+  if (!segment) {
+    throw new ValidationError("Mount path must be provided", {
+      mount_path: data.mount_path ?? "",
+    });
+  }
+
+  const fullPath = buildMountPath(segment);
 
   // Validate and create the symlink BEFORE inserting the DB row, so a bad
   // local folder cannot leave a half-created source behind.
@@ -69,7 +85,26 @@ export function createStorageSource(data: {
       );
   }
 
-  return storageDb.getById(id);
+  let created = storageDb.getById(id);
+
+  // For local sources, compute initial stats eagerly so the setup wizard can
+  // show immediate feedback. This does not persist stats; the periodic
+  // scanStorageStats() job remains the source of truth for long-term values.
+  if (data.type === "local" && created) {
+    try {
+      const stats = computeSourceStats(fullPath);
+      created = { ...(created as any), ...stats };
+    } catch (err: any) {
+      console.error(
+        "[Storage] Failed to scan stats for",
+        data.name,
+        ":",
+        err?.message ?? err,
+      );
+    }
+  }
+
+  return created;
 }
 
 export function updateStorageSource(
@@ -85,16 +120,23 @@ export function updateStorageSource(
   },
 ) {
   const existing = storageDb.getById(id);
-  const updateData = { ...data };
-  if (data.mount_path) {
+  const nextType = data.type ?? existing?.type;
+  const wasLocal = existing?.type === "local";
+  const isLocal = nextType === "local";
+
+  const updateData = { ...data } as typeof data & { mount_path?: string };
+
+  // For local sources, mount_path is internal and should not be user-editable.
+  // Keep the original mount_path stable so symlinks and network mounts do not
+  // jump around when a user edits the name.
+  if (!isLocal && data.mount_path) {
     updateData.mount_path = buildMountPath(data.mount_path);
+  } else {
+    delete updateData.mount_path;
   }
   if (data.password) {
     updateData.password = encryptPassword(data.password);
   }
-
-  const wasLocal = existing?.type === "local";
-  const isLocal = (data.type ?? existing?.type) === "local";
 
   storageDb.update(id, updateData);
 
@@ -126,6 +168,32 @@ export function deleteStorageSource(id: number) {
   return true;
 }
 
+function slugifyName(name: string): string {
+  let slug = name.toLowerCase();
+  slug = slug.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  slug = slug.replace(/[^a-z0-9]+/g, "-");
+  slug = slug.replace(/^-+|-+$/g, "");
+  if (!slug) slug = "local-source";
+  return slug;
+}
+
+function generateUniqueMountSegment(baseSlug: string): string {
+  const musicDir = path.resolve(process.env.MUSIC_DIR ?? "/opt/sonect/music");
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (
+    storageDb
+      .getAll()
+      .some((s) => path.resolve(s.mount_path) === path.join(musicDir, slug))
+  ) {
+    counter += 1;
+    slug = `${baseSlug}-${counter}`;
+  }
+
+  return slug;
+}
+
 function buildMountPath(input: string): string {
   const musicDir = path.resolve(process.env.MUSIC_DIR ?? "/opt/sonect/music");
   const normalized = input.replace(/\\/g, "/");
@@ -145,7 +213,6 @@ function buildMountPath(input: string): string {
       },
     );
   }
-  console.log(`[Storage] Resolved mount path: ${input} -> ${resolved}`);
   return resolved;
 }
 

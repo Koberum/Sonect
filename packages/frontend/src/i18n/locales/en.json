@@ -529,7 +529,11 @@
       "info": "You can add SMB/CIFS, NFS, or local storage sources. Skip this step to configure storage later in Settings.",
       "addSourceSubmit": "Create & Continue",
       "creating": "Creating...",
-      "backToTypes": "Back to types"
+      "backToTypes": "Back to types",
+      "confirmTitle": "Library added",
+      "confirmDescription": "We validated the folder and scanned your music files.",
+      "confirmCancel": "Back",
+      "confirmContinue": "Continue"
     },
     "audio": {
       "applyAndContinue": "Apply & Continue"

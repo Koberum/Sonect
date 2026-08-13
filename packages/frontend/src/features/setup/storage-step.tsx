@@ -5,12 +5,23 @@ import { toast } from "sonner";
 import {
   createStorageSource,
   mountStorageSource,
+  type StorageSource,
 } from "@/features/apis/systemApis";
 import {
   LibrarySourcePicker,
   type SourceType,
 } from "@/features/settings/library-source-picker";
 import { LibrarySourceForm } from "@/features/settings/library-source-form";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface StorageStepProps {
   onNext: () => void;
@@ -20,6 +31,26 @@ interface StorageStepProps {
 export function StorageStep({ onNext, onSkip }: StorageStepProps) {
   const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState<SourceType | null>(null);
+  const [createdSource, setCreatedSource] = useState<StorageSource | null>(
+    null,
+  );
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const formatCount = (n: number | undefined): string =>
+    (n ?? 0).toLocaleString();
+
+  function formatBytes(bytes?: number): string {
+    if (!bytes) return "0 B";
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    const i = Math.min(
+      units.length - 1,
+      Math.floor(Math.log(bytes) / Math.log(1024)),
+    );
+    const value = bytes / 1024 ** i;
+    return `${value >= 10 || i === 0 ? value.toFixed(0) : value.toFixed(1)} ${
+      units[i]
+    }`;
+  }
 
   const handleSave = async (data: {
     name: string;
@@ -30,7 +61,18 @@ export function StorageStep({ onNext, onSkip }: StorageStepProps) {
     password?: string;
   }) => {
     try {
-      const source = await createStorageSource(data);
+      const payload =
+        data.type === "local"
+          ? {
+              name: data.name,
+              type: data.type,
+              uri: data.uri,
+              username: data.username,
+              password: data.password,
+            }
+          : data;
+
+      const source = await createStorageSource(payload);
       const result = await mountStorageSource(source.id);
       if (result.success) {
         toast.success(t("settings.storage.mounted", "Mounted"));
@@ -39,7 +81,8 @@ export function StorageStep({ onNext, onSkip }: StorageStepProps) {
           result.error ?? t("settings.storage.mountError", "Mount failed"),
         );
       }
-      onNext();
+      setCreatedSource(source);
+      setConfirmOpen(true);
     } catch {
       toast.error(
         t("settings.storage.createError", "Failed to create storage source"),
@@ -119,6 +162,64 @@ export function StorageStep({ onNext, onSkip }: StorageStepProps) {
           />
         </div>
       )}
+
+      <AlertDialog
+        open={confirmOpen}
+        onOpenChange={(open) => {
+          setConfirmOpen(open);
+          if (!open) {
+            setCreatedSource(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("setup.storage.confirmTitle", "Library added")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                "setup.storage.confirmDescription",
+                "We validated the folder and scanned your music files.",
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {createdSource && (
+            <div className="space-y-2 text-sm">
+              <div className="font-medium">{createdSource.name}</div>
+              <div className="text-muted-foreground text-xs break-all">
+                {createdSource.uri}
+              </div>
+              <div className="text-muted-foreground text-xs">
+                {t("settings.libraries.stats", {
+                  files: formatCount(createdSource.file_count),
+                  folders: formatCount(createdSource.dir_count),
+                  size: formatBytes(createdSource.total_size),
+                })}
+              </div>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setConfirmOpen(false);
+                setCreatedSource(null);
+              }}
+            >
+              {t("setup.storage.confirmCancel", "Back")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmOpen(false);
+                setCreatedSource(null);
+                onNext();
+              }}
+            >
+              {t("setup.storage.confirmContinue", "Continue")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

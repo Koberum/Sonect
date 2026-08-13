@@ -123,7 +123,7 @@ export async function createStorageSource(data: {
   name: string;
   type: "smb" | "nfs" | "local";
   uri: string;
-  mount_path: string;
+  mount_path?: string;
   username?: string;
   password?: string;
   enabled?: boolean;

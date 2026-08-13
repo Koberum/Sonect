@@ -528,7 +528,11 @@
       "info": "Puedes añadir fuentes SMB/CIFS, NFS o locales. Omita este paso para configurar el almacenamiento más tarde en Ajustes.",
       "addSourceSubmit": "Crear y continuar",
       "creating": "Creando...",
-      "backToTypes": "Volver a los tipos"
+      "backToTypes": "Volver a los tipos",
+      "confirmTitle": "Biblioteca agregada",
+      "confirmDescription": "Hemos validado la carpeta y escaneado tus archivos de música.",
+      "confirmCancel": "Volver",
+      "confirmContinue": "Continuar"
     },
     "audio": {
       "applyAndContinue": "Aplicar y continuar"

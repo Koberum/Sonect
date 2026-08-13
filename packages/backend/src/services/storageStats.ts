@@ -61,11 +61,15 @@ export function walkSource(
   return stats;
 }
 
-export function scanStorageStats(): void {
+export function computeSourceStats(root: string): SourceStats {
   const exts = getAudioExtensions();
+  return walkSource(root, exts);
+}
+
+export function scanStorageStats(): void {
   for (const source of storageDb.getAll()) {
     try {
-      const stats = walkSource(source.mount_path, exts);
+      const stats = computeSourceStats(source.mount_path);
       storageDb.updateStats(source.id, stats);
     } catch (err: any) {
       console.error(
