@@ -315,7 +315,6 @@ describe("System Controller", () => {
           name: "New NAS",
           type: "smb",
           uri: "smb://new/share",
-          mount_path: "NAS2",
         },
       });
       const res = createMockRes();

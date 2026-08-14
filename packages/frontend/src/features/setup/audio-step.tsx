@@ -18,10 +18,9 @@ import {
 
 interface AudioStepProps {
   onNext: () => void;
-  onSkip: () => void;
 }
 
-export function AudioStep({ onNext, onSkip }: AudioStepProps) {
+export function AudioStep({ onNext }: AudioStepProps) {
   const { t } = useTranslation();
   const [devices, setDevices] = useState<AudioDevice[]>([]);
   const [selected, setSelected] = useState<string>("");
@@ -130,9 +129,7 @@ export function AudioStep({ onNext, onSkip }: AudioStepProps) {
       )}
 
       <div className="flex justify-between">
-        <Button variant="ghost" onClick={onSkip}>
-          {t("common.skip", "Skip")}
-        </Button>
+        <Button variant="ghost">{t("common.skip", "Skip")}</Button>
         <Button onClick={handleApply} disabled={!selected || loading}>
           {loading
             ? t("settings.audio.applying")

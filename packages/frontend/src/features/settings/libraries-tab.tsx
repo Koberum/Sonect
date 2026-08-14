@@ -139,7 +139,6 @@ export function LibrariesTab() {
     name: string;
     type: SourceType;
     uri: string;
-    mount_path: string;
     username?: string;
     password?: string;
   }) => {

@@ -246,6 +246,12 @@ dev behavior matches production.
   pointing to a local folder outside the music directory — **no `sudo mount --bind`**.
   `storageService.ts` creates/replaces/removes the symlink on source
   create/update/delete and mount/unmount.
+- **`mount_path` is derived, never user-supplied.** For every source type the
+  frontend omits `mount_path`; `createStorageSource` generates a safe, unique
+  subfolder name under `MUSIC_DIR` from the library name via
+  `slugifyName()` + `generateUniqueMountSegment()` (for `local` it is the symlink
+  target, for `smb`/`nfs` the mount point). `updateStorageSource` keeps an existing
+  `mount_path` stable — editing a name never moves the symlink/mount point.
 - **`follow_outside_symlinks "yes"`** is ensured in the MPD drop-in
   (`process.env.MPD_CONFIG_PATH`) by `configService.ensureFollowOutsideSymlinks()`
   so MPD can follow the symlink. Local folders must live outside `MUSIC_DIR`

@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { X } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   getSetupProgress,
   updateSetupProgress,
@@ -14,18 +14,6 @@ import { StorageStep } from "@/features/setup/storage-step";
 import { SyncStep } from "@/features/setup/sync-step";
 
 const STEPS = ["welcome", "storage", "audio", "sync"] as const;
-
-function getStepIndex(progress: {
-  steps: { step: string; completed: boolean }[];
-}) {
-  for (const s of progress.steps) {
-    if (!s.completed) {
-      const idx = STEPS.indexOf(s.step as (typeof STEPS)[number]);
-      if (idx >= 0) return idx;
-    }
-  }
-  return STEPS.length - 1;
-}
 
 export default function SetupWizard() {
   const navigate = useNavigate();
@@ -41,9 +29,7 @@ export default function SetupWizard() {
           navigate("/", { replace: true });
           return;
         }
-        const hasStarted = progress.steps.some((s) => s.completed);
-        const idx = hasStarted ? getStepIndex(progress) : 0;
-        setCurrentStep(Math.max(0, idx));
+        setCurrentStep(0);
       } catch {
         // If API fails, start from welcome
       } finally {
@@ -58,17 +44,6 @@ export default function SetupWizard() {
       setCurrentStep((s) => s + 1);
     }
   }, [currentStep]);
-
-  const goBack = useCallback(() => {
-    if (currentStep > 0) {
-      setCurrentStep((s) => s - 1);
-    }
-  }, [currentStep]);
-
-  const skipTo = useCallback(async () => {
-    sessionStorage.setItem("setup-skipped", "1");
-    goNext();
-  }, [goNext]);
 
   const handleSkipAll = useCallback(() => {
     sessionStorage.setItem("setup-skipped", "1");
@@ -103,7 +78,17 @@ export default function SetupWizard() {
   return (
     <div className="bg-muted/30 flex min-h-dvh items-center justify-center p-4">
       <Card className="w-full max-w-lg">
-        <CardContent className="pt-6">
+        <CardHeader className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={handleSkipAll}
+            aria-label={t("setup.wizard.skip")}
+            className="text-muted-foreground hover:text-foreground focus:ring-ring ml-auto rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none"
+          >
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
+        </CardHeader>
+        <CardContent>
           {/* Step indicator */}
           <div className="mb-8 flex items-center justify-center gap-1">
             {STEPS.map((step, i) => (
@@ -131,7 +116,7 @@ export default function SetupWizard() {
           </div>
 
           {/* Step label */}
-          <p className="text-muted-foreground mb-6 text-center text-xs font-medium tracking-wider uppercase">
+          <p className="text-muted-foreground text-center text-xs font-medium tracking-wider uppercase">
             {t("setup.wizard.stepLabel", {
               current: currentStep + 1,
               total: STEPS.length,
@@ -140,27 +125,10 @@ export default function SetupWizard() {
           </p>
 
           {/* Step content */}
-          {stepLabel === "welcome" && (
-            <WelcomeStep onNext={goNext} onSkip={handleSkipAll} />
-          )}
-          {stepLabel === "storage" && (
-            <StorageStep onNext={goNext} onSkip={skipTo} />
-          )}
-          {stepLabel === "audio" && (
-            <AudioStep onNext={goNext} onSkip={skipTo} />
-          )}
-          {stepLabel === "sync" && (
-            <SyncStep onComplete={handleComplete} onSkip={handleSkipAll} />
-          )}
-
-          {/* Back button for non-welcome, non-sync steps */}
-          {currentStep > 0 && currentStep < STEPS.length - 1 && (
-            <div className="mt-4 flex justify-center">
-              <Button variant="ghost" size="sm" onClick={goBack}>
-                {t("setup.wizard.back")}
-              </Button>
-            </div>
-          )}
+          {stepLabel === "welcome" && <WelcomeStep onNext={goNext} />}
+          {stepLabel === "storage" && <StorageStep onNext={goNext} />}
+          {stepLabel === "audio" && <AudioStep onNext={goNext} />}
+          {stepLabel === "sync" && <SyncStep onComplete={handleComplete} />}
         </CardContent>
       </Card>
     </div>

@@ -75,30 +75,18 @@ export const systemSchemas = {
       .int("id must be an integer")
       .positive("id must be positive"),
   }),
-  storageSource: z.union([
-    // Network sources require an explicit mount_path under MUSIC_DIR
-    z.object({
-      name: z.string().min(1, "name is required").max(255),
-      type: z.enum(["smb", "nfs"]),
-      uri: z.string().min(1, "URI is required"),
-      mount_path: z.string().min(1, "mount path is required"),
-      username: z.string().optional(),
-      password: z.string().optional(),
-      enabled: z.boolean().optional(),
-    }),
-    // Local sources use a real filesystem path as uri; mount_path is an
-    // internal symlink target under MUSIC_DIR and can be omitted so the
-    // server generates it from the name.
-    z.object({
-      name: z.string().min(1, "name is required").max(255),
-      type: z.literal("local"),
-      uri: z.string().min(1, "URI is required"),
-      mount_path: z.string().optional(),
-      username: z.string().optional(),
-      password: z.string().optional(),
-      enabled: z.boolean().optional(),
-    }),
-  ]),
+  storageSource: z.object({
+    name: z.string().min(1, "name is required").max(255),
+    type: z.enum(["smb", "nfs", "local"]),
+    uri: z.string().min(1, "URI is required"),
+    // mount_path is an internal detail (mount point for network sources,
+    // symlink target for local) under MUSIC_DIR. It is omitted for every type
+    // so the server generates it from the library name.
+    mount_path: z.string().optional(),
+    username: z.string().optional(),
+    password: z.string().optional(),
+    enabled: z.boolean().optional(),
+  }),
   storageSourceUpdate: z.object({
     name: z.string().min(1).max(255).optional(),
     type: z.enum(["smb", "nfs", "local"]).optional(),

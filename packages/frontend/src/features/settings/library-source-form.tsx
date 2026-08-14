@@ -9,7 +9,6 @@ export interface LibrarySourceFormValues {
   name: string;
   type: SourceType;
   uri: string;
-  mount_path: string;
   username?: string;
   password?: string;
 }
@@ -20,13 +19,6 @@ interface LibrarySourceFormProps {
   editingId?: number | null;
   onSave: (data: LibrarySourceFormValues) => Promise<void>;
   renderFooter: (helpers: { saving: boolean; submit: () => void }) => ReactNode;
-}
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
 }
 
 export function LibrarySourceForm({
@@ -41,21 +33,15 @@ export function LibrarySourceForm({
   const [form, setForm] = useState({
     name: initialValues?.name ?? "",
     uri: initialValues?.uri ?? "",
-    mount_path:
-      initialValues?.mount_path.replace(/^\/opt\/sonect\/music\/?/, "") ?? "",
     username: initialValues?.username ?? "",
     password: "",
   });
-  const [autoSlug, setAutoSlug] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!form.name.trim()) errs.name = "Required";
     if (!form.uri.trim()) errs.uri = "Required";
-    if (sourceType !== "local" && !form.mount_path.trim()) {
-      errs.mount_path = "Required";
-    }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -110,13 +96,6 @@ export function LibrarySourceForm({
       type: sourceType,
     };
 
-    // For local sources, the mount_path is an internal detail. Auto-generate
-    // it from the name on submit when creating a new source so the backend
-    // still receives a valid value without exposing it in the UI.
-    if (sourceType === "local" && !payload.mount_path.trim()) {
-      payload.mount_path = slugify(payload.name);
-    }
-
     onSave(payload)
       .catch(() => undefined)
       .finally(() => setSaving(false));
@@ -132,16 +111,7 @@ export function LibrarySourceForm({
           <Input
             id="lib-name"
             value={form.name}
-            onChange={(e) => {
-              const name = e.target.value;
-              setForm((prev) => ({
-                ...prev,
-                name,
-                ...(autoSlug && sourceType !== "local"
-                  ? { mount_path: slugify(name) }
-                  : {}),
-              }));
-            }}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
             onBlur={() => handleFieldBlur("name")}
             placeholder={t("settings.libraries.namePlaceholder", "My Music")}
             className={fieldClass("name")}
@@ -192,37 +162,6 @@ export function LibrarySourceForm({
               <p className="mt-1 text-xs text-red-500">{errors.uri}</p>
             )}
             <p className="text-muted-foreground mt-1 text-xs">{addressHint}</p>
-          </div>
-        )}
-
-        {sourceType !== "local" && (
-          <div className="space-y-2">
-            <Label htmlFor="lib-folder">
-              {t("settings.libraries.folderName", "Folder Name")}
-            </Label>
-            <Input
-              id="lib-folder"
-              value={form.mount_path}
-              onChange={(e) => {
-                setAutoSlug(false);
-                setForm({ ...form, mount_path: e.target.value });
-              }}
-              onBlur={() => handleFieldBlur("mount_path")}
-              placeholder={t(
-                "settings.libraries.folderNamePlaceholder",
-                "my-music",
-              )}
-              className={fieldClass("mount_path")}
-            />
-            {errors.mount_path && (
-              <p className="mt-1 text-xs text-red-500">{errors.mount_path}</p>
-            )}
-            <p className="text-muted-foreground mt-1 text-xs">
-              {t(
-                "settings.libraries.folderNameHint",
-                "Subfolder under /opt/sonect/music",
-              )}
-            </p>
           </div>
         )}
 

@@ -12,10 +12,9 @@ import { useTheme, type Theme } from "@/components/theme-provider";
 
 interface WelcomeStepProps {
   onNext: () => void;
-  onSkip: () => void;
 }
 
-export function WelcomeStep({ onNext, onSkip }: WelcomeStepProps) {
+export function WelcomeStep({ onNext }: WelcomeStepProps) {
   const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
   const [systemDark, setSystemDark] = useState(
@@ -38,8 +37,8 @@ export function WelcomeStep({ onNext, onSkip }: WelcomeStepProps) {
       : "/sonect-logo-light.svg";
 
   return (
-    <div className="flex flex-col items-center gap-6 py-8 text-center">
-      <div className="space-y-2">
+    <div className="flex flex-col items-center gap-6 py-6 text-center">
+      <div className="mt-8 mb-8 space-y-2">
         <img
           src={logoSrc}
           alt={t("common.appName", "Sonect")}
@@ -48,7 +47,7 @@ export function WelcomeStep({ onNext, onSkip }: WelcomeStepProps) {
         <p className="text-muted-foreground max-w-sm text-sm">
           {t(
             "setup.welcome.description",
-            "Welcome to Sonect — your self-hosted music streamer.",
+            "Welcome to Sonect, your self-hosted music streamer.",
           )}
         </p>
       </div>
@@ -97,9 +96,6 @@ export function WelcomeStep({ onNext, onSkip }: WelcomeStepProps) {
       </div>
 
       <div className="flex gap-3">
-        <Button variant="ghost" onClick={onSkip}>
-          {t("common.skip", "Skip")}
-        </Button>
         <Button onClick={onNext} size="lg">
           {t("setup.welcome.getStarted", "Get Started")}
         </Button>

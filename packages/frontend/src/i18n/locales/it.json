@@ -455,7 +455,6 @@
     "storage": {
       "title": "Storage",
       "description": "Aggiungi una sorgente di rete o locale per la tua libreria musicale.",
-      "info": "Puoi aggiungere sorgenti SMB/CIFS, NFS o locali. Salta questo passaggio per configurare lo storage più tardi nelle Impostazioni.",
       "addSourceSubmit": "Crea e continua",
       "creating": "Creazione...",
       "backToTypes": "Torna ai tipi",

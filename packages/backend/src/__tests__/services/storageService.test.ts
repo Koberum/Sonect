@@ -131,6 +131,61 @@ describe("Storage Service (local sources)", () => {
     });
   });
 
+  describe("createStorageSource (network sources)", () => {
+    it("should auto-generate a mount segment from the name when mount_path is omitted", () => {
+      const source = localSource({
+        id: 2,
+        type: "smb",
+        name: "My NAS",
+        uri: "//server/share",
+        mount_path: path.join(musicDir, "my-nas"),
+      });
+      createStub.returns(2);
+      getByIdStub.returns(source);
+      getAllStub.returns([]);
+
+      const result = storageService.createStorageSource({
+        name: "My NAS",
+        type: "smb",
+        uri: "//server/share",
+      });
+
+      expect(result.mount_path).to.equal(path.join(musicDir, "my-nas"));
+      expect(createStub.calledOnce).to.be.true;
+      expect(createStub.firstCall.args[0].mount_path).to.equal(
+        path.join(musicDir, "my-nas"),
+      );
+    });
+
+    it("should avoid collisions when auto-generating a mount segment", () => {
+      const existing = localSource({
+        id: 1,
+        type: "smb",
+        name: "My NAS",
+        uri: "//server/a",
+        mount_path: path.join(musicDir, "my-nas"),
+      });
+      const created = localSource({
+        id: 2,
+        type: "smb",
+        name: "My NAS",
+        uri: "//server/b",
+        mount_path: path.join(musicDir, "my-nas-2"),
+      });
+      createStub.returns(2);
+      getByIdStub.returns(created);
+      getAllStub.returns([existing]);
+
+      const result = storageService.createStorageSource({
+        name: "My NAS",
+        type: "smb",
+        uri: "//server/b",
+      });
+
+      expect(result.mount_path).to.equal(path.join(musicDir, "my-nas-2"));
+    });
+  });
+
   describe("deleteStorageSource", () => {
     it("should remove the local symlink and delete the row", () => {
       fs.symlinkSync(targetDir, path.join(musicDir, "my-music"));

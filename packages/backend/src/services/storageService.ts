@@ -43,17 +43,12 @@ export function createStorageSource(data: {
 }) {
   let segment = data.mount_path?.trim();
 
-  // For local sources, mount_path is an internal symlink under MUSIC_DIR. When
-  // omitted, generate a safe, unique folder name from the library name.
-  if (data.type === "local" && !segment) {
+  // mount_path is an internal detail (symlink target for local, mount point for
+  // network sources) under MUSIC_DIR. When omitted, generate a safe, unique
+  // folder name from the library name for every source type.
+  if (!segment) {
     const base = slugifyName(data.name);
     segment = generateUniqueMountSegment(base);
-  }
-
-  if (!segment) {
-    throw new ValidationError("Mount path must be provided", {
-      mount_path: data.mount_path ?? "",
-    });
   }
 
   const fullPath = buildMountPath(segment);

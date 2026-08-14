@@ -25,10 +25,9 @@ import {
 
 interface StorageStepProps {
   onNext: () => void;
-  onSkip: () => void;
 }
 
-export function StorageStep({ onNext, onSkip }: StorageStepProps) {
+export function StorageStep({ onNext }: StorageStepProps) {
   const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState<SourceType | null>(null);
   const [createdSource, setCreatedSource] = useState<StorageSource | null>(
@@ -56,23 +55,11 @@ export function StorageStep({ onNext, onSkip }: StorageStepProps) {
     name: string;
     type: SourceType;
     uri: string;
-    mount_path: string;
     username?: string;
     password?: string;
   }) => {
     try {
-      const payload =
-        data.type === "local"
-          ? {
-              name: data.name,
-              type: data.type,
-              uri: data.uri,
-              username: data.username,
-              password: data.password,
-            }
-          : data;
-
-      const source = await createStorageSource(payload);
+      const source = await createStorageSource(data);
       const result = await mountStorageSource(source.id);
       if (result.success) {
         toast.success(t("settings.storage.mounted", "Mounted"));
@@ -92,34 +79,20 @@ export function StorageStep({ onNext, onSkip }: StorageStepProps) {
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-xl font-semibold">
-          {t("settings.storage.title", "Storage")}
-        </h2>
-        <p className="text-muted-foreground mt-1 text-sm">
-          {t(
-            "setup.storage.description",
-            "Add a network or local source for your music library.",
-          )}
-        </p>
-      </div>
-
       {selectedType === null ? (
         <>
-          <div className="text-muted-foreground space-y-3 text-sm">
-            <p>
+          <div className="text-center">
+            <h2 className="text-xl font-semibold">
+              {t("settings.storage.title", "Storage")}
+            </h2>
+            <p className="text-muted-foreground mt-1 text-sm">
               {t(
-                "setup.storage.info",
-                "You can add SMB/CIFS, NFS, or local storage sources. Skip this step to configure storage later in Settings.",
+                "setup.storage.description",
+                "Add a network or local source for your music library.",
               )}
             </p>
           </div>
           <LibrarySourcePicker onSelect={setSelectedType} />
-          <div className="flex justify-between pt-2">
-            <Button variant="ghost" type="button" onClick={onSkip}>
-              {t("common.skip", "Skip")}
-            </Button>
-          </div>
         </>
       ) : (
         <div className="space-y-4">
@@ -140,9 +113,6 @@ export function StorageStep({ onNext, onSkip }: StorageStepProps) {
             onSave={handleSave}
             renderFooter={({ saving, submit }) => (
               <div className="flex items-center justify-between pt-2">
-                <Button variant="ghost" type="button" onClick={onSkip}>
-                  {t("common.skip", "Skip")}
-                </Button>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"

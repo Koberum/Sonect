@@ -3,10 +3,9 @@ import { Button } from "@/components/ui/button";
 
 interface SyncStepProps {
   onComplete: () => void;
-  onSkip: () => void;
 }
 
-export function SyncStep({ onComplete, onSkip }: SyncStepProps) {
+export function SyncStep({ onComplete }: SyncStepProps) {
   const { t } = useTranslation();
 
   return (
@@ -24,9 +23,6 @@ export function SyncStep({ onComplete, onSkip }: SyncStepProps) {
       </div>
 
       <div className="flex gap-3">
-        <Button variant="ghost" onClick={onSkip}>
-          {t("common.skip", "Skip")}
-        </Button>
         <Button onClick={onComplete} size="lg">
           {t("setup.sync.finish", "Finish Setup")}
         </Button>
