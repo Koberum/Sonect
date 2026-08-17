@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { X } from "lucide-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   getSetupProgress,
   updateSetupProgress,
@@ -29,6 +28,7 @@ export default function SetupWizard() {
           navigate("/", { replace: true });
           return;
         }
+
         setCurrentStep(0);
       } catch {
         // If API fails, start from welcome
@@ -42,6 +42,12 @@ export default function SetupWizard() {
   const goNext = useCallback(() => {
     if (currentStep < STEPS.length - 1) {
       setCurrentStep((s) => s + 1);
+    }
+  }, [currentStep]);
+
+  const goBack = useCallback(() => {
+    if (currentStep > 0) {
+      setCurrentStep((s) => s - 1);
     }
   }, [currentStep]);
 
@@ -78,17 +84,7 @@ export default function SetupWizard() {
   return (
     <div className="bg-muted/30 flex min-h-dvh items-center justify-center p-4">
       <Card className="w-full max-w-lg">
-        <CardHeader className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={handleSkipAll}
-            aria-label={t("setup.wizard.skip")}
-            className="text-muted-foreground hover:text-foreground focus:ring-ring ml-auto rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none"
-          >
-            <X className="h-5 w-5" aria-hidden="true" />
-          </button>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {/* Step indicator */}
           <div className="mb-8 flex items-center justify-center gap-1">
             {STEPS.map((step, i) => (
@@ -116,7 +112,7 @@ export default function SetupWizard() {
           </div>
 
           {/* Step label */}
-          <p className="text-muted-foreground text-center text-xs font-medium tracking-wider uppercase">
+          <p className="text-muted-foreground mb-6 text-center text-xs font-medium tracking-wider uppercase">
             {t("setup.wizard.stepLabel", {
               current: currentStep + 1,
               total: STEPS.length,
@@ -125,8 +121,12 @@ export default function SetupWizard() {
           </p>
 
           {/* Step content */}
-          {stepLabel === "welcome" && <WelcomeStep onNext={goNext} />}
-          {stepLabel === "storage" && <StorageStep onNext={goNext} />}
+          {stepLabel === "welcome" && (
+            <WelcomeStep onNext={goNext} onSkipAll={handleSkipAll} />
+          )}
+          {stepLabel === "storage" && (
+            <StorageStep onNext={goNext} onBack={goBack} />
+          )}
           {stepLabel === "audio" && <AudioStep onNext={goNext} />}
           {stepLabel === "sync" && <SyncStep onComplete={handleComplete} />}
         </CardContent>

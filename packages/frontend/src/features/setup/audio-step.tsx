@@ -8,6 +8,14 @@ import {
   SelectableRowDescription,
   SelectableRowTitle,
 } from "@/components/ui/selectable-row";
+import {
+  WizardStep,
+  WizardStepActions,
+  WizardStepContent,
+  WizardStepDescription,
+  WizardStepHeader,
+  WizardStepTitle,
+} from "@/components/ui/wizard-step";
 import { toast } from "sonner";
 import {
   getAudioDevices,
@@ -73,25 +81,25 @@ export function AudioStep({ onNext }: AudioStepProps) {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-xl font-semibold">{t("settings.audio.title")}</h2>
-        <p className="text-muted-foreground mt-1 text-sm">
+    <WizardStep>
+      <WizardStepHeader>
+        <WizardStepTitle>{t("settings.audio.title")}</WizardStepTitle>
+        <WizardStepDescription>
           {t("settings.audio.description")}
-        </p>
-      </div>
+        </WizardStepDescription>
+      </WizardStepHeader>
 
-      {fetching ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
-        </div>
-      ) : devices.length === 0 ? (
-        <p className="text-muted-foreground text-center text-sm">
-          {t("settings.audio.noDevices")}
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {devices.map((device) => (
+      <WizardStepContent>
+        {fetching ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+          </div>
+        ) : devices.length === 0 ? (
+          <p className="text-muted-foreground text-center text-sm">
+            {t("settings.audio.noDevices")}
+          </p>
+        ) : (
+          devices.map((device) => (
             <SelectableRow key={device.card} asChild>
               <label>
                 <input
@@ -124,18 +132,17 @@ export function AudioStep({ onNext }: AudioStepProps) {
                 </div>
               </label>
             </SelectableRow>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </WizardStepContent>
 
-      <div className="flex justify-between">
-        <Button variant="ghost">{t("common.skip", "Skip")}</Button>
+      <WizardStepActions>
         <Button onClick={handleApply} disabled={!selected || loading}>
           {loading
             ? t("settings.audio.applying")
             : t("setup.audio.applyAndContinue", "Apply & Continue")}
         </Button>
-      </div>
-    </div>
+      </WizardStepActions>
+    </WizardStep>
   );
 }

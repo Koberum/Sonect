@@ -8,13 +8,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import {
+  WizardStep,
+  WizardStepActions,
+  WizardStepContent,
+  WizardStepDescription,
+  WizardStepField,
+  WizardStepHeader,
+} from "@/components/ui/wizard-step";
 import { useTheme, type Theme } from "@/components/theme-provider";
 
 interface WelcomeStepProps {
   onNext: () => void;
+  onSkipAll?: () => void;
 }
 
-export function WelcomeStep({ onNext }: WelcomeStepProps) {
+export function WelcomeStep({ onNext, onSkipAll }: WelcomeStepProps) {
   const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
   const [systemDark, setSystemDark] = useState(
@@ -37,23 +46,23 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
       : "/sonect-logo-light.svg";
 
   return (
-    <div className="flex flex-col items-center gap-6 py-6 text-center">
-      <div className="mt-8 mb-8 space-y-2">
+    <WizardStep>
+      <WizardStepHeader>
         <img
           src={logoSrc}
           alt={t("common.appName", "Sonect")}
           className="mx-auto h-15 w-auto"
         />
-        <p className="text-muted-foreground max-w-sm text-sm">
+        <WizardStepDescription className="max-w-sm">
           {t(
             "setup.welcome.description",
-            "Welcome to Sonect, your self-hosted music streamer.",
+            "Welcome to Sonect — your self-hosted music streamer.",
           )}
-        </p>
-      </div>
+        </WizardStepDescription>
+      </WizardStepHeader>
 
-      <div className="w-64 space-y-4">
-        <div className="space-y-2">
+      <WizardStepContent>
+        <WizardStepField>
           <label className="text-muted-foreground block text-sm font-medium">
             {t("setup.welcome.language", "Language")}
           </label>
@@ -73,9 +82,9 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
               <SelectItem value="it">{t("language.it")}</SelectItem>
             </SelectContent>
           </Select>
-        </div>
+        </WizardStepField>
 
-        <div className="space-y-2">
+        <WizardStepField>
           <label
             htmlFor="setup-theme"
             className="text-muted-foreground block text-sm font-medium"
@@ -92,14 +101,18 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
               <SelectItem value="system">{t("theme.system")}</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-      </div>
+        </WizardStepField>
+      </WizardStepContent>
 
-      <div className="flex gap-3">
+      <WizardStepActions>
+        <Button variant="link" onClick={onSkipAll}>
+          {t("setup.welcome.skipWizard", "Skip Wizard")}
+        </Button>
+        <div className="flex-1" />
         <Button onClick={onNext} size="lg">
           {t("setup.welcome.getStarted", "Get Started")}
         </Button>
-      </div>
-    </div>
+      </WizardStepActions>
+    </WizardStep>
   );
 }

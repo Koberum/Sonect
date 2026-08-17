@@ -11,7 +11,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { StorageSource } from "@/features/apis/systemApis";
-import { LibrarySourceForm } from "./library-source-form";
+import {
+  LibrarySourceForm,
+  type LibrarySourceFormValues,
+} from "./library-source-form";
+import { useLibrarySourceForm } from "./use-library-source-form";
 import type { SourceType } from "./library-source-picker";
 
 interface LibrariesFormProps {
@@ -30,6 +34,15 @@ interface LibrariesFormProps {
   editingId?: number | null;
 }
 
+interface LibrariesFormFieldsProps {
+  sourceType: SourceType;
+  initialValues?: StorageSource;
+  editingId?: number | null;
+  onSave: (data: LibrarySourceFormValues) => Promise<void>;
+  onBack: () => void;
+  onClose: () => void;
+}
+
 const typeIcons: Record<SourceType, typeof Server> = {
   smb: Server,
   nfs: HardDrive,
@@ -41,6 +54,48 @@ const typeBadgeLabels: Record<SourceType, string> = {
   nfs: "NFS",
   local: "Local",
 };
+
+function LibrariesFormFields({
+  sourceType,
+  initialValues,
+  editingId,
+  onSave,
+  onBack,
+  onClose,
+}: LibrariesFormFieldsProps) {
+  const { t } = useTranslation();
+  const form = useLibrarySourceForm({ sourceType, initialValues, onSave });
+
+  return (
+    <>
+      <LibrarySourceForm
+        sourceType={sourceType}
+        editingId={editingId}
+        form={form.form}
+        setForm={form.setForm}
+        errors={form.errors}
+        handleFieldBlur={form.handleFieldBlur}
+        fieldClass={form.fieldClass}
+      />
+      <DialogFooter>
+        {!editingId && (
+          <Button variant="outline" onClick={onBack}>
+            {t("settings.libraries.back", "Back")}
+          </Button>
+        )}
+        <Button variant="outline" onClick={onClose}>
+          {t("common.cancel", "Cancel")}
+        </Button>
+        <Button type="button" onClick={form.submit} disabled={form.saving}>
+          {form.saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {editingId
+            ? t("settings.libraries.save", "Save")
+            : t("settings.libraries.create", "Create")}
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
 
 export function LibrariesForm({
   open,
@@ -74,29 +129,13 @@ export function LibrariesForm({
             )}
           </DialogDescription>
         </DialogHeader>
-        <LibrarySourceForm
+        <LibrariesFormFields
           sourceType={sourceType}
           initialValues={initialValues}
           editingId={editingId}
           onSave={onSave}
-          renderFooter={({ saving, submit }) => (
-            <DialogFooter>
-              {!editingId && (
-                <Button variant="outline" onClick={onBack}>
-                  {t("settings.libraries.back", "Back")}
-                </Button>
-              )}
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                {t("common.cancel", "Cancel")}
-              </Button>
-              <Button type="button" onClick={submit} disabled={saving}>
-                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {editingId
-                  ? t("settings.libraries.save", "Save")
-                  : t("settings.libraries.create", "Create")}
-              </Button>
-            </DialogFooter>
-          )}
+          onBack={onBack}
+          onClose={() => onOpenChange(false)}
         />
       </DialogContent>
     </Dialog>

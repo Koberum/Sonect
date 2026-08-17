@@ -11,7 +11,11 @@ import {
   LibrarySourcePicker,
   type SourceType,
 } from "@/features/settings/library-source-picker";
-import { LibrarySourceForm } from "@/features/settings/library-source-form";
+import {
+  LibrarySourceForm,
+  type LibrarySourceFormValues,
+} from "@/features/settings/library-source-form";
+import { useLibrarySourceForm } from "@/features/settings/use-library-source-form";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,12 +26,72 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  WizardStep,
+  WizardStepActions,
+  WizardStepContent,
+  WizardStepDescription,
+  WizardStepHeader,
+  WizardStepTitle,
+} from "@/components/ui/wizard-step";
 
 interface StorageStepProps {
   onNext: () => void;
+  onBack?: () => void;
 }
 
-export function StorageStep({ onNext }: StorageStepProps) {
+interface StorageSourceFormPanelProps {
+  sourceType: SourceType;
+  onSave: (data: LibrarySourceFormValues) => Promise<void>;
+  onBack: () => void;
+}
+
+function StorageSourceFormPanel({
+  sourceType,
+  onSave,
+  onBack,
+}: StorageSourceFormPanelProps) {
+  const { t } = useTranslation();
+  const form = useLibrarySourceForm({ sourceType, onSave });
+
+  return (
+    <>
+      <WizardStepHeader>
+        <WizardStepTitle>
+          {t("settings.libraries.addSource", "Add Library")}
+        </WizardStepTitle>
+        <WizardStepDescription>
+          {t(
+            "settings.libraries.formDescription",
+            "Fill in the details for your library source.",
+          )}
+        </WizardStepDescription>
+      </WizardStepHeader>
+      <WizardStepContent>
+        <LibrarySourceForm
+          sourceType={sourceType}
+          form={form.form}
+          setForm={form.setForm}
+          errors={form.errors}
+          handleFieldBlur={form.handleFieldBlur}
+          fieldClass={form.fieldClass}
+        />
+      </WizardStepContent>
+      <WizardStepActions>
+        <Button variant="outline" type="button" onClick={onBack}>
+          {t("setup.wizard.back", "Back")}
+        </Button>
+        <Button type="button" onClick={form.submit} disabled={form.saving}>
+          {form.saving
+            ? t("setup.storage.creating", "Creating...")
+            : t("setup.storage.addSourceSubmit", "Create & Continue")}
+        </Button>
+      </WizardStepActions>
+    </>
+  );
+}
+
+export function StorageStep({ onNext, onBack }: StorageStepProps) {
   const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState<SourceType | null>(null);
   const [createdSource, setCreatedSource] = useState<StorageSource | null>(
@@ -78,59 +142,36 @@ export function StorageStep({ onNext }: StorageStepProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <WizardStep>
       {selectedType === null ? (
         <>
-          <div className="text-center">
-            <h2 className="text-xl font-semibold">
+          <WizardStepHeader>
+            <WizardStepTitle>
               {t("settings.storage.title", "Storage")}
-            </h2>
-            <p className="text-muted-foreground mt-1 text-sm">
+            </WizardStepTitle>
+            <WizardStepDescription>
               {t(
                 "setup.storage.description",
                 "Add a network or local source for your music library.",
               )}
-            </p>
-          </div>
-          <LibrarySourcePicker onSelect={setSelectedType} />
+            </WizardStepDescription>
+          </WizardStepHeader>
+          <WizardStepContent>
+            <LibrarySourcePicker onSelect={setSelectedType} />
+          </WizardStepContent>
+          <WizardStepActions>
+            <Button variant="outline" type="button" onClick={onBack}>
+              {t("setup.wizard.back", "Back")}
+            </Button>
+          </WizardStepActions>
         </>
       ) : (
-        <div className="space-y-4">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold">
-              {t("settings.libraries.addSource", "Add Library")}
-            </h3>
-            <p className="text-muted-foreground mt-1 text-sm">
-              {t(
-                "settings.libraries.formDescription",
-                "Fill in the details for your library source.",
-              )}
-            </p>
-          </div>
-          <LibrarySourceForm
-            key={selectedType}
-            sourceType={selectedType}
-            onSave={handleSave}
-            renderFooter={({ saving, submit }) => (
-              <div className="flex items-center justify-between pt-2">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    type="button"
-                    onClick={() => setSelectedType(null)}
-                  >
-                    {t("setup.storage.backToTypes", "Back to types")}
-                  </Button>
-                  <Button type="button" onClick={submit} disabled={saving}>
-                    {saving
-                      ? t("setup.storage.creating", "Creating...")
-                      : t("setup.storage.addSourceSubmit", "Create & Continue")}
-                  </Button>
-                </div>
-              </div>
-            )}
-          />
-        </div>
+        <StorageSourceFormPanel
+          key={selectedType}
+          sourceType={selectedType}
+          onSave={handleSave}
+          onBack={() => setSelectedType(null)}
+        />
       )}
 
       <AlertDialog
@@ -190,6 +231,6 @@ export function StorageStep({ onNext }: StorageStepProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </WizardStep>
   );
 }
