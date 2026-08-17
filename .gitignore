@@ -81,6 +81,7 @@ mpd/state
 packages/backend/data
 data/covers/*
 data/playlists/*
+data/music/*
 packages/backend/.version
 TODO.md
 

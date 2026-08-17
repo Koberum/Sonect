@@ -133,7 +133,13 @@ export async function createStorageSource(data: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Failed to create storage source");
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(
+      (body && typeof body.error === "string" && body.error) ||
+        "Failed to create storage source",
+    );
+  }
   return res.json();
 }
 
@@ -154,7 +160,13 @@ export async function updateStorageSource(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Failed to update storage source");
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(
+      (body && typeof body.error === "string" && body.error) ||
+        "Failed to update storage source",
+    );
+  }
   return res.json();
 }
 

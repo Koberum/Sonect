@@ -152,11 +152,12 @@ export function LibrariesTab() {
       }
       setDialogStep("closed");
       reloadStorage();
-    } catch {
+    } catch (err) {
       toast.error(
-        editingId
-          ? t("settings.libraries.updateError", "Failed to update library")
-          : t("settings.libraries.createError", "Failed to create library"),
+        (err instanceof Error && err.message) ||
+          (editingId
+            ? t("settings.libraries.updateError", "Failed to update library")
+            : t("settings.libraries.createError", "Failed to create library")),
       );
     }
   };

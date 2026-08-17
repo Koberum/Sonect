@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
+import { Toaster } from "@/components/ui/sonner";
 import {
   getSetupProgress,
   updateSetupProgress,
@@ -131,6 +132,7 @@ export default function SetupWizard() {
           {stepLabel === "sync" && <SyncStep onComplete={handleComplete} />}
         </CardContent>
       </Card>
+      <Toaster />
     </div>
   );
 }

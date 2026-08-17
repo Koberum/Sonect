@@ -134,9 +134,10 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
       }
       setCreatedSource(source);
       setConfirmOpen(true);
-    } catch {
+    } catch (err) {
       toast.error(
-        t("settings.storage.createError", "Failed to create storage source"),
+        (err instanceof Error && err.message) ||
+          t("settings.storage.createError", "Failed to create storage source"),
       );
     }
   };
