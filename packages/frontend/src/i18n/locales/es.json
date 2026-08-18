@@ -278,6 +278,7 @@
     "tracks": "Pistas"
   },
   "common": {
+    "appName": "Sonect",
     "cover": "Carátula",
     "cancel": "Cancelar",
     "saving": "Guardando...",
@@ -413,6 +414,9 @@
       "localPath": "Ruta de Carpeta",
       "localPathPlaceholder": "/mnt/usb/musica",
       "localPathHint": "Ruta absoluta a la carpeta en este dispositivo",
+      "folderName": "Nombre de carpeta",
+      "folderNamePlaceholder": "mi-musica",
+      "folderNameHint": "Subcarpeta bajo /opt/sonect/music",
       "username": "Usuario",
       "usernamePlaceholder": "Opcional",
       "password": "Contraseña",

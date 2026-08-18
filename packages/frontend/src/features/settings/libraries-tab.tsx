@@ -42,9 +42,9 @@ const typeIcons: Record<SourceType, typeof Server> = {
 };
 
 const typeBadgeLabels: Record<SourceType, string> = {
-  smb: "SMB",
-  nfs: "NFS",
-  local: "Local",
+  smb: "settings.libraries.typeSmb",
+  nfs: "settings.libraries.typeNfs",
+  local: "settings.libraries.typeLocal",
 };
 
 const formatCount = (n: number): string => n.toLocaleString();
@@ -263,7 +263,7 @@ export function LibrariesTab() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="truncate font-medium">{src.name}</span>
                       <Badge variant="outline" className="text-xs">
-                        {typeBadgeLabels[src.type as SourceType] ?? src.type}
+                        {t(typeBadgeLabels[src.type as SourceType] ?? src.type)}
                       </Badge>
 
                       {supportsMount(src) && (

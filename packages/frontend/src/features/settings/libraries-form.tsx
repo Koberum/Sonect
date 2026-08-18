@@ -50,9 +50,9 @@ const typeIcons: Record<SourceType, typeof Server> = {
 };
 
 const typeBadgeLabels: Record<SourceType, string> = {
-  smb: "SMB",
-  nfs: "NFS",
-  local: "Local",
+  smb: "settings.libraries.typeSmb",
+  nfs: "settings.libraries.typeNfs",
+  local: "settings.libraries.typeLocal",
 };
 
 function LibrariesFormFields({
@@ -119,7 +119,7 @@ export function LibrariesForm({
               : t("settings.libraries.addSource", "Add Library")}
             <Badge variant="secondary" className="gap-1">
               <TypeIcon className="h-3 w-3" />
-              {typeBadgeLabels[sourceType]}
+              {t(typeBadgeLabels[sourceType])}
             </Badge>
           </DialogTitle>
           <DialogDescription>

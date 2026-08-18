@@ -18,8 +18,8 @@ export function Settings() {
         description={t("settings.description")}
       />
 
-      <Tabs defaultValue="audio" className="w-full">
-        <TabsList className="w-full overflow-x-auto sm:w-auto">
+      <Tabs defaultValue="audio">
+        <TabsList className="mb-4">
           <TabsTrigger value="audio">{t("settings.tabs.audio")}</TabsTrigger>
           <TabsTrigger value="network">
             {t("settings.tabs.network")}

@@ -9,12 +9,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
-  SelectableRow,
-  SelectableRowDescription,
-  SelectableRowTitle,
-} from "@/components/ui/selectable-row";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+  SelectGroup,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   getAudioDevices,
@@ -27,7 +30,6 @@ export function AudioTab() {
   const { t } = useTranslation();
   const [devices, setDevices] = useState<AudioDevice[]>([]);
   const [selected, setSelected] = useState<string>("");
-  const [currentCard, setCurrentCard] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
@@ -40,7 +42,6 @@ export function AudioTab() {
         ]);
         setDevices(devicesData);
         if (audioStatus) {
-          setCurrentCard(audioStatus.card);
           const matched = devicesData.find((d) => d.card === audioStatus.card);
           if (matched) setSelected(matched.card);
         }
@@ -93,42 +94,33 @@ export function AudioTab() {
             {t("settings.audio.noDevices")}
           </p>
         ) : null}
-        <div className="space-y-2">
-          {devices.map((device) => (
-            <SelectableRow key={device.card} asChild>
-              <label>
-                <input
-                  type="radio"
-                  name="audio-device"
-                  value={device.card}
-                  checked={selected === device.card}
-                  onChange={() => setSelected(device.card)}
-                  className="h-4 w-4"
-                />
-                <div className="flex-1">
-                  <SelectableRowTitle>
-                    {device.description || device.name}
-                  </SelectableRowTitle>
-                  <SelectableRowDescription>
-                    {device.card}
-                  </SelectableRowDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  {currentCard === device.card && (
-                    <Badge className="border-transparent bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                      {t("settings.audio.currentlyActive")}
-                    </Badge>
-                  )}
-                  {device.usb && (
-                    <Badge className="border-transparent bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                      {t("settings.audio.usbDac")}
-                    </Badge>
-                  )}
-                </div>
-              </label>
-            </SelectableRow>
-          ))}
-        </div>
+        <Select value={selected} onValueChange={setSelected}>
+          <SelectTrigger>
+            <SelectValue placeholder={t("settings.audio.noDevices")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>{t("settings.audio.devices")}</SelectLabel>
+
+              {devices.map((device) => (
+                <SelectItem key={device.card} value={device.card}>
+                  {device.description || device.name} - {device.card}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+            {/* {currentCard === device.card && (
+              <Badge className="border-transparent bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                {t("settings.audio.currentlyActive")}
+              </Badge>
+            )}
+            {device.usb && (
+              <Badge className="border-transparent bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                {t("settings.audio.usbDac")}
+              </Badge>
+            )} */}
+          </SelectContent>
+        </Select>
+
         <Button onClick={handleApply} disabled={!selected || loading}>
           {loading ? t("settings.audio.applying") : t("settings.audio.apply")}
         </Button>
