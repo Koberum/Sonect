@@ -13,7 +13,6 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
   SelectGroup,
@@ -95,13 +94,11 @@ export function AudioTab() {
           </p>
         ) : null}
         <Select value={selected} onValueChange={setSelected}>
-          <SelectTrigger>
+          <SelectTrigger className="w-full sm:w-64">
             <SelectValue placeholder={t("settings.audio.noDevices")} />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectLabel>{t("settings.audio.devices")}</SelectLabel>
-
               {devices.map((device) => (
                 <SelectItem key={device.card} value={device.card}>
                   {device.description || device.name} - {device.card}

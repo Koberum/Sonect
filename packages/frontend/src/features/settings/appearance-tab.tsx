@@ -6,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -31,10 +30,7 @@ export function AppearanceTab() {
             {t("settings.appearance.themeDescription")}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2">
-          <Label htmlFor="appearance-theme">
-            {t("settings.appearance.theme")}
-          </Label>
+        <CardContent className="space-y-6">
           <Select value={theme} onValueChange={(v) => setTheme(v as Theme)}>
             <SelectTrigger id="appearance-theme" className="w-full sm:w-64">
               <SelectValue />
@@ -56,9 +52,6 @@ export function AppearanceTab() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
-          <Label htmlFor="appearance-language">
-            {t("settings.appearance.language")}
-          </Label>
           <Select
             value={currentLanguage}
             onValueChange={(v) => {
