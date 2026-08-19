@@ -66,6 +66,7 @@ export function WelcomeStep({ onNext, onSkipAll }: WelcomeStepProps) {
           <label className="text-muted-foreground block text-sm font-medium">
             {t("setup.welcome.language", "Language")}
           </label>
+
           <Select
             value={currentLanguage}
             onValueChange={(v) => {
@@ -91,6 +92,7 @@ export function WelcomeStep({ onNext, onSkipAll }: WelcomeStepProps) {
           >
             {t("setup.welcome.theme", "Theme")}
           </label>
+
           <Select value={theme} onValueChange={(v) => setTheme(v as Theme)}>
             <SelectTrigger id="setup-theme">
               <SelectValue />
