@@ -99,8 +99,8 @@ export function AudioStep({ onNext }: AudioStepProps) {
             {t("settings.audio.noDevices")}
           </p>
         ) : (
-          devices.map((device) => (
-            <SelectableRow key={device.card} asChild>
+          devices.map((device, index) => (
+            <SelectableRow key={index} asChild>
               <label>
                 <input
                   type="radio"
