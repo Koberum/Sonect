@@ -238,6 +238,9 @@ is bind-mounted to `/etc/mpd.conf` and includes the drop-in at `/opt/sonect/data
 which `postCreate.sh` creates before starting MPD. Do not remove the `include` directive
 from `conf/mpd.conf`; keep the drop-in at the code default path (`MPD_CONFIG_PATH`) so
 dev behavior matches production.
+The Compose mount is the main configuration and `postCreate.sh` must never
+overwrite `/etc/mpd.conf`; overwriting it would make the mounted file include
+itself recursively and can crash MPD with `SIGSEGV`.
 
 ### Local library sources & per-source stats
 

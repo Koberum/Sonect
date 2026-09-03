@@ -71,6 +71,11 @@ backend writes the drop-in (via `MPD_CONFIG_PATH`, default
 `/opt/sonect/data/mpd-audio.conf`) as the service user, so frontend audio
 and MPD-config edits behave exactly as they do in production.
 
+The Compose mount at `/etc/mpd.conf` is the main configuration and must not be
+overwritten by `postCreate.sh`. The post-create hook only creates the separate
+drop-in file. This prevents the main configuration from including itself
+recursively.
+
 ## Volume Mounts
 
 - `/workspace`: Your entire project
