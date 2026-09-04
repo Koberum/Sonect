@@ -1,5 +1,39 @@
 # Changelog
 
+## [1.1.0](https://github.com/Koberum/Sonect/compare/sonect-v1.0.0...sonect-v1.1.0) (2026-09-04)
+
+
+### Features
+
+* **backend:** ensure follow_outside_symlinks in MPD drop-in ([3ac7e87](https://github.com/Koberum/Sonect/commit/3ac7e8706bee80bd391b41c8d12bd94e5a54314c))
+* **backend:** local sources no longer bind-mounted on mount/unmount/boot ([4d878ce](https://github.com/Koberum/Sonect/commit/4d878ce7c568ec106a0edddb74deacd8ea8b3669))
+* **backend:** local sources via symlink on create/update/delete ([36dd9d5](https://github.com/Koberum/Sonect/commit/36dd9d5f25bade33b470a46ee0f312a92a5cf44c))
+* **backend:** per-source library stats computed at end of scan ([7e7990f](https://github.com/Koberum/Sonect/commit/7e7990f902d28c18dd92bcfcd1c5df9a9cb024c4))
+* cleaner wizard steps ([81c97a7](https://github.com/Koberum/Sonect/commit/81c97a7bd2373fdd844230310676009f11eb2d4b))
+* **db:** add per-source library stats columns and updateStats helper ([516a953](https://github.com/Koberum/Sonect/commit/516a953d56820fba704aed9b4184d23f756abc97))
+* **frontend:** adding logo in welcome step ([9b03a53](https://github.com/Koberum/Sonect/commit/9b03a531dcdc9425a31def9fc0a4445b9fec1ecb))
+* **frontend:** adding toast during wizard ([259a03a](https://github.com/Koberum/Sonect/commit/259a03ab50a35526922c3cf24fc581a064f131af))
+* **frontend:** change the wizard step order ([aa85da9](https://github.com/Koberum/Sonect/commit/aa85da9bfd0b7cbfa321421a5f4f454cb0ebf4b8))
+* **frontend:** dedicated settings section ([7437684](https://github.com/Koberum/Sonect/commit/743768479be6380a43fa89e3395152d6cdcc0bcd))
+* **frontend:** restore Appearance tab with theme and language settings ([7e9455d](https://github.com/Koberum/Sonect/commit/7e9455d48a4c62a6c054e1766dfd72f10a8f0649))
+* **frontend:** select library type form ([0171440](https://github.com/Koberum/Sonect/commit/0171440b30221e68a516585760ebfe3001e0d55b))
+* **frontend:** select library type in wizard setup ([1f90a28](https://github.com/Koberum/Sonect/commit/1f90a284b559a41e51ab16e3a07c2ef81ce50edb))
+* **frontend:** show per-source library stats in Settings ([3356396](https://github.com/Koberum/Sonect/commit/335639617e99606301315c6281c42e614afbaf25))
+* scope mount_path from backend for storages ([64209d2](https://github.com/Koberum/Sonect/commit/64209d2a77736aa3172215e563c78461596e1569))
+
+
+### Bug Fixes
+
+* device fetching ([38122f5](https://github.com/Koberum/Sonect/commit/38122f599ab273451a60429c677137cb1b37bcb1))
+* **frontend:** adjusting logo width ([45f032d](https://github.com/Koberum/Sonect/commit/45f032de6a2e3b3c2822e09b2351f14430630c93))
+* **frontend:** reusable selectable row component ([d020fb1](https://github.com/Koberum/Sonect/commit/d020fb1119c4c235966650bafd9fdfc156be821a))
+* **frontend:** reusable selectable row component ([d020fb1](https://github.com/Koberum/Sonect/commit/d020fb1119c4c235966650bafd9fdfc156be821a))
+* init changing mpd config logic inside dev container ([e4b52ef](https://github.com/Koberum/Sonect/commit/e4b52efdc60c0e5ca6402b33c5d742d99b4676d1))
+* mpd config on devcontainers ([db54d80](https://github.com/Koberum/Sonect/commit/db54d80d132af0b3718ef32962569b6fb0ed8837))
+* **readme:** adjusting license badge ([547c102](https://github.com/Koberum/Sonect/commit/547c10202ec993c6dc8c505748f0968304616740))
+* removing padding from wizard ([20d8005](https://github.com/Koberum/Sonect/commit/20d8005b53f484d9f985b2dc8b05c8336e8d867f))
+* spacing for selectors ([6a15e45](https://github.com/Koberum/Sonect/commit/6a15e459094e200e9ca4814dc70b05248072fddb))
+
 ## 1.0.0 (2026-08-10)
 
 
