@@ -459,7 +459,7 @@ describe("System Controller", () => {
   });
 
   describe("updateSetupProgressHandler", () => {
-    it("should mark step as complete and flag setup done", async () => {
+    it("should mark a step complete without completing setup", async () => {
       const req = createMockReq({
         body: { step: "audio", completed: true },
       });
@@ -469,7 +469,7 @@ describe("System Controller", () => {
       await controller.updateSetupProgressHandler(req, res, next);
 
       expect(mockSetupService.markStepComplete.calledWith("audio")).to.be.true;
-      expect(mockSetupService.markSetupCompleted.calledOnce).to.be.true;
+      expect(mockSetupService.markSetupCompleted.called).to.be.false;
     });
 
     it("should mark step as incomplete", async () => {
@@ -482,6 +482,21 @@ describe("System Controller", () => {
       await controller.updateSetupProgressHandler(req, res, next);
 
       expect(mockSetupService.markStepIncomplete.calledWith("sync")).to.be.true;
+    });
+  });
+
+  describe("completeSetupHandler", () => {
+    it("should permanently complete setup", async () => {
+      expect(controller.completeSetupHandler).to.be.a("function");
+
+      const req = createMockReq();
+      const res = createMockRes();
+      const next = sinon.stub();
+
+      await controller.completeSetupHandler(req, res, next);
+
+      expect(mockSetupService.markSetupCompleted.calledOnce).to.be.true;
+      expect(res.json.calledWith({ success: true, complete: true })).to.be.true;
     });
   });
 

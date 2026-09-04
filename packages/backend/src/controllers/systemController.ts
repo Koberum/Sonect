@@ -209,7 +209,6 @@ export const updateSetupProgressHandler = asyncHandler(
     const { step, completed } = systemSchemas.setupProgress.parse(req.body);
     if (completed) {
       markStepComplete(step);
-      markSetupCompleted();
     } else {
       markStepIncomplete(step);
     }
@@ -219,6 +218,13 @@ export const updateSetupProgressHandler = asyncHandler(
       complete: isSetupComplete(),
       nextStep: getNextIncompleteStep(),
     });
+  },
+);
+
+export const completeSetupHandler = asyncHandler(
+  async (_req: Request, res: Response) => {
+    markSetupCompleted();
+    res.json({ success: true, complete: true });
   },
 );
 

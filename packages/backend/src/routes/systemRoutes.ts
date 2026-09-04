@@ -20,6 +20,7 @@ import {
   listMountsHandler,
   getSetupProgressHandler,
   updateSetupProgressHandler,
+  completeSetupHandler,
   resetSetupHandler,
   restartMpdHandler,
   stopMpdHandler,
@@ -54,6 +55,7 @@ router.get("/storage/mounts", listMountsHandler);
 
 router.get("/setup/progress", getSetupProgressHandler);
 router.post("/setup/progress", updateSetupProgressHandler);
+router.post("/setup/complete", completeSetupHandler);
 router.post("/setup/reset", resetSetupHandler);
 
 router.post("/mpd/restart", restartMpdHandler);

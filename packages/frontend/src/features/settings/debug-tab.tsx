@@ -254,7 +254,6 @@ export function DebugTab() {
                 try {
                   await resetSetup();
                   setResetSetupDialogOpen(false);
-                  sessionStorage.removeItem("setup-skipped");
                   toast.success(t("settings.debug.setupResetted"));
                   window.location.reload();
                 } catch {

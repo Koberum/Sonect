@@ -215,6 +215,17 @@ export async function getSetupProgress(): Promise<{
   return res.json();
 }
 
+const SETUP_COMPLETE_CACHE_KEY = "setup-complete";
+
+export async function isSetupCompleteForSession(): Promise<boolean> {
+  const cached = sessionStorage.getItem(SETUP_COMPLETE_CACHE_KEY);
+  if (cached !== null) return cached === "true";
+
+  const progress = await getSetupProgress();
+  sessionStorage.setItem(SETUP_COMPLETE_CACHE_KEY, String(progress.complete));
+  return progress.complete;
+}
+
 export async function updateSetupProgress(
   step: string,
   completed: boolean,
@@ -227,10 +238,18 @@ export async function updateSetupProgress(
   if (!res.ok) throw new Error("Failed to update setup progress");
 }
 
+export async function completeSetup(): Promise<void> {
+  const res = await fetch(`${API_BASE}/setup/complete`, { method: "POST" });
+  if (!res.ok) throw new Error("Failed to complete setup");
+  sessionStorage.setItem(SETUP_COMPLETE_CACHE_KEY, "true");
+}
+
 export async function resetSetup(): Promise<{ success: boolean }> {
   const res = await fetch(`${API_BASE}/setup/reset`, { method: "POST" });
   if (!res.ok) throw new Error("Failed to reset setup");
-  return res.json();
+  const result = await res.json();
+  sessionStorage.removeItem(SETUP_COMPLETE_CACHE_KEY);
+  return result;
 }
 
 export interface AudioStatusResponse {

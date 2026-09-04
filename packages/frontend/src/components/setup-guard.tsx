@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getSetupProgress } from "@/features/apis/systemApis";
+import { isSetupCompleteForSession } from "@/features/apis/systemApis";
 
 export function SetupGuard({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -10,13 +10,9 @@ export function SetupGuard({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     const check = async () => {
       try {
-        if (sessionStorage.getItem("setup-skipped")) {
-          setChecking(false);
-          return;
-        }
-        const progress = await getSetupProgress();
+        const complete = await isSetupCompleteForSession();
         if (!cancelled) {
-          if (!progress.complete) {
+          if (!complete) {
             navigate("/setup", { replace: true });
           } else {
             setChecking(false);

@@ -82,6 +82,11 @@ pnpm dev
 
 Open `http://localhost:5173` and trigger a library scan from the Settings page.
 
+On first launch, the setup wizard guides you through storage, audio, and library
+sync. Finishing or skipping the wizard is persisted by the backend, so the
+choice applies across browsers and private windows until the wizard is reset
+from Settings → Debug.
+
 ### Raspberry Pi (production)
 
 ```bash
@@ -136,6 +141,9 @@ immediately after user-initiated commands.
 | POST   | `/mpd/next`                   | Next track               |
 | POST   | `/mpd/previous`               | Previous track           |
 | PATCH  | `/mpd/volume`                 | Set volume (0–100)       |
+| GET    | `/system/setup/progress`      | Read setup progress      |
+| POST   | `/system/setup/complete`      | Complete or skip setup   |
+| POST   | `/system/setup/reset`         | Reset the setup wizard   |
 | GET    | `ws://host:3000`              | WebSocket playback state |
 
 ### Environment variables

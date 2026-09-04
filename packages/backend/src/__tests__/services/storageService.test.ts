@@ -90,7 +90,7 @@ describe("Storage Service (local sources)", () => {
         .true;
       expect(storageService.storageHooks.scanLibrary.calledOnce).to.be.true;
       expect(executeCommandStub.calledWith("update")).to.be.true;
-      expect(setupCompletedStub.calledWith("complete")).to.be.true;
+      expect(setupCompletedStub.called).to.be.false;
     });
 
     it("should reject a local uri that does not exist", () => {

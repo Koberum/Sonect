@@ -552,6 +552,7 @@
       "stepLabel": "Step {{current}} of {{total}} — {{step}}",
       "back": "Back",
       "skippedToast": "Setup skipped!",
+      "skipError": "Failed to skip setup",
       "completeToast": "Setup complete!"
     }
   }

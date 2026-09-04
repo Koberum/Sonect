@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Toaster } from "@/components/ui/sonner";
 import {
-  getSetupProgress,
+  completeSetup,
+  isSetupCompleteForSession,
   updateSetupProgress,
 } from "@/features/apis/systemApis";
 import { WelcomeStep } from "@/features/setup/welcome-step";
@@ -24,8 +25,8 @@ export default function SetupWizard() {
   useEffect(() => {
     const load = async () => {
       try {
-        const progress = await getSetupProgress();
-        if (progress.complete) {
+        const complete = await isSetupCompleteForSession();
+        if (complete) {
           navigate("/", { replace: true });
           return;
         }
@@ -52,15 +53,19 @@ export default function SetupWizard() {
     }
   }, [currentStep]);
 
-  const handleSkipAll = useCallback(() => {
-    sessionStorage.setItem("setup-skipped", "1");
-    toast.success(t("setup.wizard.skippedToast"));
-    navigate("/");
+  const handleSkipAll = useCallback(async () => {
+    try {
+      await completeSetup();
+      toast.success(t("setup.wizard.skippedToast"));
+      navigate("/");
+    } catch {
+      toast.error(t("setup.wizard.skipError"));
+    }
   }, [navigate, t]);
 
   const handleComplete = useCallback(async () => {
     await updateSetupProgress("sync", true);
-    sessionStorage.removeItem("setup-skipped");
+    await completeSetup();
     toast.success(t("setup.wizard.completeToast"));
     navigate("/");
   }, [navigate, t]);

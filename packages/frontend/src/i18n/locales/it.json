@@ -552,6 +552,7 @@
       "stepLabel": "Passo {{current}} di {{total}} — {{step}}",
       "back": "Indietro",
       "skippedToast": "Configurazione saltata!",
+      "skipError": "Impossibile saltare la configurazione",
       "completeToast": "Configurazione completata!"
     }
   }
