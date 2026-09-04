@@ -42,15 +42,16 @@ After making changes:
 
 ## Environment variables (packages/backend/.env)
 
-| Variable        | Default                | Purpose                                    |
-| --------------- | ---------------------- | ------------------------------------------ |
-| `MPD_HOST`      | `localhost`            | MPD daemon hostname                        |
-| `MPD_PORT`      | `6600`                 | MPD daemon port                            |
-| `COVERS_DIR`    | —                      | Path where cover JPEGs are saved           |
-| `MUSIC_DIR`     | `/music`               | Root directory of the music library        |
-| `PORT`          | `3000`                 | Backend HTTP server port                   |
-| `FRONTEND_DIST` | `../frontend/dist`     | Path to built frontend static files (prod) |
-| `MPD_LOG_PATH`  | `/var/lib/mpd/mpd.log` | MPD log file (for per-file sync progress)  |
+| Variable           | Default                                                        | Purpose                                                             |
+| ------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `MPD_HOST`         | `localhost`                                                    | MPD daemon hostname                                                 |
+| `MPD_PORT`         | `6600`                                                         | MPD daemon port                                                     |
+| `COVERS_DIR`       | —                                                              | Path where cover JPEGs are saved                                    |
+| `MUSIC_DIR`        | `/music`                                                       | Root directory of the music library                                 |
+| `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta` | Audio extensions counted as music files in per-source library stats |
+| `PORT`             | `3000`                                                         | Backend HTTP server port                                            |
+| `FRONTEND_DIST`    | `../frontend/dist`                                             | Path to built frontend static files (prod)                          |
+| `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | MPD log file (for per-file sync progress)                           |
 
 ## Production deployment (Raspberry Pi)
 
@@ -188,9 +189,16 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 ### Cover art pipeline
 
 1. `coverService.ts` (`services/coverService.ts`) handles cover extraction using `music-metadata` for embedded art.
-2. Filesystem covers (`cover.jpg`, `folder.jpg`, etc.) are checked first; embedded art is used as fallback.
-3. Covers are resized to **500×500 JPEG** with `sharp`, saved to `COVERS_DIR` as `SHA1(artist+album).jpg`.
-4. Backend serves them under `/covers` with `Cache-Control: immutable` (30 days).
+2. Filesystem covers (`cover.jpg`, `folder.jpg`, etc.) are checked first; embedded art is used as fallback. Covers are resized to **500×500 JPEG** with `sharp`, saved to `COVERS_DIR` as `SHA1(artist+album).jpg`.
+3. Backend serves them under `/covers` with `Cache-Control: immutable` (30 days).
+
+### First-run setup wizard
+
+- Route: `/setup`, guarded by `SetupGuard` (`components/setup-guard.tsx`), which wraps the whole app in `MainLayout`. On mount it calls `GET /system/setup/progress` and redirects to `/setup` when `complete` is false (unless the current session dismissed it via `sessionStorage["setup-skipped"]`).
+- The gate is **not** "all steps done": setup is considered complete only when a permanent done flag is set. The flag is a pseudo-step `complete` in the `setup_progress` table, written by `setupService.markSetupCompleted()` — called whenever any setup step is marked complete via `POST /system/setup/progress` and whenever a storage source is created (`storageService.createStorageSource`). `isSetupComplete()` does **not** consider existing storage sources — a stored `complete` flag is the single source of truth. `POST /system/setup/reset` (also exposed as the "Reset setup wizard" button in Settings → Debug) clears every `setup_progress` flag (including `complete`) without touching `storage_sources`, so the wizard reappears while keeping configured libraries intact.
+- `getSetupProgress()` (`services/setupService.ts`) reports steps in order `["storage", "audio", "sync"]`; the `storage` step's `completed` flag is **derived** from `storageDb.getAll().length > 0` (not stored), while `audio`/`sync` flags come from `setup_progress` rows.
+- Frontend wizard steps: Welcome → Storage → Audio → Sync. On a fresh install it starts at Welcome; if any step is already completed it resumes at the first incomplete step (`getStepIndex` in `SetupWizard.tsx`).
+- `SetupWizard` uses sessionStorage `setup-skipped` to dismiss the wizard for the current tab session only.
 
 ### MPD config handling
 
@@ -224,6 +232,38 @@ After every write, MPD is restarted so changes take effect. Both services use
 
 **Writing new MPD config code:** always read/write the drop-in (not `/etc/mpd.conf`).
 Use `fs.readFileSync`/`fs.writeFileSync` directly — no sudo needed.
+
+**Dev container:** the `.devcontainer` reproduces this exact wiring — `conf/mpd.conf`
+is bind-mounted to `/etc/mpd.conf` and includes the drop-in at `/opt/sonect/data/mpd-audio.conf`,
+which `postCreate.sh` creates before starting MPD. Do not remove the `include` directive
+from `conf/mpd.conf`; keep the drop-in at the code default path (`MPD_CONFIG_PATH`) so
+dev behavior matches production.
+The Compose mount is the main configuration and `postCreate.sh` must never
+overwrite `/etc/mpd.conf`; overwriting it would make the mounted file include
+itself recursively and can crash MPD with `SIGSEGV`.
+
+### Local library sources & per-source stats
+
+- **Local sources** are exposed to MPD via a **service-user-owned symlink** under
+  `MUSIC_DIR` (default `/opt/sonect/music`, symlink at `/opt/sonect/music/<folder-name>`)
+  pointing to a local folder outside the music directory — **no `sudo mount --bind`**.
+  `storageService.ts` creates/replaces/removes the symlink on source
+  create/update/delete and mount/unmount.
+- **`mount_path` is derived, never user-supplied.** For every source type the
+  frontend omits `mount_path`; `createStorageSource` generates a safe, unique
+  subfolder name under `MUSIC_DIR` from the library name via
+  `slugifyName()` + `generateUniqueMountSegment()` (for `local` it is the symlink
+  target, for `smb`/`nfs` the mount point). `updateStorageSource` keeps an existing
+  `mount_path` stable — editing a name never moves the symlink/mount point.
+- **`follow_outside_symlinks "yes"`** is ensured in the MPD drop-in
+  (`process.env.MPD_CONFIG_PATH`) by `configService.ensureFollowOutsideSymlinks()`
+  so MPD can follow the symlink. Local folders must live outside `MUSIC_DIR`
+  (validated in `storageService.ts`).
+- Per-source stats (`file_count` / `dir_count` / `total_size`) are computed by
+  `storageStats.scanStorageStats()` at the end of every `scanLibrary()` and saved
+  via `storageDb.updateStats()`; they are shown in Settings → Libraries.
+  `MUSIC_EXTENSIONS` (comma-separated; default `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta`)
+  selects which audio extensions are counted as music files.
 
 ### MPD log file for sync progress
 

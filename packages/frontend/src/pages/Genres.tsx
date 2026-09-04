@@ -4,7 +4,12 @@ import { usePlaybackContext } from "@/components/playback-context";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  SelectableRow,
+  SelectableRowDescription,
+  SelectableRowIcon,
+  SelectableRowTitle,
+} from "@/components/ui/selectable-row";
 import { Music, Disc3 } from "lucide-react";
 
 export default function Genres() {
@@ -41,20 +46,23 @@ export default function Genres() {
           )}
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {genres.map((g) => (
-              <Card
+              <SelectableRow
                 key={g.genre}
-                className="hover:bg-accent cursor-pointer transition-colors"
+                asChild
+                className="bg-card gap-4 rounded-xl p-4 py-6 shadow-sm"
                 onClick={() =>
                   navigate(`/genres/${encodeURIComponent(g.genre)}`)
                 }
               >
-                <CardContent className="flex items-center gap-4 p-4">
-                  <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-full">
-                    <Music className="text-primary h-6 w-6" />
-                  </div>
+                <div>
+                  <SelectableRowIcon className="bg-primary/10 [&_svg]:text-primary h-12 w-12 rounded-full">
+                    <Music className="h-6 w-6" />
+                  </SelectableRowIcon>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{g.genre}</p>
-                    <p className="text-muted-foreground flex items-center gap-3 text-sm">
+                    <SelectableRowTitle className="truncate">
+                      {g.genre}
+                    </SelectableRowTitle>
+                    <SelectableRowDescription className="flex items-center gap-3">
                       <span className="flex items-center gap-1">
                         <Disc3 className="h-3 w-3" />
                         {t("genres.albumCount", { count: g.album_count })}
@@ -62,10 +70,10 @@ export default function Genres() {
                       <span>
                         {t("genres.trackCount", { count: g.track_count })}
                       </span>
-                    </p>
+                    </SelectableRowDescription>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </SelectableRow>
             ))}
           </div>
         </>

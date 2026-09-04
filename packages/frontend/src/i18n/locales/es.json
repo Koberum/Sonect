@@ -278,6 +278,7 @@
     "tracks": "Pistas"
   },
   "common": {
+    "appName": "Sonect",
     "cover": "Carátula",
     "cancel": "Cancelar",
     "saving": "Guardando...",
@@ -297,6 +298,7 @@
       "audio": "Audio",
       "network": "Red",
       "storage": "Almacenamiento",
+      "libraries": "Bibliotecas",
       "library": "Biblioteca",
       "config": "Config MPD",
       "appearance": "Apariencia",
@@ -387,6 +389,63 @@
       "noSources": "No hay fuentes de almacenamiento configuradas",
       "noSourcesDescription": "Agrega una fuente SMB, NFS o local para expandir tu biblioteca de música."
     },
+    "libraries": {
+      "title": "Bibliotecas",
+      "description": "Gestiona las fuentes de tu biblioteca de música.",
+      "addSource": "Agregar Biblioteca",
+      "noSources": "No hay bibliotecas configuradas",
+      "noSourcesDescription": "Agrega una fuente SMB, NFS o local para tu biblioteca de música.",
+      "selectType": "Seleccionar Tipo de Fuente",
+      "selectTypeDesc": "Elige el tipo de fuente que deseas agregar.",
+      "typeSmb": "SMB / CIFS",
+      "typeSmbDesc": "Conecta a una carpeta compartida en red vía SMB",
+      "typeNfs": "NFS",
+      "typeNfsDesc": "Conecta a una carpeta compartida en red vía NFS",
+      "typeLocal": "Carpeta Local",
+      "typeLocalDesc": "Agrega una carpeta en este dispositivo",
+      "name": "Nombre",
+      "namePlaceholder": "Mi Música",
+      "smbAddress": "Dirección SMB",
+      "smbAddressPlaceholder": "smb://192.168.1.100/musica",
+      "smbAddressHint": "Usa formato //servidor/recurso o smb://servidor/recurso",
+      "nfsAddress": "Dirección NFS",
+      "nfsAddressPlaceholder": "192.168.1.100:/export/musica",
+      "nfsAddressHint": "Usa formato servidor:/export/ruta",
+      "localPath": "Ruta de Carpeta",
+      "localPathPlaceholder": "/mnt/usb/musica",
+      "localPathHint": "Ruta absoluta a la carpeta en este dispositivo",
+      "folderName": "Nombre de carpeta",
+      "folderNamePlaceholder": "mi-musica",
+      "folderNameHint": "Subcarpeta bajo /opt/sonect/music",
+      "username": "Usuario",
+      "usernamePlaceholder": "Opcional",
+      "password": "Contraseña",
+      "passwordPlaceholder": "Opcional",
+      "passwordEditPlaceholder": "Dejar vacío para mantener la actual",
+      "continue": "Continuar",
+      "back": "Atrás",
+      "edit": "Editar",
+      "save": "Guardar",
+      "create": "Crear",
+      "mounted": "Montada",
+      "unmounted": "Desmontada",
+      "stats": "{{files}} archivos · {{folders}} carpetas · {{size}}",
+      "mount": "Montar",
+      "unmount": "Desmontar",
+      "created": "Biblioteca creada",
+      "updated": "Biblioteca actualizada",
+      "deleted": "Biblioteca eliminada",
+      "mountError": "Error al montar",
+      "unmountError": "Error al desmontar",
+      "createError": "Error al crear biblioteca",
+      "updateError": "Error al actualizar biblioteca",
+      "deleteError": "Error al eliminar biblioteca",
+      "loadError": "Error al cargar datos de biblioteca",
+      "deleteTitle": "¿Eliminar biblioteca?",
+      "deleteConfirm": "¿Estás seguro de que deseas eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
+      "deleteButton": "Eliminar",
+      "formDescription": "Completa los detalles de tu fuente de biblioteca."
+    },
     "library": {
       "title": "Biblioteca",
       "description": "Gestiona la sincronización de tu biblioteca de música.",
@@ -447,7 +506,53 @@
       "restartConfirmTitle": "¿Reiniciar MPD?",
       "restartConfirm": "Esto reiniciará MPD e interrumpirá la reproducción. ¿Continuar?",
       "stopConfirmTitle": "¿Detener MPD?",
-      "stopConfirm": "Esto detendrá MPD. ¿Continuar?"
+      "stopConfirm": "Esto detendrá MPD. ¿Continuar?",
+      "setup": "Asistente de configuración",
+      "setupDescription": "Restablece el asistente de configuración para que vuelva a aparecer en la próxima carga.",
+      "resetSetup": "Restablecer asistente",
+      "resetSetupConfirmTitle": "¿Restablecer el asistente de configuración?",
+      "resetSetupConfirm": "Esto marcará cada paso de configuración como incompleto y el asistente volverá a aparecer en la próxima carga de página.",
+      "setupResetted": "Asistente de configuración restablecido",
+      "resetSetupError": "No se pudo restablecer el asistente de configuración"
+    }
+  },
+  "setup": {
+    "welcome": {
+      "description": "Bienvenido a Sonect, tu reproductor de música autoalojado.",
+      "language": "Idioma",
+      "theme": "Tema",
+      "getStarted": "Comenzar"
+    },
+    "storage": {
+      "title": "Almacenamiento",
+      "description": "Añade una fuente de red o local para tu biblioteca de música.",
+      "addSourceSubmit": "Crear y continuar",
+      "creating": "Creando...",
+      "backToTypes": "Volver a los tipos",
+      "confirmTitle": "Biblioteca agregada",
+      "confirmDescription": "Hemos validado la carpeta y escaneado tus archivos de música.",
+      "confirmCancel": "Volver",
+      "confirmContinue": "Continuar"
+    },
+    "audio": {
+      "applyAndContinue": "Aplicar y continuar"
+    },
+    "sync": {
+      "title": "Sincronización de biblioteca",
+      "description": "Tu biblioteca de música está lista para escanearse. Sonect sincronizará tu música desde MPD. Puedes iniciar una sincronización completa en cualquier momento.",
+      "finish": "Finalizar configuración"
+    },
+    "stepNames": {
+      "welcome": "Bienvenida",
+      "storage": "Almacenamiento",
+      "audio": "Audio",
+      "sync": "Sincronización"
+    },
+    "wizard": {
+      "stepLabel": "Paso {{current}} de {{total}} — {{step}}",
+      "back": "Atrás",
+      "skippedToast": "Configuración omitida.",
+      "completeToast": "Configuración completada."
     }
   }
 }

@@ -1,34 +1,23 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Toaster } from "@/components/ui/sonner";
 import {
   getSetupProgress,
   updateSetupProgress,
 } from "@/features/apis/systemApis";
 import { WelcomeStep } from "@/features/setup/welcome-step";
 import { AudioStep } from "@/features/setup/audio-step";
-import { NetworkStep } from "@/features/setup/network-step";
 import { StorageStep } from "@/features/setup/storage-step";
 import { SyncStep } from "@/features/setup/sync-step";
 
-const STEPS = ["welcome", "audio", "network", "storage", "sync"] as const;
-
-function getStepIndex(progress: {
-  steps: { step: string; completed: boolean }[];
-}) {
-  for (const s of progress.steps) {
-    if (!s.completed) {
-      const idx = STEPS.indexOf(s.step as (typeof STEPS)[number]);
-      if (idx >= 0) return idx;
-    }
-  }
-  return STEPS.length - 1;
-}
+const STEPS = ["welcome", "storage", "audio", "sync"] as const;
 
 export default function SetupWizard() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -40,8 +29,8 @@ export default function SetupWizard() {
           navigate("/", { replace: true });
           return;
         }
-        const idx = getStepIndex(progress);
-        setCurrentStep(Math.max(0, idx));
+
+        setCurrentStep(0);
       } catch {
         // If API fails, start from welcome
       } finally {
@@ -63,31 +52,25 @@ export default function SetupWizard() {
     }
   }, [currentStep]);
 
-  const skipTo = useCallback(async () => {
-    sessionStorage.setItem("setup-skipped", "1");
-    goNext();
-  }, [goNext]);
-
   const handleSkipAll = useCallback(() => {
     sessionStorage.setItem("setup-skipped", "1");
-    toast.success("Setup skipped!");
+    toast.success(t("setup.wizard.skippedToast"));
     navigate("/");
-  }, [navigate]);
+  }, [navigate, t]);
 
   const handleComplete = useCallback(async () => {
     await updateSetupProgress("sync", true);
     sessionStorage.removeItem("setup-skipped");
-    toast.success("Setup complete!");
+    toast.success(t("setup.wizard.completeToast"));
     navigate("/");
-  }, [navigate]);
+  }, [navigate, t]);
 
-  const labels = {
-    welcome: "Welcome",
-    audio: "Audio",
-    network: "Network",
-    storage: "Storage",
-    sync: "Sync",
-  } as const;
+  const stepLabels: Record<(typeof STEPS)[number], string> = {
+    welcome: t("setup.stepNames.welcome"),
+    storage: t("setup.stepNames.storage"),
+    audio: t("setup.stepNames.audio"),
+    sync: t("setup.stepNames.sync"),
+  };
 
   if (loading) {
     return (
@@ -131,36 +114,25 @@ export default function SetupWizard() {
 
           {/* Step label */}
           <p className="text-muted-foreground mb-6 text-center text-xs font-medium tracking-wider uppercase">
-            Step {currentStep + 1} of {STEPS.length} — {labels[stepLabel]}
+            {t("setup.wizard.stepLabel", {
+              current: currentStep + 1,
+              total: STEPS.length,
+              step: stepLabels[stepLabel],
+            })}
           </p>
 
           {/* Step content */}
           {stepLabel === "welcome" && (
-            <WelcomeStep onNext={goNext} onSkip={handleSkipAll} />
-          )}
-          {stepLabel === "audio" && (
-            <AudioStep onNext={goNext} onSkip={skipTo} />
-          )}
-          {stepLabel === "network" && (
-            <NetworkStep onNext={goNext} onSkip={skipTo} />
+            <WelcomeStep onNext={goNext} onSkipAll={handleSkipAll} />
           )}
           {stepLabel === "storage" && (
-            <StorageStep onNext={goNext} onSkip={skipTo} />
+            <StorageStep onNext={goNext} onBack={goBack} />
           )}
-          {stepLabel === "sync" && (
-            <SyncStep onComplete={handleComplete} onSkip={handleSkipAll} />
-          )}
-
-          {/* Back button for non-welcome, non-sync steps */}
-          {currentStep > 0 && currentStep < STEPS.length - 1 && (
-            <div className="mt-4 flex justify-center">
-              <Button variant="ghost" size="sm" onClick={goBack}>
-                Back
-              </Button>
-            </div>
-          )}
+          {stepLabel === "audio" && <AudioStep onNext={goNext} />}
+          {stepLabel === "sync" && <SyncStep onComplete={handleComplete} />}
         </CardContent>
       </Card>
+      <Toaster />
     </div>
   );
 }

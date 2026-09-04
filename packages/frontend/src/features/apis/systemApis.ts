@@ -21,11 +21,14 @@ export interface StorageSource {
   id: number;
   name: string;
   type: "smb" | "nfs" | "local";
-  uri: string;
-  mount_path: string;
+  uri: string; // address or path
+  mount_path: string; // local mount path
   username?: string;
   password?: string;
   enabled: number;
+  file_count?: number;
+  dir_count?: number;
+  total_size?: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -120,7 +123,7 @@ export async function createStorageSource(data: {
   name: string;
   type: "smb" | "nfs" | "local";
   uri: string;
-  mount_path: string;
+  mount_path?: string;
   username?: string;
   password?: string;
   enabled?: boolean;
@@ -130,7 +133,13 @@ export async function createStorageSource(data: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Failed to create storage source");
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(
+      (body && typeof body.error === "string" && body.error) ||
+        "Failed to create storage source",
+    );
+  }
   return res.json();
 }
 
@@ -151,7 +160,13 @@ export async function updateStorageSource(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Failed to update storage source");
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(
+      (body && typeof body.error === "string" && body.error) ||
+        "Failed to update storage source",
+    );
+  }
   return res.json();
 }
 
@@ -210,6 +225,12 @@ export async function updateSetupProgress(
     body: JSON.stringify({ step, completed }),
   });
   if (!res.ok) throw new Error("Failed to update setup progress");
+}
+
+export async function resetSetup(): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/setup/reset`, { method: "POST" });
+  if (!res.ok) throw new Error("Failed to reset setup");
+  return res.json();
 }
 
 export interface AudioStatusResponse {

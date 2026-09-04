@@ -79,7 +79,10 @@ export const systemSchemas = {
     name: z.string().min(1, "name is required").max(255),
     type: z.enum(["smb", "nfs", "local"]),
     uri: z.string().min(1, "URI is required"),
-    mount_path: z.string().min(1, "mount path is required"),
+    // mount_path is an internal detail (mount point for network sources,
+    // symlink target for local) under MUSIC_DIR. It is omitted for every type
+    // so the server generates it from the library name.
+    mount_path: z.string().optional(),
     username: z.string().optional(),
     password: z.string().optional(),
     enabled: z.boolean().optional(),

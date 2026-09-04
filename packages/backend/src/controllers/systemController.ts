@@ -33,8 +33,10 @@ import {
 } from "../services/storageService";
 import {
   getSetupProgress,
+  isSetupComplete,
   markStepComplete,
   markStepIncomplete,
+  markSetupCompleted,
   resetSetup,
   getNextIncompleteStep,
 } from "../services/setupService";
@@ -196,7 +198,7 @@ export const getSetupProgressHandler = asyncHandler(
     const progress = getSetupProgress();
     res.json({
       steps: progress,
-      complete: progress.every((s) => s.completed),
+      complete: isSetupComplete(),
       nextStep: getNextIncompleteStep(),
     });
   },
@@ -207,13 +209,14 @@ export const updateSetupProgressHandler = asyncHandler(
     const { step, completed } = systemSchemas.setupProgress.parse(req.body);
     if (completed) {
       markStepComplete(step);
+      markSetupCompleted();
     } else {
       markStepIncomplete(step);
     }
     const progress = getSetupProgress();
     res.json({
       steps: progress,
-      complete: progress.every((s) => s.completed),
+      complete: isSetupComplete(),
       nextStep: getNextIncompleteStep(),
     });
   },

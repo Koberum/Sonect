@@ -21,7 +21,7 @@ export function PlaybackProgressBar({
       </span>
 
       <div
-        className="bg-border h-[3px] flex-1 cursor-pointer rounded-sm"
+        className="bg-border h-1.5 flex-1 cursor-pointer rounded-sm"
         onClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
           const x = e.clientX - rect.left;

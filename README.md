@@ -14,7 +14,7 @@
   <a href="https://sonect.dev"><img alt="Website" src="https://img.shields.io/badge/sonect.dev-Website-orange?style=flat-square"></a>
   <a href="https://github.com/Koberum/Sonect/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Koberum/Sonect/actions/workflows/ci.yml/badge.svg?style=flat-square"></a>
   <a href="https://github.com/Koberum/Sonect/actions/workflows/release.yml"><img alt="Release" src="https://github.com/Koberum/Sonect/actions/workflows/release.yml/badge.svg?style=flat-square"></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache%202.0-lightgrey"></a>
 </p>
 
 ---
@@ -142,17 +142,30 @@ immediately after user-initiated commands.
 
 Configure via `packages/backend/.env`:
 
-| Variable          | Default                           | Description                    |
-| ----------------- | --------------------------------- | ------------------------------ |
-| `MPD_HOST`        | `localhost`                       | MPD server hostname or IP      |
-| `MPD_PORT`        | `6600`                            | MPD server port                |
-| `MUSIC_DIR`       | `/music`                          | Root of your music library     |
-| `COVERS_DIR`      | —                                 | Where cover JPEGs are cached   |
-| `DB_PATH`         | `./data/music.db`                 | SQLite database path           |
-| `MPD_CONFIG_PATH` | `/opt/sonect/data/mpd-audio.conf` | MPD config drop-in             |
-| `MPD_LOG_PATH`    | `/var/lib/mpd/mpd.log`            | MPD log file for sync progress |
-| `PORT`            | `3000`                            | Backend HTTP port              |
-| `FRONTEND_DIST`   | `../frontend/dist`                | Built frontend static files    |
+| Variable           | Default                                                        | Description                                                         |
+| ------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `MPD_HOST`         | `localhost`                                                    | MPD server hostname or IP                                           |
+| `MPD_PORT`         | `6600`                                                         | MPD server port                                                     |
+| `MUSIC_DIR`        | `/music`                                                       | Root of your music library                                          |
+| `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta` | Audio extensions counted as music files in per-source library stats |
+| `COVERS_DIR`       | —                                                              | Where cover JPEGs are cached                                        |
+| `DB_PATH`          | `./data/music.db`                                              | SQLite database path                                                |
+| `MPD_CONFIG_PATH`  | `/opt/sonect/data/mpd-audio.conf`                              | MPD config drop-in                                                  |
+| `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | MPD log file for sync progress                                      |
+| `PORT`             | `3000`                                                         | Backend HTTP port                                                   |
+| `FRONTEND_DIST`    | `../frontend/dist`                                             | Built frontend static files                                         |
+
+### Library sources
+
+**Local library sources** are exposed to MPD via a symlink under the music
+directory (`/opt/sonect/music/<folder-name>`), created automatically when the
+source is created. The MPD drop-in config gets `follow_outside_symlinks "yes"`
+so MPD follows the symlink — no OS mount is involved.
+
+Each library source (SMB, NFS, local) shows **file count, folder count, and
+total music-file size** in Settings → Libraries, refreshed at the end of every
+library scan. `MUSIC_EXTENSIONS` controls which audio extensions are counted as
+music files.
 
 ---
 

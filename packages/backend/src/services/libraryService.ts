@@ -6,6 +6,7 @@ import fs from "fs";
 import { DBAlbum, DBArtist, DBTrack } from "@repo/types";
 import { MpdSyncService, type SyncProgress } from "./mpdSyncService";
 import { CoverService } from "./coverService";
+import { scanStorageStats } from "./storageStats";
 import { broadcast } from "../ws/broadcast";
 import * as playerService from "./playerService";
 
@@ -305,6 +306,13 @@ export async function scanLibrary(): Promise<void> {
           ...currentSyncProgress,
         });
       });
+    }
+
+    // Phase 3: Refresh per-source library statistics
+    try {
+      scanStorageStats();
+    } catch (err) {
+      console.error("[Library] Failed to scan storage stats:", err);
     }
 
     currentSyncProgress = null;

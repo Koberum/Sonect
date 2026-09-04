@@ -180,21 +180,38 @@ export function detectAudioDevices(): AudioDevice[] {
       timeout: 5000,
     });
 
-    const cardRegex = /card (\d+): ([^\[]+)\s*\[([^\]]*)\]/g;
+    /* List of PLAYBACK Hardware Devices ****
+        card 0: PCH [HDA Intel PCH], device 0: ALC671 Analog [ALC671 Analog]
+          Subdevices: 1/1
+          Subdevice #0: subdevice #0
+        card 1: HDMI [HDA Intel HDMI], device 3: HDMI 0 [HDMI 0]
+          Subdevices: 1/1
+          Subdevice #0: subdevice #0
+        card 1: HDMI [HDA Intel HDMI], device 7: HDMI 1 [HDMI 1]
+          Subdevices: 1/1
+          Subdevice #0: subdevice #0
+        card 1: HDMI [HDA Intel HDMI], device 8: HDMI 2 [HDMI 2]
+          Subdevices: 1/1
+          Subdevice #0: subdevice #0
+    */
+
+    const deviceRegex =
+      /card (\d+): ([^\[]+)\s*\[([^\]]*)\], device (\d+): ([^\[]+)\s*\[([^\]]*)\]/g;
     let match: RegExpExecArray | null;
 
-    while ((match = cardRegex.exec(output)) !== null) {
+    while ((match = deviceRegex.exec(output)) !== null) {
       const cardNumber = match[1];
-      const id = match[2].trim();
-      const name = match[3] || id;
+      const cardName = match[2].trim();
+      const deviceNumber = match[4];
+      const deviceName = match[5].trim();
 
       const usbId = getUsbIdForCard(cardNumber);
       const usbInfo = usbId ? getUsbDeviceInfo(usbId) : undefined;
 
       devices.push({
-        card: `hw:${cardNumber},0`,
-        name: `${name} (card ${cardNumber})`,
-        description: name,
+        card: `hw:${cardNumber},${deviceNumber}`,
+        name: `${cardName} (card ${cardNumber})`,
+        description: deviceName,
         usb: !!usbId,
         usbVendor: usbInfo?.vendor,
         usbProduct: usbInfo?.product,

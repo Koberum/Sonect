@@ -23,6 +23,9 @@ const Statistics = lazy(() =>
   import("./pages/Statistics").then((m) => ({ default: m.Statistics })),
 );
 const PlaylistDetail = lazy(() => import("./pages/PlaylistDetail"));
+const Settings = lazy(() =>
+  import("./pages/Settings").then((m) => ({ default: m.Settings })),
+);
 const SetupWizard = lazy(() => import("./pages/SetupWizard"));
 
 function PageLoader() {
@@ -57,6 +60,7 @@ export default function App() {
                     />
                     <Route path="library/stats" element={<Statistics />} />
                     <Route path="playlists/:id" element={<PlaylistDetail />} />
+                    <Route path="settings" element={<Settings />} />
                   </Route>
                 </Routes>
               </Suspense>

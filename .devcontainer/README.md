@@ -64,13 +64,26 @@ mpd /etc/mpd.conf
 mpc status
 ```
 
+`/etc/mpd.conf` is a minimal boilerplate config that `include`s the
+user-editable drop-in at `/opt/sonect/data/mpd-audio.conf` — the same
+two-file architecture that `installer.sh` sets up on a Raspberry Pi. The
+backend writes the drop-in (via `MPD_CONFIG_PATH`, default
+`/opt/sonect/data/mpd-audio.conf`) as the service user, so frontend audio
+and MPD-config edits behave exactly as they do in production.
+
+The Compose mount at `/etc/mpd.conf` is the main configuration and must not be
+overwritten by `postCreate.sh`. The post-create hook only creates the separate
+drop-in file. This prevents the main configuration from including itself
+recursively.
+
 ## Volume Mounts
 
 - `/workspace`: Your entire project
 - `/music`: Music library directory
-- `/etc/mpd.conf`: MPD configuration
+- `/etc/mpd.conf`: MPD configuration (bind-mounted from `conf/mpd.conf`)
 - `/var/lib/mpd`: MPD data directory
 - `/dev/snd`: Host audio devices (for local testing)
+- `/opt/sonect/data/mpd-audio.conf`: User-editable MPD drop-in included by `/etc/mpd.conf` (created by `postCreate.sh` and written by the backend)
 
 ## Testing on Raspberry Pi
 

@@ -278,6 +278,7 @@
     "tracks": "Tracks"
   },
   "common": {
+    "appName": "Sonect",
     "cover": "Cover",
     "cancel": "Cancel",
     "saving": "Saving...",
@@ -297,6 +298,7 @@
       "audio": "Audio",
       "network": "Network",
       "storage": "Storage",
+      "libraries": "Libraries",
       "library": "Library",
       "config": "MPD Config",
       "appearance": "Appearance",
@@ -387,6 +389,63 @@
       "noSources": "No storage sources configured",
       "noSourcesDescription": "Add an SMB, NFS, or local source to expand your music library."
     },
+    "libraries": {
+      "title": "Libraries",
+      "description": "Manage your music library sources.",
+      "addSource": "Add Library",
+      "noSources": "No libraries configured",
+      "noSourcesDescription": "Add an SMB, NFS, or local source for your music library.",
+      "selectType": "Select Source Type",
+      "selectTypeDesc": "Choose the type of source you want to add.",
+      "typeSmb": "SMB / CIFS",
+      "typeSmbDesc": "Connect to a network shared folder via SMB",
+      "typeNfs": "NFS",
+      "typeNfsDesc": "Connect to a network shared folder via NFS",
+      "typeLocal": "Local Folder",
+      "typeLocalDesc": "Add a folder on this device",
+      "name": "Name",
+      "namePlaceholder": "My Music",
+      "smbAddress": "SMB Address",
+      "smbAddressPlaceholder": "smb://192.168.1.100/music",
+      "smbAddressHint": "Use //server/share or smb://server/share format",
+      "nfsAddress": "NFS Address",
+      "nfsAddressPlaceholder": "192.168.1.100:/export/music",
+      "nfsAddressHint": "Use server:/export/path format",
+      "localPath": "Folder Path",
+      "localPathPlaceholder": "/mnt/usb/music",
+      "localPathHint": "Absolute path to the folder on this device",
+      "folderName": "Folder Name",
+      "folderNamePlaceholder": "my-music",
+      "folderNameHint": "Subfolder under /opt/sonect/music",
+      "username": "Username",
+      "usernamePlaceholder": "Optional",
+      "password": "Password",
+      "passwordPlaceholder": "Optional",
+      "passwordEditPlaceholder": "Leave empty to keep current",
+      "continue": "Continue",
+      "back": "Back",
+      "edit": "Edit",
+      "save": "Save",
+      "create": "Create",
+      "mounted": "Mounted",
+      "unmounted": "Unmounted",
+      "stats": "{{files}} files · {{folders}} folders · {{size}}",
+      "mount": "Mount",
+      "unmount": "Unmount",
+      "created": "Library created",
+      "updated": "Library updated",
+      "deleted": "Library deleted",
+      "mountError": "Failed to mount",
+      "unmountError": "Failed to unmount",
+      "createError": "Failed to create library",
+      "updateError": "Failed to update library",
+      "deleteError": "Failed to delete library",
+      "loadError": "Failed to load library data",
+      "deleteTitle": "Delete Library?",
+      "deleteConfirm": "Are you sure you want to delete \"{{name}}\"? This cannot be undone.",
+      "deleteButton": "Delete",
+      "formDescription": "Fill in the details for your library source."
+    },
     "library": {
       "title": "Library",
       "description": "Manage your music library synchronization.",
@@ -447,7 +506,53 @@
       "restartConfirmTitle": "Restart MPD?",
       "restartConfirm": "This will restart MPD and interrupt playback. Continue?",
       "stopConfirmTitle": "Stop MPD?",
-      "stopConfirm": "This will stop MPD. Continue?"
+      "stopConfirm": "This will stop MPD. Continue?",
+      "setup": "Setup wizard",
+      "setupDescription": "Reset the setup wizard so it appears again on the next load.",
+      "resetSetup": "Reset setup wizard",
+      "resetSetupConfirmTitle": "Reset the setup wizard?",
+      "resetSetupConfirm": "This will mark every setup step as incomplete and the wizard will appear again on the next page load.",
+      "setupResetted": "Setup wizard reset",
+      "resetSetupError": "Failed to reset the setup wizard"
+    }
+  },
+  "setup": {
+    "welcome": {
+      "description": "Welcome to Sonect — your self-hosted music streamer.",
+      "language": "Language",
+      "theme": "Theme",
+      "getStarted": "Get Started"
+    },
+    "storage": {
+      "title": "Storage",
+      "description": "Add a network or local source for your music library.",
+      "addSourceSubmit": "Create & Continue",
+      "creating": "Creating...",
+      "backToTypes": "Back to types",
+      "confirmTitle": "Library added",
+      "confirmDescription": "We validated the folder and scanned your music files.",
+      "confirmCancel": "Back",
+      "confirmContinue": "Continue"
+    },
+    "audio": {
+      "applyAndContinue": "Apply & Continue"
+    },
+    "sync": {
+      "title": "Library Sync",
+      "description": "Your music library is ready to scan. Sonect will sync your music from MPD. You can trigger a full sync at any time.",
+      "finish": "Finish Setup"
+    },
+    "stepNames": {
+      "welcome": "Welcome",
+      "storage": "Storage",
+      "audio": "Audio",
+      "sync": "Sync"
+    },
+    "wizard": {
+      "stepLabel": "Step {{current}} of {{total}} — {{step}}",
+      "back": "Back",
+      "skippedToast": "Setup skipped!",
+      "completeToast": "Setup complete!"
     }
   }
 }

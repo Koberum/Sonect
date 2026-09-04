@@ -29,8 +29,10 @@ describe("System Controller", () => {
 
   const mockSetupService = {
     getSetupProgress: sinon.stub(),
+    isSetupComplete: sinon.stub(),
     markStepComplete: sinon.stub(),
     markStepIncomplete: sinon.stub(),
+    markSetupCompleted: sinon.stub(),
     resetSetup: sinon.stub(),
     getNextIncompleteStep: sinon.stub(),
   };
@@ -82,6 +84,7 @@ describe("System Controller", () => {
     });
     mockNetworkService.isNmcliAvailable.returns(true);
     mockSetupService.getSetupProgress.returns([]);
+    mockSetupService.isSetupComplete.returns(false);
     mockSetupService.getNextIncompleteStep.returns(null);
     mockStorageService.getStorageSources.returns([mockStorageSource]);
     mockStorageService.getStorageSource.returns(mockStorageSource);
@@ -312,7 +315,6 @@ describe("System Controller", () => {
           name: "New NAS",
           type: "smb",
           uri: "smb://new/share",
-          mount_path: "NAS2",
         },
       });
       const res = createMockRes();
@@ -424,10 +426,12 @@ describe("System Controller", () => {
   describe("getSetupProgressHandler", () => {
     it("should return setup progress", async () => {
       const steps = [
-        { step: "audio", completed: true },
-        { step: "network", completed: false },
+        { step: "storage", completed: true },
+        { step: "audio", completed: false },
+        { step: "sync", completed: false },
       ];
       mockSetupService.getSetupProgress.returns(steps);
+      mockSetupService.isSetupComplete.returns(true);
       const req = createMockReq();
       const res = createMockRes();
       const next = sinon.stub();
@@ -436,13 +440,26 @@ describe("System Controller", () => {
 
       const jsonArg = res.json.firstCall.args[0];
       expect(jsonArg.steps).to.deep.equal(steps);
-      expect(jsonArg.complete).to.be.false;
+      expect(jsonArg.complete).to.be.true;
       expect(jsonArg.nextStep).to.be.null;
+    });
+
+    it("should report incomplete when no storage is configured", async () => {
+      mockSetupService.getSetupProgress.returns([]);
+      mockSetupService.isSetupComplete.returns(false);
+      const req = createMockReq();
+      const res = createMockRes();
+      const next = sinon.stub();
+
+      await controller.getSetupProgressHandler(req, res, next);
+
+      const jsonArg = res.json.firstCall.args[0];
+      expect(jsonArg.complete).to.be.false;
     });
   });
 
   describe("updateSetupProgressHandler", () => {
-    it("should mark step as complete", async () => {
+    it("should mark step as complete and flag setup done", async () => {
       const req = createMockReq({
         body: { step: "audio", completed: true },
       });
@@ -452,19 +469,19 @@ describe("System Controller", () => {
       await controller.updateSetupProgressHandler(req, res, next);
 
       expect(mockSetupService.markStepComplete.calledWith("audio")).to.be.true;
+      expect(mockSetupService.markSetupCompleted.calledOnce).to.be.true;
     });
 
     it("should mark step as incomplete", async () => {
       const req = createMockReq({
-        body: { step: "network", completed: false },
+        body: { step: "sync", completed: false },
       });
       const res = createMockRes();
       const next = sinon.stub();
 
       await controller.updateSetupProgressHandler(req, res, next);
 
-      expect(mockSetupService.markStepIncomplete.calledWith("network")).to.be
-        .true;
+      expect(mockSetupService.markStepIncomplete.calledWith("sync")).to.be.true;
     });
   });
 

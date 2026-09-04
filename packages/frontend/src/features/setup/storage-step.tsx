@@ -5,26 +5,123 @@ import { toast } from "sonner";
 import {
   createStorageSource,
   mountStorageSource,
+  type StorageSource,
 } from "@/features/apis/systemApis";
+import {
+  LibrarySourcePicker,
+  type SourceType,
+} from "@/features/settings/library-source-picker";
+import {
+  LibrarySourceForm,
+  type LibrarySourceFormValues,
+} from "@/features/settings/library-source-form";
+import { useLibrarySourceForm } from "@/features/settings/use-library-source-form";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  WizardStep,
+  WizardStepActions,
+  WizardStepContent,
+  WizardStepDescription,
+  WizardStepHeader,
+  WizardStepTitle,
+} from "@/components/ui/wizard-step";
 
 interface StorageStepProps {
   onNext: () => void;
-  onSkip: () => void;
+  onBack?: () => void;
 }
 
-export function StorageStep({ onNext, onSkip }: StorageStepProps) {
+interface StorageSourceFormPanelProps {
+  sourceType: SourceType;
+  onSave: (data: LibrarySourceFormValues) => Promise<void>;
+  onBack: () => void;
+}
+
+function StorageSourceFormPanel({
+  sourceType,
+  onSave,
+  onBack,
+}: StorageSourceFormPanelProps) {
   const { t } = useTranslation();
-  const [saving, setSaving] = useState(false);
+  const form = useLibrarySourceForm({ sourceType, onSave });
+
+  return (
+    <>
+      <WizardStepHeader>
+        <WizardStepTitle>
+          {t("settings.libraries.addSource", "Add Library")}
+        </WizardStepTitle>
+        <WizardStepDescription>
+          {t(
+            "settings.libraries.formDescription",
+            "Fill in the details for your library source.",
+          )}
+        </WizardStepDescription>
+      </WizardStepHeader>
+      <WizardStepContent>
+        <LibrarySourceForm
+          sourceType={sourceType}
+          form={form.form}
+          setForm={form.setForm}
+          errors={form.errors}
+          handleFieldBlur={form.handleFieldBlur}
+          fieldClass={form.fieldClass}
+        />
+      </WizardStepContent>
+      <WizardStepActions>
+        <Button variant="outline" type="button" onClick={onBack}>
+          {t("setup.wizard.back", "Back")}
+        </Button>
+        <Button type="button" onClick={form.submit} disabled={form.saving}>
+          {form.saving
+            ? t("setup.storage.creating", "Creating...")
+            : t("setup.storage.addSourceSubmit", "Create & Continue")}
+        </Button>
+      </WizardStepActions>
+    </>
+  );
+}
+
+export function StorageStep({ onNext, onBack }: StorageStepProps) {
+  const { t } = useTranslation();
+  const [selectedType, setSelectedType] = useState<SourceType | null>(null);
+  const [createdSource, setCreatedSource] = useState<StorageSource | null>(
+    null,
+  );
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const formatCount = (n: number | undefined): string =>
+    (n ?? 0).toLocaleString();
+
+  function formatBytes(bytes?: number): string {
+    if (!bytes) return "0 B";
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    const i = Math.min(
+      units.length - 1,
+      Math.floor(Math.log(bytes) / Math.log(1024)),
+    );
+    const value = bytes / 1024 ** i;
+    return `${value >= 10 || i === 0 ? value.toFixed(0) : value.toFixed(1)} ${
+      units[i]
+    }`;
+  }
 
   const handleSave = async (data: {
     name: string;
-    type: "smb" | "nfs" | "local";
+    type: SourceType;
     uri: string;
-    mount_path: string;
     username?: string;
     password?: string;
   }) => {
-    setSaving(true);
     try {
       const source = await createStorageSource(data);
       const result = await mountStorageSource(source.id);
@@ -35,123 +132,106 @@ export function StorageStep({ onNext, onSkip }: StorageStepProps) {
           result.error ?? t("settings.storage.mountError", "Mount failed"),
         );
       }
-      onNext();
-    } catch {
+      setCreatedSource(source);
+      setConfirmOpen(true);
+    } catch (err) {
       toast.error(
-        t("settings.storage.createError", "Failed to create storage source"),
+        (err instanceof Error && err.message) ||
+          t("settings.storage.createError", "Failed to create storage source"),
       );
-    } finally {
-      setSaving(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-xl font-semibold">
-          {t("settings.storage.title", "Storage")}
-        </h2>
-        <p className="text-muted-foreground mt-1 text-sm">
-          {t(
-            "setup.storage.description",
-            "Add a network or local source for your music library.",
-          )}
-        </p>
-      </div>
+    <WizardStep>
+      {selectedType === null ? (
+        <>
+          <WizardStepHeader>
+            <WizardStepTitle>
+              {t("settings.storage.title", "Storage")}
+            </WizardStepTitle>
+            <WizardStepDescription>
+              {t(
+                "setup.storage.description",
+                "Add a network or local source for your music library.",
+              )}
+            </WizardStepDescription>
+          </WizardStepHeader>
+          <WizardStepContent>
+            <LibrarySourcePicker onSelect={setSelectedType} />
+          </WizardStepContent>
+          <WizardStepActions>
+            <Button variant="outline" type="button" onClick={onBack}>
+              {t("setup.wizard.back", "Back")}
+            </Button>
+          </WizardStepActions>
+        </>
+      ) : (
+        <StorageSourceFormPanel
+          key={selectedType}
+          sourceType={selectedType}
+          onSave={handleSave}
+          onBack={() => setSelectedType(null)}
+        />
+      )}
 
-      <div className="text-muted-foreground space-y-3 text-sm">
-        <p>
-          {t(
-            "setup.storage.info",
-            "You can add SMB/CIFS, NFS, or local storage sources. Skip this step to configure storage later in Settings.",
-          )}
-        </p>
-      </div>
-
-      <form
-        className="space-y-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const form = e.currentTarget;
-          const data = new FormData(form);
-          handleSave({
-            name: data.get("name") as string,
-            type: (data.get("type") || "smb") as "smb" | "nfs" | "local",
-            uri: data.get("uri") as string,
-            mount_path: data.get("mount_path") as string,
-            username: (data.get("username") as string) || undefined,
-            password: (data.get("password") as string) || undefined,
-          });
+      <AlertDialog
+        open={confirmOpen}
+        onOpenChange={(open) => {
+          setConfirmOpen(open);
+          if (!open) {
+            setCreatedSource(null);
+          }
         }}
       >
-        <div className="space-y-2">
-          <label className="text-sm font-medium">
-            {t("settings.storage.name", "Name")}
-          </label>
-          <input
-            name="name"
-            required
-            className="bg-background file:text-foreground placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-base shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-            placeholder={t("settings.storage.namePlaceholder", "My NAS")}
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">
-            {t("settings.storage.type", "Type")}
-          </label>
-          <select
-            name="type"
-            className="bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-base shadow-xs transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-          >
-            <option value="smb">
-              {t("settings.storage.typeSmb", "SMB / CIFS")}
-            </option>
-            <option value="nfs">{t("settings.storage.typeNfs", "NFS")}</option>
-            <option value="local">
-              {t("settings.storage.typeLocal", "Local")}
-            </option>
-          </select>
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">
-            {t("settings.storage.uri", "URI")}
-          </label>
-          <input
-            name="uri"
-            required
-            className="bg-background file:text-foreground placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-base shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-            placeholder={t("settings.storage.uriPlaceholder", "//server/share")}
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">
-            {t("settings.storage.mountPath", "Mount Path")}
-          </label>
-          <input
-            name="mount_path"
-            required
-            className="bg-background file:text-foreground placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-base shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-            placeholder={t("settings.storage.mountPathPlaceholder", "NAS")}
-          />
-          <p className="text-muted-foreground text-xs">
-            {t(
-              "settings.storage.mountPathHint",
-              "Subpath under /opt/sonect/music",
-            )}
-          </p>
-        </div>
-
-        <div className="flex justify-between pt-2">
-          <Button type="button" variant="ghost" onClick={onSkip}>
-            {t("common.skip", "Skip")}
-          </Button>
-          <Button type="submit" disabled={saving}>
-            {saving
-              ? t("settings.storage.creating", "Creating...")
-              : t("setup.storage.addAndContinue", "Add & Continue")}
-          </Button>
-        </div>
-      </form>
-    </div>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("setup.storage.confirmTitle", "Library added")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                "setup.storage.confirmDescription",
+                "We validated the folder and scanned your music files.",
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {createdSource && (
+            <div className="space-y-2 text-sm">
+              <div className="font-medium">{createdSource.name}</div>
+              <div className="text-muted-foreground text-xs break-all">
+                {createdSource.uri}
+              </div>
+              <div className="text-muted-foreground text-xs">
+                {t("settings.libraries.stats", {
+                  files: formatCount(createdSource.file_count),
+                  folders: formatCount(createdSource.dir_count),
+                  size: formatBytes(createdSource.total_size),
+                })}
+              </div>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setConfirmOpen(false);
+                setCreatedSource(null);
+              }}
+            >
+              {t("setup.storage.confirmCancel", "Back")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmOpen(false);
+                setCreatedSource(null);
+                onNext();
+              }}
+            >
+              {t("setup.storage.confirmContinue", "Continue")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </WizardStep>
   );
 }
