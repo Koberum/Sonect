@@ -48,10 +48,10 @@ export class MpdConnectionManager extends EventEmitter {
   private _pollTimer: ReturnType<typeof setInterval> | null = null;
   private _lastSongId: number | null = null;
   private _refreshInProgress = false;
-  private _autoplayEnabled = false;
   private _autoplayCallback: ((currentFile: string) => Promise<void>) | null =
     null;
   private _lastAutofillTime = 0;
+  private _autofillInProgress = false;
   private pollBuffer = "";
   private _pollResolve: ((value: string) => void) | null = null;
   private _pollReject: ((err: Error) => void) | null = null;
@@ -63,14 +63,6 @@ export class MpdConnectionManager extends EventEmitter {
 
   getCmdClient(): MPDClient | null {
     return this.cmdClient;
-  }
-
-  get autoplayEnabled(): boolean {
-    return this._autoplayEnabled;
-  }
-
-  set autoplayEnabled(enabled: boolean) {
-    this._autoplayEnabled = enabled;
   }
 
   setAutoplayCallback(cb: (currentFile: string) => Promise<void>): void {
@@ -333,6 +325,9 @@ export class MpdConnectionManager extends EventEmitter {
       }
 
       const playlistLength = parseInt(status.playlistlength ?? "0", 10) || 0;
+      const songPosition = parseInt(status.song ?? "-1", 10);
+      const remainingTracks =
+        songPosition >= 0 ? playlistLength - songPosition : playlistLength;
 
       this._cache = {
         state: (status.state as PlaybackState) || "stop",
@@ -354,18 +349,23 @@ export class MpdConnectionManager extends EventEmitter {
       this.emit("stateChanged", this._cache);
 
       if (
-        this._autoplayEnabled &&
-        playlistLength > 0 &&
-        playlistLength < AUTOPLAY_QUEUE_LOW &&
+        remainingTracks > 0 &&
+        remainingTracks < AUTOPLAY_QUEUE_LOW &&
         this._autoplayCallback &&
+        !this._autofillInProgress &&
         this._cache.track?.file &&
         Date.now() - this._lastAutofillTime > AUTOPLAY_REFILL_INTERVAL_MS
       ) {
         this._lastAutofillTime = Date.now();
-        this._autoplayCallback(this._cache.track.file).catch((err) => {
-          console.error("[MPD] Autoplay fill failed:", err);
-          pushLog("error", `Autoplay fill failed: ${String(err)}`);
-        });
+        this._autofillInProgress = true;
+        Promise.resolve(this._autoplayCallback(this._cache.track.file))
+          .catch((err) => {
+            console.error("[MPD] Autoplay fill failed:", err);
+            pushLog("error", `Autoplay fill failed: ${String(err)}`);
+          })
+          .finally(() => {
+            this._autofillInProgress = false;
+          });
       }
     } catch (err) {
       console.error("[MPD] Failed to refresh cache:", err);

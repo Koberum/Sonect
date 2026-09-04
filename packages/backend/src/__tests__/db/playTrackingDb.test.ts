@@ -124,4 +124,28 @@ describe("play tracking DB helpers", () => {
     const recent = albumsDb.getRecentAlbums(10, 1);
     expect(recent).to.have.length(0);
   });
+
+  it("getRankedByPlayCount should rank albums by total plays then title", () => {
+    const { albumsDb, db } = dbModule;
+    db()
+      .prepare(
+        "INSERT INTO albums (id, title, artist_id, genre) VALUES (2, 'Zulu', 1, 'Rock'), (3, 'Alpha', 1, 'Rock'), (4, 'Most played', 1, 'Jazz')",
+      )
+      .run();
+    db()
+      .prepare(
+        `INSERT INTO tracks (id, file, title, artist_id, album_id, genre, play_count)
+         VALUES (4, 'zulu.mp3', 'Zulu', 1, 2, 'Rock', 3),
+                (5, 'alpha.mp3', 'Alpha', 1, 3, 'Rock', 3),
+                (6, 'most-1.mp3', 'Most 1', 1, 4, 'Jazz', 4),
+                (7, 'most-2.mp3', 'Most 2', 1, 4, 'Jazz', 5)`,
+      )
+      .run();
+
+    const ranked = albumsDb.getRankedByPlayCount();
+
+    expect(ranked.map((album: { id: number }) => album.id)).to.deep.equal([
+      4, 1, 3, 2,
+    ]);
+  });
 });

@@ -9,10 +9,8 @@ import {
   pauseTrackHandler,
   playTrackHandler,
   previousTrackHandler,
-  setAutoplayHandler,
   setSingleHandler,
   setVolumeHandler,
-  getAutoplayStatusHandler,
   getQueueHandler,
   playPositionHandler,
   removeFromQueueHandler,
@@ -32,8 +30,6 @@ router.post("/random", enableRandomHandler);
 router.post("/consume", enableConsumeHandler);
 router.post("/single", setSingleHandler);
 router.post("/clear", clearQueueHandler);
-router.post("/autoplay", setAutoplayHandler);
-router.get("/autoplay", getAutoplayStatusHandler);
 router.get("/queue", getQueueHandler);
 router.post("/play-position", playPositionHandler);
 router.post("/remove-from-queue", removeFromQueueHandler);

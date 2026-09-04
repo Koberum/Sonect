@@ -148,4 +148,9 @@ describe("Player Routes", () => {
   it("should return 404 for unknown methods on known routes", async () => {
     await request.get("/mpd/play").expect(404);
   });
+
+  it("should not expose an autoplay configuration endpoint", async () => {
+    await request.get("/mpd/autoplay").expect(404);
+    await request.post("/mpd/autoplay").send({ enabled: false }).expect(404);
+  });
 });

@@ -7,15 +7,22 @@ import { setBroadcaster } from "./services/logService";
 import { initDatabase } from "@repo/db";
 import { mpdConnectionManager } from "./services/mpdConnectionManager";
 import { autoplayService } from "./services/autoplayService";
-import { queueFiles } from "./services/playerService";
+import { getQueue, queueFiles } from "./services/playerService";
 import { PlayTrackingService } from "./services/playTrackingService";
 import { mountAllEnabled } from "./services/storageService";
 
 // Wire up autoplay callback
 mpdConnectionManager.setAutoplayCallback(async (currentFile: string) => {
-  const tracks = await autoplayService.getNextBatch(currentFile);
-  if (tracks.length > 0) {
+  const sessionId = autoplayService.sessionId;
+  const queue = await getQueue();
+  if (autoplayService.sessionId !== sessionId) return;
+
+  const tracks = await autoplayService.getNextBatch(currentFile, {
+    queuedFiles: queue.map((track) => track.file),
+  });
+  if (tracks.length > 0 && autoplayService.sessionId === sessionId) {
     await queueFiles(tracks);
+    autoplayService.commitBatch(tracks, sessionId);
   }
 });
 

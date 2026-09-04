@@ -2,9 +2,13 @@ import { expect } from "chai";
 import sinon from "sinon";
 import esmock from "esmock";
 import { mpdConnectionManager } from "../../services/mpdConnectionManager";
+import { autoplayService } from "../../services/autoplayService";
 
 describe("Player Service", () => {
   let playerService: any;
+  let getByFile: sinon.SinonStub;
+  let getByAlbumOrdered: sinon.SinonStub;
+  let getNextBatch: sinon.SinonStub;
 
   const defaultStatus = {
     state: "stop",
@@ -26,12 +30,15 @@ describe("Player Service", () => {
       on: sinon.stub(),
       off: sinon.stub(),
     } as any);
+    getNextBatch = sinon.stub(autoplayService, "getNextBatch").resolves([]);
+    getByFile = sinon.stub().returns(undefined);
+    getByAlbumOrdered = sinon.stub().returns([]);
 
     playerService = await esmock("../../services/playerService.ts", {
       "@repo/db": {
         tracksDb: {
-          getByFile: sinon.stub().returns(undefined),
-          getByAlbumOrdered: sinon.stub().returns([]),
+          getByFile,
+          getByAlbumOrdered,
           getByArtist: sinon.stub().returns([]),
         },
         albumsDb: {},
@@ -57,6 +64,30 @@ describe("Player Service", () => {
           { command: "play" },
         ],
       );
+      sinon.assert.calledOnceWithExactly(getNextBatch, "song.mp3");
+    });
+
+    it("should play from the selected track to the end of its album", async () => {
+      getByFile.returns({ file: "c.mp3", album_id: 1 });
+      getByAlbumOrdered.returns([
+        { file: "a.mp3", album_id: 1 },
+        { file: "b.mp3", album_id: 1 },
+        { file: "c.mp3", album_id: 1 },
+        { file: "d.mp3", album_id: 1 },
+      ]);
+
+      await playerService.playTrack("c.mp3");
+
+      expect(
+        (mpdConnectionManager.executeCommandList as sinon.SinonStub).firstCall
+          .args[0],
+      ).to.deep.equal([
+        { command: "clear" },
+        { command: "add", args: ["c.mp3"] },
+        { command: "add", args: ["d.mp3"] },
+        { command: "consume", args: ["1"] },
+        { command: "play" },
+      ]);
     });
 
     it("should throw PlayTrackError when file is not provided", async () => {
@@ -79,6 +110,21 @@ describe("Player Service", () => {
       } catch (err: any) {
         expect(err.name).to.equal("PlayTrackError");
       }
+    });
+
+    it("should keep playback successful when the smart batch cannot be appended", async () => {
+      sinon.stub(console, "error");
+      sinon.stub(console, "log");
+      getNextBatch.resolves(["smart.mp3"]);
+      (mpdConnectionManager.executeCommandList as sinon.SinonStub)
+        .onSecondCall()
+        .rejects(new Error("append failed"));
+
+      const result = await playerService.playTrack("song.mp3");
+
+      expect(result).to.deep.equal({ success: true });
+      expect((mpdConnectionManager.refreshNow as sinon.SinonStub).calledOnce).to
+        .be.true;
     });
   });
 

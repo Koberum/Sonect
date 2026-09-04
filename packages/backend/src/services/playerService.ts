@@ -22,30 +22,41 @@ export async function playTrack(file?: string): Promise<PlayTrackResponse> {
     const commands: { command: string; args?: string[] }[] = [
       { command: "clear" },
     ];
+    let initialFiles: string[];
 
     if (dbTrack?.album_id) {
       const albumTracks = tracksDb.getByAlbumOrdered(dbTrack.album_id);
       const clickIdx = albumTracks.findIndex((t) => t.file === file);
-      const ordered =
+      initialFiles =
         clickIdx >= 0
-          ? [...albumTracks.slice(clickIdx), ...albumTracks.slice(0, clickIdx)]
-          : albumTracks;
-      for (const t of ordered) {
-        commands.push({ command: "add", args: [t.file] });
-      }
+          ? albumTracks.slice(clickIdx).map((track) => track.file)
+          : [file];
     } else {
-      commands.push({ command: "add", args: [file] });
+      initialFiles = [file];
+    }
+    for (const initialFile of initialFiles) {
+      commands.push({ command: "add", args: [initialFile] });
     }
 
     commands.push({ command: "consume", args: ["1"] });
     commands.push({ command: "play" });
 
+    const sessionId = autoplayService.resetSession(file, initialFiles);
     await mpdConnectionManager.executeCommandList(commands);
 
-    if (mpdConnectionManager.autoplayEnabled) {
-      const tracks = await autoplayService.getNextBatch(file);
-      if (tracks.length > 0) {
-        await queueFiles(tracks);
+    if (autoplayService.sessionId === sessionId) {
+      try {
+        const tracks = await autoplayService.getNextBatch(file);
+        if (tracks.length > 0 && autoplayService.sessionId === sessionId) {
+          await queueFiles(tracks);
+          autoplayService.commitBatch(tracks, sessionId);
+        }
+      } catch (err) {
+        console.error("[Player] Failed to append smart autoplay batch:", err);
+        pushLog(
+          "error",
+          `Failed to append smart autoplay batch: ${String(err)}`,
+        );
       }
     }
 
@@ -90,14 +101,6 @@ export async function clearQueue(): Promise<void> {
   mpdConnectionManager.refreshNow().catch((err) => {
     console.error("[Player] refreshNow failed after clearQueue:", err);
   });
-}
-
-export function isAutoplayEnabled(): boolean {
-  return mpdConnectionManager.autoplayEnabled;
-}
-
-export function setAutoplayEnabled(enabled: boolean): void {
-  mpdConnectionManager.autoplayEnabled = enabled;
 }
 
 export async function getQueue(): Promise<QueuedTrack[]> {

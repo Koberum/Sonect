@@ -52,8 +52,7 @@ export const artistsDb = {
 
   getById(id: number): DBArtist | undefined {
     return db().prepare("SELECT * FROM artists WHERE id = ?").get(id) as
-      | DBArtist
-      | undefined;
+      DBArtist | undefined;
   },
 
   search(query: string, limit = 20): DBArtist[] {
@@ -140,8 +139,7 @@ export const albumsDb = {
 
   getById(id: number): DBAlbum | undefined {
     return db().prepare("SELECT * FROM albums WHERE id = ?").get(id) as
-      | DBAlbum
-      | undefined;
+      DBAlbum | undefined;
   },
 
   getByGenre(genre: string): DBAlbum[] {
@@ -154,6 +152,40 @@ export const albumsDb = {
     return db()
       .prepare("SELECT * FROM albums WHERE artist_id = ? ORDER BY year, title")
       .all(artistId) as DBAlbum[];
+  },
+
+  getRankedByPlayCount({
+    artistId,
+    genre,
+  }: {
+    artistId?: number;
+    genre?: string;
+  } = {}): DBAlbum[] {
+    const conditions: string[] = [];
+    const params: (number | string)[] = [];
+
+    if (artistId !== undefined) {
+      conditions.push("al.artist_id = ?");
+      params.push(artistId);
+    }
+    if (genre !== undefined) {
+      conditions.push("al.genre = ?");
+      params.push(genre);
+    }
+    const where =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    return db()
+      .prepare(
+        `SELECT al.*
+         FROM albums al
+         LEFT JOIN tracks t ON t.album_id = al.id
+         ${where}
+         GROUP BY al.id
+         ORDER BY COALESCE(SUM(t.play_count), 0) DESC,
+                  al.title COLLATE NOCASE ASC,
+                  al.id ASC`,
+      )
+      .all(...params) as DBAlbum[];
   },
 
   search(query: string, limit = 20): DBAlbum[] {
@@ -486,8 +518,7 @@ export const tracksDb = {
 
   getById(id: number): DBTrack | undefined {
     return db().prepare("SELECT * FROM tracks WHERE id = ?").get(id) as
-      | DBTrack
-      | undefined;
+      DBTrack | undefined;
   },
 
   getByArtist(artistId: number): DBTrack[] {
@@ -514,8 +545,7 @@ export const tracksDb = {
 
   getByFile(file: string): DBTrack | undefined {
     return db().prepare("SELECT * FROM tracks WHERE file = ?").get(file) as
-      | DBTrack
-      | undefined;
+      DBTrack | undefined;
   },
 
   getRandomTracks(limit: number, excludeFiles?: string[]): DBTrack[] {
@@ -649,8 +679,7 @@ export const playlistsDb = {
 
   getById(id: number): DBPlaylist | undefined {
     return db().prepare("SELECT * FROM playlists WHERE id = ?").get(id) as
-      | DBPlaylist
-      | undefined;
+      DBPlaylist | undefined;
   },
 
   create(name: string, description?: string): number {
@@ -871,8 +900,7 @@ export const setupDb = {
     const row = db()
       .prepare("SELECT * FROM setup_progress WHERE step = ?")
       .get(step) as
-      | { step: string; completed: number; completed_at?: string }
-      | undefined;
+      { step: string; completed: number; completed_at?: string } | undefined;
     if (!row) return undefined;
     return { ...row, completed: row.completed === 1 };
   },

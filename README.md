@@ -32,8 +32,9 @@ no subscriptions, no limits.
   audio format. Repeat, random, consume, and single modes are all first-class.
 - **Live WebSocket state** — Playback changes reflect instantly across every
   open tab. MPD idle events are pushed to all connected clients in real time.
-- **Smart queue strategy** — Album, artist, then genre fallback fills your
-  queue intelligently. No more dead air between tracks.
+- **Always-on smart queue** — Playback continues from the selected track to
+  the end of its album, then queues complete albums from the same artist, the
+  same genre, and finally the most-listened albums across the library.
 - **Album art pipeline** — Artwork is extracted from your audio files, resized
   to 500x500 JPEG, served over HTTP, and cached in the browser for 30 days.
 - **In-browser MPD config** — Edit audio outputs and MPD settings from the

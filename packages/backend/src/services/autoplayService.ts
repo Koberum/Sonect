@@ -1,78 +1,113 @@
 import { tracksDb, albumsDb } from "@repo/db";
+import type { DBAlbum } from "@repo/types";
 
-const AUTOPLAY_BATCH = 25;
+const AUTOPLAY_BATCH_TARGET = 25;
+
+type BatchOptions = {
+  queuedFiles?: string[];
+};
 
 class AutoplayService {
+  private usedAlbumIds = new Set<number>();
+  private seedFile: string | undefined;
+  private _sessionId = 0;
+
   get threshold(): number {
     return 5;
   }
 
-  async getNextBatch(currentFile: string): Promise<string[]> {
-    const count = AUTOPLAY_BATCH;
+  get sessionId(): number {
+    return this._sessionId;
+  }
+
+  resetSession(seedFile?: string, queuedFiles: string[] = []): number {
+    this._sessionId++;
+    this.seedFile = seedFile;
+    this.usedAlbumIds.clear();
+    for (const file of seedFile ? [seedFile, ...queuedFiles] : queuedFiles) {
+      const track = tracksDb.getByFile(file);
+      if (track?.album_id) this.usedAlbumIds.add(track.album_id);
+    }
+    return this._sessionId;
+  }
+
+  commitBatch(files: string[], sessionId = this._sessionId): void {
+    if (sessionId !== this._sessionId) return;
+    for (const file of files) {
+      const track = tracksDb.getByFile(file);
+      if (track?.album_id) this.usedAlbumIds.add(track.album_id);
+    }
+  }
+
+  async getNextBatch(
+    currentFile: string,
+    { queuedFiles = [] }: BatchOptions = {},
+  ): Promise<string[]> {
     const result: string[] = [];
-    const seen = new Set<string>();
+    const currentTrack = tracksDb.getByFile(currentFile);
+    const seedTrack = tracksDb.getByFile(this.seedFile ?? currentFile);
+    const seedAlbum = seedTrack?.album_id
+      ? albumsDb.getById(seedTrack.album_id)
+      : undefined;
+    const protectedAlbumIds = new Set<number>();
 
-    const dbTrack = tracksDb.getByFile(currentFile);
-    if (!dbTrack) return this._randomFallback(count);
-
-    seen.add(currentFile);
-    const album = dbTrack.album_id ? albumsDb.getById(dbTrack.album_id) : null;
-
-    const collectFromAlbum = (albumId: number) => {
-      const albumTracks = tracksDb.getByAlbumOrdered(albumId);
-      for (const t of albumTracks) {
-        if (result.length >= count) return;
-        if (seen.has(t.file)) continue;
-        seen.add(t.file);
-        result.push(t.file);
-      }
-    };
-
-    const collectFromArtist = (artistId: number, skipAlbumId?: number) => {
-      const artistAlbums = albumsDb.getByArtist(artistId);
-      for (const a of artistAlbums) {
-        if (a.id === skipAlbumId) continue;
-        if (result.length >= count) return;
-        collectFromAlbum(a.id);
-      }
-    };
-
-    const collectFromGenre = (genre: string) => {
-      const genreAlbums = albumsDb.getByGenre(genre);
-      for (const a of genreAlbums) {
-        if (a.id === dbTrack.album_id) continue;
-        if (result.length >= count) return;
-        collectFromAlbum(a.id);
-      }
-    };
-
-    if (dbTrack.album_id) {
-      collectFromAlbum(dbTrack.album_id);
+    if (currentTrack?.album_id) protectedAlbumIds.add(currentTrack.album_id);
+    for (const file of queuedFiles) {
+      const queuedTrack = tracksDb.getByFile(file);
+      if (queuedTrack?.album_id) protectedAlbumIds.add(queuedTrack.album_id);
     }
 
-    if (dbTrack.artist_id && result.length < count) {
-      collectFromArtist(dbTrack.artist_id, dbTrack.album_id);
-    }
+    const fill = () => {
+      const excludedAlbumIds = new Set([
+        ...this.usedAlbumIds,
+        ...protectedAlbumIds,
+      ]);
+      const collectAlbums = (albums: DBAlbum[]): boolean => {
+        for (const album of albums) {
+          if (excludedAlbumIds.has(album.id)) continue;
+          excludedAlbumIds.add(album.id);
 
-    const trackGenre = album?.genre || dbTrack.genre;
-    if (trackGenre && result.length < count) {
-      collectFromGenre(trackGenre);
-    }
+          const albumTracks = tracksDb.getByAlbumOrdered(album.id);
+          result.push(...albumTracks.map((track) => track.file));
+          if (result.length >= AUTOPLAY_BATCH_TARGET) return true;
+        }
+        return false;
+      };
 
-    if (result.length < count) {
-      const randomTracks = tracksDb.getRandomTracks(count - result.length);
-      for (const t of randomTracks) {
-        if (result.length >= count) break;
-        seen.add(t.file);
-        result.push(t.file);
+      if (
+        seedTrack?.artist_id &&
+        collectAlbums(
+          albumsDb.getRankedByPlayCount({
+            artistId: seedTrack.artist_id,
+          }),
+        )
+      ) {
+        return;
       }
+
+      const genre = seedAlbum?.genre || seedTrack?.genre;
+      if (
+        genre &&
+        collectAlbums(
+          albumsDb.getRankedByPlayCount({
+            genre,
+          }),
+        )
+      ) {
+        return;
+      }
+
+      collectAlbums(albumsDb.getRankedByPlayCount());
+    };
+
+    fill();
+
+    if (result.length === 0) {
+      this.usedAlbumIds = new Set(protectedAlbumIds);
+      fill();
     }
 
     return result;
-  }
-
-  private _randomFallback(count: number): string[] {
-    return tracksDb.getRandomTracks(count).map((t) => t.file);
   }
 }
 

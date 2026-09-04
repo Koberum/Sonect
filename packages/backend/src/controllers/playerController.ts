@@ -12,8 +12,6 @@ import {
   previousTrack,
   setSingle,
   setVolume,
-  setAutoplayEnabled,
-  isAutoplayEnabled,
   getQueue,
   playPosition,
   removeFromQueue,
@@ -103,23 +101,6 @@ export const setSingleHandler = asyncHandler(
     const { enabled } = playerSchemas.toggle.parse(req.body);
     await setSingle(enabled);
     res.json({ message: `Single ${enabled ? "enabled" : "disabled"}` });
-  },
-);
-
-export const setAutoplayHandler = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { enabled } = playerSchemas.toggle.parse(req.body);
-    setAutoplayEnabled(enabled);
-    res.json({
-      message: `Autoplay ${enabled ? "enabled" : "disabled"}`,
-      enabled,
-    });
-  },
-);
-
-export const getAutoplayStatusHandler = asyncHandler(
-  async (_req: Request, res: Response) => {
-    res.json({ enabled: isAutoplayEnabled() });
   },
 );
 

@@ -61,6 +61,18 @@ export class MpdSyncService {
     try {
       console.log("🔄 Starting full sync from MPD...");
 
+      const playbackStats = new Map(
+        (
+          db()
+            .prepare("SELECT file, play_count, last_played FROM tracks")
+            .all() as {
+            file: string;
+            play_count: number | null;
+            last_played: string | null;
+          }[]
+        ).map((track) => [track.file, track]),
+      );
+
       console.log("   🗑️  Clearing existing database...");
       db().exec("DELETE FROM tracks");
       db().exec("DELETE FROM albums");
@@ -83,10 +95,21 @@ export class MpdSyncService {
 
       let synced = 0;
       let errors = 0;
+      const restorePlaybackStats = db().prepare(
+        "UPDATE tracks SET play_count = ?, last_played = ? WHERE id = ?",
+      );
 
       for (const track of uniqueTracks) {
         try {
-          tracksDb.upsert(track);
+          const trackId = tracksDb.upsert(track);
+          const previousStats = playbackStats.get(track.file);
+          if (previousStats) {
+            restorePlaybackStats.run(
+              previousStats.play_count ?? 0,
+              previousStats.last_played,
+              trackId,
+            );
+          }
           synced++;
 
           onProgress?.({
