@@ -14,6 +14,7 @@ export {
 export { artistsDb } from "./repositories/artists.js";
 export { albumsDb } from "./repositories/albums.js";
 export { tracksDb } from "./repositories/tracks.js";
+export { librarySyncDb } from "./repositories/librarySync.js";
 export { playlistsDb } from "./repositories/playlists.js";
 export { syncMetadataDb } from "./repositories/syncMetadata.js";
 export { statsDb } from "./repositories/stats.js";

@@ -1,5 +1,9 @@
-import { initDatabase, tracksDb, syncMetadataDb, db as _dbFn } from "@repo/db";
-const db = () => _dbFn().$client;
+import {
+  initDatabase,
+  tracksDb,
+  syncMetadataDb,
+  librarySyncDb,
+} from "@repo/db";
 import { MPDTrack } from "@repo/types";
 import { mpdConnectionManager } from "./mpdConnectionManager";
 import { parseMPDMessageToTracks } from "../utils/mpd.js";
@@ -61,23 +65,8 @@ export class MpdSyncService {
     try {
       console.log("🔄 Starting full sync from MPD...");
 
-      const playbackStats = new Map(
-        (
-          db()
-            .prepare("SELECT file, play_count, last_played FROM tracks")
-            .all() as {
-            file: string;
-            play_count: number | null;
-            last_played: string | null;
-          }[]
-        ).map((track) => [track.file, track]),
-      );
-
-      console.log("   🗑️  Clearing existing database...");
-      db().exec("DELETE FROM tracks");
-      db().exec("DELETE FROM albums");
-      db().exec("DELETE FROM artists");
-
+      // Fetch and deduplicate before any destructive database work: a failed
+      // fetch must leave the existing library untouched.
       const mpdTracks = await this.fetchAllTracksFromMPD();
 
       const seen = new Set<string>();
@@ -93,46 +82,24 @@ export class MpdSyncService {
         `📀 Found ${mpdTracks.length} tracks (${uniqueTracks.length} unique) in MPD library`,
       );
 
-      let synced = 0;
-      let errors = 0;
-      const restorePlaybackStats = db().prepare(
-        "UPDATE tracks SET play_count = ?, last_played = ? WHERE id = ?",
-      );
+      const result = librarySyncDb.rebuild(uniqueTracks, (completed, track) => {
+        onProgress?.({
+          current: completed,
+          total: uniqueTracks.length,
+          phase: "tracks",
+          track: {
+            title: track.title ?? "",
+            artist: track.artist ?? "",
+            album: track.album ?? "",
+          },
+        });
 
-      for (const track of uniqueTracks) {
-        try {
-          const trackId = tracksDb.upsert(track);
-          const previousStats = playbackStats.get(track.file);
-          if (previousStats) {
-            restorePlaybackStats.run(
-              previousStats.play_count ?? 0,
-              previousStats.last_played,
-              trackId,
-            );
-          }
-          synced++;
-
-          onProgress?.({
-            current: synced,
-            total: uniqueTracks.length,
-            phase: "tracks",
-            track: {
-              title: track.title ?? "",
-              artist: track.artist ?? "",
-              album: track.album ?? "",
-            },
-          });
-
-          if (synced % 100 === 0) {
-            console.log(
-              `   📊 Synced ${synced}/${uniqueTracks.length} tracks...`,
-            );
-          }
-        } catch (err) {
-          errors++;
-          console.error(`   ❌ Error syncing track ${track.file}:`, err);
+        if (completed % 100 === 0) {
+          console.log(
+            `   📊 Synced ${completed}/${uniqueTracks.length} tracks...`,
+          );
         }
-      }
+      });
 
       onProgress?.({
         current: uniqueTracks.length,
@@ -141,14 +108,12 @@ export class MpdSyncService {
         track: null,
       });
 
-      syncMetadataDb.setLastSync();
-
       console.log(`✅ Sync completed!`);
       console.log(
-        `   📊 Successfully synced: ${synced}/${uniqueTracks.length} unique tracks`,
+        `   📊 Successfully synced: ${result.synced}/${uniqueTracks.length} unique tracks`,
       );
-      if (errors > 0) {
-        console.log(`   ⚠️  Errors: ${errors} tracks`);
+      if (result.errors > 0) {
+        console.log(`   ⚠️  Errors: ${result.errors} tracks`);
       }
       console.log(`   ⏰ Last sync: ${syncMetadataDb.getLastSync()}`);
     } catch (error) {
@@ -170,10 +135,7 @@ export class MpdSyncService {
 
   async clearAll(): Promise<void> {
     console.log("⚠️  Clearing all database data...");
-    db().exec("DELETE FROM tracks");
-    db().exec("DELETE FROM albums");
-    db().exec("DELETE FROM artists");
-    db().exec("DELETE FROM sync_metadata");
+    librarySyncDb.clearAll();
     console.log("✅ Database cleared");
   }
 }
