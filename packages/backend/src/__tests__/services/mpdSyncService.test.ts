@@ -11,7 +11,9 @@ describe("MpdSyncService", () => {
   });
 
   beforeEach(() => {
-    db().exec("DELETE FROM tracks; DELETE FROM albums; DELETE FROM artists;");
+    db().$client.exec(
+      "DELETE FROM tracks; DELETE FROM albums; DELETE FROM artists;",
+    );
   });
 
   afterEach(() => {
@@ -19,14 +21,16 @@ describe("MpdSyncService", () => {
   });
 
   it("preserves playback statistics when rebuilding the library", async () => {
-    db().prepare("INSERT INTO artists (id, name) VALUES (1, 'Artist')").run();
     db()
-      .prepare(
+      .$client.prepare("INSERT INTO artists (id, name) VALUES (1, 'Artist')")
+      .run();
+    db()
+      .$client.prepare(
         "INSERT INTO albums (id, title, artist_id) VALUES (1, 'Album', 1)",
       )
       .run();
     db()
-      .prepare(
+      .$client.prepare(
         `INSERT INTO tracks (id, file, title, artist_id, album_id, play_count, last_played)
          VALUES (1, 'music/song.mp3', 'Song', 1, 1, 7, '2026-01-02 03:04:05')`,
       )

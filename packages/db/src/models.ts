@@ -1,5 +1,5 @@
 import type { MPDTrack } from "@repo/types";
-import { db as _sqlDb } from "./connection.js";
+import { sqlite as _sqlDb } from "./connection.js";
 const db = () => _sqlDb();
 import {
   DBAlbum,
@@ -28,7 +28,7 @@ export const artistsDb = {
     offset,
   }: { limit?: number; offset?: number } = {}): DBArtist[] {
     let query = "SELECT * FROM artists ORDER BY name";
-    const params: unknown[] = [];
+    const params: (number | string)[] = [];
     if (limit !== undefined) {
       query += " LIMIT ?";
       params.push(limit);
@@ -109,7 +109,7 @@ export const albumsDb = {
     if (sort === "year") orderBy = "year DESC, title";
     if (sort === "recent") orderBy = "created_at DESC";
     let query = `SELECT * FROM albums ORDER BY ${orderBy}`;
-    const params: unknown[] = [];
+    const params: (number | string)[] = [];
     if (limit !== undefined) {
       query += " LIMIT ?";
       params.push(limit);
@@ -465,7 +465,7 @@ export const tracksDb = {
     if (sort === "recent") orderBy = "created_at DESC";
     if (sort === "duration") orderBy = "duration DESC";
     let query = `SELECT * FROM tracks ORDER BY ${orderBy}`;
-    const params: unknown[] = [];
+    const params: (number | string)[] = [];
     if (limit !== undefined) {
       query += " LIMIT ?";
       params.push(limit);
@@ -691,7 +691,7 @@ export const playlistsDb = {
 
   update(id: number, data: { name?: string; description?: string }): void {
     const fields: string[] = [];
-    const values: unknown[] = [];
+    const values: (number | string)[] = [];
     if (data.name !== undefined) {
       fields.push("name = ?");
       values.push(data.name);
@@ -832,7 +832,7 @@ export const storageDb = {
     },
   ): void {
     const fields: string[] = [];
-    const values: unknown[] = [];
+    const values: (number | string)[] = [];
     if (data.name !== undefined) {
       fields.push("name = ?");
       values.push(data.name);

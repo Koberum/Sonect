@@ -1,5 +1,5 @@
 import { initDatabase, tracksDb, syncMetadataDb, db as _dbFn } from "@repo/db";
-const db = () => _dbFn();
+const db = () => _dbFn().$client;
 import { MPDTrack } from "@repo/types";
 import { mpdConnectionManager } from "./mpdConnectionManager";
 import { parseMPDMessageToTracks } from "../utils/mpd.js";

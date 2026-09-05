@@ -1,4 +1,4 @@
-export { db, initDb } from "./connection.js";
+export { initDb, db, closeDb, transaction } from "./connection.js";
 export { initDatabase } from "./schema.js";
 export {
   artistsDb,

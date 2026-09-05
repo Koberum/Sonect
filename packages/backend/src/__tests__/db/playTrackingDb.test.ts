@@ -3,6 +3,7 @@ import { expect } from "chai";
 
 describe("play tracking DB helpers", () => {
   let dbModule: any;
+  const db = () => dbModule.db().$client;
 
   before(async () => {
     const { initDb, initDatabase } = await import("@repo/db");
@@ -12,7 +13,6 @@ describe("play tracking DB helpers", () => {
   });
 
   beforeEach(() => {
-    const { db } = dbModule;
     db().prepare("DELETE FROM tracks").run();
     db().prepare("DELETE FROM albums").run();
     db().prepare("DELETE FROM artists").run();
@@ -45,7 +45,7 @@ describe("play tracking DB helpers", () => {
   });
 
   it("incrementPlayCount should increment play_count and set last_played", () => {
-    const { tracksDb, db } = dbModule;
+    const { tracksDb } = dbModule;
     tracksDb.incrementPlayCount(1);
     const row = db()
       .prepare("SELECT play_count, last_played FROM tracks WHERE id = 1")
@@ -104,7 +104,7 @@ describe("play tracking DB helpers", () => {
   });
 
   it("updateLastPlayed should set last_played on album", () => {
-    const { albumsDb, db } = dbModule;
+    const { albumsDb } = dbModule;
     albumsDb.updateLastPlayed(1);
     const row = db()
       .prepare("SELECT last_played FROM albums WHERE id = 1")
@@ -126,7 +126,7 @@ describe("play tracking DB helpers", () => {
   });
 
   it("getRankedByPlayCount should rank albums by total plays then title", () => {
-    const { albumsDb, db } = dbModule;
+    const { albumsDb } = dbModule;
     db()
       .prepare(
         "INSERT INTO albums (id, title, artist_id, genre) VALUES (2, 'Zulu', 1, 'Rock'), (3, 'Alpha', 1, 'Rock'), (4, 'Most played', 1, 'Jazz')",
