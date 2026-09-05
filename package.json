@@ -15,7 +15,8 @@
     "backend:test": "pnpm --filter backend test",
     "backend:test:watch": "pnpm --filter backend test:watch",
     "backend:test:coverage": "pnpm --filter backend test:coverage",
-    "clean": "pnpm -r exec rm -rf node_modules dist build"
+    "clean": "pnpm -r exec rm -rf node_modules dist build",
+    "db:generate": "pnpm --filter @repo/db db:generate"
   },
   "devDependencies": {
     "eslint": "^9.39.5",

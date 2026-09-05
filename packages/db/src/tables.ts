@@ -41,7 +41,7 @@ export const tracks = sqliteTable(
   "tracks",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
-    file: text("file").notNull().unique(),
+    file: text("file").notNull(),
     title: text("title").notNull(),
     artist_id: integer("artist_id").references(() => artists.id, {
       onDelete: "set null",
@@ -64,6 +64,7 @@ export const tracks = sqliteTable(
     updated_at: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [
+    unique("tracks_file_unique").on(table.file),
     index("idx_tracks_artist").on(table.artist_id),
     index("idx_tracks_album").on(table.album_id),
     index("idx_tracks_file").on(table.file),
