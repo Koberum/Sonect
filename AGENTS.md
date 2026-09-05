@@ -29,6 +29,10 @@ pnpm backend:start      # Start production build (node dist/bundle.cjs)
 pnpm backend:test       # Run backend tests (Mocha/Chai/Sinon/Supertest)
 pnpm backend:test:watch # Backend tests in watch mode
 pnpm backend:test:coverage # Backend test coverage report (c8)
+pnpm db:generate        # Generate a new SQL migration from tables.ts (drizzle-kit)
+pnpm db:migrate         # Apply pending migrations to DB_PATH (dev convenience)
+pnpm db:migrate-reset   # Wipe + re-apply migrations; prompts, --force skips
+pnpm db:studio          # drizzle-kit studio browser GUI
 pnpm clean              # Remove node_modules and dist from all packages
 ```
 
@@ -183,6 +187,12 @@ Single Node process on port 3000:
   folder — always append a new one; existing databases track applied
   migrations by content hash. Note: drizzle-kit@1.0.0-rc.4 pairs with
   drizzle-orm@1.0.0-rc.4.
+- **DB CLI:** `pnpm db:migrate` / `pnpm db:migrate-reset` are thin tsx
+  scripts (`packages/db/src/scripts/`) reusing the same `connection.ts`
+  pragmas and `MIGRATIONS_FOLDER` resolution as `initDatabase()` — do not
+  bypass them with `drizzle-kit migrate`, which uses its own driver and
+  skips the pragmas. They are dev conveniences only; production applies
+  migrations automatically at startup.
 - **Migrations:** `initDatabase()` (`packages/db/src/schema.ts`) applies
   pending migrations at startup via `migrate()` from
   `drizzle-orm/node-sqlite/migrator`, tracked in the `__drizzle_migrations`

@@ -198,10 +198,13 @@ environment variables, so changing any of them invalidates the cache.
 pnpm build          # Compile all packages (turbo-cached)
 pnpm lint           # Lint all packages (turbo-cached)
 pnpm dev            # Run all packages' dev servers in parallel (not cached)
-pnpm backend:test   # Run backend tests (turbo-cached)
+pnpm backend:test   # Run backend tests (fresh run, not cached)
 pnpm backend:bundle # Bundle backend for production
 pnpm frontend:build # Build frontend for production
 pnpm db:generate    # Generate a new SQL migration from the schema (drizzle-kit)
+pnpm db:migrate     # Apply pending migrations to the database
+pnpm db:migrate-reset [--force] # Wipe the database and re-apply all migrations
+pnpm db:studio      # Browse/edit the database in a browser GUI (drizzle-kit)
 ```
 
 ### Database migrations
@@ -210,6 +213,13 @@ The SQLite schema is defined in `packages/db/src/tables.ts`. To change it,
 edit that file and run `pnpm db:generate`, which commits a versioned SQL
 migration under `packages/db/drizzle/`. Migrations are applied automatically
 at backend startup and tracked in the `__drizzle_migrations` table.
+
+For manual control, `pnpm db:migrate` applies pending migrations to the
+database at `DB_PATH` (default `./data/music.db`) — useful to preview what
+startup would do. `pnpm db:migrate-reset` wipes the database (file, WAL and
+SHM) and re-applies every migration from scratch; it prompts for
+confirmation unless `--force` is passed. `pnpm db:studio` opens drizzle-kit
+studio, a browser GUI for inspecting and editing data.
 
 **One-time reset on upgrade:** databases created before the migration system
 (any database with our tables but no `__drizzle_migrations` table) are wiped
