@@ -1,7 +1,7 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "99311224-5dbc-4a5f-a065-5cb0f2e88e92",
+  "id": "f8add028-8daa-49d7-87d9-4e1df74af693",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -20,10 +20,6 @@
     },
     {
       "name": "playlists",
-      "entityType": "tables"
-    },
-    {
-      "name": "schema_version",
       "entityType": "tables"
     },
     {
@@ -301,16 +297,6 @@
       "name": "updated_at",
       "entityType": "columns",
       "table": "playlists"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "version",
-      "entityType": "columns",
-      "table": "schema_version"
     },
     {
       "type": "integer",

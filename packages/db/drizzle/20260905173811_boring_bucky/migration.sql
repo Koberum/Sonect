@@ -40,10 +40,6 @@ CREATE TABLE `playlists` (
 	`updated_at` text DEFAULT CURRENT_TIMESTAMP
 );
 --> statement-breakpoint
-CREATE TABLE `schema_version` (
-	`version` integer NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE `setup_progress` (
 	`id` integer PRIMARY KEY AUTOINCREMENT,
 	`step` text NOT NULL UNIQUE,
