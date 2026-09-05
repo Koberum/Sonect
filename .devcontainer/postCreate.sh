@@ -17,6 +17,14 @@ audio_output {
 MPDDROP
 fi
 
+# Install rtk (Rust Token Killer, https://github.com/rtk-ai/rtk) so agents can
+# use the token-optimized commands documented in AGENTS.md. Idempotent.
+if ! command -v rtk > /dev/null 2>&1; then
+  echo "Installing rtk..."
+  curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+fi
+export PATH="$HOME/.local/bin:$PATH"
+
 echo "Starting MPD in dev mode..."
 mpd /etc/mpd.conf || true
 

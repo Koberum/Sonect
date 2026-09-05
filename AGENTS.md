@@ -294,6 +294,9 @@ When running shell commands, **always prefix with `rtk`**. This reduces context
 usage by 60-90% with zero behavior change. If rtk has no filter for a command,
 it passes through unchanged — so it is always safe to use.
 
+The devcontainer installs rtk automatically via `.devcontainer/postCreate.sh`
+(user-level binary in `~/.local/bin`); it is not an npm/pnpm dependency.
+
 ## Key Commands
 
 ```bash
