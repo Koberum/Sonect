@@ -24,7 +24,7 @@ RUN npm install -g pnpm@9
 
 WORKDIR /app
 
-COPY --from=builder /build/packages/backend/dist/bundle.js ./bundle.js
+COPY --from=builder /build/packages/backend/dist/bundle.cjs ./bundle.cjs
 COPY --from=builder /build/packages/frontend/dist ./frontend/dist/
 
 RUN cat > package.json <<- 'PKGJSON'
@@ -49,4 +49,4 @@ VOLUME /app/data
 
 EXPOSE 3000
 
-CMD ["dumb-init", "node", "bundle.js"]
+CMD ["dumb-init", "node", "bundle.cjs"]

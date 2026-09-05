@@ -71,7 +71,6 @@ jobs:
           VERSION="${TAG_NAME#v}"
           mkdir -p artifact/backend artifact/frontend
           cp packages/backend/dist/bundle.cjs artifact/backend/bundle.cjs
-          cp packages/backend/dist/sql-wasm.wasm artifact/backend/sql-wasm.wasm
           cp packages/backend/start-backend.sh artifact/backend/start-backend.sh
           chmod +x artifact/backend/start-backend.sh
           cp packages/backend/.version artifact/backend/.version

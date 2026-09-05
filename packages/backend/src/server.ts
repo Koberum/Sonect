@@ -4,7 +4,7 @@ import { WebSocketServer } from "ws";
 import { setupPlayerWebSocket } from "./ws/player.ws";
 import { setWss, broadcast } from "./ws/broadcast";
 import { setBroadcaster } from "./services/logService";
-import { initDatabase } from "@repo/db";
+import { closeDb, initDatabase } from "@repo/db";
 import { mpdConnectionManager } from "./services/mpdConnectionManager";
 import { autoplayService } from "./services/autoplayService";
 import { getQueue, queueFiles } from "./services/playerService";
@@ -30,6 +30,7 @@ const PORT = parseInt(process.env.PORT ?? "3000", 10);
 
 let wss: WebSocketServer;
 let server: ReturnType<typeof app.listen>;
+let shuttingDown = false;
 
 async function main() {
   // Initialize database
@@ -59,8 +60,16 @@ async function main() {
   });
 }
 
-// Graceful shutdown
+// Graceful shutdown — server.ts is the sole owner of process termination.
+function finish() {
+  // Checkpoint WAL and close SQLite; no-op when the DB was never opened.
+  closeDb();
+  process.exit(0);
+}
+
 function shutdown() {
+  if (shuttingDown) return;
+  shuttingDown = true;
   console.log("\nShutting down...");
 
   setTimeout(() => {
@@ -80,11 +89,9 @@ function shutdown() {
   }
 
   if (server) {
-    server.close(() => {
-      process.exit(0);
-    });
+    server.close(finish);
   } else {
-    process.exit(0);
+    finish();
   }
 }
 
@@ -93,5 +100,8 @@ process.on("SIGINT", shutdown);
 
 main().catch((err) => {
   console.error("Failed to start:", err);
+  // Initialization may have partially opened the database; closeDb is a
+  // no-op when nothing was opened.
+  closeDb();
   process.exit(1);
 });
