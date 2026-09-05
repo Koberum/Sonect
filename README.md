@@ -201,7 +201,20 @@ pnpm dev            # Run all packages' dev servers in parallel (not cached)
 pnpm backend:test   # Run backend tests (turbo-cached)
 pnpm backend:bundle # Bundle backend for production
 pnpm frontend:build # Build frontend for production
+pnpm db:generate    # Generate a new SQL migration from the schema (drizzle-kit)
 ```
+
+### Database migrations
+
+The SQLite schema is defined in `packages/db/src/tables.ts`. To change it,
+edit that file and run `pnpm db:generate`, which commits a versioned SQL
+migration under `packages/db/drizzle/`. Migrations are applied automatically
+at backend startup and tracked in the `__drizzle_migrations` table.
+
+**One-time reset on upgrade:** databases created before the migration system
+(any database with our tables but no `__drizzle_migrations` table) are wiped
+and rebuilt on first startup. Play counts, playlists, storage sources, and
+setup flags are lost — this is a deliberate one-time reset.
 
 ### Releases
 

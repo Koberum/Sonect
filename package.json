@@ -12,6 +12,7 @@
     "frontend:build": "pnpm --filter frontend build",
     "backend:dev": "pnpm --filter backend dev",
     "backend:start": "pnpm --filter backend start",
+    "backend:bundle": "pnpm --filter backend bundle",
     "backend:test": "turbo run test --filter backend",
     "backend:test:watch": "pnpm --filter backend test:watch",
     "backend:test:coverage": "pnpm --filter backend test:coverage",

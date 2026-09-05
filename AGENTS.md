@@ -87,7 +87,7 @@ Single Node process on port 3000:
 
 ### Build pipeline
 
-- **Backend**: `pnpm backend:bundle` uses esbuild to bundle all JS code (Express, Zod, ws, music-metadata, workspace deps) into `dist/bundle.cjs`. Only `sharp` and `dotenv` remain external as runtime dependencies.
+- **Backend**: `pnpm backend:bundle` uses esbuild to bundle all JS code (Express, Zod, ws, music-metadata, workspace deps) into `dist/bundle.cjs`. Only `sharp` and `dotenv` remain external as runtime dependencies. The bundle defines `SONECT_BUNDLE_URL` via `--banner:js` and rewrites **all** `import.meta.url` occurrences via `--define:import.meta.url=SONECT_BUNDLE_URL` (currently only the `@repo/db` migrator uses it, to locate `dist/drizzle/`), then copies `../db/drizzle` to `dist/drizzle`. **Hazard:** if a future bundled dependency relies on `import.meta.url` for its own file's URL, it will silently receive the migrations-anchor URL instead.
 - **Frontend**: `pnpm frontend:build` runs Vite, outputs static files to `frontend/dist/`.
 - **Deployment artifact (via Release CI):** release-please
   (`release-please-config.json` + `.release-please-manifest.json`)
@@ -172,12 +172,22 @@ Single Node process on port 3000:
   path — SIGTERM/SIGINT shutdown and startup failure. `@repo/db` installs
   **no signal handlers** of its own; never add process-level handlers to the
   package.
-- **Schema changes:** table/column definitions live in
-  `packages/db/src/tables.ts`. Structural changes needed by existing databases
-  ship as a new versioned runtime migration in `packages/db/src/schema.ts` —
-  a `schema_version` table tracks applied versions, migrations run
-  transactionally, and column adds are guarded with `PRAGMA table_info`
-  checks so they stay idempotent.
+- **Schema changes:** `packages/db/src/tables.ts` is the **single schema
+  source**. To change the schema, edit `tables.ts` and run `pnpm db:generate`
+  (root alias; runs drizzle-kit generate in `@repo/db`), then commit the new
+  versioned folder under `packages/db/drizzle/` (rc.4 layout:
+  `<timestamp>_<name>/migration.sql` + `snapshot.json`). Never hand-edit the
+  generated SQL. Note: drizzle-kit@1.0.0-rc.4 pairs with drizzle-orm@1.0.0-rc.4.
+- **Migrations:** `initDatabase()` (`packages/db/src/schema.ts`) applies
+  pending migrations at startup via `migrate()` from
+  `drizzle-orm/node-sqlite/migrator`, tracked in the `__drizzle_migrations`
+  table. Legacy databases created before this system (any DB with our tables
+  but no `__drizzle_migrations`) are **wiped and rebuilt** — play counts,
+  playlists, storage sources, and setup flags are lost on upgrade. This is a
+  deliberate one-time reset. The migrations folder ships in the release
+  artifact at `backend/drizzle/` (see `release.yml`) and at
+  `packages/backend/dist/drizzle` via the bundle script — **it must not be
+  removed** from either.
 - **Queries** live in the focused repository modules under
   `packages/db/src/repositories/` (`artists`, `albums`, `tracks`,
   `librarySync`, `playlists`, `syncMetadata`, `stats`, `storage`, `setup`).
