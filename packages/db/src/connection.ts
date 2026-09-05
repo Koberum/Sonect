@@ -3,9 +3,14 @@ import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { drizzle, type NodeSQLiteDatabase } from "drizzle-orm/node-sqlite";
-import * as schema from "./tables.js";
+import type { DrizzleTypeError } from "drizzle-orm";
 
-export type DrizzleDatabase = NodeSQLiteDatabase<typeof schema> & {
+// drizzle-orm 1.0.0-rc.4 no longer takes a schema module as a database type
+// parameter: sqliteTable objects carry their own column types and are passed
+// per-query to .select()/.insert()/.update(). The only remaining type
+// parameter is for relational queries, which this app does not use, so it
+// stays at the EmptyRelations default.
+export type DrizzleDatabase = NodeSQLiteDatabase & {
   $client: DatabaseSync;
 };
 export type DatabaseTransaction = Parameters<
@@ -45,7 +50,11 @@ export function sqlite(): DatabaseSync {
   return client;
 }
 
-export function transaction<T>(work: (tx: DatabaseTransaction) => T): T {
+export function transaction<T>(
+  work: (tx: DatabaseTransaction) => T,
+): T extends Promise<unknown>
+  ? DrizzleTypeError<"Sync drivers can't use async functions in transactions!">
+  : T {
   // Drizzle's sync-driver callback type conditionally rejects Promise returns,
   // which TypeScript cannot decide for a generic T even though the runtime
   // contract accepts any synchronous result; cast the callback to keep this
