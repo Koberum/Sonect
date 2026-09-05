@@ -11,10 +11,10 @@ export {
   schemaVersion,
   setupProgress,
 } from "./tables.js";
+export { artistsDb } from "./repositories/artists.js";
+export { albumsDb } from "./repositories/albums.js";
+export { tracksDb } from "./repositories/tracks.js";
 export {
-  artistsDb,
-  albumsDb,
-  tracksDb,
   playlistsDb,
   syncMetadataDb,
   statsDb,
