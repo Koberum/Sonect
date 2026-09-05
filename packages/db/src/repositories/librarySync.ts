@@ -63,11 +63,10 @@ function rebuildInTransaction(
   let errors = 0;
 
   for (const track of tracks) {
-    let trackId: number;
     try {
       // Step 3: each track persists inside a savepoint so a rejected track
       // also rolls back the artist and album rows created for it.
-      trackId = executor.transaction((savepoint) => {
+      executor.transaction((savepoint) => {
         const id = upsertTrack(savepoint, track);
         // Step 4: restore playback fields for surviving files.
         const stats = previousStats.get(track.file);
@@ -81,10 +80,12 @@ function rebuildInTransaction(
             .where(eq(tracksTable.id, id))
             .run();
         }
-        return id;
       });
     } catch (error) {
       if (!isTrackConstraintError(error)) throw error;
+      // Keep individual malformed tracks operator-reportable, as they were
+      // before the rebuild became transactional.
+      console.error(`❌ Error syncing track ${track.file}:`, error);
       errors += 1;
       continue;
     }
