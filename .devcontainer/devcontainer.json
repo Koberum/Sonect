@@ -4,8 +4,8 @@
   "service": "sonect",
   "workspaceFolder": "/workspace",
 
-  // Ports: 3000 (backend), 5173 (Vite), 6600 (MPD)
-  "forwardPorts": [3000, 5173, 6600],
+  // Ports: 3000 (backend), 5173 (Vite), 6600 (MPD), 4983 (Drizzle Studio)
+  "forwardPorts": [3000, 5173, 6600, 4983],
 
   // Post-creation hook
   "postCreateCommand": ".devcontainer/postCreate.sh",
@@ -20,6 +20,10 @@
     },
     "6600": {
       "label": "MPD Server",
+      "onAutoForward": "silent"
+    },
+    "4983": {
+      "label": "Drizzle Studio",
       "onAutoForward": "silent"
     }
   },
