@@ -11,7 +11,7 @@ import {
   or,
   sql,
 } from "drizzle-orm";
-import { getTableColumns } from "drizzle-orm";
+import { getColumns } from "drizzle-orm";
 import type { DBAlbum } from "@repo/types";
 import { db } from "../connection.js";
 import { albums, artists, tracks } from "../tables.js";
@@ -165,7 +165,7 @@ export const albumsDb = {
   search(query: string, limit = 20): DBAlbum[] {
     const pattern = `%${query}%`;
     return db()
-      .selectDistinct(getTableColumns(albums))
+      .selectDistinct(getColumns(albums))
       .from(albums)
       .leftJoin(artists, eq(albums.artist_id, artists.id))
       .where(or(like(albums.title, pattern), like(artists.name, pattern)))
@@ -192,7 +192,7 @@ export const albumsDb = {
 
   getByTitleAndArtist(title: string, artistName: string): DBAlbum | undefined {
     return db()
-      .select(getTableColumns(albums))
+      .select(getColumns(albums))
       .from(albums)
       .innerJoin(artists, eq(albums.artist_id, artists.id))
       .where(

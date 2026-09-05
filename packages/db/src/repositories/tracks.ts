@@ -3,7 +3,7 @@ import {
   asc,
   desc,
   eq,
-  getTableColumns,
+  getColumns,
   isNull,
   isNotNull,
   like,
@@ -32,7 +32,7 @@ type TrackWithMeta = DBTrack & {
 };
 
 const trackWithMeta = {
-  ...getTableColumns(tracks),
+  ...getColumns(tracks),
   artist_name: artists.name,
   album_title: albums.title,
   cover_path: albums.cover_path,
@@ -346,7 +346,7 @@ export const tracksDb = {
     title: string,
   ): DBTrack | undefined {
     return db()
-      .select(getTableColumns(tracks))
+      .select(getColumns(tracks))
       .from(tracks)
       .leftJoin(artists, eq(tracks.artist_id, artists.id))
       .leftJoin(albums, eq(tracks.album_id, albums.id))

@@ -1,4 +1,4 @@
-import { asc, eq, getTableColumns, sql, type SQL } from "drizzle-orm";
+import { asc, eq, getColumns, sql } from "drizzle-orm";
 import type { DBPlaylist, DBTrack } from "@repo/types";
 import { db, transaction } from "../connection.js";
 import { playlistTracks, playlists, tracks } from "../tables.js";
@@ -92,7 +92,7 @@ export const playlistsDb = {
   getTracks(playlistId: number): PlaylistTrackRow[] {
     return db()
       .select({
-        ...getTableColumns(tracks),
+        ...getColumns(tracks),
         pt_id: playlistTracks.id,
         position: playlistTracks.position,
         added_at: playlistTracks.added_at,

@@ -1,8 +1,6 @@
 import { tracksDb, artistsDb, albumsDb, statsDb } from "@repo/db";
 import { Track, Artist, Album, LibraryStats, SearchResults } from "@repo/types";
 
-import path from "path";
-import fs from "fs";
 import { DBAlbum, DBArtist, DBTrack } from "@repo/types";
 import { MpdSyncService, type SyncProgress } from "./mpdSyncService";
 import { CoverService } from "./coverService";
