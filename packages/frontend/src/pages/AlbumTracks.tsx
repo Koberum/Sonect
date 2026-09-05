@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import PlayStatus from "@/features/dashboard/components/play-status";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useTranslation } from "react-i18next";
@@ -27,6 +27,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { AddToPlaylistMenu } from "@/features/dashboard/components/add-to-playlist-menu";
+import { Button } from "@/components/ui/button";
 
 export default function AlbumPage() {
   const { t } = useTranslation();
@@ -100,20 +101,7 @@ export default function AlbumPage() {
                       >
                         <TableCell className="hidden lg:table-cell">
                           {trackPlayed?.id === track.id ? (
-                            <div className="flex items-end gap-1">
-                              <div
-                                className="bg-primary eq h-1 w-1 rounded"
-                                style={{ animationDelay: "0ms" }}
-                              />
-                              <div
-                                className="bg-primary eq h-2 w-1 rounded"
-                                style={{ animationDelay: "150ms" }}
-                              />
-                              <div
-                                className="bg-primary eq h-3 w-1 rounded"
-                                style={{ animationDelay: "300ms" }}
-                              />
-                            </div>
+                            <PlayStatus />
                           ) : (
                             <>
                               <span className="group-hover:hidden">
