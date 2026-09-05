@@ -143,10 +143,6 @@
       "theme": "Theme",
       "language": "Language"
     },
-    "network": {
-      "connected": "Connected to {{ssid}}",
-      "disconnected": "Disconnected"
-    },
     "mpd": {
       "connected": "MPD Connected",
       "disconnected": "MPD Disconnected"
@@ -289,14 +285,17 @@
   },
   "status": {
     "backendUnreachable": "Cannot reach server — reconnecting...",
-    "backendOnline": "Connection restored"
+    "backendOnline": "Connection restored",
+    "networkUnknown": "Network status unavailable",
+    "networkDisconnected": "Network disconnected",
+    "networkNoDns": "Connected to network, DNS unavailable",
+    "networkConnected": "Connected to network"
   },
   "settings": {
     "title": "Settings",
     "description": "Configure your system",
     "tabs": {
       "audio": "Audio",
-      "network": "Network",
       "storage": "Storage",
       "libraries": "Libraries",
       "library": "Library",
@@ -315,34 +314,6 @@
       "configured": "Audio output configured",
       "configureError": "Failed to configure audio",
       "loadError": "Failed to load audio devices"
-    },
-    "network": {
-      "title": "Network",
-      "description": "Manage WiFi connections.",
-      "statusConnected": "Connected to {{ssid}}",
-      "statusDisconnected": "Disconnected",
-      "disconnect": "Disconnect",
-      "scan": "Scan WiFi",
-      "scanning": "Scanning...",
-      "password": "Password",
-      "passwordPlaceholder": "Enter WiFi password",
-      "connect": "Connect",
-      "connecting": "Connecting...",
-      "connected": "Connected to {{ssid}}",
-      "disconnected": "Disconnected",
-      "scanError": "Failed to scan WiFi networks",
-      "connectError": "Failed to connect",
-      "disconnectError": "Failed to disconnect",
-      "disconnectTitle": "Disconnect WiFi?",
-      "disconnectConfirm": "Are you sure you want to disconnect from \"{{ssid}}\"?",
-      "signal": "Signal",
-      "secured": "Secured",
-      "interface": "Interface",
-      "ipAddress": "IP Address",
-      "netmask": "Subnet mask",
-      "gateway": "Gateway",
-      "dns": "DNS",
-      "networks": "Networks"
     },
     "storage": {
       "title": "Storage",

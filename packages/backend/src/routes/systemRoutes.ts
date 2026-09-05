@@ -6,9 +6,6 @@ import {
   getAudioStatusHandler,
   getOutputModeHandler,
   setOutputModeHandler,
-  scanWifiHandler,
-  connectWifiHandler,
-  disconnectWifiHandler,
   getNetworkStatusHandler,
   getStorageSourcesHandler,
   getStorageSourceHandler,
@@ -39,9 +36,6 @@ router.get("/audio/status", getAudioStatusHandler);
 router.get("/output-mode", getOutputModeHandler);
 router.put("/output-mode", setOutputModeHandler);
 
-router.get("/network/wifi/scan", scanWifiHandler);
-router.post("/network/wifi/connect", connectWifiHandler);
-router.post("/network/wifi/disconnect", disconnectWifiHandler);
 router.get("/network/status", getNetworkStatusHandler);
 
 router.get("/storage/sources", getStorageSourcesHandler);

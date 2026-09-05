@@ -78,6 +78,7 @@ After making changes:
 | `PORT`             | `3000`                                                         | Backend HTTP server port                                            |
 | `FRONTEND_DIST`    | `../frontend/dist`                                             | Path to built frontend static files (prod)                          |
 | `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | MPD log file (for per-file sync progress)                           |
+| `DNS_CHECK_HOST`   | `example.com`                                                  | Host resolved to verify DNS connectivity                            |
 
 ## Production deployment (Raspberry Pi)
 
@@ -149,6 +150,13 @@ Single Node process on port 3000:
 - The backend exposes its build version through `getSystemStatus()` →
   `/system/status[].version`. It reads `backend/.version` (written only by the
   release CI), defaulting to `"dev"`. Sources: `services/appVersion.ts`.
+- Host network management is intentionally not part of Sonect. The only network
+  status endpoint is `GET /system/network/status`, which returns
+  `{ connected, dnsReachable }`. `connected` checks for a non-loopback IPv4 or
+  IPv6 address, while `dnsReachable` resolves `DNS_CHECK_HOST` (default
+  `example.com`) through the system resolver with a short timeout. The frontend
+  polls this endpoint every 15 seconds and shows one localized indicator in the
+  desktop top bar; it does not expose Wi-Fi scan, connect, or disconnect controls.
 
 ### Frontend
 

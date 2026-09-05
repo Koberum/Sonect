@@ -149,6 +149,7 @@ a complete database file.
 | POST   | `/mpd/next`                   | Next track               |
 | POST   | `/mpd/previous`               | Previous track           |
 | PATCH  | `/mpd/volume`                 | Set volume (0–100)       |
+| GET    | `/system/network/status`      | Read network/DNS status  |
 | GET    | `/system/setup/progress`      | Read setup progress      |
 | POST   | `/system/setup/complete`      | Complete or skip setup   |
 | POST   | `/system/setup/reset`         | Reset the setup wizard   |
@@ -168,6 +169,7 @@ Configure via `packages/backend/.env`:
 | `DB_PATH`          | `./data/music.db`                                              | SQLite database path                                                |
 | `MPD_CONFIG_PATH`  | `/opt/sonect/data/mpd-audio.conf`                              | MPD config drop-in                                                  |
 | `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | MPD log file for sync progress                                      |
+| `DNS_CHECK_HOST`   | `example.com`                                                  | Host resolved to verify DNS connectivity                            |
 | `PORT`             | `3000`                                                         | Backend HTTP port                                                   |
 | `FRONTEND_DIST`    | `../frontend/dist`                                             | Built frontend static files                                         |
 
@@ -182,6 +184,11 @@ Each library source (SMB, NFS, local) shows **file count, folder count, and
 total music-file size** in Settings → Libraries, refreshed at the end of every
 library scan. `MUSIC_EXTENSIONS` controls which audio extensions are counted as
 music files.
+
+Sonect does not manage host Wi-Fi connections. `GET /system/network/status`
+returns whether the server has a non-loopback network address and whether the
+configured `DNS_CHECK_HOST` resolves through the system resolver. The frontend
+shows this read-only status in the desktop top bar.
 
 ---
 

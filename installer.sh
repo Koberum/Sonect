@@ -206,6 +206,7 @@ MPD_PORT=6600
 MUSIC_DIR=$INSTALL_DIR/music
 COVERS_DIR=$INSTALL_DIR/data/covers
 DB_PATH=$INSTALL_DIR/data/music.db
+DNS_CHECK_HOST=example.com
 PORT=3000
 ENV
   log ".env created"

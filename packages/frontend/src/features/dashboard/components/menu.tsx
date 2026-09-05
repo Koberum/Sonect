@@ -5,6 +5,7 @@ import { SearchCommand } from "@/features/dashboard/components/search-command";
 import { useTheme } from "@/components/theme-provider";
 import { usePlaybackContext } from "@/components/playback-context";
 import { StatusBar } from "./status-bar";
+import { NetworkStatusIndicator } from "@/features/status/NetworkStatusIndicator";
 
 export interface MenuProps {
   isOpen?: boolean;
@@ -57,6 +58,9 @@ export function Menu({ isOpen, toggleSidebar }: MenuProps) {
       <div className="flex flex-1 items-center justify-end gap-2">
         <div className="hidden md:block">
           <StatusBar />
+        </div>
+        <div className="hidden md:flex">
+          <NetworkStatusIndicator />
         </div>
       </div>
     </Menubar>

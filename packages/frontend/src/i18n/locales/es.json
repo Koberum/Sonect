@@ -143,10 +143,6 @@
       "theme": "Tema",
       "language": "Idioma"
     },
-    "network": {
-      "connected": "Conectado a {{ssid}}",
-      "disconnected": "Desconectado"
-    },
     "mpd": {
       "connected": "MPD Conectado",
       "disconnected": "MPD Desconectado"
@@ -289,14 +285,17 @@
   },
   "status": {
     "backendUnreachable": "No se puede conectar al servidor — reconectando...",
-    "backendOnline": "Conexión restablecida"
+    "backendOnline": "Conexión restablecida",
+    "networkUnknown": "Estado de red no disponible",
+    "networkDisconnected": "Red desconectada",
+    "networkNoDns": "Conectado a la red, DNS no disponible",
+    "networkConnected": "Conectado a la red"
   },
   "settings": {
     "title": "Ajustes",
     "description": "Configura tu sistema",
     "tabs": {
       "audio": "Audio",
-      "network": "Red",
       "storage": "Almacenamiento",
       "libraries": "Bibliotecas",
       "library": "Biblioteca",
@@ -315,34 +314,6 @@
       "configured": "Salida de audio configurada",
       "configureError": "Error al configurar audio",
       "loadError": "Error al cargar dispositivos de audio"
-    },
-    "network": {
-      "title": "Red",
-      "description": "Gestiona conexiones WiFi.",
-      "statusConnected": "Conectado a {{ssid}}",
-      "statusDisconnected": "Desconectado",
-      "disconnect": "Desconectar",
-      "scan": "Escanear WiFi",
-      "scanning": "Escaneando...",
-      "password": "Contraseña",
-      "passwordPlaceholder": "Ingresa la contraseña WiFi",
-      "connect": "Conectar",
-      "connecting": "Conectando...",
-      "connected": "Conectado a {{ssid}}",
-      "disconnected": "Desconectado",
-      "scanError": "Error al escanear redes WiFi",
-      "connectError": "Error al conectar",
-      "disconnectError": "Error al desconectar",
-      "disconnectTitle": "¿Desconectar WiFi?",
-      "disconnectConfirm": "¿Estás seguro de que deseas desconectar de \"{{ssid}}\"?",
-      "signal": "Señal",
-      "secured": "Segura",
-      "interface": "Interfaz",
-      "ipAddress": "Dirección IP",
-      "netmask": "Máscara de subred",
-      "gateway": "Puerta de enlace",
-      "dns": "DNS",
-      "networks": "Redes"
     },
     "storage": {
       "title": "Almacenamiento",

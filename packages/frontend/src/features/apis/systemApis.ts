@@ -1,4 +1,4 @@
-import type { OutputMode } from "@repo/types";
+import type { NetworkStatus, OutputMode } from "@repo/types";
 
 const API_BASE = "/system";
 
@@ -9,12 +9,6 @@ export interface AudioDevice {
   usb: boolean;
   usbVendor?: string;
   usbProduct?: string;
-}
-
-export interface WifiNetwork {
-  ssid: string;
-  signal: number;
-  secured: boolean;
 }
 
 export interface StorageSource {
@@ -43,26 +37,6 @@ export interface SetupStep {
   completed: boolean;
 }
 
-export interface SystemStatus {
-  tools: {
-    aplay: boolean;
-    lsusb: boolean;
-    nmcli: boolean;
-    systemctl: boolean;
-    mpd: boolean;
-  };
-  audio: { available: boolean; cards: AudioDevice[] };
-  network: { available: boolean; connected: boolean; ssid?: string };
-  mpdConnected: boolean;
-  setupCompleted: string[];
-}
-
-export async function getSystemStatus(): Promise<SystemStatus> {
-  const res = await fetch(`${API_BASE}/status`);
-  if (!res.ok) throw new Error("Failed to fetch system status");
-  return res.json();
-}
-
 export async function getAudioDevices(): Promise<AudioDevice[]> {
   const res = await fetch(`${API_BASE}/audio/devices`);
   if (!res.ok) throw new Error("Failed to fetch audio devices");
@@ -80,36 +54,6 @@ export async function configureAudio(params: {
     body: JSON.stringify(params),
   });
   if (!res.ok) throw new Error("Failed to configure audio");
-  return res.json();
-}
-
-export async function scanWifi(): Promise<WifiNetwork[]> {
-  const res = await fetch(`${API_BASE}/network/wifi/scan`);
-  if (!res.ok) throw new Error("Failed to scan WiFi");
-  return res.json();
-}
-
-export async function connectWifi(
-  ssid: string,
-  password?: string,
-): Promise<{ success: boolean; error?: string }> {
-  const res = await fetch(`${API_BASE}/network/wifi/connect`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ssid, password }),
-  });
-  if (!res.ok) throw new Error("Failed to connect");
-  return res.json();
-}
-
-export async function disconnectWifi(): Promise<{
-  success: boolean;
-  error?: string;
-}> {
-  const res = await fetch(`${API_BASE}/network/wifi/disconnect`, {
-    method: "POST",
-  });
-  if (!res.ok) throw new Error("Failed to disconnect");
   return res.json();
 }
 
@@ -257,24 +201,16 @@ export interface AudioStatusResponse {
   name: string;
 }
 
-export interface NetworkStatusResponse {
-  connected: boolean;
-  ssid?: string;
-  interface?: string;
-  ip?: string;
-  netmask?: string;
-  gateway?: string;
-  dns?: string[];
-}
-
 export async function getAudioStatus(): Promise<AudioStatusResponse | null> {
   const res = await fetch(`${API_BASE}/audio/status`);
   if (!res.ok) throw new Error("Failed to fetch audio status");
   return res.json();
 }
 
-export async function getNetworkStatus(): Promise<NetworkStatusResponse> {
-  const res = await fetch(`${API_BASE}/network/status`);
+export async function getNetworkStatus(): Promise<NetworkStatus> {
+  const res = await fetch(`${API_BASE}/network/status`, {
+    signal: AbortSignal.timeout(5_000),
+  });
   if (!res.ok) throw new Error("Failed to fetch network status");
   return res.json();
 }

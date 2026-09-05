@@ -7,18 +7,12 @@ export interface SystemStatus {
   tools: {
     aplay: boolean;
     lsusb: boolean;
-    nmcli: boolean;
     systemctl: boolean;
     mpd: boolean;
   };
   audio: {
     available: boolean;
     cards: AudioDevice[];
-  };
-  network: {
-    available: boolean;
-    connected: boolean;
-    ssid?: string;
   };
   mpdConnected: boolean;
   setupCompleted: string[];
@@ -125,16 +119,11 @@ export function getSystemStatus(): SystemStatus {
   const tools = {
     aplay: checkTool("aplay"),
     lsusb: checkTool("lsusb"),
-    nmcli: checkTool("nmcli"),
     systemctl: checkTool("systemctl"),
     mpd: checkTool("mpd"),
   };
 
   const cards = tools.aplay ? detectAudioDevices() : [];
-
-  const network = tools.nmcli
-    ? getNetworkStatus()
-    : { available: false, connected: false };
 
   return {
     tools,
@@ -142,7 +131,6 @@ export function getSystemStatus(): SystemStatus {
       available: cards.length > 0,
       cards,
     },
-    network,
     mpdConnected: mpdConnectionManager.connected,
     setupCompleted: [],
     version: readAppVersion(),
@@ -255,37 +243,5 @@ function getUsbDeviceInfo(
     };
   } catch {
     return null;
-  }
-}
-
-function getNetworkStatus(): {
-  available: boolean;
-  connected: boolean;
-  ssid?: string;
-} {
-  try {
-    const output = execSync(
-      "nmcli -t -f NAME,TYPE,STATE connection show --active 2>/dev/null",
-      {
-        encoding: "utf-8",
-        timeout: 5000,
-      },
-    );
-    const lines = output.trim().split("\n");
-    const wifiLine = lines.find(
-      (l) => l.includes("wifi") && l.includes("activated"),
-    );
-    if (wifiLine) {
-      const ssid = wifiLine.split(":")[0];
-      return { available: true, connected: true, ssid };
-    }
-    const anyLine = lines.find((l) => l.includes("activated"));
-    return {
-      available: true,
-      connected: !!anyLine,
-      ssid: anyLine?.split(":")[0],
-    };
-  } catch {
-    return { available: true, connected: false };
   }
 }

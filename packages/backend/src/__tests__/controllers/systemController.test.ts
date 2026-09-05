@@ -20,11 +20,7 @@ describe("System Controller", () => {
   };
 
   const mockNetworkService = {
-    scanWifi: sinon.stub(),
-    connectWifi: sinon.stub(),
-    disconnectWifi: sinon.stub(),
     getNetworkStatus: sinon.stub(),
-    isNmcliAvailable: sinon.stub(),
   };
 
   const mockSetupService = {
@@ -63,7 +59,6 @@ describe("System Controller", () => {
     mockSystemService.getSystemStatus.returns({
       tools: { aplay: true, systemctl: true },
       audio: { available: true, cards: [] },
-      network: { available: true, connected: false },
       mpdConnected: true,
       setupCompleted: [],
     });
@@ -76,13 +71,10 @@ describe("System Controller", () => {
     mockAudioService.restartMPD.returns({ success: true });
     mockAudioService.stopMPD.returns({ success: true });
     mockAudioService.getMpdStatus.returns({ running: true });
-    mockNetworkService.scanWifi.returns([]);
-    mockNetworkService.connectWifi.resolves({ success: true });
-    mockNetworkService.disconnectWifi.resolves({ success: true });
-    mockNetworkService.getNetworkStatus.returns({
+    mockNetworkService.getNetworkStatus.resolves({
       connected: false,
+      dnsReachable: false,
     });
-    mockNetworkService.isNmcliAvailable.returns(true);
     mockSetupService.getSetupProgress.returns([]);
     mockSetupService.isSetupComplete.returns(false);
     mockSetupService.getNextIncompleteStep.returns(null);
@@ -123,7 +115,9 @@ describe("System Controller", () => {
 
       const jsonArg = res.json.firstCall.args[0];
       expect(jsonArg.tools).to.exist;
+      expect(jsonArg.tools.nmcli).to.not.exist;
       expect(jsonArg.audio).to.exist;
+      expect(jsonArg.network).to.not.exist;
       expect(jsonArg.setupCompleted).to.deep.equal([]);
     });
   });
@@ -193,70 +187,6 @@ describe("System Controller", () => {
     });
   });
 
-  describe("scanWifiHandler", () => {
-    it("should return scanned networks", async () => {
-      const networks = [{ ssid: "MyNet", signal: 85, secured: true }];
-      mockNetworkService.scanWifi.returns(networks);
-      const req = createMockReq();
-      const res = createMockRes();
-      const next = sinon.stub();
-
-      await controller.scanWifiHandler(req, res, next);
-
-      expect(res.json.calledWith(networks)).to.be.true;
-    });
-
-    it("should return 400 when nmcli is not available", async () => {
-      mockNetworkService.isNmcliAvailable.returns(false);
-      const req = createMockReq();
-      const res = createMockRes();
-      const next = sinon.stub();
-
-      await controller.scanWifiHandler(req, res, next);
-
-      expect(res.status.calledWith(400)).to.be.true;
-    });
-  });
-
-  describe("connectWifiHandler", () => {
-    it("should connect to WiFi", async () => {
-      const req = createMockReq({
-        body: { ssid: "MyNet", password: "pass123" },
-      });
-      const res = createMockRes();
-      const next = sinon.stub();
-
-      await controller.connectWifiHandler(req, res, next);
-
-      expect(mockNetworkService.connectWifi.calledWith("MyNet", "pass123")).to
-        .be.true;
-      expect(res.json.calledWith({ success: true })).to.be.true;
-    });
-
-    it("should return 400 for missing SSID", async () => {
-      const req = createMockReq({ body: {} });
-      const res = createMockRes();
-      const next = sinon.stub();
-
-      await controller.connectWifiHandler(req, res, next);
-
-      expect(next.calledOnce).to.be.true;
-    });
-  });
-
-  describe("disconnectWifiHandler", () => {
-    it("should disconnect WiFi", async () => {
-      const req = createMockReq();
-      const res = createMockRes();
-      const next = sinon.stub();
-
-      await controller.disconnectWifiHandler(req, res, next);
-
-      expect(mockNetworkService.disconnectWifi.calledOnce).to.be.true;
-      expect(res.json.calledWith({ success: true })).to.be.true;
-    });
-  });
-
   describe("getNetworkStatusHandler", () => {
     it("should return network status", async () => {
       const req = createMockReq();
@@ -265,7 +195,9 @@ describe("System Controller", () => {
 
       await controller.getNetworkStatusHandler(req, res, next);
 
-      expect(res.json.calledWith({ connected: false })).to.be.true;
+      expect(mockNetworkService.getNetworkStatus.calledOnce).to.be.true;
+      expect(res.json.calledWith({ connected: false, dnsReachable: false })).to
+        .be.true;
     });
   });
 

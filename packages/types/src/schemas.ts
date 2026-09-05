@@ -65,10 +65,6 @@ export const systemSchemas = {
     name: z.string().min(1, "name is required"),
     mixerType: z.enum(["hardware", "software", "none"]).optional(),
   }),
-  wifiConnect: z.object({
-    ssid: z.string().min(1, "SSID is required"),
-    password: z.string().optional(),
-  }),
   idParam: z.object({
     id: z.coerce
       .number()

@@ -143,10 +143,6 @@
       "theme": "Tema",
       "language": "Lingua"
     },
-    "network": {
-      "connected": "Connesso a {{ssid}}",
-      "disconnected": "Disconnesso"
-    },
     "mpd": {
       "connected": "MPD Connesso",
       "disconnected": "MPD Disconnesso"
@@ -289,14 +285,17 @@
   },
   "status": {
     "backendUnreachable": "Impossibile raggiungere il server — riconnessione...",
-    "backendOnline": "Connessione ripristinata"
+    "backendOnline": "Connessione ripristinata",
+    "networkUnknown": "Stato della rete non disponibile",
+    "networkDisconnected": "Rete disconnessa",
+    "networkNoDns": "Connesso alla rete, DNS non disponibile",
+    "networkConnected": "Connesso alla rete"
   },
   "settings": {
     "title": "Impostazioni",
     "description": "Configura il tuo sistema",
     "tabs": {
       "audio": "Audio",
-      "network": "Rete",
       "storage": "Archiviazione",
       "libraries": "Librerie",
       "library": "Libreria",
@@ -315,34 +314,6 @@
       "configured": "Uscita audio configurata",
       "configureError": "Impossibile configurare l'audio",
       "loadError": "Impossibile caricare i dispositivi audio"
-    },
-    "network": {
-      "title": "Rete",
-      "description": "Gestisci le connessioni WiFi.",
-      "statusConnected": "Connesso a {{ssid}}",
-      "statusDisconnected": "Disconnesso",
-      "disconnect": "Disconnetti",
-      "scan": "Scansiona WiFi",
-      "scanning": "Scansione...",
-      "password": "Password",
-      "passwordPlaceholder": "Inserisci password WiFi",
-      "connect": "Connetti",
-      "connecting": "Connessione...",
-      "connected": "Connesso a {{ssid}}",
-      "disconnected": "Disconnesso",
-      "scanError": "Impossibile scansionare le reti WiFi",
-      "connectError": "Impossibile connettersi",
-      "disconnectError": "Impossibile disconnettersi",
-      "disconnectTitle": "Disconnettere WiFi?",
-      "disconnectConfirm": "Sei sicuro di volerti disconnettere da \"{{ssid}}\"?",
-      "signal": "Segnale",
-      "secured": "Protetta",
-      "interface": "Interfaccia",
-      "ipAddress": "Indirizzo IP",
-      "netmask": "Subnet mask",
-      "gateway": "Gateway",
-      "dns": "DNS",
-      "networks": "Reti"
     },
     "storage": {
       "title": "Archiviazione",

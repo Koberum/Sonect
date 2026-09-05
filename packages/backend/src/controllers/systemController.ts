@@ -13,13 +13,7 @@ import {
   getOutputMode,
   getOutputDeviceName,
 } from "../services/audioService";
-import {
-  scanWifi,
-  connectWifi,
-  disconnectWifi,
-  getNetworkStatus,
-  isNmcliAvailable,
-} from "../services/networkService";
+import { getNetworkStatus } from "../services/networkService";
 import {
   getStorageSources,
   getStorageSource,
@@ -91,35 +85,9 @@ export const setOutputModeHandler = asyncHandler(
   },
 );
 
-export const scanWifiHandler = asyncHandler(
-  async (_req: Request, res: Response) => {
-    if (!isNmcliAvailable()) {
-      res.status(400).json({ error: "nmcli is not available on this system" });
-      return;
-    }
-    const networks = scanWifi();
-    res.json(networks);
-  },
-);
-
-export const connectWifiHandler = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { ssid, password } = systemSchemas.wifiConnect.parse(req.body);
-    const result = await connectWifi(ssid, password);
-    res.json(result);
-  },
-);
-
-export const disconnectWifiHandler = asyncHandler(
-  async (_req: Request, res: Response) => {
-    const result = await disconnectWifi();
-    res.json(result);
-  },
-);
-
 export const getNetworkStatusHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const status = getNetworkStatus();
+    const status = await getNetworkStatus();
     res.json(status);
   },
 );
