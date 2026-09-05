@@ -5,7 +5,7 @@
     "dev": "tsx watch src/server.ts",
     "start": "node dist/bundle.cjs",
     "build": "tsc",
-    "bundle": "esbuild src/server.ts --bundle --platform=node --outfile=dist/bundle.cjs --external:sharp --external:dotenv",
+    "bundle": "esbuild src/server.ts --bundle --platform=node --outfile=dist/bundle.cjs --external:sharp --external:dotenv --banner:js=\"const SONECT_BUNDLE_URL=require('url').pathToFileURL(__dirname+'/drizzle/anchor').href;\" --define:import.meta.url=SONECT_BUNDLE_URL && rm -rf dist/drizzle && cp -r ../db/drizzle dist/drizzle",
     "test": "mocha",
     "test:watch": "mocha --watch",
     "test:coverage": "c8 --reporter=text --reporter=lcov pnpm test",

@@ -72,6 +72,7 @@ jobs:
           mkdir -p artifact/backend artifact/frontend
           cp packages/backend/dist/bundle.cjs artifact/backend/bundle.cjs
           cp packages/backend/start-backend.sh artifact/backend/start-backend.sh
+          cp -r packages/db/drizzle artifact/backend/drizzle
           chmod +x artifact/backend/start-backend.sh
           cp packages/backend/.version artifact/backend/.version
           cp pnpm-lock.yaml artifact/backend/pnpm-lock.yaml
