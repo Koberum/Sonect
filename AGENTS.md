@@ -38,10 +38,12 @@ The monorepo is orchestrated by **Turborepo** (`turbo.json` at the repo root,
 `turbo` as a root devDependency). `dev`, `build`, `lint`, and `test` are
 turbo tasks:
 
-- `build`, `lint`, `test` are **cached**: re-running them without source
+- `build` and `lint` are **cached**: re-running them without source
   changes is near-instant (`>>> FULL TURBO`); after an edit only the touched
   package and its dependents rebuild. Cached outputs include `dist/**` and the
-  frontend `node_modules/.tmp/**` tsbuildinfo files.
+  frontend `node_modules/.tmp/**` tsbuildinfo files. `test` runs fresh on every
+  invocation (`cache: false`) so a changed environment can never be masked by
+  a replayed result.
 - The frontend `build` task declares `env: ["VITE_BACKEND_URL",
 "VITE_WEBSOCKET_URL", "VITE_COVER_PATH", "VITE_DEBUG"]` — if you add a new
   `VITE_*` env var read by frontend code, add it to that list or stale cached
