@@ -177,7 +177,10 @@ Single Node process on port 3000:
   (root alias; runs drizzle-kit generate in `@repo/db`), then commit the new
   versioned folder under `packages/db/drizzle/` (rc.4 layout:
   `<timestamp>_<name>/migration.sql` + `snapshot.json`). Never hand-edit the
-  generated SQL. Note: drizzle-kit@1.0.0-rc.4 pairs with drizzle-orm@1.0.0-rc.4.
+  generated SQL. Never regenerate or delete an existing committed migration
+  folder — always append a new one; existing databases track applied
+  migrations by content hash. Note: drizzle-kit@1.0.0-rc.4 pairs with
+  drizzle-orm@1.0.0-rc.4.
 - **Migrations:** `initDatabase()` (`packages/db/src/schema.ts`) applies
   pending migrations at startup via `migrate()` from
   `drizzle-orm/node-sqlite/migrator`, tracked in the `__drizzle_migrations`
