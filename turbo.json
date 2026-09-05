@@ -1,0 +1,25 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "stream",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "node_modules/.tmp/**"],
+      "env": [
+        "VITE_BACKEND_URL",
+        "VITE_WEBSOCKET_URL",
+        "VITE_COVER_PATH",
+        "VITE_DEBUG"
+      ]
+    },
+    "lint": {},
+    "test": {
+      "dependsOn": ["^build"]
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

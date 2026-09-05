@@ -187,10 +187,18 @@ music files.
 
 ## Build & Deploy
 
+The monorepo uses [Turborepo](https://turbo.build) for task orchestration:
+`build`, `lint`, and `test` are cached — re-running them without changes
+finishes in milliseconds (`>>> FULL TURBO`), and only the affected packages
+rebuild after an edit. Frontend build caching is keyed on the
+`VITE_BACKEND_URL`, `VITE_WEBSOCKET_URL`, `VITE_COVER_PATH`, and `VITE_DEBUG`
+environment variables, so changing any of them invalidates the cache.
+
 ```bash
-pnpm build          # Compile all packages
-pnpm lint           # Lint all packages
-pnpm backend:test   # Run backend tests
+pnpm build          # Compile all packages (turbo-cached)
+pnpm lint           # Lint all packages (turbo-cached)
+pnpm dev            # Run all packages' dev servers in parallel (not cached)
+pnpm backend:test   # Run backend tests (turbo-cached)
 pnpm backend:bundle # Bundle backend for production
 pnpm frontend:build # Build frontend for production
 ```

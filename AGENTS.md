@@ -32,6 +32,26 @@ pnpm backend:test:coverage # Backend test coverage report (c8)
 pnpm clean              # Remove node_modules and dist from all packages
 ```
 
+### Turborepo
+
+The monorepo is orchestrated by **Turborepo** (`turbo.json` at the repo root,
+`turbo` as a root devDependency). `dev`, `build`, `lint`, and `test` are
+turbo tasks:
+
+- `build`, `lint`, `test` are **cached**: re-running them without source
+  changes is near-instant (`>>> FULL TURBO`); after an edit only the touched
+  package and its dependents rebuild. Cached outputs include `dist/**` and the
+  frontend `node_modules/.tmp/**` tsbuildinfo files.
+- The frontend `build` task declares `env: ["VITE_BACKEND_URL",
+"VITE_WEBSOCKET_URL", "VITE_COVER_PATH", "VITE_DEBUG"]` — if you add a new
+  `VITE_*` env var read by frontend code, add it to that list or stale cached
+  builds will be served.
+- `dev` is `cache: false` + `persistent: true` with `dependsOn: ["^build"]`,
+  so workspace deps (`@repo/types`, `@repo/db`) are compiled before their
+  consumers' watch processes start.
+- Turbo cache lives in `.turbo/` (gitignored). CI does not benefit from the
+  cache until a remote cache / `actions/cache` is wired up.
+
 ### Verification steps
 
 After making changes:

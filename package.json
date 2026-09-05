@@ -4,23 +4,24 @@
   "version": "1.1.0",
   "packageManager": "pnpm@9.0.0",
   "scripts": {
-    "dev": "pnpm -r --parallel dev",
+    "dev": "turbo run dev",
     "start": "pnpm --filter backend start",
-    "build": "pnpm -r build",
-    "lint": "pnpm -r lint",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
     "frontend:dev": "pnpm --filter frontend dev",
     "frontend:build": "pnpm --filter frontend build",
     "backend:dev": "pnpm --filter backend dev",
     "backend:start": "pnpm --filter backend start",
-    "backend:test": "pnpm --filter backend test",
+    "backend:test": "turbo run test --filter backend",
     "backend:test:watch": "pnpm --filter backend test:watch",
     "backend:test:coverage": "pnpm --filter backend test:coverage",
-    "clean": "pnpm -r exec rm -rf node_modules dist build",
+    "clean": "pnpm -r exec rm -rf node_modules dist build .turbo && rm -rf .turbo",
     "db:generate": "pnpm --filter @repo/db db:generate"
   },
   "devDependencies": {
     "eslint": "^9.39.5",
     "prettier": "^3.9.6",
-    "prettier-plugin-tailwindcss": "^0.7.4"
+    "prettier-plugin-tailwindcss": "^0.7.4",
+    "turbo": "^2.10.12"
   }
 }

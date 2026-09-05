@@ -29,6 +29,7 @@ coverage/
 # TypeScript
 # ===============================
 *.tsbuildinfo
+.turbo/
 
 # ===============================
 # Environment / secrets
