@@ -1,17 +1,11 @@
 import { rmSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { migrate } from "drizzle-orm/node-sqlite/migrator";
 import { closeDb, db, initDb, sqlite } from "./connection.js";
-
-// Resolved relative to this module, so it works under tsx (src/), tsc
-// (dist/) and esbuild (bundle.cjs, via esbuild's import.meta.url shim).
-const MIGRATIONS_FOLDER = fileURLToPath(
-  new URL("../drizzle/", import.meta.url),
-);
+import { MIGRATIONS_FOLDER, resolveDbPath } from "./migrations.js";
 
 export async function initDatabase(path?: string): Promise<void> {
   console.log("🔧 Initializing database schema...");
-  const dbPath = path ?? process.env.DB_PATH ?? "./data/music.db";
+  const dbPath = resolveDbPath(path);
   initDb(path);
 
   if (isLegacyDatabase()) {

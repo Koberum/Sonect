@@ -16,7 +16,10 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/scripts/migrate.ts",
+    "db:migrate-reset": "tsx src/scripts/migrate-reset.ts",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@repo/types": "workspace:*",
