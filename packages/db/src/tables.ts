@@ -130,10 +130,6 @@ export const storageSources = sqliteTable(
   ],
 );
 
-export const schemaVersion = sqliteTable("schema_version", {
-  version: integer("version").notNull(),
-});
-
 export const setupProgress = sqliteTable("setup_progress", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   step: text("step").notNull().unique(),

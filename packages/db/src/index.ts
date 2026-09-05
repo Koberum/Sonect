@@ -8,7 +8,6 @@ export {
   playlistTracks,
   syncMetadata,
   storageSources,
-  schemaVersion,
   setupProgress,
 } from "./tables.js";
 export { artistsDb } from "./repositories/artists.js";
