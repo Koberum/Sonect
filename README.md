@@ -107,7 +107,7 @@ sonect/
 ├── packages/
 │   ├── backend/       Express 5 API + WebSocket server (port 3000)
 │   ├── frontend/      React 19 + Vite SPA (port 5173 in dev)
-│   ├── @repo/db/      SQLite schema, migrations, query helpers
+│   ├── @repo/db/      Native SQLite (node:sqlite) + Drizzle repositories
 │   └── @repo/types/   Shared TypeScript types (no runtime deps)
 ├── assets/            Screenshots and 3D print files
 ├── conf/              MPD configuration
@@ -124,6 +124,13 @@ The backend maintains two TCP connections to MPD: a command client for
 playback control and a polling client for status updates. The in-memory cache
 is refreshed every 2 seconds during play (10 s during pause/stop) and
 immediately after user-initiated commands.
+
+The database is native SQLite through Node's built-in `node:sqlite` module,
+accessed via a synchronous Drizzle repository layer in `@repo/db` — no WASM
+SQLite build ships in the release artifact. Node.js **22.14.0** is the minimum
+runtime. The database runs in WAL mode and is checkpointed during graceful
+shutdown, so the backup the installer takes before an upgrade always contains
+a complete database file.
 
 ---
 

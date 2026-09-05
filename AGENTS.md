@@ -8,12 +8,12 @@ Sonect is a self-hosted music streaming application. A Node.js/Express backend c
 
 ## Workspace packages
 
-| Package       | Path                | Purpose                                   |
-| ------------- | ------------------- | ----------------------------------------- |
-| `backend`     | `packages/backend`  | Express 5 HTTP + WebSocket server         |
-| `frontend`    | `packages/frontend` | React 19 + Vite SPA                       |
-| `@repo/db`    | `packages/db`       | SQLite schema, migrations, query helpers  |
-| `@repo/types` | `packages/types`    | Shared TypeScript types (no runtime deps) |
+| Package       | Path                | Purpose                                            |
+| ------------- | ------------------- | -------------------------------------------------- |
+| `backend`     | `packages/backend`  | Express 5 HTTP + WebSocket server                  |
+| `frontend`    | `packages/frontend` | React 19 + Vite SPA                                |
+| `@repo/db`    | `packages/db`       | Native SQLite (node:sqlite) + Drizzle repositories |
+| `@repo/types` | `packages/types`    | Shared TypeScript types (no runtime deps)          |
 
 ## Commands
 
@@ -24,8 +24,8 @@ pnpm build              # Compile all packages with tsc
 pnpm lint               # Lint all packages with ESLint
 pnpm frontend:dev       # Frontend dev server on :5173
 pnpm backend:dev        # Backend dev server on :3000
-pnpm backend:bundle     # Bundle backend with esbuild → dist/bundle.js
-pnpm backend:start      # Start production build (node dist/bundle.js)
+pnpm backend:bundle     # Bundle backend with esbuild → dist/bundle.cjs
+pnpm backend:start      # Start production build (node dist/bundle.cjs)
 pnpm backend:test       # Run backend tests (Mocha/Chai/Sinon/Supertest)
 pnpm backend:test:watch # Backend tests in watch mode
 pnpm backend:test:coverage # Backend test coverage report (c8)
@@ -67,7 +67,7 @@ Single Node process on port 3000:
 
 ### Build pipeline
 
-- **Backend**: `pnpm backend:bundle` uses esbuild to bundle all JS code (Express, Zod, ws, music-metadata, workspace deps) into `dist/bundle.js`. Only native modules (`sharp`) remain external.
+- **Backend**: `pnpm backend:bundle` uses esbuild to bundle all JS code (Express, Zod, ws, music-metadata, workspace deps) into `dist/bundle.cjs`. Only `sharp` and `dotenv` remain external as runtime dependencies.
 - **Frontend**: `pnpm frontend:build` runs Vite, outputs static files to `frontend/dist/`.
 - **Deployment artifact (via Release CI):** release-please
   (`release-please-config.json` + `.release-please-manifest.json`)
@@ -75,13 +75,13 @@ Single Node process on port 3000:
   `build-and-upload` job in `release.yml` bundles the backend and frontend and
   uploads a single `sonect.tar.gz` to the GitHub Release.
 - **Artifact layout inside `sonect.tar.gz`:** `backend/` (`bundle.cjs`,
-  `sql-wasm.wasm`, `start-backend.sh`, minimal `package.json` with only
-  `sharp`/`dotenv`, `pnpm-lock.yaml`, `.version`) and `frontend/` (static dist).
+  `start-backend.sh`, minimal `package.json` with only `sharp`/`dotenv`,
+  `pnpm-lock.yaml`, `.version`) and `frontend/` (static dist).
 - **Installer:** downloads `releases/latest/download/sonect.tar.gz` with a
   plain `curl` — no PAT, no API. The running version comes from the bundled
   `backend/.version` file and is exposed via `GET /system/status` →
   `version` (fallback `"dev"` when absent).
-- **Startup**: `node bundle.js` — no tsx, no vite, no compilation at runtime.
+- **Startup**: `node bundle.cjs` — no tsx, no vite, no compilation at runtime.
 
 ## Key conventions
 
@@ -119,7 +119,7 @@ Single Node process on port 3000:
 - **asyncHandler** (`middleware/asyncHandler.ts`) wraps all async controllers; it **returns the promise chain** so tests can `await` it.
 - **errorHandler** (`middleware/errorHandler.ts`) is registered in `app.ts` as the last middleware. Controllers throw `NotFoundError`/`ValidationError` for centralized handling.
 - **autoplayService** (`services/autoplayService.ts`) is always active. A manual track selection queues that track through the end of its album, without wrapping to earlier tracks. Smart batches then add complete albums in this order: same artist → same genre → library-wide, ranking each tier by the sum of its tracks' `play_count` (title order breaks ties). Ranking stays anchored to the manually selected track as playback advances. A batch stops only after reaching at least 25 tracks, so albums are never split. The connection manager refills below five remaining tracks and prevents overlapping fills; used albums are committed only after MPD accepts them and are not repeated until the cycle is exhausted. The next cycle preserves albums still in the MPD queue. There is no autoplay toggle API.
-- **mpdSyncService** (`services/mpdSyncService.ts`) handles library sync from MPD → SQLite, invoked via `scripts/sync.ts`. A full rebuild preserves each surviving file's `play_count` and `last_played`, which are used by smart autoplay ranking.
+- **mpdSyncService** (`services/mpdSyncService.ts`) handles library sync from MPD → SQLite, invoked via `scripts/sync.ts`. Tracks are fetched from MPD and deduplicated **before** any destructive database work — a failed fetch leaves the existing library untouched. The rebuild itself is a single transaction in `librarySyncDb.rebuild()` (`@repo/db` `repositories/librarySync.ts`): `play_count`/`last_played` are snapshotted first and restored for surviving files (they feed smart autoplay ranking), each track persists inside a savepoint, per-track constraint failures are reported and skipped, and any other error rolls the whole rebuild back to the previous library state.
 - The backend exposes its build version through `getSystemStatus()` →
   `/system/status[].version`. It reads `backend/.version` (written only by the
   release CI), defaulting to `"dev"`. Sources: `services/appVersion.ts`.
@@ -139,9 +139,32 @@ Single Node process on port 3000:
 
 ### Database
 
-- Schema is defined in `packages/db/src/schema.ts` — edit this file to change the DB structure.
-- Query helpers are in `packages/db/src/models.ts`.
-- The database is SQLite; keep queries simple and indexed.
+- `@repo/db` uses Node's built-in **`node:sqlite`** (`DatabaseSync`) wrapped by
+  **Drizzle ORM** (`drizzle-orm/node-sqlite`, pinned to `1.0.0-rc.4`) — a
+  synchronous driver. Node `22.14.0` is the minimum runtime; CI runs a
+  `db-node-22-14-floor` job against that version.
+- Connection setup and teardown live in `packages/db/src/connection.ts`.
+  `initDb()` applies the pragmas: `foreign_keys = ON`, `journal_mode = WAL`,
+  `synchronous = NORMAL`, `busy_timeout = 5000`.
+- **`closeDb()` ownership:** `backend/src/server.ts` is the sole owner of
+  process termination. It calls `closeDb()` (which runs
+  `PRAGMA wal_checkpoint(TRUNCATE)` and closes the handle) in every exit
+  path — SIGTERM/SIGINT shutdown and startup failure. `@repo/db` installs
+  **no signal handlers** of its own; never add process-level handlers to the
+  package.
+- **Schema changes:** table/column definitions live in
+  `packages/db/src/tables.ts`. Structural changes needed by existing databases
+  ship as a new versioned runtime migration in `packages/db/src/schema.ts` —
+  a `schema_version` table tracks applied versions, migrations run
+  transactionally, and column adds are guarded with `PRAGMA table_info`
+  checks so they stay idempotent.
+- **Queries** live in the focused repository modules under
+  `packages/db/src/repositories/` (`artists`, `albums`, `tracks`,
+  `librarySync`, `playlists`, `syncMetadata`, `stats`, `storage`, `setup`).
+  Put new queries there; the old `models.ts` no longer exists.
+- **Raw SQL must stay inside `@repo/db`** and use Drizzle's typed `sql`
+  template (or parameterized `prepare()` calls) — never string-concatenate
+  values into SQL outside the package. Keep queries simple and indexed.
 
 ### Code style
 
