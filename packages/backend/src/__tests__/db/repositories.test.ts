@@ -332,3 +332,220 @@ describe("music repository contracts", () => {
     dbModule.tracksDb.incrementPlayCount(onceId);
   }
 });
+
+describe("supporting repository contracts", () => {
+  let dbModule: typeof import("@repo/db");
+  let directory: string;
+  let databasePath: string;
+
+  before(async () => {
+    dbModule = await import("@repo/db");
+    directory = mkdtempSync(join(tmpdir(), "sonect-supporting-repositories-"));
+    databasePath = join(directory, "music.db");
+  });
+
+  beforeEach(async () => {
+    // Detach any connection another test suite left open, then open this
+    // suite's own temporary native database so tests never share state.
+    dbModule.closeDb();
+    await dbModule.initDatabase(databasePath);
+    dbModule
+      .db()
+      .$client.exec(
+        "DELETE FROM playlist_tracks; DELETE FROM playlists; DELETE FROM sync_metadata;" +
+          " DELETE FROM storage_sources; DELETE FROM setup_progress;" +
+          " DELETE FROM tracks; DELETE FROM albums; DELETE FROM artists;",
+      );
+  });
+
+  afterEach(() => {
+    dbModule.closeDb();
+  });
+
+  after(() => {
+    rmSync(directory, { recursive: true, force: true });
+  });
+
+  it("ignores duplicate playlist track additions at the same position", () => {
+    const playlistId = dbModule.playlistsDb.create("Road trip");
+    const firstTrackId = dbModule.tracksDb.upsert({
+      file: "music/first.mp3",
+      title: "First",
+      artist: "Artist",
+      album: "Album",
+    });
+    dbModule.playlistsDb.addTrack(playlistId, firstTrackId);
+    dbModule.playlistsDb.addTrack(playlistId, firstTrackId);
+    expect(
+      dbModule.playlistsDb
+        .getTracks(playlistId)
+        .map(({ position }) => position),
+    ).to.deep.equal([0]);
+  });
+
+  it("stores sync metadata as a single upserted value", () => {
+    dbModule.syncMetadataDb.set("last_sync", "2026-09-05T12:00:00.000Z");
+    dbModule.syncMetadataDb.set("last_sync", "2026-09-05T13:00:00.000Z");
+    expect(dbModule.syncMetadataDb.getLastSync()?.toISOString()).to.equal(
+      "2026-09-05T13:00:00.000Z",
+    );
+  });
+
+  it("keeps storage source flags numeric and persists scan stats", () => {
+    const localSource = {
+      name: "Local",
+      type: "local" as const,
+      uri: "/srv/music",
+      mount_path: "/opt/sonect/music/local",
+      enabled: true,
+    };
+    const sourceId = dbModule.storageDb.create(localSource);
+    expect(dbModule.storageDb.getById(sourceId)?.enabled).to.equal(1);
+    dbModule.storageDb.updateStats(sourceId, {
+      file_count: 2,
+      dir_count: 1,
+      total_size: 4096,
+    });
+    expect(dbModule.storageDb.getById(sourceId)).to.include({
+      file_count: 2,
+      dir_count: 1,
+      total_size: 4096,
+    });
+  });
+
+  it("toggles setup steps between completed and incomplete", () => {
+    dbModule.setupDb.setCompleted("audio");
+    expect(dbModule.setupDb.get("audio")?.completed).to.equal(true);
+    dbModule.setupDb.setIncomplete("audio");
+    expect(dbModule.setupDb.get("audio")?.completed).to.equal(false);
+  });
+
+  it("returns the complete dashboard statistics shape", () => {
+    dbModule.playlistsDb.create("Road trip");
+    dbModule.tracksDb.upsert({
+      file: "music/first.mp3",
+      title: "First",
+      artist: "Artist",
+      album: "Album",
+      genre: "Rock",
+      duration: 60,
+      date: "2020",
+    });
+    dbModule.tracksDb.upsert({
+      file: "music/second.mp3",
+      title: "Second",
+      artist: "Artist",
+      genre: "Rock",
+      duration: 120,
+      date: "2024",
+    });
+    dbModule.syncMetadataDb.set("last_sync", "2026-09-05T13:00:00.000Z");
+    expect(dbModule.statsDb.getStats()).to.deep.equal({
+      totalTracks: 2,
+      totalArtists: 1,
+      totalAlbums: 1,
+      totalPlaylists: 1,
+      totalGenres: 1,
+      totalDuration: 180,
+      averageDuration: 90,
+      earliestYear: 2020,
+      latestYear: 2024,
+      tracksWithoutAlbum: 1,
+      lastSync: "2026-09-05T13:00:00.000Z",
+    });
+  });
+
+  it("updates, orders, and deletes playlists", () => {
+    const playlistId = dbModule.playlistsDb.create("Mixtape", "Summer picks");
+    dbModule.playlistsDb.update(playlistId, {
+      name: "Renamed",
+      description: "Updated",
+    });
+    expect(dbModule.playlistsDb.getById(playlistId)).to.include({
+      name: "Renamed",
+      description: "Updated",
+    });
+
+    dbModule.playlistsDb.create("Aardvark");
+    expect(dbModule.playlistsDb.getAll().map(({ name }) => name)).to.deep.equal(
+      ["Aardvark", "Renamed"],
+    );
+
+    // Updating with no fields must be a no-op, not a blanket updated_at bump.
+    dbModule.playlistsDb.update(playlistId, {});
+    expect(dbModule.playlistsDb.getById(playlistId)).to.include({
+      name: "Renamed",
+    });
+
+    dbModule.playlistsDb.delete(playlistId);
+    expect(dbModule.playlistsDb.getById(playlistId)).to.be.undefined;
+    expect(dbModule.playlistsDb.getAll().map(({ name }) => name)).to.deep.equal(
+      ["Aardvark"],
+    );
+  });
+
+  it("returns joined playlist tracks and removes them by row id", () => {
+    const playlistId = dbModule.playlistsDb.create("Road trip");
+    const trackId = dbModule.tracksDb.upsert({
+      file: "music/joined.mp3",
+      title: "Joined",
+    });
+    dbModule.playlistsDb.addTrack(playlistId, trackId);
+
+    const tracks = dbModule.playlistsDb.getTracks(playlistId);
+    expect(tracks).to.have.length(1);
+    expect(tracks[0]).to.include.keys("pt_id", "position", "added_at");
+    expect(tracks[0]).to.include({ file: "music/joined.mp3", position: 0 });
+
+    dbModule.playlistsDb.removeTrack(tracks[0].pt_id);
+    expect(dbModule.playlistsDb.getTracks(playlistId)).to.have.length(0);
+  });
+
+  it("reads missing sync metadata as undefined and stamps last sync", () => {
+    expect(dbModule.syncMetadataDb.get("missing")).to.be.undefined;
+    expect(dbModule.syncMetadataDb.getLastSync()).to.be.undefined;
+    const before = Date.now();
+    dbModule.syncMetadataDb.setLastSync();
+    expect(dbModule.syncMetadataDb.getLastSync()?.getTime()).to.be.at.least(
+      before,
+    );
+  });
+
+  it("updates storage sources partially with numeric flags", () => {
+    const sourceId = dbModule.storageDb.create({
+      name: "NAS",
+      type: "smb",
+      uri: "smb://nas/share",
+      mount_path: "/mnt/nas",
+      username: "user",
+      password: "pass",
+      enabled: true,
+    });
+    dbModule.storageDb.update(sourceId, {
+      name: "NAS renamed",
+      enabled: false,
+    });
+    expect(dbModule.storageDb.getById(sourceId)).to.include({
+      name: "NAS renamed",
+      type: "smb",
+      uri: "smb://nas/share",
+      mount_path: "/mnt/nas",
+      username: "user",
+      password: "pass",
+      enabled: 0,
+    });
+
+    dbModule.storageDb.delete(sourceId);
+    expect(dbModule.storageDb.getById(sourceId)).to.be.undefined;
+    expect(dbModule.storageDb.getAll()).to.have.length(0);
+  });
+
+  it("returns setup rows with completed converted to booleans", () => {
+    dbModule.setupDb.setCompleted("storage");
+    dbModule.setupDb.setCompleted("audio");
+    const rows = dbModule.setupDb.getAll();
+    expect(rows.map(({ step }) => step)).to.deep.equal(["storage", "audio"]);
+    expect(rows.map(({ completed }) => completed)).to.deep.equal([true, true]);
+    expect(dbModule.setupDb.get("sync")).to.be.undefined;
+  });
+});
