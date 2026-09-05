@@ -13,7 +13,7 @@ describe("native SQLite production bundle", () => {
     // A stale generated sidecar must not survive into the build: remove it
     // first so its presence can never produce a false pass.
     rmSync(resolve(distDir, "sql-wasm.wasm"), { force: true });
-    execSync("pnpm bundle");
+    execSync("pnpm bundle", { stdio: "ignore" });
   });
 
   it("bundles node:sqlite without the sql.js wasm sidecar", () => {

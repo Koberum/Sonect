@@ -33,7 +33,8 @@ RUN cat > package.json <<- 'PKGJSON'
   "private": true,
   "type": "module",
   "dependencies": {
-    "sharp": "^0.34.5"
+    "sharp": "^0.34.5",
+    "dotenv": "^17.2.4"
   }
 }
 PKGJSON

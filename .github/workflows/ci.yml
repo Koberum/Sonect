@@ -80,3 +80,4 @@ jobs:
           src/__tests__/db/connection.test.ts
           src/__tests__/db/schemaMigration.test.ts
           src/__tests__/db/repositories.test.ts
+          src/__tests__/db/playTrackingDb.test.ts
