@@ -219,7 +219,9 @@ database at `DB_PATH` (default `./data/music.db`) — useful to preview what
 startup would do. `pnpm db:migrate-reset` wipes the database (file, WAL and
 SHM) and re-applies every migration from scratch; it prompts for
 confirmation unless `--force` is passed. `pnpm db:studio` opens drizzle-kit
-studio, a browser GUI for inspecting and editing data.
+studio, a browser GUI for inspecting and editing data. Studio browses the
+live dev database at `packages/backend/data/music.db` by default; set
+`DB_PATH` to point it elsewhere (absolute or repo-root-relative path).
 
 **One-time reset on upgrade:** databases created before the migration system
 (any database with our tables but no `__drizzle_migrations` table) are wiped

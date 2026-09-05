@@ -192,7 +192,10 @@ Single Node process on port 3000:
   pragmas and `MIGRATIONS_FOLDER` resolution as `initDatabase()` — do not
   bypass them with `drizzle-kit migrate`, which uses its own driver and
   skips the pragmas. They are dev conveniences only; production applies
-  migrations automatically at startup.
+  migrations automatically at startup. `pnpm db:studio` (drizzle-kit studio)
+  requires the `better-sqlite3` devDependency and browses the dev DB at
+  `packages/backend/data/music.db` (or `DB_PATH`, resolved from the repo
+  root — unlike the backend, which resolves it from its own cwd).
 - **Migrations:** `initDatabase()` (`packages/db/src/schema.ts`) applies
   pending migrations at startup via `migrate()` from
   `drizzle-orm/node-sqlite/migrator`, tracked in the `__drizzle_migrations`

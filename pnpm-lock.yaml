@@ -110,11 +110,14 @@ importers:
         version: 17.4.2
       drizzle-orm:
         specifier: 1.0.0-rc.4
-        version: 1.0.0-rc.4(zod@4.4.3)
+        version: 1.0.0-rc.4(better-sqlite3@13.0.3)(zod@4.4.3)
     devDependencies:
       '@types/node':
         specifier: ^25.2.0
         version: 25.2.0
+      better-sqlite3:
+        specifier: ^13.0.3
+        version: 13.0.3
       drizzle-kit:
         specifier: 1.0.0-rc.4
         version: 1.0.0-rc.4
@@ -2412,6 +2415,10 @@ packages:
     resolution: {integrity: sha512-ipDqC8FrAl/76p2SSWKSI+H9tFwm7vYqXQrItCuiVPt26Km0jS+NzSsBWAaBusvSbQcfJG+JitdMm+wZAgTYqg==}
     hasBin: true
 
+  better-sqlite3@13.0.3:
+    resolution: {integrity: sha512-RbOBxmLBG8uvFUc15X9+9SFemKcQ0WBuISBVkpuiaUB2qblC8UWlHEjdWVoZ8AdhSwmoEgsiXKfopX0CQxaACQ==}
+    engines: {node: '>=22'}
+
   body-parser@2.2.2:
     resolution: {integrity: sha512-oP5VkATKlNwcgvxi0vM0p/D3n2C3EReYVX+DNYs5TjZFn/oQt2j+4sVJtSMr18pdRr8wjTcBl6LoV+FUwzPmNA==}
     engines: {node: '>=18'}
@@ -3400,6 +3407,10 @@ packages:
 
   nise@6.1.5:
     resolution: {integrity: sha512-SnRDPDBjxZZoU2n0+gzzLtSvo1OZo7j6jnbXsoh3AFxEGhaFU7ZF0TmefuKERq79wxR2U+MPn7ArW+Tl+clC3A==}
+
+  node-addon-api@8.9.2:
+    resolution: {integrity: sha512-VijLXbi3UACN69I0JVXJsX4tjACjNoQDgv2gTF6sx2wWEi8tkSg2eX8p5gSIFi8z2+DL3oHmY6OyKce38SDolg==}
+    engines: {node: ^18 || ^20 || >= 21}
 
   node-releases@2.0.27:
     resolution: {integrity: sha512-nmh3lCkYZ3grZvqcCH+fjmQ7X+H0OeZgP40OierEaAptX4XofMh5kwNbWh7lBduUzCcV/8kZ+NDLCwm2iorIlA==}
@@ -5975,6 +5986,10 @@ snapshots:
 
   baseline-browser-mapping@2.9.19: {}
 
+  better-sqlite3@13.0.3:
+    dependencies:
+      node-addon-api: 8.9.2
+
   body-parser@2.2.2:
     dependencies:
       bytes: 3.1.2
@@ -6163,8 +6178,9 @@ snapshots:
       get-tsconfig: 4.14.3
       jiti: 2.7.0
 
-  drizzle-orm@1.0.0-rc.4(zod@4.4.3):
+  drizzle-orm@1.0.0-rc.4(better-sqlite3@13.0.3)(zod@4.4.3):
     optionalDependencies:
+      better-sqlite3: 13.0.3
       zod: 4.4.3
 
   dunder-proto@1.0.1:
@@ -6911,6 +6927,8 @@ snapshots:
       '@sinonjs/fake-timers': 15.4.0
       just-extend: 6.2.0
       path-to-regexp: 8.3.0
+
+  node-addon-api@8.9.2: {}
 
   node-releases@2.0.27: {}
 
