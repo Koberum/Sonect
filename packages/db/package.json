@@ -19,7 +19,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/scripts/migrate.ts",
     "db:migrate-reset": "tsx src/scripts/migrate-reset.ts",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio --host 0.0.0.0"
   },
   "dependencies": {
     "@repo/types": "workspace:*",

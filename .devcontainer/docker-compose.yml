@@ -18,6 +18,7 @@ services:
       - "3000:3000" # backend
       - "5173:5173" # frontend (Vite)
       - "6600:6600" # MPD
+      - "4983:4983" # Drizzle kit
 
     command: sleep infinity
 
