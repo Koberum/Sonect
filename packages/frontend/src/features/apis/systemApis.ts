@@ -215,27 +215,6 @@ export async function getNetworkStatus(): Promise<NetworkStatus> {
   return res.json();
 }
 
-export async function getMpdConfig(): Promise<{
-  content: string;
-  path: string;
-}> {
-  const res = await fetch("/mpd/config");
-  if (!res.ok) throw new Error("Failed to fetch MPD config");
-  return res.json();
-}
-
-export async function updateMpdConfig(
-  content: string,
-): Promise<{ success: boolean; warning?: string }> {
-  const res = await fetch("/mpd/config", {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content }),
-  });
-  if (!res.ok) throw new Error("Failed to update MPD config");
-  return res.json();
-}
-
 export async function restartMpd(): Promise<{
   success: boolean;
   warning?: string;

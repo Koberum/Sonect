@@ -5,7 +5,6 @@ import playerRoutes from "./routes/playerRoutes";
 import libraryRoutes from "./routes/libraryRoutes";
 import playlistRoutes from "./routes/playlistRoutes";
 import systemRoutes from "./routes/systemRoutes";
-import configRoutes from "./routes/configRoutes";
 import streamRoutes from "./routes/streamRoutes";
 import dashboardRouter from "./routes/dashboardRoutes";
 import { errorHandler } from "./middleware/errorHandler";
@@ -42,7 +41,6 @@ app.use(
 app.use("/stream", streamRoutes);
 
 app.use("/mpd", playerRoutes);
-app.use("/mpd", configRoutes);
 app.use("/library", libraryRoutes);
 app.use("/playlists", playlistRoutes);
 app.use("/system", systemRoutes);

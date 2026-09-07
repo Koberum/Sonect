@@ -2,7 +2,6 @@ import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AudioTab } from "@/features/settings/audio-tab";
 import { LibrariesTab } from "@/features/settings/libraries-tab";
-import { MpdConfigTab } from "@/features/settings/mpd-config-tab";
 import { AppearanceTab } from "@/features/settings/appearance-tab";
 import { DebugTab } from "@/features/settings/debug-tab";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
@@ -39,9 +38,7 @@ export function Settings() {
         <TabsContent value="appearance">
           <AppearanceTab />
         </TabsContent>
-        <TabsContent value="config">
-          <MpdConfigTab />
-        </TabsContent>
+        <TabsContent value="config"></TabsContent>
         <TabsContent value="debug">
           <DebugTab />
         </TabsContent>
