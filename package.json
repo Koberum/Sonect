@@ -4,7 +4,7 @@
   "version": "1.1.0",
   "packageManager": "pnpm@9.0.0",
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "turbo run build --filter @repo/db --filter @repo/types && concurrently -n types,db,frontend,backend -c auto \"pnpm --filter @repo/types dev\" \"pnpm --filter @repo/db dev\" \"pnpm --filter frontend dev\" \"pnpm --filter backend dev\"",
     "start": "pnpm --filter backend start",
     "build": "turbo run build",
     "lint": "turbo run lint",
@@ -23,6 +23,7 @@
     "db:studio": "pnpm --filter @repo/db db:studio"
   },
   "devDependencies": {
+    "concurrently": "^10.0.5",
     "eslint": "^9.39.5",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.7.4",

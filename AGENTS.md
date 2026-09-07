@@ -202,8 +202,12 @@ Single Node process on port 3000:
   skips the pragmas. They are dev conveniences only; production applies
   migrations automatically at startup. `pnpm db:studio` (drizzle-kit studio)
   requires the `better-sqlite3` devDependency and browses the dev DB at
-  `packages/backend/data/music.db` (or `DB_PATH`, resolved from the repo
-  root — unlike the backend, which resolves it from its own cwd).
+  `DB_PATH` (`/db/music.db` in the dev container; an explicit `DB_PATH` is
+  resolved from the repo root — unlike the backend, which resolves it from
+  its own cwd, and `packages/backend/.env` pins it for `pnpm dev`). The
+  relative `./data/music.db` fallback must never be relied on: it resolves
+  per-process cwd, so backend and tooling can silently open different files
+  (this exact drift once caused 500s on `/library/scan`).
 - **Migrations:** `initDatabase()` (`packages/db/src/schema.ts`) applies
   pending migrations at startup via `migrate()` from
   `drizzle-orm/node-sqlite/migrator`, tracked in the `__drizzle_migrations`

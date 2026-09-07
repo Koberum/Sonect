@@ -166,7 +166,7 @@ Configure via `packages/backend/.env`:
 | `MUSIC_DIR`        | `/music`                                                       | Root of your music library                                          |
 | `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta` | Audio extensions counted as music files in per-source library stats |
 | `COVERS_DIR`       | —                                                              | Where cover JPEGs are cached                                        |
-| `DB_PATH`          | `./data/music.db`                                              | SQLite database path                                                |
+| `DB_PATH`          | `/db/music.db` (dev) / `/opt/sonect/data/music.db` (prod)      | SQLite database path                                                |
 | `MPD_CONFIG_PATH`  | `/opt/sonect/data/mpd-audio.conf`                              | MPD config drop-in                                                  |
 | `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | MPD log file for sync progress                                      |
 | `DNS_CHECK_HOST`   | `example.com`                                                  | Host resolved to verify DNS connectivity                            |
@@ -222,13 +222,21 @@ migration under `packages/db/drizzle/`. Migrations are applied automatically
 at backend startup and tracked in the `__drizzle_migrations` table.
 
 For manual control, `pnpm db:migrate` applies pending migrations to the
-database at `DB_PATH` (default `./data/music.db`) — useful to preview what
-startup would do. `pnpm db:migrate-reset` wipes the database (file, WAL and
-SHM) and re-applies every migration from scratch; it prompts for
-confirmation unless `--force` is passed. `pnpm db:studio` opens drizzle-kit
-studio, a browser GUI for inspecting and editing data. Studio browses the
-live dev database at `packages/backend/data/music.db` by default; set
-`DB_PATH` to point it elsewhere (absolute or repo-root-relative path).
+database at `DB_PATH` — useful to preview what startup would do.
+`pnpm db:migrate-reset` wipes the database (file, WAL and SHM) and re-applies
+every migration from scratch; it prompts for confirmation unless `--force`
+is passed. `pnpm db:studio` opens drizzle-kit studio, a browser GUI for
+inspecting and editing data. Studio browses the same live dev database as the
+backend.
+
+**Database location:** every environment sets `DB_PATH` explicitly — there is
+no shared relative default. In the dev container it is `/db/music.db` (a
+persistent Docker volume, also injected via `remoteEnv` and pinned in
+`packages/backend/.env`, which is gitignored); in production the installer
+sets `/opt/sonect/data/music.db` via the systemd unit. The `./data/music.db`
+relative fallback is only a last resort for throwaway runs outside these
+environments — it resolves against each process's cwd, so different processes
+can silently open different files. Never rely on it; always set `DB_PATH`.
 
 **One-time reset on upgrade:** databases created before the migration system
 (any database with our tables but no `__drizzle_migrations` table) are wiped
