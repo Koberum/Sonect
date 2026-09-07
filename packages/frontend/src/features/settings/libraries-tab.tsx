@@ -209,11 +209,7 @@ export function LibrariesTab() {
     mounts.some((m) => m.path === mountPath);
 
   const getSourceDescription = (src: StorageSource) => {
-    const mountSubpath = src.mount_path.replace(/^\/opt\/sonect\/music\/?/, "");
-    if (src.type === "local") {
-      return `${src.uri} → /opt/sonect/music/${mountSubpath}`;
-    }
-    return `${src.uri} → /opt/sonect/music/${mountSubpath}`;
+    return `${src.uri} → ${src.mount_path}`;
   };
 
   return (

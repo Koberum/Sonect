@@ -14,6 +14,8 @@ RUN apt-get update && apt-get install -y \
     bash \
     sudo \
     vim \
+    cifs-utils \
+    nfs-common \
     && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm
