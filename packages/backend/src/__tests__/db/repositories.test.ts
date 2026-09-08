@@ -132,6 +132,36 @@ describe("music repository contracts", () => {
     expect(album?.year).to.equal(2019);
   });
 
+  it("joins the artist name onto album rows in a single query", () => {
+    const artistId = dbModule.artistsDb.findOrCreate("Join Artist");
+    const albumId = dbModule.albumsDb.findOrCreate(
+      "Join Album",
+      artistId,
+      2020,
+      "Rock",
+    );
+    const orphanId = dbModule.albumsDb.findOrCreate(
+      "Orphan Album",
+      undefined,
+      2021,
+    );
+
+    // getById, getAll, and search all carry the joined name; an album
+    // without an artist reports "" (the Track.artist_name convention).
+    expect(dbModule.albumsDb.getById(albumId)?.artist_name).to.equal(
+      "Join Artist",
+    );
+    expect(dbModule.albumsDb.getById(orphanId)?.artist_name).to.equal("");
+    expect(
+      dbModule.albumsDb
+        .getAll({ sort: "title" })
+        .find((row) => row.id === albumId)?.artist_name,
+    ).to.equal("Join Artist");
+    expect(dbModule.albumsDb.search("Join Album")[0]?.artist_name).to.equal(
+      "Join Artist",
+    );
+  });
+
   it("draws random tracks while excluding given files", () => {
     dbModule.tracksDb.upsert({ file: "music/keep.mp3", title: "Keep" });
     dbModule.tracksDb.upsert({ file: "music/skip.mp3", title: "Skip" });

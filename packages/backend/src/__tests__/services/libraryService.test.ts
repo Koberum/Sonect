@@ -13,9 +13,23 @@ describe("Library Service", () => {
     { id: 2, name: "Artist B" },
   ];
 
+  // albumsDb readers join the artist name in SQL (AlbumWithArtist), so the
+  // mocks carry artist_name exactly as the real repository returns it.
   const mockAlbums = [
-    { id: 1, title: "Album A", artist_id: 1, cover_path: "hash1.jpg" },
-    { id: 2, title: "Album B", artist_id: 2, cover_path: null },
+    {
+      id: 1,
+      title: "Album A",
+      artist_id: 1,
+      artist_name: "Artist A",
+      cover_path: "hash1.jpg",
+    },
+    {
+      id: 2,
+      title: "Album B",
+      artist_id: 2,
+      artist_name: "Artist B",
+      cover_path: null,
+    },
   ];
 
   const mockTracks = [

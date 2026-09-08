@@ -12,7 +12,6 @@ import {
 export const artists = sqliteTable("artists", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull().unique(),
-  sort_name: text("sort_name"),
   created_at: text("created_at").default(sql`CURRENT_TIMESTAMP`),
   updated_at: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
@@ -25,8 +24,6 @@ export const albums = sqliteTable(
     artist_id: integer("artist_id").references(() => artists.id, {
       onDelete: "set null",
     }),
-    artist_name: text("artist_name"),
-    date: text("date"),
     genre: text("genre"),
     cover_path: text("cover_path"),
     last_played: text("last_played"),
@@ -54,9 +51,6 @@ export const tracks = sqliteTable(
     duration: real("duration"),
     date: text("date"),
     genre: text("genre"),
-    composer: text("composer"),
-    performer: text("performer"),
-    comment: text("comment"),
     last_modified: text("last_modified"),
     play_count: integer("play_count").default(0),
     last_played: text("last_played"),

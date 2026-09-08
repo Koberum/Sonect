@@ -58,17 +58,7 @@ export async function getAllAlbums(
   limit?: number,
   offset?: number,
 ): Promise<Album[]> {
-  const albums = albumsDb.getAll({ sort, limit, offset });
-  return albums.map(
-    (album) =>
-      ({
-        ...album,
-        artist_name: album.artist_id
-          ? artistsDb.getById(album.artist_id)?.name
-          : undefined,
-        cover_path: album.cover_path,
-      }) as Album,
-  );
+  return albumsDb.getAll({ sort, limit, offset });
 }
 
 export async function getAlbumCount(): Promise<number> {
@@ -76,29 +66,11 @@ export async function getAlbumCount(): Promise<number> {
 }
 
 export async function getRecentlyAddedAlbums(limit = 20): Promise<Album[]> {
-  const albums = albumsDb.getRecent(limit);
-  return albums.map(
-    (album) =>
-      ({
-        ...album,
-        artist_name: album.artist_id
-          ? artistsDb.getById(album.artist_id)?.name
-          : undefined,
-        cover_path: album.cover_path,
-      }) as Album,
-  );
+  return albumsDb.getRecent(limit);
 }
 
 export async function getAlbumById(id: number): Promise<Album | undefined> {
-  const album = await albumsDb.getById(id);
-  if (!album) return undefined;
-  return {
-    ...album,
-    artist_name: album.artist_id
-      ? artistsDb.getById(album.artist_id)?.name
-      : undefined,
-    cover_path: album.cover_path,
-  };
+  return albumsDb.getById(id);
 }
 
 export async function updateAlbumCoverPath(
@@ -183,17 +155,7 @@ export async function getGenres(): Promise<
 }
 
 export async function getAlbumsByGenre(genre: string): Promise<Album[]> {
-  const albums = albumsDb.getByGenre(genre);
-  return albums.map(
-    (album) =>
-      ({
-        ...album,
-        artist_name: album.artist_id
-          ? artistsDb.getById(album.artist_id)?.name
-          : undefined,
-        cover_path: album.cover_path,
-      }) as Album,
-  );
+  return albumsDb.getByGenre(genre);
 }
 
 export async function getTracksByGenre(genre: string): Promise<Track[]> {
@@ -218,16 +180,7 @@ export async function search(query: string): Promise<SearchResults> {
     coverPreviews: albumsDb.getCoverPreviews(artist.id, 4),
   }));
 
-  const matchedAlbums = albumsDb.search(q);
-  const albums = matchedAlbums.map((album) => {
-    const artist = album.artist_id
-      ? artistsDb.getById(album.artist_id)
-      : undefined;
-    return {
-      ...album,
-      artist_name: artist?.name ?? "",
-    };
-  });
+  const albums = albumsDb.search(q);
 
   const matchedTracks = tracksDb.search(query);
   const tracks = matchedTracks.map((dbTrack) => {

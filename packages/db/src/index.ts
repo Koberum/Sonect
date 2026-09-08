@@ -11,7 +11,7 @@ export {
   setupProgress,
 } from "./tables.js";
 export { artistsDb } from "./repositories/artists.js";
-export { albumsDb } from "./repositories/albums.js";
+export { albumsDb, type AlbumWithArtist } from "./repositories/albums.js";
 export { tracksDb } from "./repositories/tracks.js";
 export { librarySyncDb } from "./repositories/librarySync.js";
 export { playlistsDb } from "./repositories/playlists.js";

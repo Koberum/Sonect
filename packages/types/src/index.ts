@@ -31,7 +31,10 @@ export type Track = DBTrack & {
 export type Artist = DBArtist & {
   coverPreviews?: string[];
 };
-export type Album = DBAlbum;
+// The API joins the artist name onto every album row (AlbumWithArtist in
+// @repo/db), so the public Album keeps artist_name even though the albums
+// table no longer stores it.
+export type Album = DBAlbum & { artist_name: string };
 export type Playlist = DBPlaylist;
 export type PlaylistTrack = Track & { pt_id: number };
 export type PlaylistWithTracks = Playlist & {

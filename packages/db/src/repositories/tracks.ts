@@ -97,8 +97,6 @@ export function upsertTrack(executor: QueryExecutor, track: MPDTrack): number {
         duration: track.duration ?? null,
         date: track.date ?? null,
         genre: track.genre ?? null,
-        composer: track.composer ?? null,
-        performer: track.performer ?? null,
         last_modified: track.lastModified ?? null,
         updated_at: sql`CURRENT_TIMESTAMP`,
       })
@@ -119,8 +117,6 @@ export function upsertTrack(executor: QueryExecutor, track: MPDTrack): number {
       duration: track.duration ?? null,
       date: track.date ?? null,
       genre: track.genre ?? null,
-      composer: track.composer ?? null,
-      performer: track.performer ?? null,
       last_modified: track.lastModified ?? null,
     })
     .run();

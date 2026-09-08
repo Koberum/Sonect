@@ -28,7 +28,8 @@ describe("database drizzle migrations", () => {
     const applied = db()
       .$client.prepare("SELECT COUNT(*) AS n FROM __drizzle_migrations")
       .get() as { n: number };
-    expect(applied.n).to.equal(1);
+    // 0000 (initial schema) + 0001 (drop unused artist/album/track columns).
+    expect(applied.n).to.equal(2);
   });
 
   it("re-running initDatabase is a no-op and preserves rows", async () => {
@@ -44,7 +45,7 @@ describe("database drizzle migrations", () => {
     const applied = db()
       .$client.prepare("SELECT COUNT(*) AS n FROM __drizzle_migrations")
       .get() as { n: number };
-    expect(applied.n).to.equal(1);
+    expect(applied.n).to.equal(2);
   });
 
   it("wipes a legacy schema_version database and rebuilds as v1", async () => {
@@ -64,7 +65,7 @@ describe("database drizzle migrations", () => {
     const applied = db()
       .$client.prepare("SELECT COUNT(*) AS n FROM __drizzle_migrations")
       .get() as { n: number };
-    expect(applied.n).to.equal(1);
+    expect(applied.n).to.equal(2);
   });
 
   it("enforces the schema contract for tables, indexes, foreign keys, checks, and defaults", async () => {
@@ -230,7 +231,6 @@ function createLegacyFixture(): string {
       CREATE TABLE artists (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,
-        sort_name TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );

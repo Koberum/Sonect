@@ -14,8 +14,6 @@ export type MPDTrack = {
   genre?: string;
   track?: number;
   date?: string;
-  composer?: string;
-  performer?: string;
   disc?: string;
   duration?: number;
 };
@@ -26,11 +24,7 @@ export type MPDQueuedTrack = MPDTrack & {
 };
 
 export type MPDEntityType =
-  | "file"
-  | "directory"
-  | "playlist"
-  | "song"
-  | "generic";
+  "file" | "directory" | "playlist" | "song" | "generic";
 
 export interface MPDEntity {
   type: MPDEntityType;
