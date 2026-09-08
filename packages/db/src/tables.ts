@@ -16,6 +16,13 @@ export const artists = sqliteTable("artists", {
   updated_at: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const genres = sqliteTable("genres", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull().unique(),
+  created_at: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updated_at: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
 export const albums = sqliteTable(
   "albums",
   {
@@ -24,14 +31,19 @@ export const albums = sqliteTable(
     artist_id: integer("artist_id").references(() => artists.id, {
       onDelete: "set null",
     }),
-    genre: text("genre"),
+    genre_id: integer("genre_id").references(() => genres.id, {
+      onDelete: "set null",
+    }),
     cover_path: text("cover_path"),
     last_played: text("last_played"),
     year: integer("year"),
     created_at: text("created_at").default(sql`CURRENT_TIMESTAMP`),
     updated_at: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => [index("idx_albums_artist").on(table.artist_id)],
+  (table) => [
+    index("idx_albums_artist").on(table.artist_id),
+    index("idx_albums_genre").on(table.genre_id),
+  ],
 );
 
 export const tracks = sqliteTable(
@@ -50,7 +62,9 @@ export const tracks = sqliteTable(
     disc_number: integer("disc_number"),
     duration: real("duration"),
     date: text("date"),
-    genre: text("genre"),
+    genre_id: integer("genre_id").references(() => genres.id, {
+      onDelete: "set null",
+    }),
     last_modified: text("last_modified"),
     play_count: integer("play_count").default(0),
     last_played: text("last_played"),
@@ -62,6 +76,7 @@ export const tracks = sqliteTable(
     index("idx_tracks_artist").on(table.artist_id),
     index("idx_tracks_album").on(table.album_id),
     index("idx_tracks_file").on(table.file),
+    index("idx_tracks_genre").on(table.genre_id),
   ],
 );
 
