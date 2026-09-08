@@ -4,6 +4,7 @@ export {
   artists,
   albums,
   tracks,
+  genres,
   playlists,
   playlistTracks,
   syncMetadata,
@@ -19,3 +20,4 @@ export { syncMetadataDb } from "./repositories/syncMetadata.js";
 export { statsDb } from "./repositories/stats.js";
 export { storageDb } from "./repositories/storage.js";
 export { setupDb } from "./repositories/setup.js";
+export { genresDb, findOrCreateGenre } from "./repositories/genres.js";
