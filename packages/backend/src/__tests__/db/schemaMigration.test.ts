@@ -28,8 +28,9 @@ describe("database drizzle migrations", () => {
     const applied = db()
       .$client.prepare("SELECT COUNT(*) AS n FROM __drizzle_migrations")
       .get() as { n: number };
-    // 0000 (initial schema) + 0001 (drop unused artist/album/track columns).
-    expect(applied.n).to.equal(2);
+    // 0000 (initial schema) + 0001 (drop unused artist/album/track columns)
+    // + 0002 (normalize genres into separate table).
+    expect(applied.n).to.equal(3);
   });
 
   it("re-running initDatabase is a no-op and preserves rows", async () => {
@@ -45,7 +46,7 @@ describe("database drizzle migrations", () => {
     const applied = db()
       .$client.prepare("SELECT COUNT(*) AS n FROM __drizzle_migrations")
       .get() as { n: number };
-    expect(applied.n).to.equal(2);
+    expect(applied.n).to.equal(3);
   });
 
   it("wipes a legacy schema_version database and rebuilds as v1", async () => {
@@ -65,7 +66,7 @@ describe("database drizzle migrations", () => {
     const applied = db()
       .$client.prepare("SELECT COUNT(*) AS n FROM __drizzle_migrations")
       .get() as { n: number };
-    expect(applied.n).to.equal(2);
+    expect(applied.n).to.equal(3);
   });
 
   it("enforces the schema contract for tables, indexes, foreign keys, checks, and defaults", async () => {
@@ -73,7 +74,7 @@ describe("database drizzle migrations", () => {
     await initDatabase(path);
     const client = db().$client;
 
-    // The migrator's schema: the eight application tables plus the
+    // The migrator's schema: the nine application tables plus the
     // migrator's own bookkeeping table, and nothing else (internal
     // sqlite_* bookkeeping like sqlite_sequence is excluded).
     const tableNames = (
@@ -87,6 +88,7 @@ describe("database drizzle migrations", () => {
       "__drizzle_migrations",
       "albums",
       "artists",
+      "genres",
       "playlist_tracks",
       "playlists",
       "setup_progress",
@@ -96,7 +98,7 @@ describe("database drizzle migrations", () => {
     ]);
     expect(tableNames).to.not.include("schema_version");
 
-    // The six named performance indexes.
+    // The eight named performance indexes.
     const indexNames = new Set(
       (["tracks", "albums", "playlist_tracks"] as const).flatMap((table) =>
         (
@@ -109,8 +111,10 @@ describe("database drizzle migrations", () => {
     expect([...indexNames]).to.include.members([
       "idx_tracks_artist",
       "idx_tracks_album",
+      "idx_tracks_genre",
       "idx_tracks_file",
       "idx_albums_artist",
+      "idx_albums_genre",
       "idx_playlist_tracks_playlist",
       "idx_playlist_tracks_track",
     ]);
@@ -129,9 +133,11 @@ describe("database drizzle migrations", () => {
     expect(foreignKeyActions("tracks")).to.deep.equal([
       "album_id->albums:SET NULL",
       "artist_id->artists:SET NULL",
+      "genre_id->genres:SET NULL",
     ]);
     expect(foreignKeyActions("albums")).to.deep.equal([
       "artist_id->artists:SET NULL",
+      "genre_id->genres:SET NULL",
     ]);
     expect(foreignKeyActions("playlist_tracks")).to.deep.equal([
       "playlist_id->playlists:CASCADE",
@@ -168,6 +174,7 @@ describe("database drizzle migrations", () => {
     };
     for (const table of [
       "artists",
+      "genres",
       "albums",
       "tracks",
       "playlists",

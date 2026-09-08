@@ -24,7 +24,7 @@ describe("music repository contracts", () => {
     dbModule
       .db()
       .$client.exec(
-        "DELETE FROM tracks; DELETE FROM albums; DELETE FROM artists;",
+        "DELETE FROM tracks; DELETE FROM albums; DELETE FROM artists; DELETE FROM genres;",
       );
   });
 
@@ -40,6 +40,28 @@ describe("music repository contracts", () => {
     expect(dbModule.artistsDb.findOrCreate("ARTIST")).to.equal(
       dbModule.artistsDb.findOrCreate("Artist"),
     );
+  });
+
+  it("finds genres case-insensitively before creating them and supports fetching", () => {
+    const id1 = dbModule.genresDb.findOrCreate("Rock");
+    const id2 = dbModule.genresDb.findOrCreate("rock");
+    const id3 = dbModule.genresDb.findOrCreate("  ROCK  ");
+    expect(id1).to.equal(id2);
+    expect(id1).to.equal(id3);
+
+    expect(dbModule.genresDb.count()).to.equal(1);
+
+    const fetchedById = dbModule.genresDb.getById(id1);
+    expect(fetchedById).to.deep.include({ id: id1, name: "Rock" });
+
+    const fetchedByName = dbModule.genresDb.getByName("rock");
+    expect(fetchedByName).to.deep.include({ id: id1, name: "Rock" });
+
+    const all = dbModule.genresDb.getAll();
+    expect(all.map((g) => g.name)).to.deep.equal(["Rock"]);
+
+    const search = dbModule.genresDb.search("oc");
+    expect(search.map((g) => g.name)).to.deep.equal(["Rock"]);
   });
 
   it("sorts albums by year descending with title as the tie-break", () => {
@@ -236,12 +258,24 @@ describe("music repository contracts", () => {
     expect(titles).to.include("Played Once");
     expect(titles).to.not.include("Jazz Track");
     expect(titles).to.not.include("Often");
+    const playedOnce = discovery.find((track) => track.title === "Played Once");
+    expect(playedOnce?.genre).to.equal("Rock");
+    expect(playedOnce?.genre_id).to.be.a("number");
   });
 
   it("returns top genres and the single top genre by plays", () => {
     seedTopTracks();
     expect(dbModule.tracksDb.getTopGenres(5)).to.deep.equal(["Rock", "Jazz"]);
     expect(dbModule.tracksDb.getTopGenre()).to.equal("Rock");
+  });
+
+  it("returns genre statistics with track and album counts via getGenres", () => {
+    seedTopTracks();
+    const genres = dbModule.tracksDb.getGenres();
+    expect(genres).to.deep.equal([
+      { genre: "Jazz", track_count: 1, album_count: 1 },
+      { genre: "Rock", track_count: 2, album_count: 1 },
+    ]);
   });
 
   it("returns top artists ordered by total plays", () => {
@@ -299,11 +333,21 @@ describe("music repository contracts", () => {
       "Rock",
     );
     seedAlbumPlayCounts({ [firstId]: 2, [secondId]: 1 });
+    const rankedByName = dbModule.albumsDb.getRankedByPlayCount({
+      artistId,
+      genre: "Rock",
+    });
+    expect(rankedByName.map(({ id }) => id)).to.deep.equal([firstId, secondId]);
+    expect(rankedByName[0]?.genre).to.equal("Rock");
+    expect(rankedByName[0]?.genre_id).to.be.a("number");
+
+    const rockGenreId = rankedByName[0]?.genre_id;
     expect(
       dbModule.albumsDb
-        .getRankedByPlayCount({ artistId, genre: "Rock" })
+        .getRankedByPlayCount({ artistId, genreId: rockGenreId })
         .map(({ id }) => id),
     ).to.deep.equal([firstId, secondId]);
+
     expect(
       dbModule.albumsDb.getRankedByPlayCount({ artistId, genre: "Jazz" }),
     ).to.have.length(0);
@@ -384,7 +428,7 @@ describe("supporting repository contracts", () => {
       .$client.exec(
         "DELETE FROM playlist_tracks; DELETE FROM playlists; DELETE FROM sync_metadata;" +
           " DELETE FROM storage_sources; DELETE FROM setup_progress;" +
-          " DELETE FROM tracks; DELETE FROM albums; DELETE FROM artists;",
+          " DELETE FROM tracks; DELETE FROM albums; DELETE FROM artists; DELETE FROM genres;",
       );
   });
 

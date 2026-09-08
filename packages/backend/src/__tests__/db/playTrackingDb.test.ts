@@ -22,31 +22,36 @@ describe("play tracking DB helpers", () => {
     dbModule.closeDb();
     await dbModule.initDatabase(databasePath);
     const client = dbModule.db().$client;
-    client.exec("DELETE FROM tracks; DELETE FROM albums; DELETE FROM artists;");
+    client.exec(
+      "DELETE FROM tracks; DELETE FROM albums; DELETE FROM artists; DELETE FROM genres;",
+    );
+    client
+      .prepare("INSERT INTO genres (id, name) VALUES (1, 'Rock'), (2, 'Jazz')")
+      .run();
     client
       .prepare("INSERT INTO artists (id, name) VALUES (1, 'Test Artist')")
       .run();
     client
       .prepare(
-        "INSERT INTO albums (id, title, artist_id, last_played) VALUES (1, 'Test Album', 1, '2025-01-01')",
+        "INSERT INTO albums (id, title, artist_id, genre_id, last_played) VALUES (1, 'Test Album', 1, 1, '2025-01-01')",
       )
       .run();
     client
       .prepare(
-        `INSERT INTO tracks (id, file, title, artist_id, album_id, genre, play_count, last_played)
-                   VALUES (1, 'test.mp3', 'Test Track', 1, 1, 'Rock', 0, NULL)`,
+        `INSERT INTO tracks (id, file, title, artist_id, album_id, genre_id, play_count, last_played)
+                   VALUES (1, 'test.mp3', 'Test Track', 1, 1, 1, 0, NULL)`,
       )
       .run();
     client
       .prepare(
-        `INSERT INTO tracks (id, file, title, artist_id, album_id, genre, play_count, last_played)
-                   VALUES (2, 'test2.mp3', 'Test Track 2', 1, 1, 'Rock', 5, '2025-01-01')`,
+        `INSERT INTO tracks (id, file, title, artist_id, album_id, genre_id, play_count, last_played)
+                   VALUES (2, 'test2.mp3', 'Test Track 2', 1, 1, 1, 5, '2025-01-01')`,
       )
       .run();
     client
       .prepare(
-        `INSERT INTO tracks (id, file, title, artist_id, album_id, genre, play_count, last_played)
-                   VALUES (3, 'test3.mp3', 'Test Track 3', 1, 1, 'Jazz', 0, NULL)`,
+        `INSERT INTO tracks (id, file, title, artist_id, album_id, genre_id, play_count, last_played)
+                   VALUES (3, 'test3.mp3', 'Test Track 3', 1, 1, 2, 0, NULL)`,
       )
       .run();
   });
@@ -150,16 +155,16 @@ describe("play tracking DB helpers", () => {
     const client = dbModule.db().$client;
     client
       .prepare(
-        "INSERT INTO albums (id, title, artist_id, genre) VALUES (2, 'Zulu', 1, 'Rock'), (3, 'Alpha', 1, 'Rock'), (4, 'Most played', 1, 'Jazz')",
+        "INSERT INTO albums (id, title, artist_id, genre_id) VALUES (2, 'Zulu', 1, 1), (3, 'Alpha', 1, 1), (4, 'Most played', 1, 2)",
       )
       .run();
     client
       .prepare(
-        `INSERT INTO tracks (id, file, title, artist_id, album_id, genre, play_count)
-         VALUES (4, 'zulu.mp3', 'Zulu', 1, 2, 'Rock', 3),
-                (5, 'alpha.mp3', 'Alpha', 1, 3, 'Rock', 3),
-                (6, 'most-1.mp3', 'Most 1', 1, 4, 'Jazz', 4),
-                (7, 'most-2.mp3', 'Most 2', 1, 4, 'Jazz', 5)`,
+        `INSERT INTO tracks (id, file, title, artist_id, album_id, genre_id, play_count)
+         VALUES (4, 'zulu.mp3', 'Zulu', 1, 2, 1, 3),
+                (5, 'alpha.mp3', 'Alpha', 1, 3, 1, 3),
+                (6, 'most-1.mp3', 'Most 1', 1, 4, 2, 4),
+                (7, 'most-2.mp3', 'Most 2', 1, 4, 2, 5)`,
       )
       .run();
 
