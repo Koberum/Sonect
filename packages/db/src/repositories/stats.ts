@@ -41,7 +41,7 @@ export const statsDb = {
         (SELECT COUNT(*) FROM artists) AS totalArtists,
         (SELECT COUNT(*) FROM albums) AS totalAlbums,
         (SELECT COUNT(*) FROM playlists) AS totalPlaylists,
-        (SELECT COUNT(DISTINCT genre) FROM tracks WHERE genre IS NOT NULL AND genre != '') AS totalGenres,
+        (SELECT COUNT(*) FROM genres) AS totalGenres,
         (SELECT COALESCE(SUM(duration), 0) FROM tracks) AS totalDuration,
         (SELECT COALESCE(AVG(duration), 0) FROM tracks) AS averageDuration,
         (SELECT MIN(date) FROM tracks WHERE date IS NOT NULL AND date != '') AS earliestYear,

@@ -4,6 +4,7 @@ import { transaction, type DatabaseTransaction } from "../connection.js";
 import {
   albums,
   artists,
+  genres,
   syncMetadata,
   tracks as tracksTable,
 } from "../tables.js";
@@ -54,10 +55,11 @@ function rebuildInTransaction(
       .map((row) => [row.file, row] as const),
   );
 
-  // Step 2: FK-safe wipe (tracks reference albums and artists).
+  // Step 2: FK-safe wipe (tracks reference albums, artists, and genres; albums reference artists and genres).
   executor.delete(tracksTable).run();
   executor.delete(albums).run();
   executor.delete(artists).run();
+  executor.delete(genres).run();
 
   let synced = 0;
   let errors = 0;
@@ -127,6 +129,7 @@ export const librarySyncDb = {
       tx.delete(tracksTable).run();
       tx.delete(albums).run();
       tx.delete(artists).run();
+      tx.delete(genres).run();
       tx.delete(syncMetadata).run();
     });
   },

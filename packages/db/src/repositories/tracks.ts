@@ -18,10 +18,11 @@ import {
 } from "drizzle-orm";
 import type { DBTrack, MPDTrack } from "@repo/types";
 import { db, transaction } from "../connection.js";
-import { albums, artists, tracks } from "../tables.js";
+import { albums, artists, genres, tracks } from "../tables.js";
 import { normalizeRowId, type QueryExecutor } from "./rowId.js";
 import { findOrCreateArtist } from "./artists.js";
 import { findOrCreateAlbum } from "./albums.js";
+import { findOrCreateGenre } from "./genres.js";
 
 // Track rows joined with their artist and album, as consumed by the
 // recommendation and search APIs.
@@ -29,6 +30,7 @@ type TrackWithMeta = DBTrack & {
   artist_name?: string;
   album_title?: string;
   cover_path?: string;
+  genre?: string;
 };
 
 const trackWithMeta = {
@@ -36,6 +38,7 @@ const trackWithMeta = {
   artist_name: artists.name,
   album_title: albums.title,
   cover_path: albums.cover_path,
+  genre: genres.name,
 };
 
 const joinedOnArtistAndAlbum = () =>
@@ -43,7 +46,8 @@ const joinedOnArtistAndAlbum = () =>
     .select(trackWithMeta)
     .from(tracks)
     .innerJoin(artists, eq(tracks.artist_id, artists.id))
-    .innerJoin(albums, eq(tracks.album_id, albums.id));
+    .innerJoin(albums, eq(tracks.album_id, albums.id))
+    .leftJoin(genres, eq(tracks.genre_id, genres.id));
 
 // Parse helpers kept byte-compatible with the previous storage layer: MPD can
 // report "3/10" track positions and "2024-05-01" dates, and unparseable values
@@ -63,6 +67,10 @@ function yearOf(track: MPDTrack): number | undefined {
 // Single definition used by tracksDb.upsert() and by the transactional
 // library rebuild: playback statistics are never touched here, only metadata.
 export function upsertTrack(executor: QueryExecutor, track: MPDTrack): number {
+  const genreId =
+    track.genre && track.genre.trim() !== ""
+      ? findOrCreateGenre(executor, track.genre)
+      : undefined;
   const artistId = track.artist
     ? findOrCreateArtist(executor, track.artist)
     : undefined;
@@ -75,7 +83,7 @@ export function upsertTrack(executor: QueryExecutor, track: MPDTrack): number {
         track.album,
         albumArtistId ?? artistId,
         yearOf(track),
-        track.genre,
+        genreId,
       )
     : undefined;
 
@@ -92,11 +100,11 @@ export function upsertTrack(executor: QueryExecutor, track: MPDTrack): number {
         title: track.title || "Unknown",
         artist_id: artistId ?? null,
         album_id: albumId ?? null,
+        genre_id: genreId ?? null,
         track_number: trackNumberOf(track),
         disc_number: discNumberOf(track),
         duration: track.duration ?? null,
         date: track.date ?? null,
-        genre: track.genre ?? null,
         last_modified: track.lastModified ?? null,
         updated_at: sql`CURRENT_TIMESTAMP`,
       })
@@ -112,11 +120,11 @@ export function upsertTrack(executor: QueryExecutor, track: MPDTrack): number {
       title: track.title || "Unknown",
       artist_id: artistId ?? null,
       album_id: albumId ?? null,
+      genre_id: genreId ?? null,
       track_number: trackNumberOf(track),
       disc_number: discNumberOf(track),
       duration: track.duration ?? null,
       date: track.date ?? null,
-      genre: track.genre ?? null,
       last_modified: track.lastModified ?? null,
     })
     .run();
@@ -152,15 +160,15 @@ export const tracksDb = {
   },
 
   getTracksForDiscovery(
-    genres: string[],
+    genreNames: string[],
     artistIds: number[],
     limit: number,
   ): TrackWithMeta[] {
     // The raw SQL matched `genre IN (...) OR artist_id IN (...)`; an empty
     // SQLite IN list is always false, so both lists empty matches nothing.
-    if (genres.length === 0 && artistIds.length === 0) return [];
+    if (genreNames.length === 0 && artistIds.length === 0) return [];
     const scope = or(
-      genres.length > 0 ? inArray(tracks.genre, genres) : undefined,
+      genreNames.length > 0 ? inArray(genres.name, genreNames) : undefined,
       artistIds.length > 0 ? inArray(tracks.artist_id, artistIds) : undefined,
     );
     return joinedOnArtistAndAlbum()
@@ -175,14 +183,14 @@ export const tracksDb = {
   getTopGenres(limit: number): string[] {
     const total = sql<number>`sum(${tracks.play_count})`;
     return db()
-      .select({ genre: tracks.genre })
+      .select({ genre: genres.name })
       .from(tracks)
-      .where(and(isNotNull(tracks.genre), ne(tracks.genre, "")))
-      .groupBy(tracks.genre)
+      .innerJoin(genres, eq(tracks.genre_id, genres.id))
+      .groupBy(genres.id, genres.name)
       .orderBy(desc(total))
       .limit(limit)
       .all()
-      .map((row) => row.genre as string);
+      .map((row) => row.genre);
   },
 
   getTopArtists(limit: number): { id: number; name: string; total: number }[] {
@@ -200,10 +208,10 @@ export const tracksDb = {
   getTopGenre(): string | null {
     const total = sql<number>`sum(${tracks.play_count})`;
     const row = db()
-      .select({ genre: tracks.genre })
+      .select({ genre: genres.name })
       .from(tracks)
-      .where(and(isNotNull(tracks.genre), ne(tracks.genre, "")))
-      .groupBy(tracks.genre)
+      .innerJoin(genres, eq(tracks.genre_id, genres.id))
+      .groupBy(genres.id, genres.name)
       .orderBy(desc(total))
       .limit(1)
       .get();
@@ -212,7 +220,7 @@ export const tracksDb = {
 
   getTracksByGenre(genre: string, limit: number): TrackWithMeta[] {
     return joinedOnArtistAndAlbum()
-      .where(eq(tracks.genre, genre))
+      .where(sql`${genres.name} = ${genre} COLLATE NOCASE`)
       .orderBy(desc(tracks.play_count))
       .limit(limit)
       .all() as TrackWithMeta[];
@@ -264,22 +272,23 @@ export const tracksDb = {
   getGenres(): { genre: string; track_count: number; album_count: number }[] {
     return db()
       .select({
-        genre: tracks.genre,
+        genre: genres.name,
         track_count: count(tracks.id),
         album_count: countDistinct(tracks.album_id),
       })
       .from(tracks)
-      .where(and(isNotNull(tracks.genre), ne(tracks.genre, "")))
-      .groupBy(tracks.genre)
-      .orderBy(asc(tracks.genre))
+      .innerJoin(genres, eq(tracks.genre_id, genres.id))
+      .groupBy(genres.id, genres.name)
+      .orderBy(asc(genres.name))
       .all() as { genre: string; track_count: number; album_count: number }[];
   },
 
   getByGenre(genre: string): DBTrack[] {
     return db()
-      .select()
+      .select(getColumns(tracks))
       .from(tracks)
-      .where(eq(tracks.genre, genre))
+      .innerJoin(genres, eq(tracks.genre_id, genres.id))
+      .where(sql`${genres.name} = ${genre} COLLATE NOCASE`)
       .orderBy(asc(tracks.title))
       .all() as DBTrack[];
   },
@@ -368,6 +377,7 @@ export const tracksDb = {
       .from(tracks)
       .leftJoin(artists, eq(tracks.artist_id, artists.id))
       .leftJoin(albums, eq(tracks.album_id, albums.id))
+      .leftJoin(genres, eq(tracks.genre_id, genres.id))
       .where(
         or(
           like(tracks.title, pattern),
