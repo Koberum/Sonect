@@ -1,8 +1,8 @@
 type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
 
 class NetworkError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
     this.name = "NetworkError";
   }
 }
@@ -65,6 +65,7 @@ export class ApiClient {
     } catch (err) {
       throw new NetworkError(
         `Network request failed: ${err instanceof Error ? err.message : String(err)}`,
+        { cause: err },
       );
     }
 
@@ -74,7 +75,7 @@ export class ApiClient {
     try {
       data = text ? JSON.parse(text) : null;
     } catch (err) {
-      throw new Error(`Failed to parse JSON response: ${err}`);
+      throw new Error(`Failed to parse JSON response: ${err}`, { cause: err });
     }
 
     if (!response.ok) {
