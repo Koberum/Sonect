@@ -1,4 +1,4 @@
-import { tracksDb, artistsDb, albumsDb, statsDb } from "@repo/db";
+import { tracksDb, artistsDb, albumsDb, statsDb, genresDb } from "@repo/db";
 import { Track, Artist, Album, LibraryStats, SearchResults } from "@repo/types";
 
 import { DBAlbum, DBArtist, DBTrack } from "@repo/types";
@@ -111,7 +111,13 @@ export function mapDbTrackToTrack(
     artist_name: artist?.name ?? "",
     cover_path: album?.cover_path ?? "",
     album_name: album?.title,
-    genre: (dbTrack as any).genre ?? album?.genre ?? undefined,
+    genre:
+      (dbTrack as any).genre ??
+      (dbTrack.genre_id
+        ? genresDb.getById(dbTrack.genre_id)?.name
+        : undefined) ??
+      album?.genre ??
+      undefined,
   };
 }
 

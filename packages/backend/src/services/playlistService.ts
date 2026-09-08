@@ -1,4 +1,4 @@
-import { playlistsDb, tracksDb, artistsDb, albumsDb } from "@repo/db";
+import { playlistsDb, tracksDb, artistsDb, albumsDb, genresDb } from "@repo/db";
 import {
   Playlist,
   PlaylistTrack,
@@ -35,7 +35,11 @@ export function getPlaylistWithTracks(
       disc_number: t.disc_number,
       duration: t.duration,
       date: t.date,
-      genre: t.genre,
+      genre:
+        (t as any).genre ??
+        (t.genre_id ? genresDb.getById(t.genre_id)?.name : undefined) ??
+        album?.genre ??
+        undefined,
       pt_id: t.pt_id,
       position: t.position,
     } as Track & { pt_id: number; position: number };
