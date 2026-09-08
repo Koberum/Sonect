@@ -85,12 +85,14 @@ class AutoplayService {
         return;
       }
 
-      const genre = seedAlbum?.genre || seedTrack?.genre;
+      const genreId = seedAlbum?.genre_id || seedTrack?.genre_id;
+      const genre = seedAlbum?.genre || (seedTrack as any)?.genre;
       if (
-        genre &&
+        (genreId || genre) &&
         collectAlbums(
           albumsDb.getRankedByPlayCount({
-            genre,
+            genreId: genreId ?? undefined,
+            genre: genre ?? undefined,
           }),
         )
       ) {

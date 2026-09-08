@@ -104,13 +104,14 @@ export async function getTracksByArtist(artistId: number): Promise<Track[]> {
 export function mapDbTrackToTrack(
   dbTrack: DBTrack,
   artist?: DBArtist,
-  album?: DBAlbum,
+  album?: DBAlbum & { genre?: string },
 ): Track {
   return {
     ...dbTrack,
     artist_name: artist?.name ?? "",
     cover_path: album?.cover_path ?? "",
     album_name: album?.title,
+    genre: (dbTrack as any).genre ?? album?.genre ?? undefined,
   };
 }
 
