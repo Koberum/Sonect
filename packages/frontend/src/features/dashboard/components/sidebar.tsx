@@ -85,7 +85,6 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
       setNewName("");
       setDialogOpen(false);
       await refresh();
-      console.log(t("playlist.created"));
     } catch {
       console.error(t("playlist.createError"));
     }

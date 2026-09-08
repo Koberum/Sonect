@@ -17,6 +17,7 @@ export default defineConfig([
     ],
     rules: {
       "react-hooks/set-state-in-effect": "off",
+      "no-console": ["warn", { allow: ["warn", "error"] }],
     },
     languageOptions: {
       ecmaVersion: 2020,

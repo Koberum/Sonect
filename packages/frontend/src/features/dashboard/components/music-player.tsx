@@ -104,7 +104,6 @@ export default function MusicPlayer() {
 
   useEffect(() => {
     if (playbackStatus.state !== "play") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplayElapsed(playbackStatus.elapsed);
       return;
     }
