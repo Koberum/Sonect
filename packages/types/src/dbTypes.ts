@@ -1,14 +1,21 @@
+export type DBGenre = {
+  id: number;
+  name: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
 export type DBTrack = {
   id: number;
   file: string;
   title: string;
   artist_id?: number;
   album_id?: number;
+  genre_id?: number;
   track_number?: number;
   disc_number?: number;
   duration?: number;
   date?: string;
-  genre?: string;
   last_modified?: string;
   play_count?: number;
   last_played?: string;
@@ -27,8 +34,8 @@ export type DBAlbum = {
   id: number;
   title: string;
   artist_id?: number;
+  genre_id?: number;
   year?: number;
-  genre?: string;
   cover_path?: string;
   last_played?: string;
   created_at?: string;

@@ -10,6 +10,7 @@ export type {
   DBTrack,
   DBAlbum,
   DBArtist,
+  DBGenre,
   DBPlaylist,
   DBStorageSource,
   DBSetupProgress,
@@ -17,6 +18,7 @@ export type {
 import type {
   DBAlbum,
   DBArtist,
+  DBGenre,
   DBTrack,
   DBPlaylist,
   DBStorageSource,
@@ -27,6 +29,7 @@ export type Track = DBTrack & {
   cover_path: string;
   artist_name: string;
   album_name?: string;
+  genre?: string;
 };
 export type Artist = DBArtist & {
   coverPreviews?: string[];
@@ -34,7 +37,11 @@ export type Artist = DBArtist & {
 // The API joins the artist name onto every album row (AlbumWithArtist in
 // @repo/db), so the public Album keeps artist_name even though the albums
 // table no longer stores it.
-export type Album = DBAlbum & { artist_name: string };
+export type Album = DBAlbum & {
+  artist_name: string;
+  genre?: string;
+};
+export type Genre = DBGenre;
 export type Playlist = DBPlaylist;
 export type PlaylistTrack = Track & { pt_id: number };
 export type PlaylistWithTracks = Playlist & {
