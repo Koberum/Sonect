@@ -15,38 +15,9 @@ export type {
   DBStorageSource,
   DBSetupProgress,
 } from "./dbTypes";
-import type {
-  DBAlbum,
-  DBArtist,
-  DBGenre,
-  DBTrack,
-  DBPlaylist,
-  DBStorageSource,
-  DBSetupProgress,
-} from "./dbTypes";
+import type { DBStorageSource, DBSetupProgress } from "./dbTypes";
+import { Track } from "./library/types";
 
-export type Track = DBTrack & {
-  cover_path: string;
-  artist_name: string;
-  album_name?: string;
-  genre?: string;
-};
-export type Artist = DBArtist & {
-  coverPreviews?: string[];
-};
-// The API joins the artist name onto every album row (AlbumWithArtist in
-// @repo/db), so the public Album keeps artist_name even though the albums
-// table no longer stores it.
-export type Album = DBAlbum & {
-  artist_name: string;
-  genre?: string;
-};
-export type Genre = DBGenre;
-export type Playlist = DBPlaylist;
-export type PlaylistTrack = Track & { pt_id: number };
-export type PlaylistWithTracks = Playlist & {
-  tracks: PlaylistTrack[];
-};
 export type StorageSource = DBStorageSource;
 export type SetupProgress = DBSetupProgress;
 
@@ -83,24 +54,7 @@ export type QueuedTrack = {
   cover_path: string;
 };
 
-export type SearchResults = {
-  artists: Artist[];
-  albums: Album[];
-  tracks: Track[];
-};
-
 export type PlayTrackResponse = { success: boolean };
-
-export interface DashboardData {
-  continueListening: Album[];
-  recentlyPlayed: Track[];
-  topTracks: Track[];
-  suggestedTracks: Track[];
-  genreQuickMix: {
-    genre: string;
-    tracks: Track[];
-  } | null;
-}
 
 export interface LibraryStats {
   totalTracks: number;

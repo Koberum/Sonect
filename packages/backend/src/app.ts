@@ -9,7 +9,7 @@ import streamRoutes from "./routes/streamRoutes";
 import dashboardRouter from "./routes/dashboardRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 import { requestLogger } from "./middleware/requestLogger";
-import { pushLog } from "./services/logService";
+import { pushLog } from "./services/utils/logService";
 
 const app = express();
 

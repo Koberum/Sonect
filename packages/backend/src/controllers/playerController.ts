@@ -17,8 +17,8 @@ import {
   removeFromQueue,
   addToQueue,
   moveQueueItem,
-} from "../services/playerService";
-import { asyncHandler } from "../middleware/asyncHandler";
+} from "@services/player/playerService";
+import { asyncHandler } from "@middleware/asyncHandler";
 
 export const playTrackHandler = asyncHandler(
   async (req: Request, res: Response) => {

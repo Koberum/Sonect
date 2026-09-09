@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { readAppVersion } from "../../services/appVersion.js";
+import { readAppVersion } from "../../services/utils/appVersion.js";
 
 describe("appVersion", () => {
   let tmp: string;

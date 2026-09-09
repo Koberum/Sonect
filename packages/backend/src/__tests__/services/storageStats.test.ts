@@ -18,7 +18,7 @@ describe("Storage Stats", () => {
     updateStatsStub = sinon.stub(dbModule.storageDb, "updateStats");
 
     process.env.MUSIC_EXTENSIONS = "mp3,flac";
-    storageStats = await import("../../services/storageStats.ts");
+    storageStats = await import("../../services/storage/storageStats.js");
   });
 
   afterEach(() => {

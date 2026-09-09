@@ -1,5 +1,5 @@
-import { Album } from "@repo/types";
 import { albumsDb } from "@repo/db";
+import { Album } from "@repo/types/library";
 
 interface AlbumService {
   getAlbumsByArtist(artistId: number): Promise<Album[]>;

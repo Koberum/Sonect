@@ -1,9 +1,13 @@
 import { tracksDb, artistsDb, albumsDb, statsDb } from "@repo/db";
-import { LibraryStats, SearchResults } from "@repo/types";
-import { MpdSyncService, type SyncProgress } from "./mpdSyncService";
-import { scanStorageStats } from "./storageStats";
-import { broadcast } from "../ws/broadcast";
-import * as playerService from "./playerService";
+import { LibraryStats, SearchResults } from "@repo/types/library";
+import {
+  MpdSyncService,
+  type SyncProgress,
+} from "@services/mpd/mpdSyncService";
+import { scanStorageStats } from "@services/storage/storageStats";
+import { broadcast } from "../../ws/broadcast";
+import { PlayerService } from "@services/player/playerService";
+import { CoverService } from "@services/cover/coverService";
 
 interface LibraryService {
   getLibraryStats(): Promise<LibraryStats>;
@@ -15,6 +19,8 @@ interface LibraryService {
 }
 
 class LibraryServiceImpl implements LibraryService {
+  constructor(private readonly playerService: PlayerService) {}
+
   private currentSyncProgress: Record<string, unknown> | null = null;
   private syncRunning = false;
 
@@ -75,7 +81,7 @@ class LibraryServiceImpl implements LibraryService {
     broadcast({ type: "sync-progress", ...this.currentSyncProgress });
 
     try {
-      await playerService.updateLibrary();
+      await this.playerService.updateLibrary();
 
       const syncService = new MpdSyncService();
       const coverService = new CoverService();
@@ -183,5 +189,3 @@ class LibraryServiceImpl implements LibraryService {
     }
   }
 }
-
-export const libraryService = new LibraryServiceImpl();

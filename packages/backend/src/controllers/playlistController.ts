@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { playlistSchemas } from "@repo/types";
-import * as playlistService from "../services/playlistService";
-import { asyncHandler } from "../middleware/asyncHandler";
-import { NotFoundError } from "../middleware/errorHandler";
+import * as playlistService from "@services/playlistService";
+import { asyncHandler } from "@middleware/asyncHandler";
+import { NotFoundError } from "@middleware/errorHandler";
 
 export const getAllPlaylistsHandler = asyncHandler(
   async (_req: Request, res: Response) => {

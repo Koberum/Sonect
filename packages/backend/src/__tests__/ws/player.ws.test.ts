@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import sinon from "sinon";
 import { EventEmitter } from "events";
-import { mpdConnectionManager } from "../../services/mpdConnectionManager";
+import { mpdConnectionManager } from "../../services/utils/mpdConnectionManager";
 import type { PlaybackStatus } from "@repo/types";
 
 const INITIAL_STATUS: PlaybackStatus = {

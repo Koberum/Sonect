@@ -3,7 +3,7 @@ import sinon from "sinon";
 import esmock from "esmock";
 
 describe("Network Service", () => {
-  let networkService: typeof import("../../services/networkService.ts");
+  let networkService: typeof import("../../services/network/networkService.js");
   let networkInterfacesStub: sinon.SinonStub;
   let lookupStub: sinon.SinonStub;
 

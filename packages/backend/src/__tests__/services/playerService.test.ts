@@ -1,8 +1,8 @@
 import { expect } from "chai";
 import sinon from "sinon";
 import esmock from "esmock";
-import { mpdConnectionManager } from "../../services/mpdConnectionManager";
-import { autoplayService } from "../../services/autoplayService";
+import { mpdConnectionManager } from "../../services/utils/mpdConnectionManager";
+import { autoplayService } from "../../services/mpd/autoplayService";
 
 describe("Player Service", () => {
   let playerService: any;

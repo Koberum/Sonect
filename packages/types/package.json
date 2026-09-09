@@ -12,6 +12,10 @@
     "./system": {
       "types": "./dist/system/types.d.ts",
       "default": "./dist/system/types.js"
+    },
+    "./library": {
+      "types": "./dist/library/types.d.ts",
+      "default": "./dist/library/types.js"
     }
   },
   "scripts": {

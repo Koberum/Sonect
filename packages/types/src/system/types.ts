@@ -50,3 +50,5 @@ export interface HardwareUsage {
   };
   uptime: number;
 }
+
+export type LogLevel = "debug" | "info" | "warn" | "error";

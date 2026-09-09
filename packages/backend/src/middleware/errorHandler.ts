@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
-import { pushLog } from "../services/logService";
+import { pushLog } from "../services/utils/logService";
 
 export interface AppError extends Error {
   statusCode?: number;

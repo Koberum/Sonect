@@ -9,8 +9,8 @@ import {
   tracksDb,
   db,
 } from "@repo/db";
-import { MpdSyncService } from "../../services/mpdSyncService";
-import { mpdConnectionManager } from "../../services/mpdConnectionManager";
+import { MpdSyncService } from "../../services/mpd/mpdSyncService";
+import { mpdConnectionManager } from "../../services/utils/mpdConnectionManager";
 
 describe("MpdSyncService", () => {
   before(async () => {

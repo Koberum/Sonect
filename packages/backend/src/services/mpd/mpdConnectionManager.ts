@@ -2,8 +2,8 @@ import { EventEmitter } from "events";
 import net from "net";
 import mpd from "mpd";
 import type { PlaybackStatus, PlaybackState } from "@repo/types";
-import { resolveTrack } from "./libraryService";
-import { parseKeyValue, hashFile } from "../utils/mpd.js";
+import { resolveTrack } from "../library/libraryService";
+import { parseKeyValue, hashFile } from "../../utils/mpd.js";
 import { pushLog } from "./logService";
 
 const { cmd } = mpd;

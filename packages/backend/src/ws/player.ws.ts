@@ -1,6 +1,6 @@
 import { WebSocketServer, WebSocket } from "ws";
-import { mpdConnectionManager } from "../services/mpdConnectionManager";
-import { getCurrentSyncProgress } from "../services/libraryService";
+import { mpdConnectionManager } from "@services/mpd/mpdConnectionManager";
+import { getCurrentSyncProgress } from "@services/library/libraryService";
 
 function isWsOpen(ws: WebSocket): boolean {
   return ws.readyState === WebSocket.OPEN;

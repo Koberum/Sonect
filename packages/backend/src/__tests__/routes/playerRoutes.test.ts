@@ -3,7 +3,7 @@ import sinon from "sinon";
 import express from "express";
 import supertest from "supertest";
 import * as dbModule from "@repo/db";
-import { mpdConnectionManager } from "../../services/mpdConnectionManager";
+import { mpdConnectionManager } from "../../services/utils/mpdConnectionManager";
 import { errorHandler } from "../../middleware/errorHandler";
 
 describe("Player Routes", () => {

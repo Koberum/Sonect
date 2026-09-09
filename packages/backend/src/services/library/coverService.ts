@@ -5,7 +5,7 @@ import sharp from "sharp";
 import * as mm from "music-metadata";
 import { albumsDb, tracksDb, artistsDb } from "@repo/db";
 import { DBAlbum, DBTrack } from "@repo/types";
-import { pushLog } from "../services/logService";
+import { LogService } from "@services/utils/logService";
 
 const COVERS_DIR = process.env.COVERS_DIR || "./data/covers";
 const MUSIC_DIR = process.env.MUSIC_DIR ?? "/opt/sonect/music";
@@ -45,11 +45,7 @@ interface CoverService {
 }
 
 export class CoverServiceImpl implements CoverService {
-  private ensureCoversDir(): void {
-    if (!fs.existsSync(COVERS_DIR)) {
-      fs.mkdirSync(COVERS_DIR, { recursive: true });
-    }
-  }
+  constructor(private readonly logService: LogService) {}
 
   async syncAllCovers(
     albums: DBAlbum[],
@@ -250,6 +246,10 @@ export class CoverServiceImpl implements CoverService {
     await fs.promises.writeFile(outPath, data);
     return `${hash}.jpg`;
   }
-}
 
-export const coverService = new CoverServiceImpl();
+  private ensureCoversDir(): void {
+    if (!fs.existsSync(COVERS_DIR)) {
+      fs.mkdirSync(COVERS_DIR, { recursive: true });
+    }
+  }
+}

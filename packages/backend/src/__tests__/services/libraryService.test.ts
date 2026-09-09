@@ -2,7 +2,6 @@ import { expect } from "chai";
 import sinon from "sinon";
 import * as dbModule from "@repo/db";
 import fs from "fs";
-import path from "path";
 
 describe("Library Service", () => {
   const coversDir = "/tmp/test-covers";
@@ -85,7 +84,7 @@ describe("Library Service", () => {
         mockTracks.filter((t) => t.artist_id === artistId),
       );
 
-    libraryService = await import("../../services/libraryService.ts");
+    libraryService = await import("../../services/library/libraryService.js");
   });
 
   afterEach(() => {

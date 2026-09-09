@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { SuggestionService } from "../services/suggestionService";
+import { SuggestionService } from "@services/library/suggestionService";
 
 const suggestionService = new SuggestionService();
 

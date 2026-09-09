@@ -3,13 +3,13 @@ import app from "./app";
 import { WebSocketServer } from "ws";
 import { setupPlayerWebSocket } from "./ws/player.ws";
 import { setWss, broadcast } from "./ws/broadcast";
-import { setBroadcaster } from "./services/logService";
+import { setBroadcaster } from "@services/utils/logService";
 import { closeDb, initDatabase } from "@repo/db";
-import { mpdConnectionManager } from "./services/mpdConnectionManager";
-import { autoplayService } from "./services/autoplayService";
-import { getQueue, queueFiles } from "./services/playerService";
-import { PlayTrackingService } from "./services/playTrackingService";
-import { mountAllEnabled } from "./services/storageService";
+import { mpdConnectionManager } from "@services/mpd/mpdConnectionManager";
+import { autoplayService } from "@services/mpd/autoplayService";
+import { getQueue, queueFiles } from "@services/player/playerService";
+import { PlayTrackingService } from "@services/player/playTrackingService";
+import { mountAllEnabled } from "@services/storage/storageService";
 
 // Wire up autoplay callback
 mpdConnectionManager.setAutoplayCallback(async (currentFile: string) => {

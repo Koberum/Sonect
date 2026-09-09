@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import sinon from "sinon";
-import { MpdConnectionManager } from "../../services/mpdConnectionManager";
+import { MpdConnectionManager } from "../../services/utils/mpdConnectionManager";
 
 describe("MpdConnectionManager autoplay refill", () => {
   afterEach(() => {

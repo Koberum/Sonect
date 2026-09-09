@@ -5,7 +5,7 @@ import * as os from "os";
 import * as path from "path";
 import childProcess from "child_process";
 import * as dbModule from "@repo/db";
-import { mpdConnectionManager } from "../../services/mpdConnectionManager";
+import { mpdConnectionManager } from "../../services/utils/mpdConnectionManager";
 
 describe("Storage Service (local sources)", () => {
   let musicDir: string;
@@ -50,7 +50,7 @@ describe("Storage Service (local sources)", () => {
     getAllStub = sinon.stub(dbModule.storageDb, "getAll");
     setupCompletedStub = sinon.stub(dbModule.setupDb, "setCompleted");
 
-    storageService = await import("../../services/storageService.ts");
+    storageService = await import("../../services/storage/storageService");
     sinon.stub(storageService.storageHooks, "scanLibrary").resolves(undefined);
     sinon
       .stub(storageService.storageHooks, "ensureSymlinksAllowed")

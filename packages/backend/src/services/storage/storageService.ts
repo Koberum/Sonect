@@ -2,12 +2,12 @@ import childProcess from "child_process";
 import fs from "fs";
 import path from "path";
 import { storageDb } from "@repo/db";
-import { mpdConnectionManager } from "./mpdConnectionManager";
-import { encryptPassword, decryptPassword } from "./crypto";
-import { scanLibrary } from "./libraryService";
+import { mpdConnectionManager } from "./utils/mpdConnectionManager";
+import { encryptPassword, decryptPassword } from "../utils/crypto";
+import { scanLibrary } from "../library/libraryService";
 import { computeSourceStats } from "./storageStats";
-import { ensureFollowOutsideSymlinks } from "./configService";
-import { ValidationError } from "../middleware/errorHandler";
+import { ensureFollowOutsideSymlinks } from "../mpd/configService";
+import { ValidationError } from "../../middleware/errorHandler";
 
 const MUSIC_DIR = process.env.MUSIC_DIR ?? "/opt/sonect/music";
 

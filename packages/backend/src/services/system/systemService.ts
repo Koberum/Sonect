@@ -1,7 +1,7 @@
 import { execSync } from "child_process";
 import os from "os";
-import { readAppVersion } from "./appVersion.js";
-import { mpdConnectionManager } from "./mpdConnectionManager.js";
+import { readAppVersion } from "../utils/appVersion.js";
+import { mpdConnectionManager } from "@services/mpd/mpdConnectionManager.js";
 import type {
   SystemStatus,
   AudioDevice,
@@ -19,6 +19,8 @@ interface SystemServiceInterface {
 }
 
 class SystemServiceImpl implements SystemServiceInterface {
+  private prevCpuTimes: CpuTimes | null = null;
+
   public getHardwareUsage(): HardwareUsage {
     const cpus = os.cpus();
     const totalMem = os.totalmem();
@@ -42,19 +44,19 @@ class SystemServiceImpl implements SystemServiceInterface {
     const curr: CpuTimes = { user, nice, sys, idle, irq };
     let usage = 0;
 
-    if (prevCpuTimes) {
-      const userDelta = curr.user - prevCpuTimes.user;
-      const niceDelta = curr.nice - prevCpuTimes.nice;
-      const sysDelta = curr.sys - prevCpuTimes.sys;
-      const idleDelta = curr.idle - prevCpuTimes.idle;
-      const irqDelta = curr.irq - prevCpuTimes.irq;
+    if (this.prevCpuTimes) {
+      const userDelta = curr.user - this.prevCpuTimes.user;
+      const niceDelta = curr.nice - this.prevCpuTimes.nice;
+      const sysDelta = curr.sys - this.prevCpuTimes.sys;
+      const idleDelta = curr.idle - this.prevCpuTimes.idle;
+      const irqDelta = curr.irq - this.prevCpuTimes.irq;
       const totalDelta =
         userDelta + niceDelta + sysDelta + idleDelta + irqDelta;
       if (totalDelta > 0) {
         usage = Math.round((100 * (totalDelta - idleDelta)) / totalDelta);
       }
     }
-    prevCpuTimes = curr;
+    this.prevCpuTimes = curr;
 
     return {
       cpu: {
@@ -79,13 +81,13 @@ class SystemServiceImpl implements SystemServiceInterface {
 
   public getSystemStatus(): SystemStatus {
     const tools = {
-      aplay: checkTool("aplay"),
-      lsusb: checkTool("lsusb"),
-      systemctl: checkTool("systemctl"),
-      mpd: checkTool("mpd"),
+      aplay: this.checkTool("aplay"),
+      lsusb: this.checkTool("lsusb"),
+      systemctl: this.checkTool("systemctl"),
+      mpd: this.checkTool("mpd"),
     };
 
-    const cards = tools.aplay ? detectAudioDevices() : [];
+    const cards = tools.aplay ? this.detectAudioDevices() : [];
 
     return {
       tools,
@@ -142,8 +144,8 @@ class SystemServiceImpl implements SystemServiceInterface {
         const deviceNumber = match[4];
         const deviceName = match[5].trim();
 
-        const usbId = getUsbIdForCard(cardNumber);
-        const usbInfo = usbId ? getUsbDeviceInfo(usbId) : undefined;
+        const usbId = this.getUsbIdForCard(cardNumber);
+        const usbInfo = usbId ? this.getUsbDeviceInfo(usbId) : undefined;
 
         devices.push({
           card: `hw:${cardNumber},${deviceNumber}`,

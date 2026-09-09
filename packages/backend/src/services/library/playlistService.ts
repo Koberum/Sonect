@@ -5,7 +5,7 @@ import {
   PlaylistWithTracks,
   Track,
 } from "@repo/types";
-import { mpdConnectionManager } from "./mpdConnectionManager";
+import { mpdConnectionManager } from "./utils/mpdConnectionManager";
 
 export function getAllPlaylists(): Playlist[] {
   return playlistsDb.getAll();

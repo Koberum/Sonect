@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
 import { systemSchemas } from "@repo/types";
-import { asyncHandler } from "../middleware/asyncHandler";
-import { getSystemStatus, getHardwareUsage } from "../services/systemService";
+import { asyncHandler } from "@middleware/asyncHandler";
+import {
+  getSystemStatus,
+  getHardwareUsage,
+} from "../services/system/systemService";
 import {
   getAudioDevices,
   configureAudioOutput,
@@ -12,8 +15,8 @@ import {
   setOutputMode,
   getOutputMode,
   getOutputDeviceName,
-} from "../services/audioService";
-import { getNetworkStatus } from "../services/networkService";
+} from "../services/mpd/audioService";
+import { getNetworkStatus } from "../services/network/networkService";
 import {
   getStorageSources,
   getStorageSource,
@@ -24,7 +27,7 @@ import {
   unmountSource,
   listMounts,
   sanitizeSource,
-} from "../services/storageService";
+} from "../services/storage/storageService";
 import {
   getSetupProgress,
   isSetupComplete,

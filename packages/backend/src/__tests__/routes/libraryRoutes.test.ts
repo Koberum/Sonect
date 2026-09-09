@@ -4,10 +4,10 @@ import express from "express";
 import supertest from "supertest";
 import * as dbModule from "@repo/db";
 import fs from "fs";
-import { mpdConnectionManager } from "../../services/mpdConnectionManager";
+import { mpdConnectionManager } from "../../services/utils/mpdConnectionManager";
 import { errorHandler } from "../../middleware/errorHandler";
-import { MpdSyncService } from "../../services/mpdSyncService";
-import { CoverService } from "../../services/coverService";
+import { MpdSyncService } from "../../services/mpd/mpdSyncService";
+import { CoverService } from "../../services/library/coverService";
 
 describe("Library Routes", () => {
   let request: supertest.SuperTest<supertest.Test>;

@@ -5,8 +5,8 @@ import {
   librarySyncDb,
 } from "@repo/db";
 import { MPDTrack } from "@repo/types";
-import { mpdConnectionManager } from "./mpdConnectionManager";
-import { parseMPDMessageToTracks } from "../utils/mpd.js";
+import { mpdConnectionManager } from "@services/mpd/mpdConnectionManager";
+import { parseMPDMessageToTracks } from "../../utils/mpd.js";
 
 export type SyncProgress = {
   current: number;

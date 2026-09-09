@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { librarySchemas } from "@repo/types";
-import * as libraryService from "../services/libraryService";
-import { asyncHandler } from "../middleware/asyncHandler";
-import { NotFoundError } from "../middleware/errorHandler";
+import * as libraryService from "@services/library/libraryService";
+import { asyncHandler } from "@middleware/asyncHandler";
+import { NotFoundError } from "@middleware/errorHandler";
 
 export const getLibraryStatsHandler = asyncHandler(
   async (_req: Request, res: Response) => {
