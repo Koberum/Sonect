@@ -5,7 +5,7 @@ import sharp from "sharp";
 import * as mm from "music-metadata";
 import { albumsDb, tracksDb, artistsDb } from "@repo/db";
 import { DBAlbum, DBTrack } from "@repo/types";
-import { LogService } from "@services/utils/logService";
+import { logService, LogService } from "@services/utils/logService";
 
 const COVERS_DIR = process.env.COVERS_DIR || "./data/covers";
 const MUSIC_DIR = process.env.MUSIC_DIR ?? "/opt/sonect/music";
@@ -37,7 +37,7 @@ export type CoverProgress = {
   };
 };
 
-interface CoverService {
+export interface CoverService {
   syncAllCovers(
     albums: DBAlbum[],
     onProgress?: (progress: CoverProgress) => void,
@@ -70,7 +70,7 @@ export class CoverServiceImpl implements CoverService {
             albumsDb.updateCoverPath(album.id, result);
           }
         } catch (err) {
-          pushLog(
+          this.logService.pushLog(
             "error",
             `Error extracting cover for album "${album.title}": ${err instanceof Error ? err.message : String(err)}`,
           );
@@ -89,7 +89,7 @@ export class CoverServiceImpl implements CoverService {
   private async findAndSaveCover(album: DBAlbum): Promise<string | null> {
     const tracks = tracksDb.getByAlbum(album.id);
     if (tracks.length === 0) {
-      pushLog(
+      this.logService.pushLog(
         "warn",
         `No tracks found for album "${album.title}", skipping cover`,
         {
@@ -103,9 +103,13 @@ export class CoverServiceImpl implements CoverService {
 
     const fsCover = this.findFsCover(albumDir);
     if (fsCover) {
-      pushLog("debug", `Filesystem cover found for "${album.title}"`, {
-        file: fsCover,
-      });
+      this.logService.pushLog(
+        "debug",
+        `Filesystem cover found for "${album.title}"`,
+        {
+          file: fsCover,
+        },
+      );
       const data = await sharp(fsCover)
         .resize(500, 500, { fit: "inside" })
         .jpeg({ quality: 85 })
@@ -118,7 +122,7 @@ export class CoverServiceImpl implements CoverService {
       try {
         const embedded = await this.extractEmbeddedArt(trackPath);
         if (embedded) {
-          pushLog(
+          this.logService.pushLog(
             "debug",
             `Embedded cover found for "${album.title}" in track: ${track.file}`,
           );
@@ -129,14 +133,14 @@ export class CoverServiceImpl implements CoverService {
           return await this.writeCover(data, album);
         }
       } catch (err) {
-        pushLog(
+        this.logService.pushLog(
           "warn",
           `Failed to extract embedded art from "${track.file}": ${err instanceof Error ? err.message : String(err)}`,
         );
       }
     }
 
-    pushLog(
+    this.logService.pushLog(
       "info",
       `No cover found for album "${album.title}" (${tracks.length} tracks checked)`,
     );
@@ -253,3 +257,5 @@ export class CoverServiceImpl implements CoverService {
     }
   }
 }
+
+export const coverService: CoverService = new CoverServiceImpl(logService);

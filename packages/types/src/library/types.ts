@@ -10,12 +10,14 @@ export type CoverProgress = {
   };
 };
 
-export type Track = DBTrack & {
+export type Track = DBTrack;
+export type TrackWithCover = Track & {
   cover_path: string;
   artist_name: string;
   album_name?: string;
   genre?: string;
 };
+
 export type Artist = DBArtist & {
   coverPreviews?: string[];
 };
@@ -48,3 +50,17 @@ export type SearchResults = {
   albums: Album[];
   tracks: Track[];
 };
+
+export interface LibraryStats {
+  totalTracks: number;
+  totalArtists: number;
+  totalAlbums: number;
+  totalPlaylists: number;
+  totalGenres: number;
+  totalDuration: number;
+  averageDuration: number;
+  earliestYear: number | null;
+  latestYear: number | null;
+  tracksWithoutAlbum: number;
+  lastSync: string | null;
+}

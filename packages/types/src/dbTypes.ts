@@ -23,6 +23,12 @@ export type DBTrack = {
   updated_at?: string;
 };
 
+export type DBTrackWithRelations = DBTrack & {
+  artist: DBArtist;
+  album: DBAlbum;
+  genre: DBGenre;
+};
+
 export type DBArtist = {
   id: number;
   name: string;

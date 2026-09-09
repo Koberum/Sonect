@@ -1,12 +1,12 @@
 import { PlayTrackError } from "@repo/types";
 import { PlayTrackResponse, PlaybackStatus, QueuedTrack } from "@repo/types";
+import { LogService } from "@services/utils/logService";
 import { mpdConnectionManager } from "@services/mpd/mpdConnectionManager";
 import { autoplayService } from "../mpd/autoplayService";
 import { tracksDb, albumsDb } from "@repo/db";
 import type { MPDTrack } from "@repo/types";
 import { parseKeyValue, hashFile } from "../../utils/mpd.js";
 import { broadcast } from "../../ws/broadcast";
-import { pushLog } from "../utils/logService";
 import { readNewMpdLogLines, parseMpdLogLines } from "../mpd/mpdLogReader";
 import path from "path";
 
@@ -17,9 +17,24 @@ export interface PlayerService {
   queueFiles(files: string[]): Promise<void>;
   clearQueue(): Promise<void>;
   getQueue(): Promise<QueuedTrack[]>;
+  nextTrack(): Promise<void>;
+  previousTrack(): Promise<void>;
+  goToPosition(position: number): Promise<void>;
+  enableRepeat(enabled: boolean): Promise<void>;
+  enableRandom(enabled: boolean): Promise<void>;
+  enableConsume(enabled: boolean): Promise<void>;
+  setSingle(enabled: boolean): Promise<void>;
+  setVolume(volume: number): Promise<void>;
+  playPosition(pos: number): Promise<void>;
+  removeFromQueue(pos: number): Promise<void>;
+  addToQueue(file: string): Promise<void>;
+  moveQueueItem(from: number, to: number): Promise<void>;
+  updateLibrary(): Promise<void>;
 }
 
 class PlayerServiceImpl implements PlayerService {
+  constructor(private readonly logService: LogService) {}
+
   public getPlaybackStatus(): PlaybackStatus {
     return mpdConnectionManager.getCachedStatus();
   }
@@ -58,12 +73,12 @@ class PlayerServiceImpl implements PlayerService {
         try {
           const tracks = await autoplayService.getNextBatch(file);
           if (tracks.length > 0 && autoplayService.sessionId === sessionId) {
-            await queueFiles(tracks);
+            await this.queueFiles(tracks);
             autoplayService.commitBatch(tracks, sessionId);
           }
         } catch (err) {
           console.error("[Player] Failed to append smart autoplay batch:", err);
-          pushLog(
+          this.logService.pushLog(
             "error",
             `Failed to append smart autoplay batch: ${String(err)}`,
           );
@@ -115,7 +130,7 @@ class PlayerServiceImpl implements PlayerService {
 
   public async getQueue(): Promise<QueuedTrack[]> {
     const raw = await mpdConnectionManager.executeCommand("playlistinfo");
-    return parseQueueResponse(raw);
+    return this.parseQueueResponse(raw);
   }
 
   public parseQueueResponse(raw: string): QueuedTrack[] {
@@ -251,9 +266,8 @@ class PlayerServiceImpl implements PlayerService {
     if (!cmdClient) throw new Error("MPD cmd client not connected");
 
     let fileCount = 0;
-    let logPos = 0;
 
-    pushLog("info", "Starting MPD library update");
+    this.logService.pushLog("info", "Starting MPD library update");
     await mpdConnectionManager.executeCommand("update");
 
     await new Promise((r) => setTimeout(r, 500));
@@ -263,7 +277,7 @@ class PlayerServiceImpl implements PlayerService {
 
     if (status.updating_db) {
       const added = readNewMpdLogLines(0);
-      logPos = added.newPosition;
+      let logPos = added.newPosition;
 
       while (true) {
         await new Promise((r) => setTimeout(r, 2000));
@@ -288,7 +302,7 @@ class PlayerServiceImpl implements PlayerService {
 
         const r = await mpdConnectionManager.executeCommand("status");
         if (!parseKeyValue(r).updating_db) {
-          pushLog(
+          this.logService.pushLog(
             "info",
             `MPD library update finished (${fileCount} files indexed)`,
           );
@@ -296,7 +310,10 @@ class PlayerServiceImpl implements PlayerService {
         }
       }
     } else {
-      pushLog("info", "MPD library update completed (no changes detected)");
+      this.logService.pushLog(
+        "info",
+        "MPD library update completed (no changes detected)",
+      );
     }
   }
 }

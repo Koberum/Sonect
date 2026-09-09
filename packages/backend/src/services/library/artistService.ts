@@ -1,4 +1,4 @@
-import { Artist } from "@repo/types";
+import { Artist } from "@repo/types/library";
 import { artistsDb, albumsDb } from "@repo/db";
 
 interface ArtistService {

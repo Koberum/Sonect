@@ -55,17 +55,3 @@ export type QueuedTrack = {
 };
 
 export type PlayTrackResponse = { success: boolean };
-
-export interface LibraryStats {
-  totalTracks: number;
-  totalArtists: number;
-  totalAlbums: number;
-  totalPlaylists: number;
-  totalGenres: number;
-  totalDuration: number;
-  averageDuration: number;
-  earliestYear: number | null;
-  latestYear: number | null;
-  tracksWithoutAlbum: number;
-  lastSync: string | null;
-}

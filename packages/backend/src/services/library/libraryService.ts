@@ -1,5 +1,5 @@
 import { tracksDb, artistsDb, albumsDb, statsDb } from "@repo/db";
-import { LibraryStats, SearchResults } from "@repo/types/library";
+import { LibraryStats, SearchResults } from, TrackWithCover "@repo/types/library";
 import {
   MpdSyncService,
   type SyncProgress,
@@ -7,7 +7,11 @@ import {
 import { scanStorageStats } from "@services/storage/storageStats";
 import { broadcast } from "../../ws/broadcast";
 import { PlayerService } from "@services/player/playerService";
-import { CoverService } from "@services/cover/coverService";
+import { LogService } from "@services/utils/logService";
+import { CoverService } from "@services/library/coverService";
+import { GenreService } from "@services/library/genreService";
+import { DBAlbum, DBArtist, DBTrack } from "@repo/types";
+import { TrackWithCover } from "@repo/types/library";
 
 interface LibraryService {
   getLibraryStats(): Promise<LibraryStats>;
@@ -16,10 +20,16 @@ interface LibraryService {
   setCurrentSyncProgress(progress: Record<string, unknown> | null): void;
   scanLibrary(): Promise<void>;
   scanImagesOnly(): Promise<void>;
+  searchTracks(query: string): Promise<SearchResults>;
 }
 
 class LibraryServiceImpl implements LibraryService {
-  constructor(private readonly playerService: PlayerService) {}
+  constructor(
+    private readonly playerService: PlayerService,
+    private readonly coverService: CoverService,
+    private readonly genreService: GenreService,
+    private readonly logService: LogService,
+  ) {}
 
   private currentSyncProgress: Record<string, unknown> | null = null;
   private syncRunning = false;
@@ -28,27 +38,18 @@ class LibraryServiceImpl implements LibraryService {
     return statsDb.getStats();
   }
 
-  public async search(query: string): Promise<SearchResults> {
+  public async searchTracks(query: string): Promise<SearchResults> {
     const q = query.toLowerCase();
+
+
 
     const matchedArtists = artistsDb.search(q);
     const artists = matchedArtists.map((artist) => ({
       ...artist,
       coverPreviews: albumsDb.getCoverPreviews(artist.id, 4),
     }));
-
     const albums = albumsDb.search(q);
-
-    const matchedTracks = tracksDb.search(query);
-    const tracks = matchedTracks.map((dbTrack) => {
-      const artist = dbTrack.artist_id
-        ? artistsDb.getById(dbTrack.artist_id)
-        : undefined;
-      const album = dbTrack.album_id
-        ? albumsDb.getById(dbTrack.album_id)
-        : undefined;
-      return this.mapDbTrackToTrack(dbTrack, artist, album);
-    });
+    const tracks = tracksDb.search(query);
 
     return { artists, albums, tracks };
   }
@@ -187,5 +188,25 @@ class LibraryServiceImpl implements LibraryService {
     } finally {
       this.syncRunning = false;
     }
+  }
+
+  public async mapDbTrackToTrack(
+    dbTrack: DBTrack,
+    artist?: DBArtist | null,
+    album?: (DBAlbum & { genre?: string }) | null,
+  ): Promise<TrackWithCover> {
+    return {
+      ...dbTrack,
+      artist_name: artist?.name ?? "",
+      cover_path: album?.cover_path ?? "",
+      album_name: album?.title,
+      genre:
+        (dbTrack as any).genre ??
+        (dbTrack.genre_id
+          ? (await this.genreService.getById(dbTrack.genre_id))?.name
+          : undefined) ??
+        album?.genre ??
+        undefined,
+    };
   }
 }

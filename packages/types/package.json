@@ -16,6 +16,26 @@
     "./library": {
       "types": "./dist/library/types.d.ts",
       "default": "./dist/library/types.js"
+    },
+    "./player": {
+      "types": "./dist/player/types.d.ts",
+      "default": "./dist/player/types.js"
+    },
+    "./cover": {
+      "types": "./dist/cover/types.d.ts",
+      "default": "./dist/cover/types.js"
+    },
+    "./storage": {
+      "types": "./dist/storage/types.d.ts",
+      "default": "./dist/storage/types.js"
+    },
+    "./network": {
+      "types": "./dist/network/types.d.ts",
+      "default": "./dist/network/types.js"
+    },
+    "./mpd": {
+      "types": "./dist/mpd/types.d.ts",
+      "default": "./dist/mpd/types.js"
     }
   },
   "scripts": {

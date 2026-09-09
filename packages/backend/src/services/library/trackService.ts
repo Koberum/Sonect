@@ -1,29 +1,30 @@
-import { Track } from "@repo/types";
-
+import { Track, TrackWithCover } from "@repo/types/library";
 import { albumsDb, artistsDb, tracksDb } from "@repo/db";
-import { mapDbTrackToTrack } from "../utils/utils";
 
 interface TrackService {
-  getTracksByAlbum(albumId: number): Promise<Track[]>;
-  getTracksByArtist(artistId: number): Promise<Track[]>;
-  getAllTracks(
+  getTracksByAlbum(albumId: number): Track[];
+  getTracksByArtist(artistId: number): Track[];
+  getAllTracks(sort?: string, limit?: number, offset?: number): Track[];
+  getTrackCount(): number;
+  getTrackById(id: number): Track | undefined;
+  resolveTrack(artist: string, album: string, title: string): Track | null;
+  getTracksByGenre(genre: string): Track[];
+  getRecentlyAddedTracks(limit?: number): Track[];
+
+  getTrackByIdWithCover(id: number): TrackWithCover | undefined;
+  getTracksByAlbumWithCover(albumId: number): TrackWithCover[];
+  getTracksByArtistWithCover(artistId: number): TrackWithCover[];
+  getAllTracksWithCover(
     sort?: string,
     limit?: number,
     offset?: number,
-  ): Promise<Track[]>;
-  getTrackCount(): Promise<number>;
-  getTrackById(id: number): Promise<Track | undefined>;
-  resolveTrack(
-    artist: string,
-    album: string,
-    title: string,
-  ): Promise<Track | null>;
-  getTracksByGenre(genre: string): Promise<Track[]>;
-  getRecentlyAddedTracks(limit?: number): Promise<Track[]>;
+  ): TrackWithCover[];
+  getRecentlyAddedTracksWithCover(limit?: number): TrackWithCover[];
+  getTracksByGenreWithCover(genre: string): TrackWithCover[];
 }
 
 class TrackServiceImpl implements TrackService {
-  public async getRecentlyAddedTracks(limit = 20): Promise<Track[]> {
+  public getRecentlyAddedTracks(limit = 20): Track[] {
     const dbTracks = tracksDb.getRecent(limit);
     return dbTracks.map((dbTrack) => {
       const artist = dbTrack.artist_id
@@ -36,7 +37,7 @@ class TrackServiceImpl implements TrackService {
     });
   }
 
-  public async getTracksByGenre(genre: string): Promise<Track[]> {
+  public getTracksByGenre(genre: string): Track[] {
     const dbTracks = tracksDb.getByGenre(genre);
     return dbTracks.map((dbTrack) => {
       const artist = dbTrack.artist_id
@@ -48,11 +49,11 @@ class TrackServiceImpl implements TrackService {
       return mapDbTrackToTrack(dbTrack, artist, album);
     });
   }
-  public async resolveTrack(
+  public resolveTrack(
     artist: string,
     album: string,
     title: string,
-  ): Promise<Track | null> {
+  ): Track | null {
     const dbTrack = await tracksDb.getByArtistAlbumTitle(artist, album, title);
     if (!dbTrack) return null;
 
@@ -66,11 +67,11 @@ class TrackServiceImpl implements TrackService {
     return mapDbTrackToTrack(dbTrack, dbArtist, dbAlbum);
   }
 
-  public async getTracksByAlbum(albumId: number): Promise<Track[]> {
+  public getTracksByAlbum(albumId: number): Track[] {
     const album = albumsDb.getById(albumId);
     if (!album) throw new Error("Album not found");
 
-    return (await tracksDb.getByAlbum(albumId)).map((dbTrack) => {
+    return tracksDb.getByAlbum(albumId).map((dbTrack) => {
       const trackArtist = dbTrack.artist_id
         ? artistsDb.getById(dbTrack.artist_id)
         : undefined;
@@ -78,20 +79,16 @@ class TrackServiceImpl implements TrackService {
     });
   }
 
-  public async getTracksByArtist(artistId: number): Promise<Track[]> {
+  public getTracksByArtist(artistId: number): Track[] {
     const artist = artistsDb.getById(artistId);
     if (!artist) throw new Error("Artist not found");
 
-    return (await tracksDb.getByArtist(artistId)).map((dbTrack) =>
-      mapDbTrackToTrack(dbTrack, artist),
-    );
+    return tracksDb
+      .getByArtist(artistId)
+      .map((dbTrack) => mapDbTrackToTrack(dbTrack, artist));
   }
 
-  public async getAllTracks(
-    sort?: string,
-    limit?: number,
-    offset?: number,
-  ): Promise<Track[]> {
+  public getAllTracks(sort?: string, limit?: number, offset?: number): Track[] {
     const dbTracks = tracksDb.getAll({ sort, limit, offset });
     return dbTracks.map((dbTrack) => {
       const artist = dbTrack.artist_id
@@ -104,12 +101,12 @@ class TrackServiceImpl implements TrackService {
     });
   }
 
-  public async getTrackCount(): Promise<number> {
+  public getTrackCount(): number {
     return tracksDb.count();
   }
 
-  public async getTrackById(id: number): Promise<Track | undefined> {
-    const dbTrack = await tracksDb.getById(id);
+  public getTrackById(id: number): Track | undefined {
+    const dbTrack = tracksDb.getById(id);
     if (!dbTrack) return undefined;
 
     const artist = dbTrack.artist_id
@@ -119,6 +116,19 @@ class TrackServiceImpl implements TrackService {
       ? albumsDb.getById(dbTrack.album_id)
       : undefined;
     return mapDbTrackToTrack(dbTrack, artist, album);
+  }
+
+  public getTracksByAlbum(albumId: number): TrackWithCover[] {
+    const album = albumsDb.getById(albumId);
+    if (!album) throw new Error("Album not found");
+
+    return tracksDb.getByAlbum(albumId).map((dbTrack) => ({
+      ...dbTrack,
+      cover_path: album.cover_path ?? "",
+      album_name: album.title,
+      artist_name: dbTrack.artist_name ?? album.artist_name ?? "",
+      genre: dbTrack.genre ?? album.genre ?? undefined,
+    }));
   }
 }
 
