@@ -37,7 +37,14 @@ export type CoverProgress = {
   };
 };
 
-export class CoverService {
+interface CoverService {
+  syncAllCovers(
+    albums: DBAlbum[],
+    onProgress?: (progress: CoverProgress) => void,
+  ): Promise<void>;
+}
+
+export class CoverServiceImpl implements CoverService {
   private ensureCoversDir(): void {
     if (!fs.existsSync(COVERS_DIR)) {
       fs.mkdirSync(COVERS_DIR, { recursive: true });
@@ -57,12 +64,10 @@ export class CoverService {
         ? (artistsDb.getById(album.artist_id)?.name ?? "")
         : "";
 
-      if (
-        !(
-          album.cover_path &&
-          fs.existsSync(path.join(COVERS_DIR, album.cover_path))
-        )
-      ) {
+      if (!(
+        album.cover_path &&
+        fs.existsSync(path.join(COVERS_DIR, album.cover_path))
+      )) {
         try {
           const result = await this.findAndSaveCover(album);
           if (result) {
@@ -247,4 +252,4 @@ export class CoverService {
   }
 }
 
-export default CoverService;
+export const coverService = new CoverServiceImpl();

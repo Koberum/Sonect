@@ -2,7 +2,7 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import type { OutputMode } from "@repo/types";
-import { detectAudioDevices, type AudioDevice } from "./systemService";
+import { AudioDevice } from "@repo/types/system";
 
 interface AudioService {
   getAudioDevices(): AudioDevice[];
@@ -20,15 +20,19 @@ interface AudioService {
   getOutputDeviceName(): string | null;
 }
 
-export function AudioServiceImpl(): AudioService {
-  const MPD_CONFIG_PATH =
+class AudioServiceImpl implements AudioService {
+  private readonly MPD_CONFIG_PATH =
     process.env.MPD_CONFIG_PATH ?? "/opt/sonect/data/mpd-audio.conf";
 
-  function getAudioDevices(): AudioDevice[] {
+  private _currentOutputMode: OutputMode = "mpd";
+  private _lastAlsaConfig: string | null = null;
+  private _lastDeviceName: string | null = null;
+
+  public getAudioDevices(): AudioDevice[] {
     return detectAudioDevices();
   }
 
-  function getCurrentAudioOutput(): {
+  public getCurrentAudioOutput(): {
     card: string;
     name: string;
   } | null {
@@ -45,7 +49,7 @@ export function AudioServiceImpl(): AudioService {
     }
   }
 
-  function configureAudioOutput(params: {
+  public configureAudioOutput(params: {
     card: string;
     name: string;
     mixerType?: "hardware" | "software" | "none";
@@ -116,7 +120,7 @@ export function AudioServiceImpl(): AudioService {
     return { success: true, warning: restartResult.warning };
   }
 
-  function restartMPD(): { success: boolean; warning?: string } {
+  public restartMPD(): { success: boolean; warning?: string } {
     if (checkTool("systemctl")) {
       try {
         execSync("sudo systemctl restart mpd", {
@@ -150,7 +154,7 @@ export function AudioServiceImpl(): AudioService {
     };
   }
 
-  function stopMPD(): { success: boolean; warning?: string } {
+  public stopMPD(): { success: boolean; warning?: string } {
     if (checkTool("systemctl")) {
       try {
         execSync("sudo systemctl stop mpd", {
@@ -184,7 +188,7 @@ export function AudioServiceImpl(): AudioService {
     };
   }
 
-  function getMpdStatus(): {
+  public getMpdStatus(): {
     running: boolean;
     pid?: string;
     error?: string;
@@ -212,15 +216,11 @@ export function AudioServiceImpl(): AudioService {
     }
   }
 
-  let _currentOutputMode: OutputMode = "mpd";
-  let _lastAlsaConfig: string | null = null;
-  let _lastDeviceName: string | null = null;
-
-  function setOutputMode(mode: OutputMode): {
+  public setOutputMode(mode: OutputMode): {
     success: boolean;
     warning?: string;
   } {
-    if (mode === _currentOutputMode) {
+    if (mode === this._currentOutputMode) {
       return { success: true };
     }
 
@@ -229,8 +229,8 @@ export function AudioServiceImpl(): AudioService {
     if (mode === "browser") {
       const currentAlsa = getCurrentAudioOutput();
       if (currentAlsa) {
-        _lastDeviceName = currentAlsa.name;
-        _lastAlsaConfig = [
+        this._lastDeviceName = currentAlsa.name;
+        this._lastAlsaConfig = [
           `audio_output {`,
           `    type        "alsa"`,
           `    name        "${currentAlsa.name}"`,
@@ -265,8 +265,8 @@ export function AudioServiceImpl(): AudioService {
         };
       }
     } else {
-      _lastDeviceName = null;
-      if (_lastAlsaConfig) {
+      this._lastDeviceName = null;
+      if (this._lastAlsaConfig) {
         try {
           if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
@@ -292,11 +292,11 @@ export function AudioServiceImpl(): AudioService {
     return { success: true, warning: restartResult.warning };
   }
 
-  function getOutputMode(): OutputMode {
+  public getOutputMode(): OutputMode {
     return _currentOutputMode;
   }
 
-  function getOutputDeviceName(): string | null {
+  public getOutputDeviceName(): string | null {
     if (_currentOutputMode === "mpd") {
       const status = getCurrentAudioOutput();
       return status?.name ?? null;
@@ -304,7 +304,7 @@ export function AudioServiceImpl(): AudioService {
     return _lastDeviceName;
   }
 
-  function checkTool(name: string): boolean {
+  public checkTool(name: string): boolean {
     try {
       execSync(`which ${name}`, { stdio: "ignore" });
       return true;
@@ -312,19 +312,6 @@ export function AudioServiceImpl(): AudioService {
       return false;
     }
   }
-
-  return {
-    getOutputMode,
-    getOutputDeviceName,
-    setOutputMode,
-    getAudioDevices,
-    getMpdStatus,
-    stopMPD,
-    restartMPD,
-    setOutputMode,
-    getOutputMode,
-    getOutputDeviceName,
-  };
 }
 
-export default AudioServiceImpl;
+export const audioService = new AudioServiceImpl();
