@@ -28,5 +28,5 @@ export type MPDEntityType =
 
 export interface MPDEntity {
   type: MPDEntityType;
-  [key: string]: any;
+  [key: string]: string | number | boolean | undefined;
 }

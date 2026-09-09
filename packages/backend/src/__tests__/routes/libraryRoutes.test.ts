@@ -24,13 +24,17 @@ describe("Library Routes", () => {
       artist_id: 1,
       cover_path: "abc.jpg",
       year: 2020,
+      artist_name: "Artist A",
+      genre: "Rock",
     },
     {
       id: 2,
       title: "Album B",
       artist_id: 2,
-      cover_path: null,
+      cover_path: undefined,
       year: 2021,
+      artist_name: "Artist B",
+      genre: "Pop",
     },
   ];
 

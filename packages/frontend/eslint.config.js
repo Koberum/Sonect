@@ -11,17 +11,21 @@ export default defineConfig([
     files: ["**/*.{ts,tsx}"],
     extends: [
       js.configs.recommended,
-      tseslint.configs.recommended,
+      tseslint.configs.recommendedTypeChecked, // Changed to type-checked
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
-    rules: {
-      "react-hooks/set-state-in-effect": "off",
-      "no-console": ["warn", { allow: ["warn", "error"] }],
-    },
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+      parserOptions: {
+        project: ["./tsconfig.app.json", "./tsconfig.node.json"],
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      "react-hooks/set-state-in-effect": "off",
+      "no-console": ["warn", { allow: ["warn", "error"] }],
     },
   },
 ]);

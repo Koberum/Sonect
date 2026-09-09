@@ -74,7 +74,7 @@ describe("play tracking DB helpers", () => {
       )
       .get() as { play_count: number; last_played: string | null };
     expect(row.play_count).to.equal(1);
-    expect(row.last_played).to.not.be.null;
+    expect(row.last_played).to.not.be.equal(null);
   });
 
   it("getTopTracks should return tracks ordered by play_count DESC", () => {
@@ -97,8 +97,8 @@ describe("play tracking DB helpers", () => {
     const { tracksDb } = dbModule;
     const discovery = tracksDb.getTracksForDiscovery(["Rock"], [], 10);
     const isTrack = (id: number) => (track: DBTrack) => track.id === id;
-    expect(discovery.some(isTrack(1))).to.be.true;
-    expect(discovery.some(isTrack(3))).to.be.false;
+    expect(discovery.some(isTrack(1))).to.be.equal(false);
+    expect(discovery.some(isTrack(3))).to.be.equal(false);
   });
 
   it("getTopGenres should return genres ordered by total play_count", () => {
@@ -134,7 +134,7 @@ describe("play tracking DB helpers", () => {
       .db()
       .$client.prepare("SELECT last_played FROM albums WHERE id = 1")
       .get() as { last_played: string | null };
-    expect(row.last_played).to.not.be.null;
+    expect(row.last_played).to.not.be.equal(null);
   });
 
   it("getRecentAlbums should return albums ordered by last_played DESC", () => {

@@ -19,7 +19,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/scripts/migrate.ts",
     "db:migrate-reset": "tsx src/scripts/migrate-reset.ts",
-    "db:studio": "drizzle-kit studio --host 0.0.0.0"
+    "db:studio": "drizzle-kit studio --host 0.0.0.0",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@repo/types": "workspace:*",
@@ -30,7 +31,11 @@
     "@types/node": "^25.2.0",
     "better-sqlite3": "^13.0.3",
     "drizzle-kit": "1.0.0-rc.4",
+    "@typescript/native": "npm:typescript@7.0.2",
+    "@typescript/typescript6": "6.0.2",
+    "eslint": "^10.10.0",
     "tsx": "^4.23.12",
-    "typescript": "7.0.2"
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "typescript-eslint": "^8.70.0"
   }
 }
