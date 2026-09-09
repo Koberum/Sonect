@@ -250,13 +250,11 @@ export const tracksDb = {
     return row?.value ?? 0;
   },
 
-  getRecent(limit: number): DBTrack[] {
-    return db()
-      .select()
-      .from(tracks)
+  getRecentWithRelations(limit: number): DBTrackWithRelations[] {
+    return joinedOnArtistAndAlbum()
       .orderBy(desc(tracks.created_at))
       .limit(limit)
-      .all() as DBTrack[];
+      .all() as DBTrackWithRelations[];
   },
 
   getGenres(): { genre: string; track_count: number; album_count: number }[] {
@@ -281,6 +279,13 @@ export const tracksDb = {
       .where(sql`${genres.name} = ${genre} COLLATE NOCASE`)
       .orderBy(asc(tracks.title))
       .all() as DBTrack[];
+  },
+
+  getByGenreWithRelations(genre: string): DBTrackWithRelations[] {
+    return joinedOnArtistAndAlbum()
+      .where(sql`${genres.name} = ${genre} COLLATE NOCASE`)
+      .orderBy(asc(tracks.title))
+      .all() as DBTrackWithRelations[];
   },
 
   getById(id: number): DBTrack | undefined {
@@ -380,19 +385,19 @@ export const tracksDb = {
       .all() as DBTrackWithRelations[];
   },
 
-  getByIdWithMeta(id: number): DBTrackWithRelations | undefined {
+  getByIdWithRelations(id: number): DBTrackWithRelations | undefined {
     return joinedOnArtistAndAlbum().where(eq(tracks.id, id)).get() as
       DBTrackWithRelations | undefined;
   },
 
-  getByArtistWithMeta(artistId: number): DBTrackWithRelations[] {
+  getByArtistWithRelations(artistId: number): DBTrackWithRelations[] {
     return joinedOnArtistAndAlbum()
       .where(eq(tracks.artist_id, artistId))
       .orderBy(asc(tracks.title))
       .all() as DBTrackWithRelations[];
   },
 
-  getByAlbumWithMeta(albumId: number): DBTrackWithRelations[] {
+  getByAlbumWithRelations(albumId: number): DBTrackWithRelations[] {
     return joinedOnArtistAndAlbum()
       .where(eq(tracks.album_id, albumId))
       .orderBy(
@@ -403,7 +408,7 @@ export const tracksDb = {
       .all() as DBTrackWithRelations[];
   },
 
-  getAllWithMeta(
+  getAllWithRelations(
     sort?: string,
     limit?: number,
     offset?: number,

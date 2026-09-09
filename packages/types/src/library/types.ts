@@ -1,4 +1,11 @@
-import { DBTrack, DBAlbum, DBArtist, DBGenre, DBPlaylist } from "../dbTypes";
+import {
+  DBTrack,
+  DBAlbum,
+  DBArtist,
+  DBGenre,
+  DBPlaylist,
+  DBTrackWithRelations,
+} from "../dbTypes";
 
 export type CoverProgress = {
   current: number;
@@ -11,13 +18,7 @@ export type CoverProgress = {
 };
 
 export type Track = DBTrack;
-export type TrackWithCover = Track & {
-  cover_path: string;
-  artist_name: string;
-  album_name?: string;
-  genre?: string;
-};
-
+export type TrackWithRelations = DBTrackWithRelations;
 export type Artist = DBArtist & {
   coverPreviews?: string[];
 };

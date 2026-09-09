@@ -1,21 +1,20 @@
 import { tracksDb, artistsDb, albumsDb, statsDb } from "@repo/db";
-import { LibraryStats, SearchResults } from, TrackWithCover "@repo/types/library";
+import { LibraryStats, SearchResults } from "@repo/types/library";
 import {
-  MpdSyncService,
   type SyncProgress,
-} from "@services/mpd/mpdSyncService";
+  LibrarySyncService,
+  librarySyncService,
+} from "@services/library/librarySyncService";
 import { scanStorageStats } from "@services/storage/storageStats";
 import { broadcast } from "../../ws/broadcast";
-import { PlayerService } from "@services/player/playerService";
-import { LogService } from "@services/utils/logService";
-import { CoverService } from "@services/library/coverService";
-import { GenreService } from "@services/library/genreService";
-import { DBAlbum, DBArtist, DBTrack } from "@repo/types";
-import { TrackWithCover } from "@repo/types/library";
+import { coverService } from "@services/library/coverService";
+import type { PlayerService } from "@services/player/playerService";
+import { playerService } from "@services/player/playerService";
+import type { CoverService } from "@services/library/coverService";
 
 interface LibraryService {
   getLibraryStats(): Promise<LibraryStats>;
-  search(query: string): Promise<SearchResults>;
+  searchTracks(query: string): Promise<SearchResults>;
   getCurrentSyncProgress(): Record<string, unknown> | null;
   setCurrentSyncProgress(progress: Record<string, unknown> | null): void;
   scanLibrary(): Promise<void>;
@@ -25,10 +24,9 @@ interface LibraryService {
 
 class LibraryServiceImpl implements LibraryService {
   constructor(
-    private readonly playerService: PlayerService,
-    private readonly coverService: CoverService,
-    private readonly genreService: GenreService,
-    private readonly logService: LogService,
+    private readonly playerService: PlayerService = playerService,
+    private readonly coverService: CoverService = coverService,
+    private readonly librarySyncService: LibrarySyncService = librarySyncService,
   ) {}
 
   private currentSyncProgress: Record<string, unknown> | null = null;
@@ -40,8 +38,6 @@ class LibraryServiceImpl implements LibraryService {
 
   public async searchTracks(query: string): Promise<SearchResults> {
     const q = query.toLowerCase();
-
-
 
     const matchedArtists = artistsDb.search(q);
     const artists = matchedArtists.map((artist) => ({
@@ -84,11 +80,8 @@ class LibraryServiceImpl implements LibraryService {
     try {
       await this.playerService.updateLibrary();
 
-      const syncService = new MpdSyncService();
-      const coverService = new CoverService();
-
       // Phase 1: Sync tracks from MPD
-      await syncService.syncAll((progress: SyncProgress) => {
+      await this.librarySyncService.syncAll((progress: SyncProgress) => {
         this.currentSyncProgress = { ...progress } as Record<string, unknown>;
         broadcast({ type: "sync-progress", ...progress });
       });
@@ -96,22 +89,25 @@ class LibraryServiceImpl implements LibraryService {
       // Phase 2: Extract covers for all albums
       const albums = albumsDb.getAll();
       if (albums.length > 0) {
-        await coverService.syncAllCovers(albums, (progress: SyncProgress) => {
-          this.currentSyncProgress = {
-            phase: "covers",
-            current: progress.current,
-            total: progress.total,
-            track: {
-              title: progress.track?.title,
-              artist: progress.track?.artist,
-              album: progress.track?.album,
-            },
-          };
-          broadcast({
-            type: "sync-progress",
-            ...this.currentSyncProgress,
-          });
-        });
+        await this.coverService.syncAllCovers(
+          albums,
+          (progress: SyncProgress) => {
+            this.currentSyncProgress = {
+              phase: "covers",
+              current: progress.current,
+              total: progress.total,
+              track: {
+                title: progress.track?.title,
+                artist: progress.track?.artist,
+                album: progress.track?.album,
+              },
+            };
+            broadcast({
+              type: "sync-progress",
+              ...this.currentSyncProgress,
+            });
+          },
+        );
       }
 
       // Phase 3: Refresh per-source library statistics
@@ -189,24 +185,10 @@ class LibraryServiceImpl implements LibraryService {
       this.syncRunning = false;
     }
   }
-
-  public async mapDbTrackToTrack(
-    dbTrack: DBTrack,
-    artist?: DBArtist | null,
-    album?: (DBAlbum & { genre?: string }) | null,
-  ): Promise<TrackWithCover> {
-    return {
-      ...dbTrack,
-      artist_name: artist?.name ?? "",
-      cover_path: album?.cover_path ?? "",
-      album_name: album?.title,
-      genre:
-        (dbTrack as any).genre ??
-        (dbTrack.genre_id
-          ? (await this.genreService.getById(dbTrack.genre_id))?.name
-          : undefined) ??
-        album?.genre ??
-        undefined,
-    };
-  }
 }
+
+export const libraryService: LibraryService = new LibraryServiceImpl(
+  playerService,
+  coverService,
+  librarySyncService,
+);

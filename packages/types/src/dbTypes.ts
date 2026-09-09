@@ -24,9 +24,10 @@ export type DBTrack = {
 };
 
 export type DBTrackWithRelations = DBTrack & {
-  artist: DBArtist;
-  album: DBAlbum;
-  genre: DBGenre;
+  artist_name?: string;
+  album_title?: string;
+  cover_path?: string;
+  genre?: string;
 };
 
 export type DBArtist = {

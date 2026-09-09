@@ -1,5 +1,5 @@
 import { albumsDb, tracksDb } from "@repo/db";
-import type { DashboardData, Album, Track } from "@repo/types";
+import type { DashboardData, Album, Track } from "@repo/types/library";
 
 export class SuggestionService {
   async getDashboard(currentAlbumId?: number): Promise<DashboardData> {

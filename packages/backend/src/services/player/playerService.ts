@@ -1,6 +1,6 @@
 import { PlayTrackError } from "@repo/types";
 import { PlayTrackResponse, PlaybackStatus, QueuedTrack } from "@repo/types";
-import { LogService } from "@services/utils/logService";
+import { logService, LogService } from "@services/utils/logService";
 import { mpdConnectionManager } from "@services/mpd/mpdConnectionManager";
 import { autoplayService } from "../mpd/autoplayService";
 import { tracksDb, albumsDb } from "@repo/db";
@@ -317,3 +317,5 @@ class PlayerServiceImpl implements PlayerService {
     }
   }
 }
+
+export const playerService: PlayerService = new PlayerServiceImpl(logService);

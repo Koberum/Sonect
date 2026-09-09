@@ -19,7 +19,7 @@ export type SyncProgress = {
   } | null;
 };
 
-export class MpdSyncService {
+export class LibrarySyncService {
   async initDatabase(): Promise<void> {
     await initDatabase();
   }
@@ -140,4 +140,4 @@ export class MpdSyncService {
   }
 }
 
-export default MpdSyncService;
+export const librarySyncService = new LibrarySyncService();

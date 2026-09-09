@@ -6,8 +6,7 @@ import * as dbModule from "@repo/db";
 import fs from "fs";
 import { mpdConnectionManager } from "../../services/utils/mpdConnectionManager";
 import { errorHandler } from "../../middleware/errorHandler";
-import { MpdSyncService } from "../../services/mpd/mpdSyncService";
-import { CoverService } from "../../services/library/coverService";
+import { MpdSyncService } from "../../services/library/librarySyncService";
 
 describe("Library Routes", () => {
   let request: supertest.SuperTest<supertest.Test>;

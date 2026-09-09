@@ -4,8 +4,8 @@ import {
   PlaylistTrack,
   PlaylistWithTracks,
   Track,
-} from "@repo/types";
-import { mpdConnectionManager } from "./utils/mpdConnectionManager";
+} from "@repo/types/library";
+import { mpdConnectionManager } from "@services/mpd/mpdConnectionManager";
 
 export function getAllPlaylists(): Playlist[] {
   return playlistsDb.getAll();

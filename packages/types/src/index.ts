@@ -14,6 +14,7 @@ export type {
   DBPlaylist,
   DBStorageSource,
   DBSetupProgress,
+  DBTrackWithRelations,
 } from "./dbTypes";
 import type { DBStorageSource, DBSetupProgress } from "./dbTypes";
 import { Track } from "./library/types";

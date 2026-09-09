@@ -9,7 +9,7 @@ import {
   tracksDb,
   db,
 } from "@repo/db";
-import { MpdSyncService } from "../../services/mpd/mpdSyncService";
+import { MpdSyncService } from "../../services/library/librarySyncService";
 import { mpdConnectionManager } from "../../services/utils/mpdConnectionManager";
 
 describe("MpdSyncService", () => {

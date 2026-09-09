@@ -1,9 +1,9 @@
-import { Track, TrackWithCover } from "@repo/types/library";
+import { Track, TrackWithRelations } from "@repo/types/library";
 import { albumsDb, artistsDb, tracksDb } from "@repo/db";
 
 interface TrackService {
-  getTracksByAlbum(albumId: number): Track[];
-  getTracksByArtist(artistId: number): Track[];
+  getTracksByAlbum(albumId: number): TrackWithRelations[];
+  getTracksByArtist(artistId: number): TrackWithRelations[];
   getAllTracks(sort?: string, limit?: number, offset?: number): Track[];
   getTrackCount(): number;
   getTrackById(id: number): Track | undefined;
@@ -11,75 +11,58 @@ interface TrackService {
   getTracksByGenre(genre: string): Track[];
   getRecentlyAddedTracks(limit?: number): Track[];
 
-  getTrackByIdWithCover(id: number): TrackWithCover | undefined;
-  getTracksByAlbumWithCover(albumId: number): TrackWithCover[];
-  getTracksByArtistWithCover(artistId: number): TrackWithCover[];
+  getTrackByIdWithCover(id: number): TrackWithRelations | undefined;
   getAllTracksWithCover(
     sort?: string,
     limit?: number,
     offset?: number,
-  ): TrackWithCover[];
-  getRecentlyAddedTracksWithCover(limit?: number): TrackWithCover[];
-  getTracksByGenreWithCover(genre: string): TrackWithCover[];
+  ): TrackWithRelations[];
+  getRecentlyAddedTracksWithCover(limit?: number): TrackWithRelations[];
+  getTracksByGenreWithCover(genre: string): TrackWithRelations[];
 }
 
 class TrackServiceImpl implements TrackService {
-  public getRecentlyAddedTracks(limit = 20): Track[] {
-    const dbTracks = tracksDb.getRecent(limit);
-    return dbTracks.map((dbTrack) => {
-      const artist = dbTrack.artist_id
-        ? artistsDb.getById(dbTrack.artist_id)
-        : undefined;
-      const album = dbTrack.album_id
-        ? albumsDb.getById(dbTrack.album_id)
-        : undefined;
-      return mapDbTrackToTrack(dbTrack, artist, album);
-    });
+  public getRecentlyAddedTracks(limit = 20): TrackWithRelations[] {
+    const dbTracks = tracksDb.getRecentWithRelations(limit);
+    return dbTracks as TrackWithRelations[];
   }
 
-  public getTracksByGenre(genre: string): Track[] {
-    const dbTracks = tracksDb.getByGenre(genre);
-    return dbTracks.map((dbTrack) => {
-      const artist = dbTrack.artist_id
-        ? artistsDb.getById(dbTrack.artist_id)
-        : undefined;
-      const album = dbTrack.album_id
-        ? albumsDb.getById(dbTrack.album_id)
-        : undefined;
-      return mapDbTrackToTrack(dbTrack, artist, album);
-    });
+  public getTracksByGenre(genre: string): TrackWithRelations[] {
+    const dbTracks = tracksDb.getByGenreWithRelations(genre);
+    return dbTracks as TrackWithRelations[];
   }
   public resolveTrack(
     artist: string,
     album: string,
     title: string,
-  ): Track | null {
-    const dbTrack = await tracksDb.getByArtistAlbumTitle(artist, album, title);
+  ): TrackWithRelations | null {
+    const dbTrack = tracksDb.getByArtistAlbumTitle(artist, album, title);
     if (!dbTrack) return null;
 
     const dbArtist = dbTrack.artist_id
-      ? await artistsDb.getById(dbTrack.artist_id)
+      ? artistsDb.getById(dbTrack.artist_id)
       : undefined;
     const dbAlbum = dbTrack.album_id
-      ? await albumsDb.getById(dbTrack.album_id)
+      ? albumsDb.getById(dbTrack.album_id)
       : undefined;
 
     return mapDbTrackToTrack(dbTrack, dbArtist, dbAlbum);
   }
 
-  public getTracksByAlbum(albumId: number): Track[] {
+  public getTracksByAlbum(albumId: number): TrackWithRelations[] {
     const album = albumsDb.getById(albumId);
     if (!album) throw new Error("Album not found");
 
-    return tracksDb.getByAlbum(albumId).map((dbTrack) => {
-      const trackArtist = dbTrack.artist_id
-        ? artistsDb.getById(dbTrack.artist_id)
-        : undefined;
-      return mapDbTrackToTrack(dbTrack, trackArtist, album);
-    });
+    return tracksDb.getByAlbumWithRelations(albumId).map((dbTrack) => ({
+      ...dbTrack,
+      cover_path: album.cover_path ?? "",
+      album_name: album.title,
+      artist_name: dbTrack.artist.name ?? album.artist_name ?? "",
+      genre: dbTrack.genre ?? album.genre ?? undefined,
+    }));
   }
 
-  public getTracksByArtist(artistId: number): Track[] {
+  public getTracksByArtist(artistId: number): TrackWithRelations[] {
     const artist = artistsDb.getById(artistId);
     if (!artist) throw new Error("Artist not found");
 
@@ -88,7 +71,11 @@ class TrackServiceImpl implements TrackService {
       .map((dbTrack) => mapDbTrackToTrack(dbTrack, artist));
   }
 
-  public getAllTracks(sort?: string, limit?: number, offset?: number): Track[] {
+  public getAllTracks(
+    sort?: string,
+    limit?: number,
+    offset?: number,
+  ): TrackWithRelations[] {
     const dbTracks = tracksDb.getAll({ sort, limit, offset });
     return dbTracks.map((dbTrack) => {
       const artist = dbTrack.artist_id
@@ -105,7 +92,7 @@ class TrackServiceImpl implements TrackService {
     return tracksDb.count();
   }
 
-  public getTrackById(id: number): Track | undefined {
+  public getTrackById(id: number): TrackWithRelations | undefined {
     const dbTrack = tracksDb.getById(id);
     if (!dbTrack) return undefined;
 
@@ -116,19 +103,6 @@ class TrackServiceImpl implements TrackService {
       ? albumsDb.getById(dbTrack.album_id)
       : undefined;
     return mapDbTrackToTrack(dbTrack, artist, album);
-  }
-
-  public getTracksByAlbum(albumId: number): TrackWithCover[] {
-    const album = albumsDb.getById(albumId);
-    if (!album) throw new Error("Album not found");
-
-    return tracksDb.getByAlbum(albumId).map((dbTrack) => ({
-      ...dbTrack,
-      cover_path: album.cover_path ?? "",
-      album_name: album.title,
-      artist_name: dbTrack.artist_name ?? album.artist_name ?? "",
-      genre: dbTrack.genre ?? album.genre ?? undefined,
-    }));
   }
 }
 

@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { MpdSyncService } from "../services/mpd/mpdSyncService.js";
+import { MpdSyncService } from "../services/library/librarySyncService.js";
 
 async function main() {
   const syncService = new MpdSyncService();
