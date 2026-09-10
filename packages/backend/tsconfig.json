@@ -10,11 +10,10 @@
     "strict": true,
     "skipLibCheck": true,
     "types": ["@typescript/native", "mocha"],
-    "baseUrl": ".",
     "paths": {
-      "@services/*": ["src/services/*"],
-      "@middleware/*": ["src/middleware/*"],
-      "@controllers/*": ["src/controllers/*"]
+      "@services/*": ["./src/services/*"],
+      "@middleware/*": ["./src/middleware/*"],
+      "@controllers/*": ["./src/controllers/*"]
     }
   },
   "include": ["src/**/*"]

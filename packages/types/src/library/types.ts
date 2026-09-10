@@ -65,3 +65,4 @@ export interface LibraryStats {
   tracksWithoutAlbum: number;
   lastSync: string | null;
 }
+

@@ -6,6 +6,7 @@ import * as mm from "music-metadata";
 import { albumsDb, tracksDb, artistsDb } from "@repo/db";
 import { DBAlbum, DBTrack } from "@repo/types";
 import { logService, LogService } from "@services/utils/logService";
+import { CoverProgress } from "@repo/types/library";
 
 const COVERS_DIR = process.env.COVERS_DIR || "./data/covers";
 const MUSIC_DIR = process.env.MUSIC_DIR ?? "/opt/sonect/music";
@@ -26,16 +27,6 @@ const COVER_FILE_NAMES = [
   "FrontCover.jpg",
   "frontcover.jpg",
 ];
-
-export type CoverProgress = {
-  current: number;
-  total: number;
-  album: {
-    id: number;
-    title: string;
-    artist: string;
-  };
-};
 
 export interface CoverService {
   syncAllCovers(

@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
+import { checkTool } from "@services/utils/utils";
 
 const MPD_CONFIG_PATH =
   process.env.MPD_CONFIG_PATH ?? "/opt/sonect/data/mpd-audio.conf";
@@ -72,15 +73,6 @@ export function ensureFollowOutsideSymlinks(): {
 
 export function getConfigPath(): string {
   return MPD_CONFIG_PATH;
-}
-
-function checkTool(name: string): boolean {
-  try {
-    execSync(`which ${name}`, { stdio: "ignore" });
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 function restartMpdInternal(): { success: boolean; warning?: string } {

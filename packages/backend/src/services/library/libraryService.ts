@@ -11,8 +11,9 @@ import { coverService } from "@services/library/coverService";
 import type { PlayerService } from "@services/player/playerService";
 import { playerService } from "@services/player/playerService";
 import type { CoverService } from "@services/library/coverService";
+import { CoverProgress } from "@repo/types/library";
 
-interface LibraryService {
+export interface LibraryService {
   getLibraryStats(): Promise<LibraryStats>;
   searchTracks(query: string): Promise<SearchResults>;
   getCurrentSyncProgress(): Record<string, unknown> | null;
@@ -91,16 +92,11 @@ class LibraryServiceImpl implements LibraryService {
       if (albums.length > 0) {
         await this.coverService.syncAllCovers(
           albums,
-          (progress: SyncProgress) => {
+          (progress: CoverProgress) => {
             this.currentSyncProgress = {
               phase: "covers",
               current: progress.current,
               total: progress.total,
-              track: {
-                title: progress.track?.title,
-                artist: progress.track?.artist,
-                album: progress.track?.album,
-              },
             };
             broadcast({
               type: "sync-progress",
@@ -139,8 +135,6 @@ class LibraryServiceImpl implements LibraryService {
       return;
     }
     this.syncRunning = true;
-
-    const coverService = new CoverService();
     const albums = albumsDb.getAll();
     if (albums.length === 0) {
       this.currentSyncProgress = null;

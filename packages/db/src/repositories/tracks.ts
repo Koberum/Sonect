@@ -220,31 +220,6 @@ export const tracksDb = {
     return transaction((tx) => upsertTrack(tx, track));
   },
 
-  getAll({
-    sort,
-    limit,
-    offset,
-  }: { sort?: string; limit?: number; offset?: number } = {}): DBTrack[] {
-    const orderBy =
-      sort === "recent"
-        ? [desc(tracks.created_at)]
-        : sort === "duration"
-          ? [desc(tracks.duration)]
-          : [asc(tracks.title)];
-    let query = db()
-      .select()
-      .from(tracks)
-      .orderBy(...orderBy)
-      .$dynamic();
-    if (limit !== undefined) {
-      query = query.limit(limit);
-      if (offset !== undefined) {
-        query = query.offset(offset);
-      }
-    }
-    return query.all() as DBTrack[];
-  },
-
   count(): number {
     const row = db().select({ value: count() }).from(tracks).get();
     return row?.value ?? 0;
@@ -344,9 +319,9 @@ export const tracksDb = {
     artist: string,
     album: string,
     title: string,
-  ): DBTrack | undefined {
+  ): DBTrackWithRelations | undefined {
     return db()
-      .select(getColumns(tracks))
+      .select(dBTrackWithRelations)
       .from(tracks)
       .leftJoin(artists, eq(tracks.artist_id, artists.id))
       .leftJoin(albums, eq(tracks.album_id, albums.id))
@@ -358,7 +333,7 @@ export const tracksDb = {
         ),
       )
       .limit(1)
-      .get() as DBTrack | undefined;
+      .get() as DBTrackWithRelations | undefined;
   },
 
   deleteByFile(file: string): void {

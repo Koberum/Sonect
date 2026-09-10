@@ -2,10 +2,9 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import type { OutputMode } from "@repo/types";
-import { AudioDevice } from "@repo/types/system";
+import { checkTool } from "@services/utils/utils";
 
 interface AudioService {
-  getAudioDevices(): AudioDevice[];
   getCurrentAudioOutput(): { card: string; name: string } | null;
   configureAudioOutput(params: {
     card: string;
@@ -14,30 +13,30 @@ interface AudioService {
   }): { success: boolean; warning?: string };
   restartMPD(): { success: boolean; warning?: string };
   stopMPD(): { success: boolean; warning?: string };
-  getMpdStatus(): { success: boolean; warning?: string };
+  getMpdStatus(): {
+    running: boolean;
+    pid?: string;
+    error?: string;
+  };
   setOutputMode(mode: OutputMode): { success: boolean; warning?: string };
   getOutputMode(): OutputMode;
   getOutputDeviceName(): string | null;
 }
 
 class AudioServiceImpl implements AudioService {
-  private readonly MPD_CONFIG_PATH =
+  private readonly mpdConfigPath =
     process.env.MPD_CONFIG_PATH ?? "/opt/sonect/data/mpd-audio.conf";
 
   private _currentOutputMode: OutputMode = "mpd";
   private _lastAlsaConfig: string | null = null;
   private _lastDeviceName: string | null = null;
 
-  public getAudioDevices(): AudioDevice[] {
-    return detectAudioDevices();
-  }
-
   public getCurrentAudioOutput(): {
     card: string;
     name: string;
   } | null {
     try {
-      const config = fs.readFileSync(MPD_CONFIG_PATH, "utf-8");
+      const config = fs.readFileSync(this.mpdConfigPath, "utf-8");
       const match = config.match(/audio_output\s*\{[^}]*\}/s);
       if (!match) return null;
       const device = match[0].match(/device\s+"([^"]+)"/)?.[1];
@@ -65,13 +64,13 @@ class AudioServiceImpl implements AudioService {
       `}`,
     ].join("\n");
 
-    const dir = path.dirname(MPD_CONFIG_PATH);
+    const dir = path.dirname(this.mpdConfigPath);
 
-    if (!fs.existsSync(MPD_CONFIG_PATH)) {
+    if (!fs.existsSync(this.mpdConfigPath)) {
       try {
         fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(
-          MPD_CONFIG_PATH,
+          this.mpdConfigPath,
           "# This file is managed by the Sonect frontend.\n# It is owned by the service user, so no sudo is needed for edits.\n\n" +
             newOutput +
             "\n",
@@ -80,21 +79,21 @@ class AudioServiceImpl implements AudioService {
       } catch {
         return {
           success: false,
-          warning: `Cannot write to ${MPD_CONFIG_PATH}. Check file permissions.`,
+          warning: `Cannot write to ${this.mpdConfigPath}. Check file permissions.`,
         };
       }
 
-      const restartResult = restartMPD();
+      const restartResult = this.restartMPD();
       return { success: true, warning: restartResult.warning };
     }
 
     let config: string;
     try {
-      config = fs.readFileSync(MPD_CONFIG_PATH, "utf-8");
+      config = fs.readFileSync(this.mpdConfigPath, "utf-8");
     } catch {
       return {
         success: false,
-        warning: `Cannot read ${MPD_CONFIG_PATH}. File may not exist.`,
+        warning: `Cannot read ${this.mpdConfigPath}. File may not exist.`,
       };
     }
 
@@ -108,15 +107,15 @@ class AudioServiceImpl implements AudioService {
     }
 
     try {
-      fs.writeFileSync(MPD_CONFIG_PATH, config, "utf-8");
+      fs.writeFileSync(this.mpdConfigPath, config, "utf-8");
     } catch {
       return {
         success: false,
-        warning: `Cannot write to ${MPD_CONFIG_PATH}. Check file permissions.`,
+        warning: `Cannot write to ${this.mpdConfigPath}. Check file permissions.`,
       };
     }
 
-    const restartResult = restartMPD();
+    const restartResult = this.restartMPD();
     return { success: true, warning: restartResult.warning };
   }
 
@@ -224,10 +223,10 @@ class AudioServiceImpl implements AudioService {
       return { success: true };
     }
 
-    const dir = path.dirname(MPD_CONFIG_PATH);
+    const dir = path.dirname(this.mpdConfigPath);
 
     if (mode === "browser") {
-      const currentAlsa = getCurrentAudioOutput();
+      const currentAlsa = this.getCurrentAudioOutput();
       if (currentAlsa) {
         this._lastDeviceName = currentAlsa.name;
         this._lastAlsaConfig = [
@@ -252,7 +251,7 @@ class AudioServiceImpl implements AudioService {
           fs.mkdirSync(dir, { recursive: true });
         }
         fs.writeFileSync(
-          MPD_CONFIG_PATH,
+          this.mpdConfigPath,
           "# This file is managed by the Sonect frontend.\n# Browser output mode — MPD plays silently.\n\n" +
             nullConfig +
             "\n",
@@ -261,7 +260,7 @@ class AudioServiceImpl implements AudioService {
       } catch {
         return {
           success: false,
-          warning: `Cannot write to ${MPD_CONFIG_PATH}.`,
+          warning: `Cannot write to ${this.mpdConfigPath}.`,
         };
       }
     } else {
@@ -272,36 +271,36 @@ class AudioServiceImpl implements AudioService {
             fs.mkdirSync(dir, { recursive: true });
           }
           fs.writeFileSync(
-            MPD_CONFIG_PATH,
+            this.mpdConfigPath,
             "# This file is managed by the Sonect frontend.\n\n" +
-              _lastAlsaConfig +
+              this._lastAlsaConfig +
               "\n",
             "utf-8",
           );
         } catch {
           return {
             success: false,
-            warning: `Cannot write to ${MPD_CONFIG_PATH}.`,
+            warning: `Cannot write to ${this.mpdConfigPath}.`,
           };
         }
       }
     }
 
-    _currentOutputMode = mode;
-    const restartResult = restartMPD();
+    this._currentOutputMode = mode;
+    const restartResult = this.restartMPD();
     return { success: true, warning: restartResult.warning };
   }
 
   public getOutputMode(): OutputMode {
-    return _currentOutputMode;
+    return this._currentOutputMode;
   }
 
   public getOutputDeviceName(): string | null {
-    if (_currentOutputMode === "mpd") {
-      const status = getCurrentAudioOutput();
+    if (this._currentOutputMode === "mpd") {
+      const status = this.getCurrentAudioOutput();
       return status?.name ?? null;
     }
-    return _lastDeviceName;
+    return this._lastDeviceName;
   }
 
   public checkTool(name: string): boolean {

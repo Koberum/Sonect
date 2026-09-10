@@ -2,9 +2,10 @@ import { EventEmitter } from "events";
 import net from "net";
 import mpd from "mpd";
 import type { PlaybackStatus, PlaybackState } from "@repo/types";
-import { resolveTrack } from "../library/libraryService";
+import { TrackService, trackService } from "@services/library/trackService";
+import { LogService, logService } from "@services/utils/logService";
 import { parseKeyValue, hashFile } from "../../utils/mpd.js";
-import { pushLog } from "./logService";
+import { TrackWithRelations } from "@repo/types/library";
 
 const { cmd } = mpd;
 
@@ -35,6 +36,13 @@ function createDefaultStatus(): PlaybackStatus {
 }
 
 export class MpdConnectionManager extends EventEmitter {
+  constructor(
+    private trackService: TrackService,
+    private logService: LogService,
+  ) {
+    super();
+  }
+
   private cmdClient: MPDClient | null = null;
   private pollSocket: net.Socket | null = null;
   private _cache: PlaybackStatus = createDefaultStatus();
@@ -75,7 +83,7 @@ export class MpdConnectionManager extends EventEmitter {
 
   async executeCommand(command: string, args: string[] = []): Promise<string> {
     console.log(`[MPD] Executing command: ${command} ${args.join(" ")}`);
-    pushLog("info", `MPD cmd: ${command} ${args.join(" ")}`);
+    this.logService.pushLog("info", `MPD cmd: ${command} ${args.join(" ")}`);
 
     if (!this._cmdConnected || !this.cmdClient) {
       throw new Error("MPD connection not available");
@@ -151,7 +159,9 @@ export class MpdConnectionManager extends EventEmitter {
     if (!client) return;
     try {
       client.socket.end();
-    } catch {}
+    } catch {
+      this.logService.pushLog("error", "Failed to destroy MPD client socket");
+    }
     client.removeAllListeners();
   }
 
@@ -159,7 +169,9 @@ export class MpdConnectionManager extends EventEmitter {
     if (!this.pollSocket) return;
     try {
       this.pollSocket.end();
-    } catch {}
+    } catch {
+      this.logService.pushLog("error", "Failed to destroy MPD poll socket");
+    }
     this.pollSocket.removeAllListeners();
   }
 
@@ -172,25 +184,31 @@ export class MpdConnectionManager extends EventEmitter {
 
       client.on("ready", () => {
         console.log("[MPD] Command connection ready");
-        pushLog("info", "MPD command connection ready");
+        this.logService.pushLog("info", "MPD command connection ready");
         this._cmdConnected = true;
         this._cmdReconnectDelay = RECONNECT_BASE_MS;
       });
 
       client.on("end", () => {
         console.log("[MPD] Command connection closed");
-        pushLog("warn", "MPD command connection closed");
+        this.logService.pushLog("warn", "MPD command connection closed");
         this._cmdConnected = false;
         this.scheduleReconnectCmd();
       });
 
       client.on("error", (err: Error) => {
         console.error("[MPD] Command connection error:", err.message);
-        pushLog("error", `MPD command connection error: ${err.message}`);
+        this.logService.pushLog(
+          "error",
+          `MPD command connection error: ${err.message}`,
+        );
       });
     } catch (err) {
       console.error("[MPD] Command connection failed:", err);
-      pushLog("error", `MPD command connection failed: ${String(err)}`);
+      this.logService.pushLog(
+        "error",
+        `MPD command connection failed: ${String(err)}`,
+      );
       this.scheduleReconnectCmd();
     }
   }
@@ -215,7 +233,7 @@ export class MpdConnectionManager extends EventEmitter {
 
             if (greeting.startsWith("OK MPD ")) {
               console.log("[MPD] Poll connection ready");
-              pushLog("info", "MPD poll connection ready");
+              this.logService.pushLog("info", "MPD poll connection ready");
               this._pollConnected = true;
               this._pollReconnectDelay = RECONNECT_BASE_MS;
 
@@ -224,7 +242,10 @@ export class MpdConnectionManager extends EventEmitter {
               this.refreshFullCache().then(() => this.startPolling());
             } else {
               console.error(`[MPD] Invalid greeting: ${greeting}`);
-              pushLog("error", `Invalid MPD greeting: ${greeting}`);
+              this.logService.pushLog(
+                "error",
+                `Invalid MPD greeting: ${greeting}`,
+              );
               socket.end();
               this.pollSocket = null;
               this.scheduleReconnectPoll();
@@ -237,7 +258,7 @@ export class MpdConnectionManager extends EventEmitter {
 
       socket.on("close", () => {
         console.log("[MPD] Poll connection closed");
-        pushLog("warn", "MPD poll connection closed");
+        this.logService.pushLog("warn", "MPD poll connection closed");
         this._pollConnected = false;
         this.stopPolling();
         const reject = this._pollReject;
@@ -251,11 +272,17 @@ export class MpdConnectionManager extends EventEmitter {
 
       socket.on("error", (err: Error) => {
         console.error("[MPD] Poll connection error:", err.message);
-        pushLog("error", `MPD poll connection error: ${err.message}`);
+        this.logService.pushLog(
+          "error",
+          `MPD poll connection error: ${err.message}`,
+        );
       });
     } catch (err) {
       console.error("[MPD] Poll connection failed:", err);
-      pushLog("error", `MPD poll connection failed: ${String(err)}`);
+      this.logService.pushLog(
+        "error",
+        `MPD poll connection failed: ${String(err)}`,
+      );
       this.scheduleReconnectPoll();
     }
   }
@@ -287,7 +314,7 @@ export class MpdConnectionManager extends EventEmitter {
       const rawStatus = await this.executeOnPollClient("status");
       const status = parseKeyValue(rawStatus);
 
-      let resolvedTrack = undefined;
+      let resolvedTrack: TrackWithRelations | undefined;
       const currentSongId = parseInt(status.songid, 10);
 
       if (!isNaN(currentSongId)) {
@@ -301,11 +328,12 @@ export class MpdConnectionManager extends EventEmitter {
             const song = parseKeyValue(rawSong);
 
             if (song.file && song.Artist && song.Album && song.Title) {
-              resolvedTrack = await resolveTrack(
-                song.Artist,
-                song.Album,
-                song.Title,
-              );
+              resolvedTrack =
+                (await this.trackService.resolveTrack(
+                  song.Artist,
+                  song.Album,
+                  song.Title,
+                )) ?? undefined;
             }
 
             if (!resolvedTrack && song.file) {
@@ -317,7 +345,9 @@ export class MpdConnectionManager extends EventEmitter {
                 cover_path: "",
               };
             }
-          } catch {}
+          } catch {
+            this.logService.pushLog("error", "Failed to resolve current song");
+          }
           if (resolvedTrack) {
             this.emit("trackChanged", resolvedTrack);
           }
@@ -361,7 +391,10 @@ export class MpdConnectionManager extends EventEmitter {
         Promise.resolve(this._autoplayCallback(this._cache.track.file))
           .catch((err) => {
             console.error("[MPD] Autoplay fill failed:", err);
-            pushLog("error", `Autoplay fill failed: ${String(err)}`);
+            this.logService.pushLog(
+              "error",
+              `Autoplay fill failed: ${String(err)}`,
+            );
           })
           .finally(() => {
             this._autofillInProgress = false;
@@ -369,7 +402,10 @@ export class MpdConnectionManager extends EventEmitter {
       }
     } catch (err) {
       console.error("[MPD] Failed to refresh cache:", err);
-      pushLog("error", `Failed to refresh cache: ${String(err)}`);
+      this.logService.pushLog(
+        "error",
+        `Failed to refresh cache: ${String(err)}`,
+      );
     } finally {
       this._refreshInProgress = false;
     }
@@ -434,7 +470,10 @@ export class MpdConnectionManager extends EventEmitter {
     console.log(
       `[MPD] Reconnecting command in ${this._cmdReconnectDelay}ms ...`,
     );
-    pushLog("warn", `MPD cmd reconnecting in ${this._cmdReconnectDelay}ms`);
+    this.logService.pushLog(
+      "warn",
+      `MPD cmd reconnecting in ${this._cmdReconnectDelay}ms`,
+    );
     this._cmdReconnectTimer = setTimeout(() => {
       this._cmdReconnectTimer = null;
       this._cmdReconnectDelay = Math.min(
@@ -452,7 +491,10 @@ export class MpdConnectionManager extends EventEmitter {
     if (!this._running || this._pollReconnectTimer) return;
 
     console.log(`[MPD] Reconnecting poll in ${this._pollReconnectDelay}ms ...`);
-    pushLog("warn", `MPD poll reconnecting in ${this._pollReconnectDelay}ms`);
+    this.logService.pushLog(
+      "warn",
+      `MPD poll reconnecting in ${this._pollReconnectDelay}ms`,
+    );
     this._pollReconnectTimer = setTimeout(() => {
       this._pollReconnectTimer = null;
       this._pollReconnectDelay = Math.min(
@@ -467,4 +509,7 @@ export class MpdConnectionManager extends EventEmitter {
   }
 }
 
-export const mpdConnectionManager = new MpdConnectionManager();
+export const mpdConnectionManager = new MpdConnectionManager(
+  trackService,
+  logService,
+);
