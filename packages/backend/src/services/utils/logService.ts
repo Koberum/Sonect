@@ -58,5 +58,3 @@ export class LogServiceImpl implements LogService {
     return this.logs;
   }
 }
-
-export const logService = new LogServiceImpl();

@@ -4,7 +4,7 @@ import path from "path";
 import type { OutputMode } from "@repo/types";
 import { checkTool } from "@services/utils/utils";
 
-interface AudioService {
+export interface AudioService {
   getCurrentAudioOutput(): { card: string; name: string } | null;
   configureAudioOutput(params: {
     card: string;
@@ -23,7 +23,7 @@ interface AudioService {
   getOutputDeviceName(): string | null;
 }
 
-class AudioServiceImpl implements AudioService {
+export class AudioServiceImpl implements AudioService {
   private readonly mpdConfigPath =
     process.env.MPD_CONFIG_PATH ?? "/opt/sonect/data/mpd-audio.conf";
 
@@ -312,5 +312,3 @@ class AudioServiceImpl implements AudioService {
     }
   }
 }
-
-export const audioService = new AudioServiceImpl();

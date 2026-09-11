@@ -25,7 +25,7 @@ export interface TrackService {
   getTracksByGenre(genre: string): TrackWithRelations[];
 }
 
-class TrackServiceImpl implements TrackService {
+export class TrackServiceImpl implements TrackService {
   public getRecentlyAddedTracks(limit = 20): TrackWithRelations[] {
     const dbTracks = tracksDb.getRecentWithRelations(limit);
     return dbTracks as TrackWithRelations[];
@@ -84,4 +84,4 @@ class TrackServiceImpl implements TrackService {
   }
 }
 
-export const trackService: TrackService = new TrackServiceImpl();
+export const trackService = new TrackServiceImpl();

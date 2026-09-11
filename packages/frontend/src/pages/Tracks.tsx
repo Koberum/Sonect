@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { getAllTracks } from "@/features/apis/libraryApis";
 import { useEffect, useState, useRef, useCallback } from "react";
-import type { Track } from "@repo/types";
+import type { TrackWithRelations } from "@repo/types/library";
 import { formatTime } from "@/lib/utils";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
 import {
@@ -34,7 +34,7 @@ const PAGE_SIZE = 100;
 export default function Tracks() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [tracks, setTracks] = useState<Track[]>([]);
+  const [tracks, setTracks] = useState<TrackWithRelations[]>([]);
   const [total, setTotal] = useState(0);
   const [firstLoad, setFirstLoad] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -200,7 +200,7 @@ export default function Tracks() {
                                 navigate(`/albums/${track.album_id}`);
                               }}
                             >
-                              {track.album_name || "-"}
+                              {track.album_title || "-"}
                             </span>
                           ) : (
                             "-"

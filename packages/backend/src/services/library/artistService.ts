@@ -1,13 +1,13 @@
 import { Artist } from "@repo/types/library";
 import { artistsDb, albumsDb } from "@repo/db";
 
-interface ArtistService {
+export interface ArtistService {
   getAllArtists(limit?: number, offset?: number): Promise<Artist[]>;
   getArtistCount(): Promise<number>;
   getArtistById(id: number): Promise<Artist | undefined>;
 }
 
-class ArtistServiceImpl implements ArtistService {
+export class ArtistServiceImpl implements ArtistService {
   public async getAllArtists(
     limit?: number,
     offset?: number,
@@ -27,5 +27,3 @@ class ArtistServiceImpl implements ArtistService {
     return artistsDb.getById(id);
   }
 }
-
-export const artistService: ArtistService = new ArtistServiceImpl();

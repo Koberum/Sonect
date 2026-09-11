@@ -7,7 +7,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 
-import type { Album, Track } from "@repo/types";
+import type { Album, Track } from "@repo/types/library";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { playSong, addToQueue } from "@/features/apis/mpdApis";

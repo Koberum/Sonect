@@ -1,5 +1,5 @@
 import { ApiClient } from "@/lib/apiClient";
-import type { Playlist, PlaylistWithTracks } from "@repo/types";
+import type { Playlist, PlaylistWithTracks } from "@repo/types/library";
 
 const apiClient = new ApiClient({
   baseUrl: `${import.meta.env.VITE_BACKEND_URL ?? ""}/playlists`,

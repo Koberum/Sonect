@@ -6,7 +6,12 @@ import { Input } from "@/components/ui/input";
 import { getCoverPath } from "@/lib/utils";
 import { search } from "@/features/apis/libraryApis";
 import { playSong, addToQueue } from "@/features/apis/mpdApis";
-import type { Track, Album, Artist, SearchResults } from "@repo/types";
+import type {
+  TrackWithRelations,
+  Album,
+  Artist,
+  SearchResults,
+} from "@repo/types/library";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "react-responsive";
@@ -41,7 +46,7 @@ export function SearchCommand() {
     }
   };
 
-  const handlePlayTrack = useCallback(async (track: Track) => {
+  const handlePlayTrack = useCallback(async (track: TrackWithRelations) => {
     await playSong(track);
     setOverlayOpen(false);
     setShowDropdown(false);
@@ -55,9 +60,9 @@ export function SearchCommand() {
   }, []);
 
   const activateItem = useCallback(
-    (item: Artist | Album | Track) => {
+    (item: Artist | Album | TrackWithRelations) => {
       if ("file" in item) {
-        handlePlayTrack(item as Track);
+        handlePlayTrack(item as TrackWithRelations);
       } else if ("artist_name" in item && !("name" in item)) {
         navigate(`/albums/${(item as Album).id}`);
         closeSearch();
@@ -69,8 +74,10 @@ export function SearchCommand() {
     [handlePlayTrack, navigate, closeSearch],
   );
 
-  const sections: { type: SectionType; items: (Artist | Album | Track)[] }[] =
-    [];
+  const sections: {
+    type: SectionType;
+    items: (Artist | Album | TrackWithRelations)[];
+  }[] = [];
 
   if (results) {
     if (results.artists.length > 0)
@@ -213,7 +220,7 @@ export function SearchCommand() {
 
   let globalIdx = 0;
 
-  const handleAddToQueue = async (track: Track) => {
+  const handleAddToQueue = async (track: TrackWithRelations) => {
     await addToQueue(track.file);
     toast(t("search.addedToQueue"));
     setShowDropdown(false);
@@ -253,7 +260,7 @@ export function SearchCommand() {
                 const idx = globalIdx++;
                 const isSelected = idx === selectedIndex;
                 if ("file" in item) {
-                  const track = item as Track;
+                  const track = item as TrackWithRelations;
                   return (
                     <div
                       key={track.id}

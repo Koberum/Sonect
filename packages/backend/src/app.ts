@@ -1,15 +1,15 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
-import playerRoutes from "./routes/playerRoutes";
-import libraryRoutes from "./routes/libraryRoutes";
-import playlistRoutes from "./routes/playlistRoutes";
-import systemRoutes from "./routes/systemRoutes";
-import streamRoutes from "./routes/streamRoutes";
-import dashboardRouter from "./routes/dashboardRoutes";
-import { errorHandler } from "./middleware/errorHandler";
-import { requestLogger } from "./middleware/requestLogger";
-import { pushLog } from "./services/utils/logService";
+import playerRoutes from "@routes/playerRoutes";
+import libraryRoutes from "@routes/libraryRoutes";
+import playlistRoutes from "@routes/playlistRoutes";
+import systemRoutes from "@routes/systemRoutes";
+import streamRoutes from "@routes/streamRoutes";
+import dashboardRouter from "@routes/dashboardRoutes";
+import { errorHandler } from "@middleware/errorHandler";
+import { requestLogger } from "@middleware/requestLogger";
+import { getLogService } from "@services/factory";
 
 const app = express();
 
@@ -32,7 +32,7 @@ app.use(express.json());
 
 app.use(
   "/covers",
-  express.static(process.env.COVERS_DIR || "./data/covers", {
+  express.static(process.env.COVERS_DIR || "@data/covers", {
     maxAge: "30d",
     immutable: true,
   }),
@@ -48,9 +48,9 @@ app.use("/dashboard", dashboardRouter);
 
 // In production, serve the built frontend from the same process
 const frontendDist =
-  process.env.FRONTEND_DIST || path.resolve(process.cwd(), "../frontend/dist");
+  process.env.FRONTEND_DIST || path.resolve(process.cwd(), "@frontend/dist");
 if (process.env.NODE_ENV === "production" && fs.existsSync(frontendDist)) {
-  pushLog("info", `Serving frontend from ${frontendDist}`);
+  getLogService().pushLog("info", `Serving frontend from ${frontendDist}`);
   app.use(express.static(frontendDist, { maxAge: "30d", immutable: true }));
   app.get("/{*path}", (req, res, next) => {
     if (
@@ -64,11 +64,11 @@ if (process.env.NODE_ENV === "production" && fs.existsSync(frontendDist)) {
     ) {
       return next();
     }
-    pushLog("debug", `SPA fallback: ${req.path}`);
+    getLogService().pushLog("debug", `SPA fallback: ${req.path}`);
     res.sendFile(path.join(frontendDist, "index.html"));
   });
 } else if (process.env.NODE_ENV === "production") {
-  pushLog("warn", `Frontend dist not found at ${frontendDist}`);
+  getLogService().pushLog("warn", `Frontend dist not found at ${frontendDist}`);
 }
 
 app.use(errorHandler);

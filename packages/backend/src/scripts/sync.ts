@@ -1,10 +1,13 @@
 import "dotenv/config";
-import { librarySyncService } from "@services/library/librarySyncService.js";
+import { initDatabase } from "@repo/db";
+import { initializeServices, getLibrarySyncService } from "@services/factory";
 
 async function main() {
-
   try {
-    await librarySyncService.initDatabase();
+    await initDatabase();
+    initializeServices();
+
+    const librarySyncService = getLibrarySyncService();
 
     const command = process.argv[2];
 

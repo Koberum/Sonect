@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { usePlaybackContext } from "@/components/playback-context";
 import { useEffect, useState, useRef } from "react";
-import type { DashboardData } from "@repo/types";
+import type { DashboardData } from "@repo/types/library";
 import { useNavigate } from "react-router-dom";
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
 import { ScrollBar, ScrollArea } from "@/components/ui/scroll-area";

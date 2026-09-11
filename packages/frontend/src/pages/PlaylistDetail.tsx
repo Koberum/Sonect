@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { PlayIcon, Trash2, Play, Edit3, X, ListMusic } from "lucide-react";
 import { formatTime, getCoverPath } from "@/lib/utils";
-import type { PlaylistWithTracks, Track } from "@repo/types";
+import type { PlaylistWithTracks, PlaylistTrack } from "@repo/types/library";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -91,8 +91,8 @@ export default function PlaylistDetail() {
       .finally(() => setLoading(false));
   }, [id, navigate]);
 
-  const handlePlay = useCallback(async (file: string) => {
-    await playSong({ file } as Track);
+  const handlePlay = useCallback(async (track: PlaylistTrack) => {
+    await playSong(track);
   }, []);
 
   const handlePlayAll = useCallback(async () => {
@@ -322,7 +322,7 @@ export default function PlaylistDetail() {
                 <ContextMenuTrigger asChild>
                   <TableRow
                     className="group cursor-pointer"
-                    onClick={() => handlePlay(track.file)}
+                    onClick={() => handlePlay(track)}
                   >
                     <TableCell className="text-muted-foreground">
                       <span className="group-hover:hidden">{idx + 1}</span>
@@ -381,7 +381,7 @@ export default function PlaylistDetail() {
                   <ContextMenuItem
                     onClick={(e) => {
                       e.stopPropagation();
-                      handlePlay(track.file);
+                      handlePlay(track);
                     }}
                   >
                     <Play className="mr-2 h-4 w-4" fill="currentColor" />

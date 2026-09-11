@@ -1,11 +1,6 @@
 export * from "./schemas";
 export { PlayTrackError } from "./errors";
-export type {
-  MPDTrack,
-  MPDQueuedTrack,
-  MPDEntity,
-  MPDEntityType,
-} from "./mpdTypes";
+export type { MPDTrack, MPDQueuedTrack, MPDEntity, MPDEntityType } from "./mpd";
 export type {
   DBTrack,
   DBAlbum,
@@ -15,9 +10,9 @@ export type {
   DBStorageSource,
   DBSetupProgress,
   DBTrackWithRelations,
-} from "./dbTypes";
-import type { DBStorageSource, DBSetupProgress } from "./dbTypes";
-import { Track } from "./library/types";
+} from "./db";
+import type { DBStorageSource, DBSetupProgress } from "./db";
+import { TrackWithRelations } from "./library";
 
 export type StorageSource = DBStorageSource;
 export type SetupProgress = DBSetupProgress;
@@ -39,7 +34,7 @@ export type PlaybackStatus = {
   random: boolean;
   single: boolean;
   consume: boolean;
-  track?: Track;
+  track?: TrackWithRelations;
   queueLength: number;
 };
 
@@ -56,3 +51,11 @@ export type QueuedTrack = {
 };
 
 export type PlayTrackResponse = { success: boolean };
+
+// Sub-package re-exports for modular imports
+export * from "./library";
+export * from "./mpd";
+export * from "./system";
+export * from "./db";
+export * from "./schemas";
+export * from "./errors";

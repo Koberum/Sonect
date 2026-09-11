@@ -7,7 +7,7 @@ type BatchOptions = {
   queuedFiles?: string[];
 };
 
-class AutoplayService {
+export class AutoplayService {
   private usedAlbumIds = new Set<number>();
   private seedFile: string | undefined;
   private _sessionId = 0;
@@ -112,5 +112,3 @@ class AutoplayService {
     return result;
   }
 }
-
-export const autoplayService = new AutoplayService();

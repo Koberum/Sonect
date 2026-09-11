@@ -1,7 +1,7 @@
 import { execSync } from "child_process";
 import os from "os";
 import { readAppVersion } from "../utils/appVersion.js";
-import { mpdConnectionManager } from "@services/mpd/mpdConnectionManager.js";
+import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager.js";
 import type {
   SystemStatus,
   AudioDevice,
@@ -9,7 +9,7 @@ import type {
   HardwareUsage,
 } from "@repo/types/system";
 
-interface SystemServiceInterface {
+export interface SystemServiceInterface {
   getSystemStatus(): SystemStatus;
   getHardwareUsage(): HardwareUsage;
   detectAudioDevices(): AudioDevice[];
@@ -18,8 +18,13 @@ interface SystemServiceInterface {
   getUsbIdForCard(cardNumber: string): string | null;
 }
 
-class SystemServiceImpl implements SystemServiceInterface {
+export class SystemServiceImpl implements SystemServiceInterface {
   private prevCpuTimes: CpuTimes | null = null;
+  private mpdConnectionManager: MpdConnectionManager;
+
+  constructor(mpdConnectionManager: MpdConnectionManager) {
+    this.mpdConnectionManager = mpdConnectionManager;
+  }
 
   public getHardwareUsage(): HardwareUsage {
     const cpus = os.cpus();
@@ -95,7 +100,7 @@ class SystemServiceImpl implements SystemServiceInterface {
         available: cards.length > 0,
         cards,
       },
-      mpdConnected: mpdConnectionManager.connected,
+      mpdConnected: this.mpdConnectionManager.connected,
       setupCompleted: [],
       version: readAppVersion(),
     };
@@ -132,10 +137,10 @@ class SystemServiceImpl implements SystemServiceInterface {
         card 1: HDMI [HDA Intel HDMI], device 8: HDMI 2 [HDMI 2]
           Subdevices: 1/1
           Subdevice #0: subdevice #0
-    */
+      */
 
       const deviceRegex =
-        /card (\d+): ([^\[]+)\s*\[([^\]]*)\], device (\d+): ([^\[]+)\s*\[([^\]]*)\]/g;
+        /card (\d+): ([^[]+)\s*\[([^\]]*)\], device (\d+): ([^[]+)\s*\[([^\]]*)\]/g;
       let match: RegExpExecArray | null;
 
       while ((match = deviceRegex.exec(output)) !== null) {
@@ -209,5 +214,3 @@ class SystemServiceImpl implements SystemServiceInterface {
     }
   }
 }
-
-export const SystemService = new SystemServiceImpl();

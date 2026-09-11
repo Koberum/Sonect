@@ -3,7 +3,7 @@ import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
 import { usePlaybackContext } from "@/components/playback-context";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
 import { SortTabs } from "@/features/dashboard/components/sort-tabs";
-import type { Album, Artist } from "@repo/types";
+import type { Album, Artist } from "@repo/types/library";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";

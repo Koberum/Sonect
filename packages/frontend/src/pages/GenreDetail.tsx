@@ -5,7 +5,7 @@ import {
   getTracksByGenre,
 } from "@/features/apis/libraryApis";
 import { useEffect, useState } from "react";
-import type { Album, Track } from "@repo/types";
+import type { Album, TrackWithRelations } from "@repo/types/library";
 import { useNavigate, useParams } from "react-router-dom";
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
@@ -36,7 +36,7 @@ export default function GenreDetail() {
   const { genre } = useParams<{ genre: string }>();
   const navigate = useNavigate();
   const [albums, setAlbums] = useState<Album[]>([]);
-  const [tracks, setTracks] = useState<Track[]>([]);
+  const [tracks, setTracks] = useState<TrackWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
   const { trackPlayed } = usePlaybackContext();
 
@@ -159,7 +159,7 @@ export default function GenreDetail() {
                               navigate(`/albums/${track.album_id}`);
                             }}
                           >
-                            {track.album_name || "-"}
+                            {track.album_title || "-"}
                           </span>
                         ) : (
                           "-"

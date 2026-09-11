@@ -1,32 +1,75 @@
 import childProcess from "child_process";
 import fs from "fs";
+import type { LogService } from "@services/utils/logService";
 import path from "path";
 import { storageDb } from "@repo/db";
 import { encryptPassword, decryptPassword } from "../utils/crypto";
 import { computeSourceStats } from "./storageStats";
-import { ensureFollowOutsideSymlinks } from "@services/mpd/configService";
 import { ValidationError } from "@middleware/errorHandler";
+import { StorageSource } from "@repo/types";
+import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager";
+import type { LibraryService } from "@services/library/libraryService";
+import type { ConfigService } from "@services/mpd/configService";
 
 const MUSIC_DIR = process.env.MUSIC_DIR ?? "/opt/sonect/music";
-
-// Object indirection so unit tests can stub these named s (esmock
-// cannot replace relative modules in this repo).
-const storageHooks = {
-  ensureSymlinksAllowed: ensureFollowOutsideSymlinks,
-  scanLibrary,
-};
 
 interface MountInfo {
   path: string;
   uri: string;
 }
-interface StorageSource {
-  // Populate with methods and output types
+export interface StorageService {
   getStorageSourcesHandler(): Promise<StorageSource[]>;
+  getStorageSource(id: number): any;
+  createStorageSource(data: {
+    name: string;
+    type: "smb" | "nfs" | "local";
+    uri: string;
+    mount_path?: string;
+    username?: string;
+    password?: string;
+    enabled?: boolean;
+  }): any;
+  updateStorageSource(
+    id: number,
+    data: {
+      name?: string;
+      type?: "smb" | "nfs" | "local";
+      uri?: string;
+      mount_path?: string;
+      username?: string;
+      password?: string;
+      enabled?: boolean;
+    },
+  ): any;
+  deleteStorageSource(id: number): boolean;
+  slugifyName(name: string): string;
+  generateUniqueMountSegment(baseSlug: string): string;
+  resolveLocalTarget(uri: string): string;
+  ensureLocalSymlink(source: { uri: string; mount_path: string }): void;
+  removeLocalSymlink(mountPoint: string): void;
+  sanitizeSource(source: Record<string, unknown>): Record<string, unknown>;
+  mountSource(id: number): Promise<{ success: boolean; error?: string }>;
+  unmountSource(id: number): Promise<{ success: boolean; error?: string }>;
+  listMounts(): MountInfo[];
+  mountAllEnabled(): Promise<void>;
+  mountSmb(
+    uri: string,
+    mountPoint: string,
+    username?: string,
+    password?: string,
+  ): Promise<void>;
+  mountNfs(uri: string, mountPoint: string): Promise<void>;
 }
 
-class StorageSourceImpl implements StorageSource {
-  public async getStorageSourcesHandler(): StorageSource[] {
+export class StorageServiceImpl implements StorageService {
+  constructor(
+    private mpdConnectionManager: MpdConnectionManager,
+    private libraryService: LibraryService,
+    private configService: ConfigService,
+    private logService: LogService,
+  ) {}
+
+  public async getStorageSourcesHandler(): Promise<StorageSource[]> {
     return storageDb.getAll() as StorageSource[];
   }
 
@@ -49,8 +92,8 @@ class StorageSourceImpl implements StorageSource {
     // network sources) under MUSIC_DIR. When omitted, generate a safe, unique
     // folder name from the library name for every source type.
     if (!segment) {
-      const base = slugifyName(data.name);
-      segment = generateUniqueMountSegment(base);
+      const base = this.slugifyName(data.name);
+      segment = this.generateUniqueMountSegment(base);
     }
 
     const fullPath = this.buildMountPath(segment);
@@ -58,7 +101,7 @@ class StorageSourceImpl implements StorageSource {
     // Validate and create the symlink BEFORE inserting the DB row, so a bad
     // local folder cannot leave a half-created source behind.
     if (data.type === "local") {
-      ensureLocalSymlink({ uri: data.uri, mount_path: fullPath });
+      this.ensureLocalSymlink({ uri: data.uri, mount_path: fullPath });
     }
 
     const id = storageDb.create({
@@ -68,9 +111,9 @@ class StorageSourceImpl implements StorageSource {
     });
 
     if (data.type === "local") {
-      storageHooks.ensureSymlinksAllowed();
-      mpdConnectionManager.executeCommand("update").catch(() => {});
-      storageHooks
+      this.configService.ensureFollowOutsideSymlinks();
+      this.mpdConnectionManager.executeCommand("update").catch(() => {});
+      this.libraryService
         .scanLibrary()
         .catch((err) =>
           console.error(
@@ -136,17 +179,17 @@ class StorageSourceImpl implements StorageSource {
     storageDb.update(id, updateData);
 
     if (existing && wasLocal && !isLocal) {
-      removeLocalSymlink(existing.mount_path);
+      this.removeLocalSymlink(existing.mount_path);
     }
 
     if (existing && isLocal) {
       const source = storageDb.getById(id);
       if (source) {
         if (wasLocal && source.mount_path !== existing.mount_path) {
-          removeLocalSymlink(existing.mount_path);
+          this.removeLocalSymlink(existing.mount_path);
         }
-        ensureLocalSymlink(source);
-        storageHooks.ensureSymlinksAllowed();
+        this.ensureLocalSymlink(source);
+        this.configService.ensureFollowOutsideSymlinks();
       }
     }
 
@@ -157,7 +200,7 @@ class StorageSourceImpl implements StorageSource {
     const source = storageDb.getById(id);
     if (!source) return false;
     if (source.type === "local") {
-      removeLocalSymlink(source.mount_path);
+      this.removeLocalSymlink(source.mount_path);
     }
     storageDb.delete(id);
     return true;
@@ -226,7 +269,7 @@ class StorageSourceImpl implements StorageSource {
   }
 
   public ensureLocalSymlink(source: { uri: string; mount_path: string }): void {
-    const target = resolveLocalTarget(source.uri);
+    const target = this.resolveLocalTarget(source.uri);
     if (!fs.existsSync(target)) {
       throw new ValidationError(`Local folder does not exist: ${target}`, {
         uri: source.uri,
@@ -241,7 +284,7 @@ class StorageSourceImpl implements StorageSource {
     const mountPoint = source.mount_path;
     fs.mkdirSync(path.dirname(mountPoint), { recursive: true });
 
-    let stats: fs.Stats | null = null;
+    let stats: fs.Stats | null;
     try {
       stats = fs.lstatSync(mountPoint);
     } catch {
@@ -281,7 +324,7 @@ class StorageSourceImpl implements StorageSource {
     return source;
   }
 
-  public mountSource(
+  public async mountSource(
     id: number,
   ): Promise<{ success: boolean; error?: string }> {
     const source = storageDb.getById(id);
@@ -294,17 +337,10 @@ class StorageSourceImpl implements StorageSource {
 
     if (source.type === "local") {
       try {
-        ensureLocalSymlink(source);
-        storageHooks.ensureSymlinksAllowed();
-        mpdConnectionManager.executeCommand("update").catch(() => {});
-        storageHooks
-          .scanLibrary()
-          .catch((err) =>
-            console.error(
-              "[Storage] Library scan after local mount failed:",
-              err,
-            ),
-          );
+        this.ensureLocalSymlink(source);
+        this.configService.ensureFollowOutsideSymlinks();
+        await this.mpdConnectionManager.executeCommand("update");
+        await this.libraryService.scanLibrary();
         return { success: true };
       } catch (err: any) {
         return { success: false, error: err.message };
@@ -323,19 +359,22 @@ class StorageSourceImpl implements StorageSource {
 
       switch (source.type) {
         case "smb": {
-          await mountSmb(sourceDev, mountPoint, source.username, plainPassword);
+          await this.mountSmb(
+            sourceDev,
+            mountPoint,
+            source.username,
+            plainPassword,
+          );
           break;
         }
         case "nfs": {
-          await mountNfs(sourceDev, mountPoint);
+          await this.mountNfs(sourceDev, mountPoint);
           break;
         }
       }
 
-      mpdConnectionManager.executeCommand("update").catch(() => {});
-      scanLibrary().catch((err) =>
-        console.error("[Storage] Library scan after mount failed:", err),
-      );
+      await this.mpdConnectionManager.executeCommand("update");
+      await this.libraryService.scanLibrary();
 
       return { success: true };
     } catch (err: any) {
@@ -343,20 +382,20 @@ class StorageSourceImpl implements StorageSource {
     }
   }
 
-  public unmountSource(
+  public async unmountSource(
     id: number,
   ): Promise<{ success: boolean; error?: string }> {
     const source = storageDb.getById(id);
     if (!source) return { success: false, error: "Source not found" };
 
     if (source.type === "local") {
-      removeLocalSymlink(source.mount_path);
+      this.removeLocalSymlink(source.mount_path);
       return { success: true };
     }
 
     const mountPath = source.mount_path;
 
-    const mounts = listMounts();
+    const mounts = this.listMounts();
     const isMounted = mounts.some((m) => m.path === mountPath);
     if (!isMounted) return { success: true };
 
@@ -411,14 +450,14 @@ class StorageSourceImpl implements StorageSource {
     }
   }
 
-  public mountAllEnabled(): void {
+  public async mountAllEnabled(): Promise<void> {
     const sources = storageDb.getAll().filter((s) => s.enabled);
     let mounted = 0;
     for (const source of sources) {
       try {
         if (source.type === "local") {
-          ensureLocalSymlink(source);
-          storageHooks.ensureSymlinksAllowed();
+          this.ensureLocalSymlink(source);
+          this.configService.ensureFollowOutsideSymlinks();
         } else {
           const mountPoint = source.mount_path;
           fs.mkdirSync(mountPoint, { recursive: true });
@@ -430,7 +469,7 @@ class StorageSourceImpl implements StorageSource {
 
           switch (source.type) {
             case "smb":
-              await mountSmb(
+              await this.mountSmb(
                 sourceDev,
                 mountPoint,
                 source.username,
@@ -438,7 +477,7 @@ class StorageSourceImpl implements StorageSource {
               );
               break;
             case "nfs":
-              await mountNfs(sourceDev, mountPoint);
+              await this.mountNfs(sourceDev, mountPoint);
               break;
           }
         }
@@ -450,7 +489,7 @@ class StorageSourceImpl implements StorageSource {
       }
     }
     if (mounted > 0) {
-      storageHooks
+      this.libraryService
         .scanLibrary()
         .catch((err) =>
           console.error(
@@ -461,7 +500,7 @@ class StorageSourceImpl implements StorageSource {
     }
   }
 
-  public mountSmb(
+  public async mountSmb(
     uri: string,
     mountPoint: string,
     username?: string,
@@ -487,7 +526,12 @@ class StorageSourceImpl implements StorageSource {
       } finally {
         try {
           fs.unlinkSync(credsPath);
-        } catch {}
+        } catch {
+          this.logService.pushLog(
+            "warn",
+            `[Storage] Failed to delete SMB credentials file: ${credsPath}`,
+          );
+        }
       }
     } else {
       childProcess.execSync(
@@ -500,7 +544,7 @@ class StorageSourceImpl implements StorageSource {
     }
   }
 
-  public mountNfs(uri: string, mountPoint: string): void {
+  public async mountNfs(uri: string, mountPoint: string): Promise<void> {
     childProcess.execSync(
       `sudo mount -t nfs "${uri}" "${mountPoint}" -o "nolock,hard,intr"`,
       {

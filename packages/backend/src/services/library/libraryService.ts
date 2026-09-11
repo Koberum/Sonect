@@ -1,17 +1,13 @@
 import { tracksDb, artistsDb, albumsDb, statsDb } from "@repo/db";
 import { LibraryStats, SearchResults } from "@repo/types/library";
-import {
-  type SyncProgress,
+import type {
+  SyncProgress,
   LibrarySyncService,
-  librarySyncService,
 } from "@services/library/librarySyncService";
 import { scanStorageStats } from "@services/storage/storageStats";
 import { broadcast } from "../../ws/broadcast";
-import { coverService } from "@services/library/coverService";
-import type { PlayerService } from "@services/player/playerService";
-import { playerService } from "@services/player/playerService";
 import type { CoverService } from "@services/library/coverService";
-import { CoverProgress } from "@repo/types/library";
+import type { PlayerService } from "@services/player/playerService";
 
 export interface LibraryService {
   getLibraryStats(): Promise<LibraryStats>;
@@ -23,11 +19,11 @@ export interface LibraryService {
   searchTracks(query: string): Promise<SearchResults>;
 }
 
-class LibraryServiceImpl implements LibraryService {
+export class LibraryServiceImpl implements LibraryService {
   constructor(
-    private readonly playerService: PlayerService = playerService,
-    private readonly coverService: CoverService = coverService,
-    private readonly librarySyncService: LibrarySyncService = librarySyncService,
+    private readonly playerService: PlayerService,
+    private readonly coverService: CoverService,
+    private readonly librarySyncService: LibrarySyncService,
   ) {}
 
   private currentSyncProgress: Record<string, unknown> | null = null;
@@ -90,20 +86,17 @@ class LibraryServiceImpl implements LibraryService {
       // Phase 2: Extract covers for all albums
       const albums = albumsDb.getAll();
       if (albums.length > 0) {
-        await this.coverService.syncAllCovers(
-          albums,
-          (progress: CoverProgress) => {
-            this.currentSyncProgress = {
-              phase: "covers",
-              current: progress.current,
-              total: progress.total,
-            };
-            broadcast({
-              type: "sync-progress",
-              ...this.currentSyncProgress,
-            });
-          },
-        );
+        await this.coverService.syncAllCovers(albums, (progress) => {
+          this.currentSyncProgress = {
+            phase: "covers",
+            current: progress.current,
+            total: progress.total,
+          };
+          broadcast({
+            type: "sync-progress",
+            ...this.currentSyncProgress,
+          });
+        });
       }
 
       // Phase 3: Refresh per-source library statistics
@@ -143,7 +136,7 @@ class LibraryServiceImpl implements LibraryService {
       return;
     }
     try {
-      await coverService.syncAllCovers(
+      await this.coverService.syncAllCovers(
         albums,
         (progress: {
           current: number;
@@ -180,9 +173,3 @@ class LibraryServiceImpl implements LibraryService {
     }
   }
 }
-
-export const libraryService: LibraryService = new LibraryServiceImpl(
-  playerService,
-  coverService,
-  librarySyncService,
-);

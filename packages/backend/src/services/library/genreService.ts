@@ -6,7 +6,7 @@ export interface GenreService {
   getById(id: number): Promise<Genre | undefined>;
 }
 
-class GenreServiceImpl implements GenreService {
+export class GenreServiceImpl implements GenreService {
   public async getGenres(): Promise<Genre[]> {
     return genresDb.getAll();
   }
@@ -15,5 +15,3 @@ class GenreServiceImpl implements GenreService {
     return genresDb.getById(id);
   }
 }
-
-export const genreService: GenreService = new GenreServiceImpl();

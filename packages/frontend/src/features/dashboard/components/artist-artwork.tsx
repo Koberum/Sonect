@@ -7,7 +7,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 
-import type { Artist } from "@repo/types";
+import type { Artist } from "@repo/types/library";
 import { useTranslation } from "react-i18next";
 import { getTracksByArtist } from "@/features/apis/libraryApis";
 import { useNavigate } from "react-router-dom";

@@ -74,17 +74,20 @@ export function parseMPDMessageToTracks(msg: string): MPDTrack[] {
   return entities
     .filter((entity) => entity.type === "file")
     .map((entity) => ({
-      file: entity.path || "",
-      title: entity.title,
-      artist: entity.artist,
-      album: entity.album,
-      albumArtist: entity.albumartist,
-      genre: entity.genre,
-      track: entity.track ? parseInt(entity.track.toString()) : undefined,
-      date: entity.date,
-      disc: entity.disc,
-      duration: entity.duration,
-      lastModified: entity["last-modified"],
+      file: String(entity.path || ""),
+      title: entity.title ? String(entity.title) : undefined,
+      artist: entity.artist ? String(entity.artist) : undefined,
+      album: entity.album ? String(entity.album) : undefined,
+      albumArtist: entity.albumartist ? String(entity.albumartist) : undefined,
+      genre: entity.genre ? String(entity.genre) : undefined,
+      track: entity.track ? parseInt(String(entity.track)) : undefined,
+      date: entity.date ? String(entity.date) : undefined,
+      disc: entity.disc ? String(entity.disc) : undefined,
+      duration:
+        typeof entity.duration === "number" ? entity.duration : undefined,
+      lastModified: entity["last-modified"]
+        ? String(entity["last-modified"])
+        : undefined,
     }));
 }
 
@@ -94,18 +97,21 @@ export function parseMPDMessageToQueuedTracks(msg: string): MPDQueuedTrack[] {
   return entities
     .filter((entity) => entity.type === "file")
     .map((entity) => ({
-      file: entity.path || "",
-      title: entity.title,
-      artist: entity.artist,
-      album: entity.album,
-      albumArtist: entity.albumartist,
-      genre: entity.genre,
-      track: entity.track ? parseInt(entity.track.toString()) : undefined,
-      date: entity.date,
-      disc: entity.disc,
-      duration: entity.duration,
-      lastModified: entity["last-modified"],
-      pos: parseInt(entity.pos?.toString() || "0"),
-      id: parseInt(entity.id?.toString() || "0"),
+      file: String(entity.path || ""),
+      title: entity.title ? String(entity.title) : undefined,
+      artist: entity.artist ? String(entity.artist) : undefined,
+      album: entity.album ? String(entity.album) : undefined,
+      albumArtist: entity.albumartist ? String(entity.albumartist) : undefined,
+      genre: entity.genre ? String(entity.genre) : undefined,
+      track: entity.track ? parseInt(String(entity.track)) : undefined,
+      date: entity.date ? String(entity.date) : undefined,
+      disc: entity.disc ? String(entity.disc) : undefined,
+      duration:
+        typeof entity.duration === "number" ? entity.duration : undefined,
+      lastModified: entity["last-modified"]
+        ? String(entity["last-modified"])
+        : undefined,
+      pos: entity.pos ? parseInt(String(entity.pos)) : 0,
+      id: entity.id ? parseInt(String(entity.id)) : 0,
     }));
 }

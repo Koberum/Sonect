@@ -1,7 +1,7 @@
 import { albumsDb } from "@repo/db";
 import { Album } from "@repo/types/library";
 
-interface AlbumService {
+export interface AlbumService {
   getAlbumsByArtist(artistId: number): Promise<Album[]>;
   getAllAlbums(
     sort?: string,
@@ -15,7 +15,7 @@ interface AlbumService {
   getAlbumsByGenre(genre: string): Promise<Album[]>;
 }
 
-class AlbumServiceImpl implements AlbumService {
+export class AlbumServiceImpl implements AlbumService {
   public async getAlbumsByArtist(artistId: number): Promise<Album[]> {
     return albumsDb.getByArtist(artistId);
   }
@@ -49,5 +49,3 @@ class AlbumServiceImpl implements AlbumService {
     albumsDb.updateCoverPath(albumId, coverPath);
   }
 }
-
-export const albumService: AlbumService = new AlbumServiceImpl();

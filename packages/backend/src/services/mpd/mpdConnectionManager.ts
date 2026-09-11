@@ -2,8 +2,8 @@ import { EventEmitter } from "events";
 import net from "net";
 import mpd from "mpd";
 import type { PlaybackStatus, PlaybackState } from "@repo/types";
-import { TrackService, trackService } from "@services/library/trackService";
-import { LogService, logService } from "@services/utils/logService";
+import type { TrackService } from "@services/library/trackService";
+import type { LogService } from "@services/utils/logService";
 import { parseKeyValue, hashFile } from "../../utils/mpd.js";
 import { TrackWithRelations } from "@repo/types/library";
 
@@ -508,8 +508,3 @@ export class MpdConnectionManager extends EventEmitter {
     }, this._pollReconnectDelay);
   }
 }
-
-export const mpdConnectionManager = new MpdConnectionManager(
-  trackService,
-  logService,
-);

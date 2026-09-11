@@ -9,33 +9,29 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./system": {
-      "types": "./dist/system/types.d.ts",
-      "default": "./dist/system/types.js"
-    },
     "./library": {
-      "types": "./dist/library/types.d.ts",
-      "default": "./dist/library/types.js"
-    },
-    "./player": {
-      "types": "./dist/player/types.d.ts",
-      "default": "./dist/player/types.js"
-    },
-    "./cover": {
-      "types": "./dist/cover/types.d.ts",
-      "default": "./dist/cover/types.js"
-    },
-    "./storage": {
-      "types": "./dist/storage/types.d.ts",
-      "default": "./dist/storage/types.js"
-    },
-    "./network": {
-      "types": "./dist/network/types.d.ts",
-      "default": "./dist/network/types.js"
+      "types": "./dist/library/index.d.ts",
+      "default": "./dist/library/index.js"
     },
     "./mpd": {
-      "types": "./dist/mpd/types.d.ts",
-      "default": "./dist/mpd/types.js"
+      "types": "./dist/mpd/index.d.ts",
+      "default": "./dist/mpd/index.js"
+    },
+    "./system": {
+      "types": "./dist/system/index.d.ts",
+      "default": "./dist/system/index.js"
+    },
+    "./db": {
+      "types": "./dist/db/index.d.ts",
+      "default": "./dist/db/index.js"
+    },
+    "./schemas": {
+      "types": "./dist/schemas/index.d.ts",
+      "default": "./dist/schemas/index.js"
+    },
+    "./errors": {
+      "types": "./dist/errors/index.d.ts",
+      "default": "./dist/errors/index.js"
     }
   },
   "scripts": {

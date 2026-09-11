@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { getAlbums } from "@/features/apis/libraryApis";
 import { usePlaybackContext } from "@/components/playback-context";
 import { useEffect, useState, useRef, useCallback } from "react";
-import type { Album } from "@repo/types";
+import type { Album } from "@repo/types/library";
 import { useNavigate } from "react-router-dom";
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";

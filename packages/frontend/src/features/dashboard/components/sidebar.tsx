@@ -27,13 +27,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { createPlaylist } from "@/features/apis/playlistApis";
 import { getLibraryStats, scanLibrary } from "@/features/apis/libraryApis";
-import type { LibraryStats } from "@repo/types";
+import type { LibraryStats } from "@repo/types/library";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
+
 export interface SidebarProps {
   className?: string;
   toggleSidebar(open: boolean): void;

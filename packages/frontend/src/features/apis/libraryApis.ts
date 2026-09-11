@@ -3,9 +3,9 @@ import type {
   Album,
   Artist,
   LibraryStats,
-  Track,
+  TrackWithRelations,
   SearchResults,
-} from "@repo/types";
+} from "@repo/types/library";
 
 const apiClient = new ApiClient({
   baseUrl: `${import.meta.env.VITE_BACKEND_URL ?? ""}/library`,
@@ -14,11 +14,15 @@ const apiClient = new ApiClient({
 /**
  * Tracks
  */
-export const getTracksByAlbum = async (albumId: string): Promise<Track[]> => {
+export const getTracksByAlbum = async (
+  albumId: string,
+): Promise<TrackWithRelations[]> => {
   return apiClient.get(`/albums/${albumId}/tracks`);
 };
 
-export const getTracksByArtist = async (artistId: string): Promise<Track[]> => {
+export const getTracksByArtist = async (
+  artistId: string,
+): Promise<TrackWithRelations[]> => {
   return apiClient.get(`/artists/${artistId}/tracks`);
 };
 
@@ -26,7 +30,7 @@ export const getAllTracks = async (params?: {
   sort?: string;
   limit?: number;
   offset?: number;
-}): Promise<{ items: Track[]; total: number }> => {
+}): Promise<{ items: TrackWithRelations[]; total: number }> => {
   return apiClient.get("/tracks", {
     queryParams: params as Record<string, string | number | boolean>,
   });
@@ -82,7 +86,9 @@ export const getAlbumsByGenre = async (genre: string): Promise<Album[]> => {
   return apiClient.get(`/genres/${encodeURIComponent(genre)}/albums`);
 };
 
-export const getTracksByGenre = async (genre: string): Promise<Track[]> => {
+export const getTracksByGenre = async (
+  genre: string,
+): Promise<TrackWithRelations[]> => {
   return apiClient.get(`/genres/${encodeURIComponent(genre)}/tracks`);
 };
 
@@ -91,7 +97,7 @@ export const getTracksByGenre = async (genre: string): Promise<Track[]> => {
  */
 export const getRecentlyAdded = async (
   limit = 20,
-): Promise<{ albums: Album[]; tracks: Track[] }> => {
+): Promise<{ albums: Album[]; tracks: TrackWithRelations[] }> => {
   return apiClient.get("/recently-added", {
     queryParams: { limit: String(limit) },
   });

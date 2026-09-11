@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getAlbumById, getTracksByAlbum } from "@/features/apis/libraryApis";
-import type { Album, Track } from "@repo/types";
+import type { Album, TrackWithRelations } from "@repo/types/library";
 import { formatTime, getCoverPath } from "@/lib/utils";
 import {
   Table,
@@ -33,7 +33,7 @@ export default function AlbumPage() {
   const { t } = useTranslation();
   const { id } = useParams();
   const [album, setAlbum] = useState<Album>();
-  const [tracks, setTracks] = useState<Track[]>([]);
+  const [tracks, setTracks] = useState<TrackWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -92,7 +92,7 @@ export default function AlbumPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tracks.map((track: Track) => (
+                {tracks.map((track: TrackWithRelations) => (
                   <ContextMenu key={track.id}>
                     <ContextMenuTrigger asChild>
                       <TableRow

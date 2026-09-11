@@ -5,7 +5,7 @@ import {
   librarySyncDb,
 } from "@repo/db";
 import { MPDTrack } from "@repo/types";
-import { mpdConnectionManager } from "@services/mpd/mpdConnectionManager";
+import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager";
 import { parseMPDMessageToTracks } from "../../utils/mpd.js";
 
 export type SyncProgress = {
@@ -20,6 +20,8 @@ export type SyncProgress = {
 };
 
 export class LibrarySyncService {
+  constructor(private readonly mpdConnectionManager: MpdConnectionManager) {}
+
   async initDatabase(): Promise<void> {
     await initDatabase();
   }
@@ -28,7 +30,7 @@ export class LibrarySyncService {
     const mpdTracks: MPDTrack[] = [];
     try {
       console.log("📀 Fetching albums...");
-      const albumsRaw = await mpdConnectionManager.executeCommand("list", [
+      const albumsRaw = await this.mpdConnectionManager.executeCommand("list", [
         "album",
       ]);
       const albums = albumsRaw
@@ -39,7 +41,7 @@ export class LibrarySyncService {
 
       for (const album of albums) {
         try {
-          const raw = await mpdConnectionManager.executeCommand("find", [
+          const raw = await this.mpdConnectionManager.executeCommand("find", [
             "album",
             album,
           ]);
@@ -126,9 +128,8 @@ export class LibrarySyncService {
     totalTracks: number;
     lastSync?: Date;
   }> {
-    const tracks = tracksDb.getAll();
     return {
-      totalTracks: tracks.length,
+      totalTracks: tracksDb.count(),
       lastSync: syncMetadataDb.getLastSync(),
     };
   }
@@ -139,5 +140,3 @@ export class LibrarySyncService {
     console.log("✅ Database cleared");
   }
 }
-
-export const librarySyncService = new LibrarySyncService();

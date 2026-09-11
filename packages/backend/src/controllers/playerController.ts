@@ -1,43 +1,26 @@
 import { Request, Response } from "express";
 import { playerSchemas } from "@repo/types";
-import {
-  clearQueue,
-  enableConsume,
-  enableRandom,
-  enableRepeat,
-  goToPosition,
-  nextTrack,
-  pauseTrack,
-  playTrack,
-  previousTrack,
-  setSingle,
-  setVolume,
-  getQueue,
-  playPosition,
-  removeFromQueue,
-  addToQueue,
-  moveQueueItem,
-} from "@services/player/playerService";
+import { getPlayerService } from "@services/factory";
 import { asyncHandler } from "@middleware/asyncHandler";
 
 export const playTrackHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { file } = playerSchemas.play.parse(req.body);
-    await playTrack(file);
+    await getPlayerService().playTrack(file);
     res.json({ message: `Playing track: ${file}` });
   },
 );
 
 export const pauseTrackHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    await pauseTrack();
+    await getPlayerService().pauseTrack();
     res.json({ message: "Playback paused" });
   },
 );
 
 export const clearQueueHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    await clearQueue();
+    await getPlayerService().clearQueue();
     res.json({ message: "Queue cleared" });
   },
 );
@@ -45,7 +28,7 @@ export const clearQueueHandler = asyncHandler(
 export const goToPositionHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { position } = playerSchemas.position.parse(req.body);
-    await goToPosition(position);
+    await getPlayerService().goToPosition(position);
     res.json({ message: `Moved to position ${position}` });
   },
 );
@@ -53,21 +36,21 @@ export const goToPositionHandler = asyncHandler(
 export const setVolumeHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { volume } = playerSchemas.volume.parse(req.body);
-    await setVolume(volume);
+    await getPlayerService().setVolume(volume);
     res.json({ message: `Volume set to ${volume}` });
   },
 );
 
 export const nextTrackHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    await nextTrack();
+    await getPlayerService().nextTrack();
     res.json({ message: "Skipped to next track" });
   },
 );
 
 export const previousTrackHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    await previousTrack();
+    await getPlayerService().previousTrack();
     res.json({ message: "Went back to previous track" });
   },
 );
@@ -75,7 +58,7 @@ export const previousTrackHandler = asyncHandler(
 export const enableRepeatHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { enabled } = playerSchemas.toggle.parse(req.body);
-    await enableRepeat(enabled);
+    await getPlayerService().enableRepeat(enabled);
     res.json({ message: `Repeat ${enabled ? "enabled" : "disabled"}` });
   },
 );
@@ -83,7 +66,7 @@ export const enableRepeatHandler = asyncHandler(
 export const enableRandomHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { enabled } = playerSchemas.toggle.parse(req.body);
-    await enableRandom(enabled);
+    await getPlayerService().enableRandom(enabled);
     res.json({ message: `Random ${enabled ? "enabled" : "disabled"}` });
   },
 );
@@ -91,7 +74,7 @@ export const enableRandomHandler = asyncHandler(
 export const enableConsumeHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { enabled } = playerSchemas.toggle.parse(req.body);
-    await enableConsume(enabled);
+    await getPlayerService().enableConsume(enabled);
     res.json({ message: `Consume ${enabled ? "enabled" : "disabled"}` });
   },
 );
@@ -99,14 +82,14 @@ export const enableConsumeHandler = asyncHandler(
 export const setSingleHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { enabled } = playerSchemas.toggle.parse(req.body);
-    await setSingle(enabled);
+    await getPlayerService().setSingle(enabled);
     res.json({ message: `Single ${enabled ? "enabled" : "disabled"}` });
   },
 );
 
 export const getQueueHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const queue = await getQueue();
+    const queue = await getPlayerService().getQueue();
     res.json(queue);
   },
 );
@@ -114,7 +97,7 @@ export const getQueueHandler = asyncHandler(
 export const playPositionHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { pos } = playerSchemas.playPosition.parse(req.body);
-    await playPosition(pos);
+    await getPlayerService().playPosition(pos);
     res.json({ message: `Playing queue position ${pos}` });
   },
 );
@@ -122,7 +105,7 @@ export const playPositionHandler = asyncHandler(
 export const removeFromQueueHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { pos } = playerSchemas.queuePos.parse(req.body);
-    await removeFromQueue(pos);
+    await getPlayerService().removeFromQueue(pos);
     res.json({ message: `Removed queue position ${pos}` });
   },
 );
@@ -130,7 +113,7 @@ export const removeFromQueueHandler = asyncHandler(
 export const addToQueueHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { file } = playerSchemas.addToQueue.parse(req.body);
-    await addToQueue(file);
+    await getPlayerService().addToQueue(file);
     res.json({ message: `Added to queue: ${file}` });
   },
 );
@@ -138,7 +121,7 @@ export const addToQueueHandler = asyncHandler(
 export const moveQueueItemHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { from, to } = playerSchemas.moveQueue.parse(req.body);
-    await moveQueueItem(from, to);
+    await getPlayerService().moveQueueItem(from, to);
     res.json({ message: `Moved queue item from ${from} to ${to}` });
   },
 );

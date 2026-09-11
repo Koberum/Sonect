@@ -5,7 +5,7 @@ import {
   DBGenre,
   DBPlaylist,
   DBTrackWithRelations,
-} from "../dbTypes";
+} from "../db/types";
 
 export type CoverProgress = {
   current: number;
@@ -30,26 +30,26 @@ export type Album = DBAlbum & {
 
 export type Genre = DBGenre;
 export type Playlist = DBPlaylist;
-export type PlaylistTrack = Track & { pt_id: number };
+export type PlaylistTrack = TrackWithRelations & { pt_id: number };
 export type PlaylistWithTracks = Playlist & {
   tracks: PlaylistTrack[];
 };
 
 export interface DashboardData {
   continueListening: Album[];
-  recentlyPlayed: Track[];
-  topTracks: Track[];
-  suggestedTracks: Track[];
+  recentlyPlayed: TrackWithRelations[];
+  topTracks: TrackWithRelations[];
+  suggestedTracks: TrackWithRelations[];
   genreQuickMix: {
     genre: string;
-    tracks: Track[];
+    tracks: TrackWithRelations[];
   } | null;
 }
 
 export type SearchResults = {
   artists: Artist[];
   albums: Album[];
-  tracks: Track[];
+  tracks: TrackWithRelations[];
 };
 
 export interface LibraryStats {
@@ -65,4 +65,3 @@ export interface LibraryStats {
   tracksWithoutAlbum: number;
   lastSync: string | null;
 }
-

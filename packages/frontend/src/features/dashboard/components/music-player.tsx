@@ -170,7 +170,7 @@ export default function MusicPlayer() {
             {trackPlayed && (
               <PlayedTrack
                 title={trackPlayed?.title}
-                artist={trackPlayed?.artist_name}
+                artist={trackPlayed?.artist_name ?? ""}
                 cover_path={trackPlayed?.cover_path}
               />
             )}

@@ -1,8 +1,8 @@
 import { PlayTrackError } from "@repo/types";
 import { PlayTrackResponse, PlaybackStatus, QueuedTrack } from "@repo/types";
-import { logService, LogService } from "@services/utils/logService";
-import { mpdConnectionManager } from "@services/mpd/mpdConnectionManager";
-import { autoplayService } from "../mpd/autoplayService";
+import type { LogService } from "@services/utils/logService";
+import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager";
+import type { AutoplayService } from "../mpd/autoplayService";
 import { tracksDb, albumsDb } from "@repo/db";
 import type { MPDTrack } from "@repo/types";
 import { parseKeyValue, hashFile } from "../../utils/mpd.js";
@@ -32,11 +32,15 @@ export interface PlayerService {
   updateLibrary(): Promise<void>;
 }
 
-class PlayerServiceImpl implements PlayerService {
-  constructor(private readonly logService: LogService) {}
+export class PlayerServiceImpl implements PlayerService {
+  constructor(
+    private readonly logService: LogService,
+    private readonly mpdConnectionManager: MpdConnectionManager,
+    private readonly autoplayService: AutoplayService,
+  ) {}
 
   public getPlaybackStatus(): PlaybackStatus {
-    return mpdConnectionManager.getCachedStatus();
+    return this.mpdConnectionManager.getCachedStatus();
   }
 
   public async playTrack(file?: string): Promise<PlayTrackResponse> {
@@ -66,15 +70,18 @@ class PlayerServiceImpl implements PlayerService {
       commands.push({ command: "consume", args: ["1"] });
       commands.push({ command: "play" });
 
-      const sessionId = autoplayService.resetSession(file, initialFiles);
-      await mpdConnectionManager.executeCommandList(commands);
+      const sessionId = this.autoplayService.resetSession(file, initialFiles);
+      await this.mpdConnectionManager.executeCommandList(commands);
 
-      if (autoplayService.sessionId === sessionId) {
+      if (this.autoplayService.sessionId === sessionId) {
         try {
-          const tracks = await autoplayService.getNextBatch(file);
-          if (tracks.length > 0 && autoplayService.sessionId === sessionId) {
+          const tracks = await this.autoplayService.getNextBatch(file);
+          if (
+            tracks.length > 0 &&
+            this.autoplayService.sessionId === sessionId
+          ) {
             await this.queueFiles(tracks);
-            autoplayService.commitBatch(tracks, sessionId);
+            this.autoplayService.commitBatch(tracks, sessionId);
           }
         } catch (err) {
           console.error("[Player] Failed to append smart autoplay batch:", err);
@@ -85,7 +92,7 @@ class PlayerServiceImpl implements PlayerService {
         }
       }
 
-      mpdConnectionManager.refreshNow().catch((err) => {
+      this.mpdConnectionManager.refreshNow().catch((err) => {
         console.error("[Player] refreshNow failed after playTrack:", err);
       });
 
@@ -97,8 +104,8 @@ class PlayerServiceImpl implements PlayerService {
   }
 
   public async pauseTrack(): Promise<PlayTrackResponse> {
-    await mpdConnectionManager.executeCommand("pause");
-    mpdConnectionManager.refreshNow().catch((err) => {
+    await this.mpdConnectionManager.executeCommand("pause");
+    this.mpdConnectionManager.refreshNow().catch((err) => {
       console.error("[Player] refreshNow failed after pauseTrack:", err);
     });
     return { success: true };
@@ -109,7 +116,7 @@ class PlayerServiceImpl implements PlayerService {
       command: "add" as const,
       args: [track.file],
     }));
-    await mpdConnectionManager.executeCommandList(commands);
+    await this.mpdConnectionManager.executeCommandList(commands);
   }
 
   public async queueFiles(files: string[]): Promise<void> {
@@ -118,18 +125,18 @@ class PlayerServiceImpl implements PlayerService {
       command: "add" as const,
       args: [f],
     }));
-    await mpdConnectionManager.executeCommandList(commands);
+    await this.mpdConnectionManager.executeCommandList(commands);
   }
 
   public async clearQueue(): Promise<void> {
-    await mpdConnectionManager.executeCommand("clear");
-    mpdConnectionManager.refreshNow().catch((err) => {
+    await this.mpdConnectionManager.executeCommand("clear");
+    this.mpdConnectionManager.refreshNow().catch((err) => {
       console.error("[Player] refreshNow failed after clearQueue:", err);
     });
   }
 
   public async getQueue(): Promise<QueuedTrack[]> {
-    const raw = await mpdConnectionManager.executeCommand("playlistinfo");
+    const raw = await this.mpdConnectionManager.executeCommand("playlistinfo");
     return this.parseQueueResponse(raw);
   }
 
@@ -172,50 +179,60 @@ class PlayerServiceImpl implements PlayerService {
   }
 
   public async nextTrack(): Promise<void> {
-    await mpdConnectionManager.executeCommand("next");
-    mpdConnectionManager.refreshNow().catch((err) => {
+    await this.mpdConnectionManager.executeCommand("next");
+    this.mpdConnectionManager.refreshNow().catch((err) => {
       console.error("[Player] refreshNow failed after nextTrack:", err);
     });
   }
 
   public async previousTrack(): Promise<void> {
-    await mpdConnectionManager.executeCommand("previous");
-    mpdConnectionManager.refreshNow().catch((err) => {
+    await this.mpdConnectionManager.executeCommand("previous");
+    this.mpdConnectionManager.refreshNow().catch((err) => {
       console.error("[Player] refreshNow failed after previousTrack:", err);
     });
   }
 
   public async goToPosition(position: number): Promise<void> {
-    await mpdConnectionManager.executeCommand("seekcur", [position.toString()]);
-    mpdConnectionManager.refreshNow().catch((err) => {
+    await this.mpdConnectionManager.executeCommand("seekcur", [
+      position.toString(),
+    ]);
+    this.mpdConnectionManager.refreshNow().catch((err) => {
       console.error("[Player] refreshNow failed after goToPosition:", err);
     });
   }
 
   public async enableRepeat(enabled: boolean): Promise<void> {
-    await mpdConnectionManager.executeCommand("repeat", [enabled ? "1" : "0"]);
-    mpdConnectionManager.refreshNow().catch((err) => {
+    await this.mpdConnectionManager.executeCommand("repeat", [
+      enabled ? "1" : "0",
+    ]);
+    this.mpdConnectionManager.refreshNow().catch((err) => {
       console.error("[Player] refreshNow failed after enableRepeat:", err);
     });
   }
 
   public async enableRandom(enabled: boolean): Promise<void> {
-    await mpdConnectionManager.executeCommand("random", [enabled ? "1" : "0"]);
-    mpdConnectionManager.refreshNow().catch((err) => {
+    await this.mpdConnectionManager.executeCommand("random", [
+      enabled ? "1" : "0",
+    ]);
+    this.mpdConnectionManager.refreshNow().catch((err) => {
       console.error("[Player] refreshNow failed after enableRandom:", err);
     });
   }
 
   public async enableConsume(enabled: boolean): Promise<void> {
-    await mpdConnectionManager.executeCommand("consume", [enabled ? "1" : "0"]);
-    mpdConnectionManager.refreshNow().catch((err) => {
+    await this.mpdConnectionManager.executeCommand("consume", [
+      enabled ? "1" : "0",
+    ]);
+    this.mpdConnectionManager.refreshNow().catch((err) => {
       console.error("[Player] refreshNow failed after enableConsume:", err);
     });
   }
 
   public async setSingle(enabled: boolean): Promise<void> {
-    await mpdConnectionManager.executeCommand("single", [enabled ? "1" : "0"]);
-    mpdConnectionManager.refreshNow().catch((err) => {
+    await this.mpdConnectionManager.executeCommand("single", [
+      enabled ? "1" : "0",
+    ]);
+    this.mpdConnectionManager.refreshNow().catch((err) => {
       console.error("[Player] refreshNow failed after setSingle:", err);
     });
   }
@@ -224,55 +241,57 @@ class PlayerServiceImpl implements PlayerService {
     if (volume < 0 || volume > 100) {
       throw new Error("Volume needs to be between 0 and 100");
     }
-    await mpdConnectionManager.executeCommand("setvol", [volume.toString()]);
-    mpdConnectionManager.refreshNow().catch((err) => {
+    await this.mpdConnectionManager.executeCommand("setvol", [
+      volume.toString(),
+    ]);
+    this.mpdConnectionManager.refreshNow().catch((err) => {
       console.error("[Player] refreshNow failed after setVolume:", err);
     });
   }
 
   public async playPosition(pos: number): Promise<void> {
-    await mpdConnectionManager.executeCommand("play", [pos.toString()]);
-    mpdConnectionManager.refreshNow().catch((err) => {
+    await this.mpdConnectionManager.executeCommand("play", [pos.toString()]);
+    this.mpdConnectionManager.refreshNow().catch((err) => {
       console.error("[Player] refreshNow failed after playPosition:", err);
     });
   }
 
   public async removeFromQueue(pos: number): Promise<void> {
-    await mpdConnectionManager.executeCommand("delete", [pos.toString()]);
-    mpdConnectionManager.refreshNow().catch((err) => {
+    await this.mpdConnectionManager.executeCommand("delete", [pos.toString()]);
+    this.mpdConnectionManager.refreshNow().catch((err) => {
       console.error("[Player] refreshNow failed after removeFromQueue:", err);
     });
   }
 
   public async addToQueue(file: string): Promise<void> {
-    await mpdConnectionManager.executeCommand("add", [file]);
-    mpdConnectionManager.refreshNow().catch((err) => {
+    await this.mpdConnectionManager.executeCommand("add", [file]);
+    this.mpdConnectionManager.refreshNow().catch((err) => {
       console.error("[Player] refreshNow failed after addToQueue:", err);
     });
   }
 
   public async moveQueueItem(from: number, to: number): Promise<void> {
-    await mpdConnectionManager.executeCommand("move", [
+    await this.mpdConnectionManager.executeCommand("move", [
       from.toString(),
       to.toString(),
     ]);
-    mpdConnectionManager.refreshNow().catch((err) => {
+    this.mpdConnectionManager.refreshNow().catch((err) => {
       console.error("[Player] refreshNow failed after moveQueueItem:", err);
     });
   }
 
   public async updateLibrary(): Promise<void> {
-    const cmdClient = mpdConnectionManager.getCmdClient();
+    const cmdClient = this.mpdConnectionManager.getCmdClient();
     if (!cmdClient) throw new Error("MPD cmd client not connected");
 
     let fileCount = 0;
 
     this.logService.pushLog("info", "Starting MPD library update");
-    await mpdConnectionManager.executeCommand("update");
+    await this.mpdConnectionManager.executeCommand("update");
 
     await new Promise((r) => setTimeout(r, 500));
 
-    const raw = await mpdConnectionManager.executeCommand("status");
+    const raw = await this.mpdConnectionManager.executeCommand("status");
     const status = parseKeyValue(raw);
 
     if (status.updating_db) {
@@ -300,7 +319,7 @@ class PlayerServiceImpl implements PlayerService {
         }
         logPos = readNewMpdLogLines(logPos).newPosition;
 
-        const r = await mpdConnectionManager.executeCommand("status");
+        const r = await this.mpdConnectionManager.executeCommand("status");
         if (!parseKeyValue(r).updating_db) {
           this.logService.pushLog(
             "info",
@@ -318,4 +337,8 @@ class PlayerServiceImpl implements PlayerService {
   }
 }
 
-export const playerService: PlayerService = new PlayerServiceImpl(logService);
+export const playerService = new PlayerServiceImpl(
+  {} as LogService,
+  {} as MpdConnectionManager,
+  {} as AutoplayService,
+);

@@ -5,7 +5,7 @@ import sharp from "sharp";
 import * as mm from "music-metadata";
 import { albumsDb, tracksDb, artistsDb } from "@repo/db";
 import { DBAlbum, DBTrack } from "@repo/types";
-import { logService, LogService } from "@services/utils/logService";
+import type { LogService } from "@services/utils/logService";
 import { CoverProgress } from "@repo/types/library";
 
 const COVERS_DIR = process.env.COVERS_DIR || "./data/covers";
@@ -248,5 +248,3 @@ export class CoverServiceImpl implements CoverService {
     }
   }
 }
-
-export const coverService: CoverService = new CoverServiceImpl(logService);
