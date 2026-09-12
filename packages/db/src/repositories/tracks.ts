@@ -397,6 +397,9 @@ export const tracksDb = {
     let query = db()
       .select(dBTrackWithRelations)
       .from(tracks)
+      .leftJoin(artists, eq(tracks.artist_id, artists.id))
+      .leftJoin(albums, eq(tracks.album_id, albums.id))
+      .leftJoin(genres, eq(tracks.genre_id, genres.id))
       .orderBy(...orderBy)
       .$dynamic();
     if (limit !== undefined) {

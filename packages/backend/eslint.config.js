@@ -28,4 +28,10 @@ export default defineConfig([
       "no-process-exit": "off",
     },
   },
+  {
+    files: ["**/__tests__/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-unused-expressions": "off",
+    },
+  },
 ]);

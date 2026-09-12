@@ -14,7 +14,8 @@
       "@services/*": ["./src/services/*"],
       "@middleware/*": ["./src/middleware/*"],
       "@controllers/*": ["./src/controllers/*"],
-      "@routes/*": ["./src/routes/*"]
+      "@routes/*": ["./src/routes/*"],
+      "@tests/*": ["./src/__tests__/*"]
     }
   },
   "include": ["src/**/*"]
