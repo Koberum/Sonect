@@ -18,6 +18,12 @@ import {
   playQueueItem,
   removeFromQueue,
 } from "@/features/mpd/api";
+import {
+  sessionNext,
+  sessionPause,
+  sessionPlay,
+  sessionPrevious,
+} from "@/features/session/api";
 import type { QueuedTrack } from "@repo/types";
 import { Badge } from "@/components/ui/badge";
 import VolumeControls from "./volume-controls";
@@ -43,6 +49,9 @@ export function FullPagePlayer({
   const { trackPlayed, playbackStatus, outputMode } = usePlaybackContext();
   const [queue, setQueue] = useState<QueuedTrack[]>([]);
   const fetchedRef = useRef(false);
+  const sessionMode = outputMode === "browser";
+  const noop = () => Promise.resolve();
+  const doToggle = (fn: () => Promise<void>) => (sessionMode ? noop() : fn());
 
   useEffect(() => {
     if (fetchedRef.current) return;
@@ -105,6 +114,7 @@ export function FullPagePlayer({
           elapsed={displayElapsed}
           duration={playbackStatus.duration}
           className="w-full"
+          outputMode={outputMode}
         />
       </div>
 
@@ -112,19 +122,19 @@ export function FullPagePlayer({
         <PlaybackControls
           playbackStatus={playbackStatus}
           playTrack={() => {
-            if (trackPlayed) playSong(trackPlayed);
+            if (trackPlayed) {
+              return sessionMode
+                ? sessionPlay(trackPlayed.file)
+                : playSong(trackPlayed);
+            }
           }}
-          pauseTrack={() => {
-            pauseSong();
-          }}
-          nextTrack={() => {
-            nextTrack();
-          }}
-          previousTrack={() => {
-            previousTrack();
-          }}
-          setRandom={(enabled) => setRandom(enabled)}
-          setRepeat={(enabled) => setRepeat(enabled)}
+          pauseTrack={() => (sessionMode ? sessionPause() : pauseSong())}
+          nextTrack={() => (sessionMode ? sessionNext() : nextTrack())}
+          previousTrack={() =>
+            sessionMode ? sessionPrevious() : previousTrack()
+          }
+          setRandom={(enabled) => doToggle(() => setRandom(enabled))}
+          setRepeat={(enabled) => doToggle(() => setRepeat(enabled))}
           showAllControls
         />
       </div>
