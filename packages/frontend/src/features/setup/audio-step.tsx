@@ -22,7 +22,7 @@ import {
   configureAudio,
   getAudioStatus,
   type AudioDevice,
-} from "@/features/apis/systemApis";
+} from "@/features/system/api";
 
 interface AudioStepProps {
   onNext: () => void;

@@ -1,18 +1,10 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  getPlaylist,
-  deletePlaylist,
-  loadPlaylist,
-  removeTrackFromPlaylist,
-} from "@/features/apis/playlistApis";
-import { playSong, addToQueue } from "@/features/apis/mpdApis";
-import { usePlaylistContext } from "@/components/playlist-context";
+import { playSong, addToQueue } from "@/features/mpd/api";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { updatePlaylist } from "@/features/apis/playlistApis";
 import {
   Table,
   TableBody,
@@ -23,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import { PlayIcon, Trash2, Play, Edit3, X, ListMusic } from "lucide-react";
 import { formatTime, getCoverPath } from "@/lib/utils";
-import type { PlaylistWithTracks, PlaylistTrack } from "@repo/types/catalog";
+import type { PlaylistTrack } from "@repo/types/catalog";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -63,33 +55,39 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import {
+  playlistQueries,
+  playlistMutations,
+} from "@/features/playlists/queries";
 
 export default function PlaylistDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
-  const { refresh } = usePlaylistContext();
-  const [playlist, setPlaylist] = useState<PlaylistWithTracks | null>(null);
-  const [loading, setLoading] = useState(true);
+  const pid = id ? parseInt(id, 10) : 0;
+
+  const { data: playlist, isPending } = useQuery({
+    ...playlistQueries.detail(pid),
+    enabled: !!pid,
+  });
+
+  const updateMut = useMutation(playlistMutations.update());
+  const deleteMut = useMutation(playlistMutations.delete());
+  const removeTrackMut = useMutation(playlistMutations.removeTrack());
+  const loadMut = useMutation(playlistMutations.load());
+
   const [editOpen, setEditOpen] = useState(false);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    getPlaylist(parseInt(id, 10))
-      .then((data) => {
-        setPlaylist(data);
-        setEditName(data.name);
-        setEditDesc(data.description || "");
-      })
-      .catch(() => navigate("/"))
-      .finally(() => setLoading(false));
-  }, [id, navigate]);
+    if (playlist) {
+      setEditName(playlist.name);
+      setEditDesc(playlist.description || "");
+    }
+  }, [playlist]);
 
   const handlePlay = useCallback(async (track: PlaylistTrack) => {
     await playSong(track);
@@ -97,37 +95,28 @@ export default function PlaylistDetail() {
 
   const handlePlayAll = useCallback(async () => {
     if (!playlist || playlist.tracks.length === 0) return;
-    await loadPlaylist(playlist.id);
-  }, [playlist]);
+    await loadMut.mutateAsync(playlist.id);
+  }, [playlist, loadMut]);
 
   const handleDelete = async () => {
     if (!playlist) return;
-    setDeleteLoading(true);
     try {
-      await deletePlaylist(playlist.id);
+      await deleteMut.mutateAsync(playlist.id);
       toast(t("playlist.deleted"));
-      await refresh();
       navigate("/");
     } catch {
       toast.error(t("playlist.deleteError"));
     } finally {
-      setDeleteLoading(false);
       setDeleteOpen(false);
     }
   };
 
   const handleRemoveTrack = async (ptId: number) => {
     if (!playlist) return;
-    const previous = playlist;
-    setPlaylist({
-      ...playlist,
-      tracks: playlist.tracks.filter((t) => t.pt_id !== ptId),
-    });
     try {
-      await removeTrackFromPlaylist(playlist.id, ptId);
+      await removeTrackMut.mutateAsync({ playlistId: playlist.id, ptId });
       toast(t("playlist.trackRemoved"));
     } catch {
-      setPlaylist(previous);
       toast.error(t("playlist.trackRemovedError"));
     }
   };
@@ -139,24 +128,22 @@ export default function PlaylistDetail() {
 
   const handleEdit = async () => {
     if (!playlist || !editName.trim()) return;
-    setEditLoading(true);
     try {
-      const updated = await updatePlaylist(playlist.id, {
-        name: editName.trim(),
-        description: editDesc.trim() || undefined,
+      await updateMut.mutateAsync({
+        id: playlist.id,
+        data: {
+          name: editName.trim(),
+          description: editDesc.trim() || undefined,
+        },
       });
-      setPlaylist({ ...playlist, ...updated });
       setEditOpen(false);
-      await refresh();
       toast(t("playlist.updated"));
     } catch {
       toast.error(t("playlist.updateError"));
-    } finally {
-      setEditLoading(false);
     }
   };
 
-  if (loading) {
+  if (isPending) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-48" />
@@ -239,8 +226,14 @@ export default function PlaylistDetail() {
                   onChange={(e) => setEditDesc(e.target.value)}
                   placeholder={t("playlist.descriptionPlaceholder")}
                 />
-                <Button type="submit" className="w-full" disabled={editLoading}>
-                  {editLoading ? t("common.saving") : t("playlist.save")}
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={updateMut.isPending}
+                >
+                  {updateMut.isPending
+                    ? t("common.saving")
+                    : t("playlist.save")}
                 </Button>
               </form>
             </SheetContent>
@@ -270,10 +263,12 @@ export default function PlaylistDetail() {
                 <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDelete}
-                  disabled={deleteLoading}
+                  disabled={deleteMut.isPending}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  {deleteLoading ? t("common.deleting") : t("playlist.delete")}
+                  {deleteMut.isPending
+                    ? t("common.deleting")
+                    : t("playlist.delete")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

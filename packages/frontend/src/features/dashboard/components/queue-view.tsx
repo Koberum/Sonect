@@ -1,11 +1,6 @@
-import { useEffect, useState } from "react";
-import {
-  getQueue,
-  playQueueItem,
-  removeFromQueue,
-} from "@/features/apis/mpdApis";
+import { useState } from "react";
+import { playQueueItem, removeFromQueue } from "@/features/mpd/api";
 import { getCoverPath } from "@/lib/utils";
-import type { QueuedTrack } from "@repo/types";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -16,6 +11,9 @@ import { ListMusic, X, Play } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTranslation } from "react-i18next";
 import PlayStatus from "@/features/dashboard/components/play-status";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { mpdQueries } from "@/features/mpd/queries";
+import { qk } from "@/lib/queryKeys";
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -29,23 +27,13 @@ interface QueueViewProps {
 
 export function QueueView({ currentTrackFile }: QueueViewProps) {
   const { t } = useTranslation();
-  const [queue, setQueue] = useState<QueuedTrack[]>([]);
   const [open, setOpen] = useState(false);
+  const qc = useQueryClient();
 
-  useEffect(() => {
-    if (!open) return;
-    const fetchQueue = async () => {
-      try {
-        const data = await getQueue();
-        setQueue(data);
-      } catch {
-        setQueue([]);
-      }
-    };
-    fetchQueue();
-    const id = setInterval(fetchQueue, 5000);
-    return () => clearInterval(id);
-  }, [open]);
+  const { data: queue = [] } = useQuery({
+    ...mpdQueries.queue(open),
+    enabled: open,
+  });
 
   const handlePlay = async (pos: number) => {
     await playQueueItem(pos);
@@ -54,7 +42,9 @@ export function QueueView({ currentTrackFile }: QueueViewProps) {
   const handleRemove = async (e: React.MouseEvent, pos: number) => {
     e.stopPropagation();
     await removeFromQueue(pos);
-    setQueue((prev) => prev.filter((t) => t.pos !== pos));
+    qc.setQueryData(qk.mpd.queue(), (old: typeof queue) =>
+      old ? old.filter((trk) => trk.pos !== pos) : old,
+    );
   };
 
   return (

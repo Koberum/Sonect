@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Folder, HardDrive, Loader2, Plus, Server, Trash2 } from "lucide-react";
 import {
@@ -21,17 +21,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import {
-  getStorageSources,
-  createStorageSource,
-  updateStorageSource,
-  deleteStorageSource,
-  mountStorageSource,
-  unmountStorageSource,
-  getActiveMounts,
-  type StorageSource,
-  type MountInfo,
-} from "@/features/apis/systemApis";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { systemQueries, systemMutations } from "@/features/system/queries";
+import type { StorageSource } from "@/features/system/api";
 import { LibrariesTypeSelect, type SourceType } from "./libraries-type-select";
 import { LibrariesForm } from "./libraries-form";
 
@@ -64,9 +56,16 @@ type DialogStep = "closed" | "select-type" | "form";
 
 export function LibrariesTab() {
   const { t } = useTranslation();
-  const [sources, setSources] = useState<StorageSource[]>([]);
-  const [mounts, setMounts] = useState<MountInfo[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: sources = [], isPending: loading } = useQuery(
+    systemQueries.storageSources(),
+  );
+  const { data: mounts = [] } = useQuery(systemQueries.activeMounts());
+  const createMut = useMutation(systemMutations.createStorageSource());
+  const updateMut = useMutation(systemMutations.updateStorageSource());
+  const deleteMut = useMutation(systemMutations.deleteStorageSource());
+  const mountMut = useMutation(systemMutations.mount());
+  const unmountMut = useMutation(systemMutations.unmount());
+
   const [dialogStep, setDialogStep] = useState<DialogStep>("closed");
   const [selectedType, setSelectedType] = useState<SourceType>("smb");
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -77,40 +76,6 @@ export function LibrariesTab() {
   const [deletingName, setDeletingName] = useState("");
 
   const supportsMount = (src: StorageSource) => src.type !== "local";
-
-  const reloadStorage = async () => {
-    try {
-      const [src, mnt] = await Promise.all([
-        getStorageSources(),
-        getActiveMounts(),
-      ]);
-      setSources(src);
-      setMounts(mnt);
-    } catch {
-      toast.error(
-        t("settings.libraries.loadError", "Failed to load library data"),
-      );
-    }
-  };
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [src, mnt] = await Promise.all([
-          getStorageSources(),
-          getActiveMounts(),
-        ]);
-        setSources(src);
-        setMounts(mnt);
-      } catch {
-        toast.error(
-          t("settings.libraries.loadError", "Failed to load library data"),
-        );
-      }
-      setLoading(false);
-    };
-    load();
-  }, [t]);
 
   const openAddDialog = () => {
     setEditingId(null);
@@ -144,14 +109,13 @@ export function LibrariesTab() {
   }) => {
     try {
       if (editingId) {
-        await updateStorageSource(editingId, data);
+        await updateMut.mutateAsync({ id: editingId, data });
         toast.success(t("settings.libraries.updated", "Library updated"));
       } else {
-        await createStorageSource(data);
+        await createMut.mutateAsync(data);
         toast.success(t("settings.libraries.created", "Library created"));
       }
       setDialogStep("closed");
-      reloadStorage();
     } catch (err) {
       toast.error(
         (err instanceof Error && err.message) ||
@@ -164,11 +128,10 @@ export function LibrariesTab() {
 
   const handleDelete = async (id: number) => {
     try {
-      await deleteStorageSource(id);
+      await deleteMut.mutateAsync(id);
       toast.success(t("settings.libraries.deleted", "Library deleted"));
       setDeletingId(null);
       setDeletingName("");
-      reloadStorage();
     } catch {
       toast.error(
         t("settings.libraries.deleteError", "Failed to delete library"),
@@ -178,10 +141,9 @@ export function LibrariesTab() {
 
   const handleMount = async (id: number) => {
     try {
-      const result = await mountStorageSource(id);
+      const result = await mountMut.mutateAsync(id);
       if (result.success) {
         toast.success(t("settings.libraries.mounted", "Mounted"));
-        reloadStorage();
       } else {
         toast.error(
           result.error ?? t("settings.libraries.mountError", "Mount failed"),
@@ -194,9 +156,8 @@ export function LibrariesTab() {
 
   const handleUnmount = async (id: number) => {
     try {
-      await unmountStorageSource(id);
+      await unmountMut.mutateAsync(id);
       toast.success(t("settings.libraries.unmounted", "Unmounted"));
-      reloadStorage();
     } catch (err) {
       toast.error(
         (err instanceof Error && err.message) ||

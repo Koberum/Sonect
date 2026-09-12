@@ -10,8 +10,8 @@ import {
 import type { Album, Track } from "@repo/types/catalog";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { playSong, addToQueue } from "@/features/apis/mpdApis";
-import { getTracksByAlbum } from "@/features/apis/catalogApis";
+import { playSong, addToQueue } from "@/features/mpd/api";
+import { getTracksByAlbum } from "@/features/catalog/api";
 import { useState } from "react";
 
 interface AlbumArtworkProps extends React.HTMLAttributes<HTMLDivElement> {

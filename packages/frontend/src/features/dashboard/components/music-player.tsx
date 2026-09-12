@@ -14,7 +14,7 @@ import {
   previousTrack,
   setRandom,
   setRepeat,
-} from "@/features/apis/mpdApis";
+} from "@/features/mpd/api";
 import { usePlaybackContext } from "@/components/playback-context";
 import VolumeControls from "./volume-controls";
 import { useBrowserAudio } from "@/lib/useBrowserAudio";
@@ -22,7 +22,7 @@ import { OutputSelector } from "./output-selector";
 import {
   getOutputMode,
   setOutputMode as setOutputModeApi,
-} from "@/features/apis/systemApis";
+} from "@/features/system/api";
 import { useTranslation } from "react-i18next";
 import { Play } from "lucide-react";
 

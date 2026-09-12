@@ -1,8 +1,5 @@
-import { getLibraryStats } from "@/features/apis/catalogApis";
-import { usePlaybackContext } from "@/components/playback-context";
+import { useQuery } from "@tanstack/react-query";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
-import type { LibraryStats } from "@repo/types/catalog";
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   AlbumIcon,
@@ -16,8 +13,8 @@ import {
   RefreshCw,
   Tags,
 } from "lucide-react";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { catalogQueries } from "@/features/catalog/queries";
 
 function formatDuration(seconds: number): string {
   if (seconds === 0) return "0m";
@@ -69,18 +66,9 @@ function StatCard({ title, value, icon, description }: StatCardProps) {
 
 export function Statistics() {
   const { t } = useTranslation();
-  usePlaybackContext();
-  const [stats, setStats] = useState<LibraryStats | null>(null);
+  const { data: stats, isPending } = useQuery(catalogQueries.stats());
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      const data = await getLibraryStats();
-      setStats(data);
-    };
-    fetchStats();
-  }, []);
-
-  if (!stats) {
+  if (isPending || !stats) {
     return (
       <div>
         <PageTitle

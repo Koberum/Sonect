@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { isSetupCompleteForSession } from "@/features/apis/systemApis";
+import { isSetupCompleteForSession } from "@/features/system/api";
 
 export function SetupGuard({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();

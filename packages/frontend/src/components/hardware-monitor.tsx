@@ -1,10 +1,7 @@
-import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  getHardwareUsage,
-  type HardwareUsage,
-} from "@/features/apis/systemApis";
 import { Cpu, MemoryStick } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { systemQueries } from "@/features/system/queries";
 
 function formatBytes(bytes: number): string {
   if (bytes >= 1073741824) return `${(bytes / 1073741824).toFixed(1)} GB`;
@@ -35,24 +32,7 @@ function ProgressBar({ value, color }: { value: number; color: string }) {
 
 export function HardwareMonitor() {
   const { t } = useTranslation();
-  const [usage, setUsage] = useState<HardwareUsage | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
-
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        const data = await getHardwareUsage();
-        setUsage(data);
-      } catch {
-        // silently ignore
-      }
-    };
-    fetch();
-    intervalRef.current = setInterval(fetch, 2000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
+  const { data: usage } = useQuery(systemQueries.hardwareUsage(true));
 
   if (!usage) {
     return (

@@ -8,7 +8,7 @@ import {
   completeSetup,
   isSetupCompleteForSession,
   updateSetupProgress,
-} from "@/features/apis/systemApis";
+} from "@/features/system/api";
 import { WelcomeStep } from "@/features/setup/welcome-step";
 import { AudioStep } from "@/features/setup/audio-step";
 import { StorageStep } from "@/features/setup/storage-step";

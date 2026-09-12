@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -15,8 +15,6 @@ import {
   Settings,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { usePlaylistContext } from "@/components/playlist-context";
-import { usePlaybackContext } from "@/components/playback-context";
 import {
   Dialog,
   DialogContent,
@@ -25,15 +23,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { createPlaylist } from "@/features/apis/playlistApis";
-import { getLibraryStats, scanLibrary } from "@/features/apis/catalogApis";
-import type { LibraryStats } from "@repo/types/catalog";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import {
+  playlistQueries,
+  playlistMutations,
+} from "@/features/playlists/queries";
+import { catalogQueries } from "@/features/catalog/queries";
+import { scanLibrary } from "@/features/catalog/api";
 
 export interface SidebarProps {
   className?: string;
@@ -43,22 +45,12 @@ export interface SidebarProps {
 export function Sidebar({ className, toggleSidebar }: SidebarProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { playlists, refresh } = usePlaylistContext();
-  usePlaybackContext();
+  const { data: playlists = [] } = useQuery(playlistQueries.list());
+  const createMut = useMutation(playlistMutations.create());
+  const { data: libraryStats } = useQuery(catalogQueries.stats());
   const [newName, setNewName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [libraryStats, setLibraryStats] = useState<LibraryStats | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  useEffect(() => {
-    getLibraryStats()
-      .then(setLibraryStats)
-      .catch(() => {});
-  }, []);
 
   const handleNavigation = (path: string) => {
     navigate(path);
@@ -82,10 +74,9 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
   const handleCreatePlaylist = async () => {
     if (!newName.trim()) return;
     try {
-      await createPlaylist(newName.trim());
+      await createMut.mutateAsync({ name: newName.trim() });
       setNewName("");
       setDialogOpen(false);
-      await refresh();
     } catch {
       console.error(t("playlist.createError"));
     }

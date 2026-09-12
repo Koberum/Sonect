@@ -170,6 +170,13 @@ Single Node process on port 3000:
 - Use `i18next` / `react-i18next` for ALL user-visible strings. Every hardcoded label, heading, button text, menu item, aria-label, alt text, toast message, and placeholder must use `t("namespace.key")`. Translation keys live in `packages/frontend/src/i18n/locales/{lang}.json`. When building a new feature or component, define all labels in both `en.json` and `es.json` as part of the implementation — never ship untranslated UI text.
 - **Vite proxy** — When adding new backend route prefixes (e.g. `/playlists`), you **must** add a corresponding proxy entry in `packages/frontend/vite.config.ts` so the Vite dev server forwards those requests to the backend on port 3000.
 - **Responsive design** — Every page and component must work at all viewport sizes. Use Tailwind responsive prefixes (`sm:`, `md:`, `lg:`, `xl:`). Never ship a layout that breaks below 375px (mobile). After any UI change, verify with Playwright at 3 viewport sizes: 375px (mobile), 768px (tablet), 1280px (desktop).
+- **Data fetching — TanStack Query** — All REST fetching goes through `@tanstack/react-query` (v5). Idiomatic layout:
+  - `lib/api.ts` — single `apiFetch<T>(path, {params, body, signal})` built on native `fetch` (`VITE_BACKEND_URL` base, `ApiError`/`NetworkError` throwing). No `ApiClient` class.
+  - `lib/queryClient.ts` — `QueryClient` defaults: `staleTime: 30s`, `gcTime: 5m`, `retry:1`, `refetchOnWindowFocus:false`, `placeholderData: keepPreviousData`. Per‑query overrides: lists `60s`, static catalog `5m`, `stats` `2m`, `search` `10s`, polling `0 + refetchInterval`.
+  - `lib/queryKeys.ts` — factory `qk` for stable keys (`qk.catalog.albumsInfinite(sort)`, `qk.playlists.detail(id)`, …) — use for `invalidateQueries`.
+  - `features/<domain>/api.ts` — typed fetchers `(params, signal?) => Promise<T>` via `apiFetch`.
+  - `features/<domain>/queries.ts` — `queryOptions`/`infiniteQueryOptions`/`mutationOptions` factories + thin hooks; `queryFn: ({signal})=> fetcher(..., signal)` for cancellation. Mutations invalidate via `queryClient.invalidateQueries({queryKey: qk...})`.
+  - `App.tsx` wraps `QueryClientProvider` outermost; `ReactQueryDevtools` is `import.meta.env.DEV` only; `vite.config.ts` chunks `@tanstack` → `vendor-query`. Do **not** re‑introduce `ApiClient` or `PlaylistContext` — they were deleted in this migration; use `useQuery(playlistQueries.list())` etc. Keep `PlaybackContext`/`WebSocketProvider` for push state.
 
 ### Database
 

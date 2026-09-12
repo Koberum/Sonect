@@ -17,7 +17,7 @@ import {
   getQueue,
   playQueueItem,
   removeFromQueue,
-} from "@/features/apis/mpdApis";
+} from "@/features/mpd/api";
 import type { QueuedTrack } from "@repo/types";
 import { Badge } from "@/components/ui/badge";
 import VolumeControls from "./volume-controls";

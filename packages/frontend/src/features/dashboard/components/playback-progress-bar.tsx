@@ -1,4 +1,4 @@
-import { goToPosition } from "@/features/apis/mpdApis";
+import { goToPosition } from "@/features/mpd/api";
 import { formatTime } from "@/lib/utils";
 
 type PlaybackProgressBar = {

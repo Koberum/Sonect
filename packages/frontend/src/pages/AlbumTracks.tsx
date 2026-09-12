@@ -3,9 +3,6 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useTranslation } from "react-i18next";
 import { useParams, Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { getAlbumById, getTracksByAlbum } from "@/features/apis/catalogApis";
-import type { Album, TrackWithRelations } from "@repo/types/catalog";
 import { formatTime, getCoverPath } from "@/lib/utils";
 import {
   Table,
@@ -16,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PlayIcon, ListPlus } from "lucide-react";
-import { playSong, addToQueue } from "@/features/apis/mpdApis";
+import { playSong, addToQueue } from "@/features/mpd/api";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
 import { usePlaybackContext } from "@/components/playback-context";
 import {
@@ -28,29 +25,22 @@ import {
 } from "@/components/ui/context-menu";
 import { AddToPlaylistMenu } from "@/features/dashboard/components/add-to-playlist-menu";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { catalogQueries } from "@/features/catalog/queries";
+import type { TrackWithRelations } from "@repo/types/catalog";
 
 export default function AlbumPage() {
   const { t } = useTranslation();
   const { id } = useParams();
-  const [album, setAlbum] = useState<Album>();
-  const [tracks, setTracks] = useState<TrackWithRelations[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const album = await getAlbumById(id!);
-        setAlbum(album);
-        const tracks = await getTracksByAlbum(id!);
-        setTracks(tracks);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [id]);
+  const { data: album, isPending: albumPending } = useQuery({
+    ...catalogQueries.album(id ?? ""),
+    enabled: !!id,
+  });
+  const { data: tracks = [], isPending: tracksPending } = useQuery({
+    ...catalogQueries.tracksByAlbum(id ?? ""),
+    enabled: !!id,
+  });
+  const isPending = albumPending || tracksPending;
 
   const { trackPlayed } = usePlaybackContext();
   return (
@@ -72,7 +62,7 @@ export default function AlbumPage() {
       />
       <Separator className="my-4" />
       <div className="relative">
-        {loading ? (
+        {isPending ? (
           <div className="flex justify-center py-16">
             <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
           </div>
