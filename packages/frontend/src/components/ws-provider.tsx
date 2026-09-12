@@ -1,10 +1,16 @@
 import { useEffect, useRef } from "react";
+import { getClientSessionId } from "@/lib/session";
 import { usePlaybackContext, type SyncProgress } from "./playback-context";
 import type { PlaybackStatus } from "@repo/types";
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
-  const { setPlaybackStatus, setTrackPlayed, setSyncProgress, setWsConnected } =
-    usePlaybackContext();
+  const {
+    setPlaybackStatus,
+    setTrackPlayed,
+    setSyncProgress,
+    setWsConnected,
+    outputMode,
+  } = usePlaybackContext();
 
   const settersRef = useRef({
     setPlaybackStatus,
@@ -27,7 +33,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const intentionalCloseRef = useRef(false);
   const trackIdRef = useRef<number | null>(null);
 
-  const wsUrl =
+  const wsUrl: string =
     import.meta.env.VITE_WEBSOCKET_URL ||
     `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`;
 
@@ -46,7 +52,12 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       if (cancelled) return;
       wsRef.current?.close();
 
-      const ws = new WebSocket(wsUrl);
+      const modeUrl =
+        outputMode === "browser"
+          ? `${wsUrl}${wsUrl.includes("?") ? "&" : "?"}sessionId=${encodeURIComponent(getClientSessionId())}`
+          : wsUrl;
+
+      const ws = new WebSocket(modeUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -136,7 +147,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       wsRef.current = null;
       setWsConnected(false);
     };
-  }, [wsUrl]);
+  }, [wsUrl, outputMode]);
 
   return <>{children}</>;
 }
