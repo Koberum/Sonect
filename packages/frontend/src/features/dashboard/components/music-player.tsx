@@ -19,10 +19,13 @@ import { usePlaybackContext } from "@/components/playback-context";
 import VolumeControls from "./volume-controls";
 import { useBrowserAudio } from "@/lib/useBrowserAudio";
 import { OutputSelector } from "./output-selector";
+import type { TrackWithRelations } from "@repo/types/catalog";
 import {
-  getOutputMode,
-  setOutputMode as setOutputModeApi,
-} from "@/features/system/api";
+  sessionNext,
+  sessionPause,
+  sessionPlay,
+  sessionPrevious,
+} from "@/features/session/api";
 import { useTranslation } from "react-i18next";
 import { Play } from "lucide-react";
 
@@ -82,25 +85,19 @@ export default function MusicPlayer() {
     }
   }, [playbackStatus.track, trackPlayed, setTrackPlayed]);
 
-  const handleOutputModeChange = async (mode: OutputMode) => {
-    try {
-      await setOutputModeApi(mode);
-      setOutputMode(mode);
-    } catch {
-      console.error(t("player.outputModeError"));
-    }
+  const handleOutputModeChange = (mode: OutputMode) => {
+    setOutputMode(mode);
   };
 
-  const [deviceName, setDeviceName] = useState<string | null>(null);
+  const sessionMode = outputMode === "browser";
+  const doPlay = (t: TrackWithRelations | null) =>
+    t && (sessionMode ? sessionPlay(t.file) : playSong(t));
+  const doPause = () => (sessionMode ? sessionPause() : pauseSong());
+  const doNext = () => (sessionMode ? sessionNext() : nextTrack());
+  const doPrev = () => (sessionMode ? sessionPrevious() : previousTrack());
 
-  useEffect(() => {
-    getOutputMode()
-      .then((res) => {
-        setOutputMode(res.mode);
-        setDeviceName(res.deviceName);
-      })
-      .catch(() => {});
-  }, [setOutputMode]);
+  const noop = () => Promise.resolve();
+  const doToggle = (fn: () => Promise<void>) => (sessionMode ? noop() : fn());
 
   useEffect(() => {
     if (playbackStatus.state !== "play") {
@@ -146,6 +143,7 @@ export default function MusicPlayer() {
             elapsed={displayElapsed}
             duration={playbackStatus.duration}
             className="h-1 w-full"
+            outputMode={outputMode}
           />
         </div>
         <div className="relative flex h-20 items-center">
@@ -179,19 +177,19 @@ export default function MusicPlayer() {
             <PlaybackControls
               playbackStatus={playbackStatus}
               playTrack={() => {
-                if (trackPlayed) playSong(trackPlayed);
+                if (trackPlayed) doPlay(trackPlayed);
               }}
               pauseTrack={() => {
-                pauseSong();
+                doPause();
               }}
               nextTrack={() => {
-                nextTrack();
+                doNext();
               }}
               previousTrack={() => {
-                previousTrack();
+                doPrev();
               }}
-              setRandom={(enabled) => setRandom(enabled)}
-              setRepeat={(enabled) => setRepeat(enabled)}
+              setRandom={(enabled) => doToggle(() => setRandom(enabled))}
+              setRepeat={(enabled) => doToggle(() => setRepeat(enabled))}
             />
 
             <div className="hidden w-full md:flex">
@@ -199,6 +197,7 @@ export default function MusicPlayer() {
                 elapsed={displayElapsed}
                 duration={playbackStatus.duration}
                 className="w-full pr-6 pl-6"
+                outputMode={outputMode}
               />
             </div>
           </div>
@@ -207,7 +206,7 @@ export default function MusicPlayer() {
             <OutputSelector
               currentMode={outputMode}
               onModeChange={handleOutputModeChange}
-              deviceName={deviceName}
+              deviceName={null}
             />
             <VolumeControls
               volume={

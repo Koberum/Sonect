@@ -73,6 +73,7 @@
     "title": "Now Playing",
     "outputMpd": "MPD Output",
     "outputBrowser": "Browser Output",
+    "sessionPlayback": "Session playback",
     "outputModeError": "Failed to switch output mode",
     "tapToPlay": "Tap to play"
   },
