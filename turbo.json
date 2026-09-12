@@ -12,7 +12,9 @@
         "VITE_DEBUG"
       ]
     },
-    "lint": {},
+    "lint": {
+      "dependsOn": ["^build"]
+    },
     "test": {
       "dependsOn": ["^build"],
       "cache": false
