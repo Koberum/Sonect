@@ -44,6 +44,10 @@ import {
   NetworkServiceImpl,
   type NetworkService,
 } from "./network/networkService.js";
+import {
+  SessionRegistry,
+  setGlobalSessionRegistry,
+} from "./session/sessionRegistry.js";
 
 let _initialized = false;
 let _logService: LogService;
@@ -62,6 +66,7 @@ let _playlistService: PlaylistService;
 let _suggestionService: SuggestionServiceInterface;
 let _setupService: SetupService;
 let _networkService: NetworkService;
+let _sessionRegistry: SessionRegistry;
 
 function assertInitialized(): void {
   if (!_initialized) {
@@ -117,6 +122,9 @@ export function initializeServices(): void {
   _suggestionService = new SuggestionService();
   _setupService = new SetupServiceImpl();
   _networkService = new NetworkServiceImpl();
+
+  _sessionRegistry = new SessionRegistry(_logService);
+  setGlobalSessionRegistry(_sessionRegistry);
 
   _mpdConnectionManager.setAutoplayCallback(async (currentFile: string) => {
     const sessionId = _autoplayService.sessionId;
@@ -213,6 +221,11 @@ export function getSetupService(): SetupService {
 export function getNetworkService(): NetworkService {
   assertInitialized();
   return _networkService;
+}
+
+export function getSessionRegistry(): SessionRegistry {
+  assertInitialized();
+  return _sessionRegistry;
 }
 
 export function isServicesInitialized(): boolean {
