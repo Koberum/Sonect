@@ -52,6 +52,16 @@ export type QueuedTrack = {
 
 export type PlayTrackResponse = { success: boolean };
 
+export type SessionQueueEntry = {
+  id: number;
+  file: string;
+  title: string;
+  artist_name: string;
+  album: string;
+  duration: number;
+  cover_path: string;
+};
+
 // Sub-package re-exports for modular imports
 export * from "./catalog";
 export * from "./mpd";
