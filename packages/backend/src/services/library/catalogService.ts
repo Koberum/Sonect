@@ -3,7 +3,6 @@ import type {
   Album,
   Artist,
   Genre,
-  Track,
   TrackWithRelations,
 } from "@repo/types/library";
 
@@ -53,7 +52,7 @@ export class CatalogServiceImpl implements CatalogService {
     const artists = artistsDb.getAll({ limit, offset });
     return artists.map((artist) => ({
       ...artist,
-      coverPreviews: albumsDb.getCoverPreviews(artist.id, 4),
+      coverPreviews: albumsDb.getCoverPreviews(artist.id, 4), // TODO: Optimize here with single sync join query on db
     }));
   }
 
