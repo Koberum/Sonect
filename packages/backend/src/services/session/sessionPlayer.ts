@@ -172,13 +172,18 @@ export class SessionPlayer extends EventEmitter {
   next(): void {
     if (this.queueInternal.length === 0) return;
     this.advance();
-    if (this.stateInternal === "stop") return;
+    if (this.stateInternal === "stop") {
+      // Queue end reached: emit so WS consumers observe the final stop.
+      this.emit("stateChanged");
+      return;
+    }
     this.stateInternal = "play";
     this.startClock();
     this.emit("stateChanged");
   }
 
   previous(): void {
+    if (this.queueInternal.length === 0) return;
     if (this.indexInternal > 0) {
       this.indexInternal -= 1;
     }
@@ -216,6 +221,10 @@ export class SessionPlayer extends EventEmitter {
         this.stopClock();
       } else if (this.indexInternal >= this.queueInternal.length) {
         this.indexInternal = this.queueInternal.length - 1;
+        this.position = 0;
+      } else {
+        // Mid-queue: the item that followed the removed one is now current at
+        // `pos` — start it from the beginning.
         this.position = 0;
       }
     } else if (this.indexInternal > removing) {
