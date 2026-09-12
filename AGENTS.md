@@ -86,7 +86,7 @@ After making changes:
 
 ```
 Single Node process on port 3000:
-  Express API routes (/mpd, /library, /playlists, /system, /covers)
+  Express API routes (/mpd, /catalog, /playlists, /system, /covers)
   + WebSocket server (ws)
   + Static file serving for built React frontend
   + SPA fallback (index.html for any unmatched GET)
@@ -146,7 +146,7 @@ Single Node process on port 3000:
 - **asyncHandler** (`middleware/asyncHandler.ts`) wraps all async controllers; it **returns the promise chain** so tests can `await` it.
 - **errorHandler** (`middleware/errorHandler.ts`) is registered in `app.ts` as the last middleware. Controllers throw `NotFoundError`/`ValidationError` for centralized handling.
 - **autoplayService** (`services/autoplayService.ts`) is always active. A manual track selection queues that track through the end of its album, without wrapping to earlier tracks. Smart batches then add complete albums in this order: same artist → same genre → library-wide, ranking each tier by the sum of its tracks' `play_count` (title order breaks ties). Ranking stays anchored to the manually selected track as playback advances. A batch stops only after reaching at least 25 tracks, so albums are never split. The connection manager refills below five remaining tracks and prevents overlapping fills; used albums are committed only after MPD accepts them and are not repeated until the cycle is exhausted. The next cycle preserves albums still in the MPD queue. There is no autoplay toggle API.
-- **mpdSyncService** (`services/mpdSyncService.ts`) handles library sync from MPD → SQLite, invoked via `scripts/sync.ts`. Tracks are fetched from MPD and deduplicated **before** any destructive database work — a failed fetch leaves the existing library untouched. The rebuild itself is a single transaction in `librarySyncDb.rebuild()` (`@repo/db` `repositories/librarySync.ts`): `play_count`/`last_played` are snapshotted first and restored for surviving files (they feed smart autoplay ranking), each track persists inside a savepoint, per-track constraint failures are reported and skipped, and any other error rolls the whole rebuild back to the previous library state.
+- **CatalogSyncService** (`services/catalogSyncService.ts`) handles library sync from MPD → SQLite, invoked via `scripts/sync.ts`. Tracks are fetched from MPD and deduplicated **before** any destructive database work — a failed fetch leaves the existing library untouched. The rebuild itself is a single transaction in `catalogSyncDb.rebuild()` (`@repo/db` `repositories/catalogSync.ts`): `play_count`/`last_played` are snapshotted first and restored for surviving files (they feed smart autoplay ranking), each track persists inside a savepoint, per-track constraint failures are reported and skipped, and any other error rolls the whole rebuild back to the previous library state.
 - The backend exposes its build version through `getSystemStatus()` →
   `/system/status[].version`. It reads `backend/.version` (written only by the
   release CI), defaulting to `"dev"`. Sources: `services/appVersion.ts`.
@@ -170,6 +170,13 @@ Single Node process on port 3000:
 - Use `i18next` / `react-i18next` for ALL user-visible strings. Every hardcoded label, heading, button text, menu item, aria-label, alt text, toast message, and placeholder must use `t("namespace.key")`. Translation keys live in `packages/frontend/src/i18n/locales/{lang}.json`. When building a new feature or component, define all labels in both `en.json` and `es.json` as part of the implementation — never ship untranslated UI text.
 - **Vite proxy** — When adding new backend route prefixes (e.g. `/playlists`), you **must** add a corresponding proxy entry in `packages/frontend/vite.config.ts` so the Vite dev server forwards those requests to the backend on port 3000.
 - **Responsive design** — Every page and component must work at all viewport sizes. Use Tailwind responsive prefixes (`sm:`, `md:`, `lg:`, `xl:`). Never ship a layout that breaks below 375px (mobile). After any UI change, verify with Playwright at 3 viewport sizes: 375px (mobile), 768px (tablet), 1280px (desktop).
+- **Data fetching — TanStack Query** — All REST fetching goes through `@tanstack/react-query` (v5). Idiomatic layout:
+  - `lib/api.ts` — single `apiFetch<T>(path, {params, body, signal})` built on native `fetch` (`VITE_BACKEND_URL` base, `ApiError`/`NetworkError` throwing). No `ApiClient` class.
+  - `lib/queryClient.ts` — `QueryClient` defaults: `staleTime: 30s`, `gcTime: 5m`, `retry:1`, `refetchOnWindowFocus:false`, `placeholderData: keepPreviousData`. Per‑query overrides: lists `60s`, static catalog `5m`, `stats` `2m`, `search` `10s`, polling `0 + refetchInterval`.
+  - `lib/queryKeys.ts` — factory `qk` for stable keys (`qk.catalog.albumsInfinite(sort)`, `qk.playlists.detail(id)`, …) — use for `invalidateQueries`.
+  - `features/<domain>/api.ts` — typed fetchers `(params, signal?) => Promise<T>` via `apiFetch`.
+  - `features/<domain>/queries.ts` — `queryOptions`/`infiniteQueryOptions`/`mutationOptions` factories + thin hooks; `queryFn: ({signal})=> fetcher(..., signal)` for cancellation. Mutations invalidate via `queryClient.invalidateQueries({queryKey: qk...})`.
+  - `App.tsx` wraps `QueryClientProvider` outermost; `ReactQueryDevtools` is `import.meta.env.DEV` only; `vite.config.ts` chunks `@tanstack` → `vendor-query`. Do **not** re‑introduce `ApiClient` or `PlaylistContext` — they were deleted in this migration; use `useQuery(playlistQueries.list())` etc. Keep `PlaybackContext`/`WebSocketProvider` for push state.
 
 ### Database
 
@@ -207,7 +214,7 @@ Single Node process on port 3000:
   its own cwd, and `packages/backend/.env` pins it for `pnpm dev`). The
   relative `./data/music.db` fallback must never be relied on: it resolves
   per-process cwd, so backend and tooling can silently open different files
-  (this exact drift once caused 500s on `/library/scan`).
+  (this exact drift once caused 500s on `/catalog/scan`).
 - **Migrations:** `initDatabase()` (`packages/db/src/schema.ts`) applies
   pending migrations at startup via `migrate()` from
   `drizzle-orm/node-sqlite/migrator`, tracked in the `__drizzle_migrations`

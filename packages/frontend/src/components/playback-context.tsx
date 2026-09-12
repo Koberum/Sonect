@@ -1,5 +1,6 @@
 // MusicContext.tsx
-import type { PlaybackStatus, Track, OutputMode } from "@repo/types";
+import type { PlaybackStatus, OutputMode } from "@repo/types";
+import type { TrackWithRelations } from "@repo/types/catalog";
 import { createContext, useContext, useEffect, useState } from "react";
 
 export type SyncProgress = {
@@ -14,11 +15,11 @@ export type SyncProgress = {
 };
 
 type PlaybackContextType = {
-  trackPlayed: Track | null;
+  trackPlayed: TrackWithRelations | null;
   playbackStatus: PlaybackStatus;
   syncProgress: SyncProgress | null;
   wsConnected: boolean;
-  setTrackPlayed: (track: Track | null) => void;
+  setTrackPlayed: (track: TrackWithRelations | null) => void;
   setPlaybackStatus: (status: PlaybackStatus) => void;
   setSyncProgress: (progress: SyncProgress | null) => void;
   outputMode: OutputMode;
@@ -43,7 +44,9 @@ const defaultPlayerState: PlaybackStatus = {
 };
 
 export function PlaybackProvider({ children }: { children: React.ReactNode }) {
-  const [trackPlayed, setTrackPlayed] = useState<Track | null>(null);
+  const [trackPlayed, setTrackPlayed] = useState<TrackWithRelations | null>(
+    null,
+  );
   const [playbackStatus, setPlaybackStatus] =
     useState<PlaybackStatus>(defaultPlayerState);
   const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);

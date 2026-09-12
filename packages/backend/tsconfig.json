@@ -9,7 +9,14 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "types": ["@typescript/native", "mocha"]
+    "types": ["@typescript/native", "mocha"],
+    "paths": {
+      "@services/*": ["./src/services/*"],
+      "@middleware/*": ["./src/middleware/*"],
+      "@controllers/*": ["./src/controllers/*"],
+      "@routes/*": ["./src/routes/*"],
+      "@tests/*": ["./src/__tests__/*"]
+    }
   },
   "include": ["src/**/*"]
 }

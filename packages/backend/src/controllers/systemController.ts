@@ -1,45 +1,19 @@
 import { Request, Response } from "express";
 import { systemSchemas } from "@repo/types";
-import { asyncHandler } from "../middleware/asyncHandler";
-import { getSystemStatus, getHardwareUsage } from "../services/systemService";
+import { asyncHandler } from "@middleware/asyncHandler";
 import {
-  getAudioDevices,
-  configureAudioOutput,
-  getCurrentAudioOutput,
-  restartMPD,
-  stopMPD,
-  getMpdStatus,
-  setOutputMode,
-  getOutputMode,
-  getOutputDeviceName,
-} from "../services/audioService";
-import { getNetworkStatus } from "../services/networkService";
-import {
-  getStorageSources,
-  getStorageSource,
-  createStorageSource,
-  updateStorageSource,
-  deleteStorageSource,
-  mountSource,
-  unmountSource,
-  listMounts,
-  sanitizeSource,
-} from "../services/storageService";
-import {
-  getSetupProgress,
-  isSetupComplete,
-  markStepComplete,
-  markStepIncomplete,
-  markSetupCompleted,
-  resetSetup,
-  getNextIncompleteStep,
-} from "../services/setupService";
+  getSystemService,
+  getMpdConfigService,
+  getStorageService,
+  getSetupService,
+  getNetworkService,
+} from "@services/factory";
 import { NotFoundError } from "../middleware/errorHandler";
 
 export const getStatusHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const status = getSystemStatus();
-    const setup = getSetupProgress();
+    const status = getSystemService().getSystemStatus();
+    const setup = getSetupService().getSetupProgress();
     res.json({
       ...status,
       setupCompleted: setup.filter((s) => s.completed).map((s) => s.step),
@@ -49,30 +23,30 @@ export const getStatusHandler = asyncHandler(
 
 export const getAudioDevicesHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const devices = getAudioDevices();
-    res.json(devices);
+    const devices = getMpdConfigService().getCurrentAudioOutput();
+    res.json(devices ? [devices] : []);
   },
 );
 
 export const configureAudioHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const params = systemSchemas.audioConfigure.parse(req.body);
-    const result = configureAudioOutput(params);
+    const result = getMpdConfigService().configureAudioOutput(params);
     res.json(result);
   },
 );
 
 export const getAudioStatusHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const status = getCurrentAudioOutput();
+    const status = getMpdConfigService().getCurrentAudioOutput();
     res.json(status);
   },
 );
 
 export const getOutputModeHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const mode = getOutputMode();
-    const deviceName = getOutputDeviceName();
+    const mode = getMpdConfigService().getOutputMode();
+    const deviceName = getMpdConfigService().getOutputDeviceName();
     res.json({ mode, deviceName });
   },
 );
@@ -80,42 +54,49 @@ export const getOutputModeHandler = asyncHandler(
 export const setOutputModeHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { mode } = systemSchemas.outputMode.parse(req.body);
-    const result = setOutputMode(mode);
+    const result = getMpdConfigService().setOutputMode(mode);
     res.json(result);
   },
 );
 
 export const getNetworkStatusHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const status = await getNetworkStatus();
+    const status = await getNetworkService().getNetworkStatus();
     res.json(status);
   },
 );
 
 export const getStorageSourcesHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const sources = getStorageSources().map(sanitizeSource);
-    res.json(sources);
+    const sources = await getStorageService().getStorageSourcesHandler();
+    const sanitized = sources.map((s) => getStorageService().sanitizeSource(s));
+    res.json(sanitized);
   },
 );
 
 export const getStorageSourceHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = systemSchemas.idParam.parse(req.params);
-    const source = getStorageSource(id);
+    const source = getStorageService().getStorageSource(id);
     if (!source) throw new NotFoundError(`Storage source ${id}`);
-    res.json(sanitizeSource(source as Record<string, unknown>));
+    res.json(
+      getStorageService().sanitizeSource(source as Record<string, unknown>),
+    );
   },
 );
 
 export const createStorageSourceHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const data = systemSchemas.storageSource.parse(req.body);
-    const source = createStorageSource({
+    const source = getStorageService().createStorageSource({
       ...data,
       enabled: data.enabled ?? true,
     });
-    res.status(201).json(sanitizeSource(source as Record<string, unknown>));
+    res
+      .status(201)
+      .json(
+        getStorageService().sanitizeSource(source as Record<string, unknown>),
+      );
   },
 );
 
@@ -123,16 +104,18 @@ export const updateStorageSourceHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = systemSchemas.idParam.parse(req.params);
     const data = systemSchemas.storageSourceUpdate.parse(req.body);
-    const source = updateStorageSource(id, data);
+    const source = getStorageService().updateStorageSource(id, data);
     if (!source) throw new NotFoundError(`Storage source ${id}`);
-    res.json(sanitizeSource(source as Record<string, unknown>));
+    res.json(
+      getStorageService().sanitizeSource(source as Record<string, unknown>),
+    );
   },
 );
 
 export const deleteStorageSourceHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = systemSchemas.idParam.parse(req.params);
-    const deleted = deleteStorageSource(id);
+    const deleted = getStorageService().deleteStorageSource(id);
     if (!deleted) throw new NotFoundError(`Storage source ${id}`);
     res.json({ success: true });
   },
@@ -141,7 +124,7 @@ export const deleteStorageSourceHandler = asyncHandler(
 export const mountStorageHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = systemSchemas.idParam.parse(req.params);
-    const result = await mountSource(id);
+    const result = await getStorageService().mountSource(id);
     res.json(result);
   },
 );
@@ -149,25 +132,25 @@ export const mountStorageHandler = asyncHandler(
 export const unmountStorageHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = systemSchemas.idParam.parse(req.params);
-    const result = await unmountSource(id);
+    const result = await getStorageService().unmountSource(id);
     res.json(result);
   },
 );
 
 export const listMountsHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const mounts = await listMounts();
+    const mounts = getStorageService().listMounts();
     res.json(mounts);
   },
 );
 
 export const getSetupProgressHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const progress = getSetupProgress();
+    const progress = getSetupService().getSetupProgress();
     res.json({
       steps: progress,
-      complete: isSetupComplete(),
-      nextStep: getNextIncompleteStep(),
+      complete: getSetupService().isSetupComplete(),
+      nextStep: getSetupService().getNextIncompleteStep(),
     });
   },
 );
@@ -176,57 +159,57 @@ export const updateSetupProgressHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { step, completed } = systemSchemas.setupProgress.parse(req.body);
     if (completed) {
-      markStepComplete(step);
+      getSetupService().markStepComplete(step);
     } else {
-      markStepIncomplete(step);
+      getSetupService().markStepIncomplete(step);
     }
-    const progress = getSetupProgress();
+    const progress = getSetupService().getSetupProgress();
     res.json({
       steps: progress,
-      complete: isSetupComplete(),
-      nextStep: getNextIncompleteStep(),
+      complete: getSetupService().isSetupComplete(),
+      nextStep: getSetupService().getNextIncompleteStep(),
     });
   },
 );
 
 export const completeSetupHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    markSetupCompleted();
+    getSetupService().markSetupCompleted();
     res.json({ success: true, complete: true });
   },
 );
 
 export const resetSetupHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    resetSetup();
+    getSetupService().resetSetup();
     res.json({ success: true });
   },
 );
 
 export const restartMpdHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const result = restartMPD();
+    const result = getMpdConfigService().restartMPD();
     res.json(result);
   },
 );
 
 export const stopMpdHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const result = stopMPD();
+    const result = getMpdConfigService().stopMPD();
     res.json(result);
   },
 );
 
 export const getMpdStatusHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const status = getMpdStatus();
+    const status = getMpdConfigService().getMpdStatus();
     res.json(status);
   },
 );
 
 export const getHardwareUsageHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const usage = getHardwareUsage();
+    const usage = getSystemService().getHardwareUsage();
     res.json(usage);
   },
 );

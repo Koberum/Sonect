@@ -16,13 +16,13 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { usePlaylistContext } from "@/components/playlist-context";
-import {
-  createPlaylist,
-  addTrackToPlaylist,
-} from "@/features/apis/playlistApis";
 import { toast } from "sonner";
 import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import {
+  playlistQueries,
+  playlistMutations,
+} from "@/features/playlists/queries";
 
 interface AddToPlaylistMenuProps {
   trackId: number;
@@ -34,13 +34,15 @@ export function AddToPlaylistMenu({
   onAdded,
 }: AddToPlaylistMenuProps) {
   const { t } = useTranslation();
-  const { playlists, refresh } = usePlaylistContext();
+  const { data: playlists = [] } = useQuery(playlistQueries.list());
+  const addTrackMut = useMutation(playlistMutations.addTrack());
+  const createMut = useMutation(playlistMutations.create());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newName, setNewName] = useState("");
 
   const handleAdd = async (playlistId: number) => {
     try {
-      await addTrackToPlaylist(playlistId, trackId);
+      await addTrackMut.mutateAsync({ playlistId, trackId });
       toast(t("playlist.trackAdded"));
       onAdded?.();
     } catch {
@@ -51,11 +53,10 @@ export function AddToPlaylistMenu({
   const handleCreateAndAdd = async () => {
     if (!newName.trim()) return;
     try {
-      const playlist = await createPlaylist(newName.trim());
-      await addTrackToPlaylist(playlist.id, trackId);
+      const playlist = await createMut.mutateAsync({ name: newName.trim() });
+      await addTrackMut.mutateAsync({ playlistId: playlist.id, trackId });
       setNewName("");
       setDialogOpen(false);
-      await refresh();
       toast(t("playlist.trackAdded"));
       onAdded?.();
     } catch {

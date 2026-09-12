@@ -7,11 +7,11 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 
-import type { Artist } from "@repo/types";
+import type { Artist } from "@repo/types/catalog";
 import { useTranslation } from "react-i18next";
-import { getTracksByArtist } from "@/features/apis/libraryApis";
+import { getTracksByArtist } from "@/features/catalog/api";
 import { useNavigate } from "react-router-dom";
-import { playSong, addToQueue } from "@/features/apis/mpdApis";
+import { playSong, addToQueue } from "@/features/mpd/api";
 import { ImageCollage } from "./image-collage";
 
 interface ArtistArtworkProps extends React.HTMLAttributes<HTMLDivElement> {

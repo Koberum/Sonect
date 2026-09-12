@@ -14,7 +14,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/mpd": "http://localhost:3000",
-      "/library": "http://localhost:3000",
+      "/catalog": "http://localhost:3000",
       "/playlists": "http://localhost:3000",
       "/covers": "http://localhost:3000",
       "/stream": "http://localhost:3000",
@@ -31,6 +31,8 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes("node_modules")) {
+            if (id.includes("@tanstack/react-query-devtools")) return undefined;
+            if (id.includes("@tanstack")) return "vendor-query";
             if (id.includes("react")) return "vendor-react";
             if (id.includes("lucide-react") || id.includes("radix-ui"))
               return "vendor-ui";

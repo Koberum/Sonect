@@ -26,7 +26,7 @@ import {
   restartMpd,
   resetSetup,
   stopMpd,
-} from "@/features/apis/systemApis";
+} from "@/features/system/api";
 import { HardwareMonitor } from "@/components/hardware-monitor";
 
 export function DebugTab() {

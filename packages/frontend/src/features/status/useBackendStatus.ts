@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { usePlaybackContext } from "@/components/playback-context";
+import { useRef, useEffect, useState } from "react";
 
-const HEARTBEAT_INTERVAL = 15_000;
-const HEARTBEAT_INTERVAL_SYNCING = 60_000;
 const FAILURE_THRESHOLD = 3;
 
 export interface BackendStatus {
@@ -11,60 +10,43 @@ export interface BackendStatus {
 }
 
 export function useBackendStatus(): BackendStatus {
-  const [isOnline, setIsOnline] = useState(true);
-  const [isChecking, setIsChecking] = useState(false);
-  const failureCountRef = useRef(0);
-  const wasEverOfflineRef = useRef(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { syncProgress } = usePlaybackContext();
   const isSyncing = syncProgress !== null;
+  const failureCountRef = useRef(0);
+  const wasEverOfflineRef = useRef(false);
+  const [isOnline, setIsOnline] = useState(true);
+
+  const { isFetching, isError, isSuccess } = useQuery({
+    queryKey: ["system", "backend", "status", isSyncing ? "syncing" : "idle"],
+    queryFn: async ({ signal }) => {
+      const res = await fetch("/system/status", {
+        method: "GET",
+        signal: signal ?? AbortSignal.timeout(5_000),
+      });
+      if (!res.ok) throw new Error("offline");
+      return true;
+    },
+    refetchInterval: isSyncing ? 60_000 : 15_000,
+    refetchIntervalInBackground: false,
+    retry: false,
+    staleTime: 0,
+    gcTime: 0,
+  });
 
   useEffect(() => {
-    let cancelled = false;
-    const interval = isSyncing
-      ? HEARTBEAT_INTERVAL_SYNCING
-      : HEARTBEAT_INTERVAL;
-
-    const check = async () => {
-      if (cancelled) return;
-      setIsChecking(true);
-      try {
-        await fetch("/system/status", {
-          method: "GET",
-          signal: AbortSignal.timeout(5_000),
-        });
-        if (!cancelled) {
-          failureCountRef.current = 0;
-          if (!isOnline && wasEverOfflineRef.current) {
-            setIsOnline(true);
-          }
-        }
-      } catch {
-        if (!cancelled) {
-          failureCountRef.current++;
-          if (failureCountRef.current >= FAILURE_THRESHOLD) {
-            wasEverOfflineRef.current = true;
-            setIsOnline(false);
-          }
-        }
-      } finally {
-        if (!cancelled) {
-          setIsChecking(false);
-        }
+    if (isSuccess) {
+      failureCountRef.current = 0;
+      if (!isOnline && wasEverOfflineRef.current) {
+        setIsOnline(true);
       }
-    };
-
-    check();
-    timerRef.current = setInterval(check, interval);
-
-    return () => {
-      cancelled = true;
-      if (timerRef.current !== null) {
-        clearInterval(timerRef.current);
+    } else if (isError) {
+      failureCountRef.current++;
+      if (failureCountRef.current >= FAILURE_THRESHOLD) {
+        wasEverOfflineRef.current = true;
+        setIsOnline(false);
       }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSyncing]);
+    }
+  }, [isSuccess, isError, isOnline]);
 
-  return { isOnline, isChecking };
+  return { isOnline, isChecking: isFetching };
 }

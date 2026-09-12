@@ -1,11 +1,6 @@
 export * from "./schemas";
 export { PlayTrackError } from "./errors";
-export type {
-  MPDTrack,
-  MPDQueuedTrack,
-  MPDEntity,
-  MPDEntityType,
-} from "./mpdTypes";
+export type { MPDTrack, MPDQueuedTrack, MPDEntity, MPDEntityType } from "./mpd";
 export type {
   DBTrack,
   DBAlbum,
@@ -14,39 +9,11 @@ export type {
   DBPlaylist,
   DBStorageSource,
   DBSetupProgress,
-} from "./dbTypes";
-import type {
-  DBAlbum,
-  DBArtist,
-  DBGenre,
-  DBTrack,
-  DBPlaylist,
-  DBStorageSource,
-  DBSetupProgress,
-} from "./dbTypes";
+  DBTrackWithRelations,
+} from "./db";
+import type { DBStorageSource, DBSetupProgress } from "./db";
+import { TrackWithRelations } from "./catalog";
 
-export type Track = DBTrack & {
-  cover_path: string;
-  artist_name: string;
-  album_name?: string;
-  genre?: string;
-};
-export type Artist = DBArtist & {
-  coverPreviews?: string[];
-};
-// The API joins the artist name onto every album row (AlbumWithArtist in
-// @repo/db), so the public Album keeps artist_name even though the albums
-// table no longer stores it.
-export type Album = DBAlbum & {
-  artist_name: string;
-  genre?: string;
-};
-export type Genre = DBGenre;
-export type Playlist = DBPlaylist;
-export type PlaylistTrack = Track & { pt_id: number };
-export type PlaylistWithTracks = Playlist & {
-  tracks: PlaylistTrack[];
-};
 export type StorageSource = DBStorageSource;
 export type SetupProgress = DBSetupProgress;
 
@@ -67,7 +34,7 @@ export type PlaybackStatus = {
   random: boolean;
   single: boolean;
   consume: boolean;
-  track?: Track;
+  track?: TrackWithRelations;
   queueLength: number;
 };
 
@@ -83,35 +50,12 @@ export type QueuedTrack = {
   cover_path: string;
 };
 
-export type SearchResults = {
-  artists: Artist[];
-  albums: Album[];
-  tracks: Track[];
-};
-
 export type PlayTrackResponse = { success: boolean };
 
-export interface DashboardData {
-  continueListening: Album[];
-  recentlyPlayed: Track[];
-  topTracks: Track[];
-  suggestedTracks: Track[];
-  genreQuickMix: {
-    genre: string;
-    tracks: Track[];
-  } | null;
-}
-
-export interface LibraryStats {
-  totalTracks: number;
-  totalArtists: number;
-  totalAlbums: number;
-  totalPlaylists: number;
-  totalGenres: number;
-  totalDuration: number;
-  averageDuration: number;
-  earliestYear: number | null;
-  latestYear: number | null;
-  tracksWithoutAlbum: number;
-  lastSync: string | null;
-}
+// Sub-package re-exports for modular imports
+export * from "./catalog";
+export * from "./mpd";
+export * from "./system";
+export * from "./db";
+export * from "./schemas";
+export * from "./errors";

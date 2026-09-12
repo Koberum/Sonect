@@ -3,28 +3,14 @@ import app from "./app";
 import { WebSocketServer } from "ws";
 import { setupPlayerWebSocket } from "./ws/player.ws";
 import { setWss, broadcast } from "./ws/broadcast";
-import { setBroadcaster } from "./services/logService";
 import { closeDb, initDatabase } from "@repo/db";
-import { mpdConnectionManager } from "./services/mpdConnectionManager";
-import { autoplayService } from "./services/autoplayService";
-import { getQueue, queueFiles } from "./services/playerService";
-import { PlayTrackingService } from "./services/playTrackingService";
-import { mountAllEnabled } from "./services/storageService";
-
-// Wire up autoplay callback
-mpdConnectionManager.setAutoplayCallback(async (currentFile: string) => {
-  const sessionId = autoplayService.sessionId;
-  const queue = await getQueue();
-  if (autoplayService.sessionId !== sessionId) return;
-
-  const tracks = await autoplayService.getNextBatch(currentFile, {
-    queuedFiles: queue.map((track) => track.file),
-  });
-  if (tracks.length > 0 && autoplayService.sessionId === sessionId) {
-    await queueFiles(tracks);
-    autoplayService.commitBatch(tracks, sessionId);
-  }
-});
+import {
+  initializeServices,
+  getMpdConnectionManager,
+  getPlayTrackingService,
+  getStorageService,
+  getLogService,
+} from "@services/factory";
 
 const PORT = parseInt(process.env.PORT ?? "3000", 10);
 
@@ -36,6 +22,9 @@ async function main() {
   // Initialize database
   await initDatabase();
 
+  // Initialize all services in correct dependency order
+  initializeServices();
+
   // HTTP server
   server = app.listen(PORT, () => {
     console.log(`🚀 Backend Express su http://localhost:${PORT}`);
@@ -44,20 +33,25 @@ async function main() {
   // WebSocket server
   wss = new WebSocketServer({ server });
   setWss(wss);
-  setBroadcaster(broadcast);
+  getLogService().setBroadcaster(broadcast);
   setupPlayerWebSocket(wss);
 
   // MPD connection manager (idle loop, state cache, command queue)
-  mpdConnectionManager.start();
+  getMpdConnectionManager().start();
 
   // Track play tracking
-  const playTracking = new PlayTrackingService(mpdConnectionManager);
+  const playTracking = getPlayTrackingService();
   playTracking.start();
 
   // Re-mount enabled storage sources
-  mountAllEnabled().catch((err) => {
-    console.error("[Server] Failed to restore storage mounts:", err);
-  });
+  getStorageService()
+    .mountAllEnabled()
+    .catch((err) => {
+      getLogService().pushLog(
+        "error",
+        `[Server] Failed to restore storage mounts: ${String(err)}`,
+      );
+    });
 }
 
 // Graceful shutdown — server.ts is the sole owner of process termination.
@@ -78,7 +72,7 @@ function shutdown() {
   }, 5000);
 
   try {
-    mpdConnectionManager.stop();
+    getMpdConnectionManager().stop();
   } catch {
     // MPD disconnect may fail if unreachable — continue shutdown
   }

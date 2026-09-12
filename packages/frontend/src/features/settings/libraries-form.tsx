@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { StorageSource } from "@/features/apis/systemApis";
+import type { StorageSource } from "@/features/system/api";
 import {
   LibrarySourceForm,
   type LibrarySourceFormValues,

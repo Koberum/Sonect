@@ -1,21 +1,23 @@
 import "dotenv/config";
-import { MpdSyncService } from "../services/mpdSyncService.js";
+import { initDatabase } from "@repo/db";
+import { initializeServices, getCatalogSyncService } from "@services/factory";
 
 async function main() {
-  const syncService = new MpdSyncService();
-
   try {
-    await syncService.initDatabase();
+    await initDatabase();
+    initializeServices();
+
+    const catalogSyncService = getCatalogSyncService();
 
     const command = process.argv[2];
 
     switch (command) {
       case "sync":
-        await syncService.syncAll();
+        await catalogSyncService.syncAll();
         break;
 
       case "stats": {
-        const stats = await syncService.getStats();
+        const stats = await catalogSyncService.getStats();
         console.log("📊 Database Statistics:");
         console.log(`   Total tracks: ${stats.totalTracks}`);
         console.log(`   Last sync: ${stats.lastSync || "Never"}`);
@@ -24,7 +26,7 @@ async function main() {
 
       case "clear":
         console.log("⚠️  WARNING: This will delete all data!");
-        await syncService.clearAll();
+        await catalogSyncService.clearAll();
         break;
 
       default:

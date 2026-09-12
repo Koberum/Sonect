@@ -17,7 +17,7 @@ import {
   getQueue,
   playQueueItem,
   removeFromQueue,
-} from "@/features/apis/mpdApis";
+} from "@/features/mpd/api";
 import type { QueuedTrack } from "@repo/types";
 import { Badge } from "@/components/ui/badge";
 import VolumeControls from "./volume-controls";
@@ -96,7 +96,7 @@ export function FullPagePlayer({
         <h3 className="truncate text-lg font-semibold">{trackPlayed.title}</h3>
         <p className="text-muted-foreground truncate text-sm">
           {trackPlayed.artist_name}
-          {trackPlayed.album_name ? ` \u00b7 ${trackPlayed.album_name}` : ""}
+          {trackPlayed.album_title ? ` \u00b7 ${trackPlayed.album_title}` : ""}
         </p>
       </div>
 

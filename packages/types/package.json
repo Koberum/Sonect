@@ -8,6 +8,30 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./catalog": {
+      "types": "./dist/catalog/index.d.ts",
+      "default": "./dist/catalog/index.js"
+    },
+    "./mpd": {
+      "types": "./dist/mpd/index.d.ts",
+      "default": "./dist/mpd/index.js"
+    },
+    "./system": {
+      "types": "./dist/system/index.d.ts",
+      "default": "./dist/system/index.js"
+    },
+    "./db": {
+      "types": "./dist/db/index.d.ts",
+      "default": "./dist/db/index.js"
+    },
+    "./schemas": {
+      "types": "./dist/schemas/index.d.ts",
+      "default": "./dist/schemas/index.js"
+    },
+    "./errors": {
+      "types": "./dist/errors/index.d.ts",
+      "default": "./dist/errors/index.js"
     }
   },
   "scripts": {

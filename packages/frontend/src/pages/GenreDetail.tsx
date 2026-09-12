@@ -1,11 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
-import {
-  getAlbumsByGenre,
-  getTracksByGenre,
-} from "@/features/apis/libraryApis";
-import { useEffect, useState } from "react";
-import type { Album, Track } from "@repo/types";
 import { useNavigate, useParams } from "react-router-dom";
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
@@ -20,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PlayIcon, ListPlus } from "lucide-react";
-import { playSong, addToQueue } from "@/features/apis/mpdApis";
+import { playSong, addToQueue } from "@/features/mpd/api";
 import { usePlaybackContext } from "@/components/playback-context";
 import {
   ContextMenu,
@@ -30,29 +24,28 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { AddToPlaylistMenu } from "@/features/dashboard/components/add-to-playlist-menu";
+import { useQuery } from "@tanstack/react-query";
+import { catalogQueries } from "@/features/catalog/queries";
 
 export default function GenreDetail() {
   const { t } = useTranslation();
   const { genre } = useParams<{ genre: string }>();
   const navigate = useNavigate();
-  const [albums, setAlbums] = useState<Album[]>([]);
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [loading, setLoading] = useState(true);
   const { trackPlayed } = usePlaybackContext();
 
-  useEffect(() => {
-    if (!genre) return;
-    Promise.all([getAlbumsByGenre(genre), getTracksByGenre(genre)])
-      .then(([a, tr]) => {
-        setAlbums(a);
-        setTracks(tr);
-      })
-      .finally(() => setLoading(false));
-  }, [genre]);
+  const { data: albums = [], isPending: albumsPending } = useQuery({
+    ...catalogQueries.albumsByGenre(genre ?? ""),
+    enabled: !!genre,
+  });
+  const { data: tracks = [], isPending: tracksPending } = useQuery({
+    ...catalogQueries.tracksByGenre(genre ?? ""),
+    enabled: !!genre,
+  });
 
   if (!genre) return null;
 
-  if (loading) {
+  const isPending = albumsPending || tracksPending;
+  if (isPending) {
     return (
       <div>
         <PageTitle title={genre} description={t("genres.description")} />
@@ -159,7 +152,7 @@ export default function GenreDetail() {
                               navigate(`/albums/${track.album_id}`);
                             }}
                           >
-                            {track.album_name || "-"}
+                            {track.album_title || "-"}
                           </span>
                         ) : (
                           "-"

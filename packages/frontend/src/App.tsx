@@ -4,8 +4,16 @@ import MainLayout from "./layout/MainLayout";
 import { ThemeProvider } from "./components/theme-provider";
 import { PlaybackProvider } from "./components/playback-context";
 import { WebSocketProvider } from "./components/ws-provider";
-import { PlaylistProvider } from "./components/playlist-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import { lazy as rqLazy, Suspense as RqSuspense } from "react";
+
+const Devtools = rqLazy(() =>
+  import("@tanstack/react-query-devtools").then((m) => ({
+    default: m.ReactQueryDevtools,
+  })),
+);
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const AlbumPage = lazy(() => import("./pages/AlbumTracks"));
@@ -38,10 +46,10 @@ function PageLoader() {
 
 export default function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <PlaybackProvider>
-        <WebSocketProvider>
-          <PlaylistProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <PlaybackProvider>
+          <WebSocketProvider>
             <TooltipProvider>
               <Suspense fallback={<PageLoader />}>
                 <Routes>
@@ -65,9 +73,14 @@ export default function App() {
                 </Routes>
               </Suspense>
             </TooltipProvider>
-          </PlaylistProvider>
-        </WebSocketProvider>
-      </PlaybackProvider>
-    </ThemeProvider>
+          </WebSocketProvider>
+        </PlaybackProvider>
+      </ThemeProvider>
+      {import.meta.env.DEV && (
+        <RqSuspense fallback={null}>
+          <Devtools initialIsOpen={false} buttonPosition="bottom-right" />
+        </RqSuspense>
+      )}
+    </QueryClientProvider>
   );
 }

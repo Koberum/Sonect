@@ -8,6 +8,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./migrations": {
+      "types": "./dist/migrations.d.ts",
+      "default": "./dist/migrations.js"
     }
   },
   "engines": {

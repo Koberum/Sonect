@@ -1,8 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
-import { getAllTracks } from "@/features/apis/libraryApis";
-import { useEffect, useState, useRef, useCallback } from "react";
-import type { Track } from "@repo/types";
+import { useRef, useEffect, useState } from "react";
 import { formatTime } from "@/lib/utils";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
 import {
@@ -15,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { PlayIcon, ListPlus } from "lucide-react";
-import { playSong, addToQueue } from "@/features/apis/mpdApis";
+import { playSong, addToQueue } from "@/features/mpd/api";
 import { usePlaybackContext } from "@/components/playback-context";
 import { SortTabs } from "@/features/dashboard/components/sort-tabs";
 import {
@@ -27,82 +25,37 @@ import {
 } from "@/components/ui/context-menu";
 import { AddToPlaylistMenu } from "@/features/dashboard/components/add-to-playlist-menu";
 import { useNavigate } from "react-router-dom";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { catalogQueries } from "@/features/catalog/queries";
 
 type SortOption = "title" | "recent" | "duration";
-const PAGE_SIZE = 100;
 
 export default function Tracks() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [total, setTotal] = useState(0);
-  const [firstLoad, setFirstLoad] = useState(true);
-  const [loading, setLoading] = useState(false);
   const [sort, setSort] = useState<SortOption>("title");
   const { trackPlayed } = usePlaybackContext();
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const offsetRef = useRef(0);
-  const loadingRef = useRef(false);
-  const needsResetRef = useRef(true);
-  const lengthRef = useRef(tracks.length);
-  const totalRef = useRef(total);
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
+    useInfiniteQuery(catalogQueries.tracksInfinite(sort));
+
+  const tracks = data?.pages.flatMap((p) => p.items) ?? [];
 
   useEffect(() => {
-    lengthRef.current = tracks.length;
-    totalRef.current = total;
-  });
-
-  const loadMore = useCallback(() => {
-    if (loadingRef.current) return;
-    if (!needsResetRef.current && tracks.length >= total && total > 0) return;
-    loadingRef.current = true;
-    const offset = offsetRef.current;
-    const reset = needsResetRef.current;
-    needsResetRef.current = false;
-    getAllTracks({ sort, limit: PAGE_SIZE, offset })
-      .then((data) => {
-        setTotal(data.total);
-        setTracks(reset ? data.items : (prev) => [...prev, ...data.items]);
-        offsetRef.current = offset + data.items.length;
-      })
-      .finally(() => {
-        loadingRef.current = false;
-        setLoading(false);
-        setFirstLoad(false);
-      });
-  }, [sort, tracks.length, total]);
-
-  const loadMoreRef = useRef(loadMore);
-  useEffect(() => {
-    loadMoreRef.current = loadMore;
-  });
-
-  useEffect(() => {
-    needsResetRef.current = true;
-    offsetRef.current = 0;
-    loadMoreRef.current();
-  }, [sort]);
-
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-
+    const el = sentinelRef.current;
+    if (!el) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          offsetRef.current = lengthRef.current;
-          if (lengthRef.current < totalRef.current) {
-            setLoading(true);
-            loadMoreRef.current();
-          }
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
         }
       },
       { rootMargin: "200px" },
     );
-
-    observer.observe(sentinel);
+    observer.observe(el);
     return () => observer.disconnect();
-  }, [sort]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, sort]);
 
   const sortOptions: { value: SortOption; label: string }[] = [
     { value: "title", label: t("album.title") },
@@ -124,7 +77,7 @@ export default function Tracks() {
       />
       <ScrollArea>
         <ScrollBar orientation="horizontal" />
-        {firstLoad && tracks.length === 0 ? (
+        {isPending ? (
           <div className="flex justify-center py-16">
             <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
           </div>
@@ -146,7 +99,7 @@ export default function Tracks() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tracks.length === 0 && !loading && (
+                {tracks.length === 0 && !isFetchingNextPage && (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center">
                       {t("tracks.noTracks")}
@@ -200,7 +153,7 @@ export default function Tracks() {
                                 navigate(`/albums/${track.album_id}`);
                               }}
                             >
-                              {track.album_name || "-"}
+                              {track.album_title || "-"}
                             </span>
                           ) : (
                             "-"
@@ -248,7 +201,7 @@ export default function Tracks() {
           </>
         )}
       </ScrollArea>
-      {loading && tracks.length > 0 && (
+      {isFetchingNextPage && (
         <div className="flex justify-center py-4">
           <div className="border-primary h-6 w-6 animate-spin rounded-full border-b-2" />
         </div>

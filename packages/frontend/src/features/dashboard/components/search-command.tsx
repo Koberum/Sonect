@@ -4,12 +4,14 @@ import { useNavigate } from "react-router-dom";
 import { Search, MicVocal, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { getCoverPath } from "@/lib/utils";
-import { search } from "@/features/apis/libraryApis";
-import { playSong, addToQueue } from "@/features/apis/mpdApis";
-import type { Track, Album, Artist, SearchResults } from "@repo/types";
+import { playSong, addToQueue } from "@/features/mpd/api";
+import type { TrackWithRelations, Album, Artist } from "@repo/types/catalog";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "react-responsive";
+import { useQuery } from "@tanstack/react-query";
+import { catalogQueries } from "@/features/catalog/queries";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 type SectionType = "artists" | "albums" | "tracks";
 
@@ -23,12 +25,15 @@ export function SearchCommand() {
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResults | null>(null);
-  const [loading, setLoading] = useState(false);
+  const debouncedQuery = useDebouncedValue(query, 350);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const MIN_QUERY_LENGTH = 2;
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const abortRef = useRef<AbortController | null>(null);
+
+  const enabled = debouncedQuery.trim().length >= MIN_QUERY_LENGTH;
+  const { data: results, isFetching: loading } = useQuery({
+    ...catalogQueries.search(debouncedQuery),
+    enabled,
+  });
 
   const getSectionLabel = (type: SectionType): string => {
     switch (type) {
@@ -41,7 +46,7 @@ export function SearchCommand() {
     }
   };
 
-  const handlePlayTrack = useCallback(async (track: Track) => {
+  const handlePlayTrack = useCallback(async (track: TrackWithRelations) => {
     await playSong(track);
     setOverlayOpen(false);
     setShowDropdown(false);
@@ -51,13 +56,12 @@ export function SearchCommand() {
     setOverlayOpen(false);
     setShowDropdown(false);
     setQuery("");
-    setResults(null);
   }, []);
 
   const activateItem = useCallback(
-    (item: Artist | Album | Track) => {
+    (item: Artist | Album | TrackWithRelations) => {
       if ("file" in item) {
-        handlePlayTrack(item as Track);
+        handlePlayTrack(item as TrackWithRelations);
       } else if ("artist_name" in item && !("name" in item)) {
         navigate(`/albums/${(item as Album).id}`);
         closeSearch();
@@ -69,8 +73,10 @@ export function SearchCommand() {
     [handlePlayTrack, navigate, closeSearch],
   );
 
-  const sections: { type: SectionType; items: (Artist | Album | Track)[] }[] =
-    [];
+  const sections: {
+    type: SectionType;
+    items: (Artist | Album | TrackWithRelations)[];
+  }[] = [];
 
   if (results) {
     if (results.artists.length > 0)
@@ -106,7 +112,6 @@ export function SearchCommand() {
       setTimeout(() => inputRef.current?.focus(), 100);
     } else {
       setQuery("");
-      setResults(null);
     }
   }, [overlayOpen]);
 
@@ -115,47 +120,6 @@ export function SearchCommand() {
       setSelectedIndex(0);
     }
   }, [showDropdown]);
-
-  const doSearch = useCallback(async (q: string, signal?: AbortSignal) => {
-    if (!q.trim()) {
-      setResults(null);
-      return;
-    }
-    setLoading(true);
-    try {
-      const data = await search(q, signal);
-      if (!signal?.aborted) {
-        setResults(data);
-      }
-    } catch {
-      if (!signal?.aborted) {
-        setResults(null);
-      }
-    } finally {
-      if (!signal?.aborted) {
-        setLoading(false);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (query.trim().length < MIN_QUERY_LENGTH) {
-      setResults(null);
-      setLoading(false);
-      return;
-    }
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    debounceRef.current = setTimeout(
-      () => doSearch(query, controller.signal),
-      350,
-    );
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [query, doSearch]);
 
   useEffect(() => {
     if (!showDropdown && !overlayOpen) return;
@@ -213,7 +177,7 @@ export function SearchCommand() {
 
   let globalIdx = 0;
 
-  const handleAddToQueue = async (track: Track) => {
+  const handleAddToQueue = async (track: TrackWithRelations) => {
     await addToQueue(track.file);
     toast(t("search.addedToQueue"));
     setShowDropdown(false);
@@ -253,7 +217,7 @@ export function SearchCommand() {
                 const idx = globalIdx++;
                 const isSelected = idx === selectedIndex;
                 if ("file" in item) {
-                  const track = item as Track;
+                  const track = item as TrackWithRelations;
                   return (
                     <div
                       key={track.id}

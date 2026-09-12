@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { pushLog } from "../services/logService";
+import { getLogService } from "@services/factory";
 
 export function requestLogger(req: Request, res: Response, next: NextFunction) {
   const start = Date.now();
@@ -15,14 +15,14 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
           : "debug";
 
     if (level === "error" || level === "warn") {
-      pushLog(level, message, {
+      getLogService().pushLog(level, message, {
         method: req.method,
         url: req.originalUrl,
         statusCode: res.statusCode,
         duration,
       });
     } else {
-      pushLog(level, message);
+      getLogService().pushLog(level, message);
     }
   });
 
