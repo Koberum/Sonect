@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { PlayIcon, Trash2, Play, Edit3, X, ListMusic } from "lucide-react";
 import { formatTime, getCoverPath } from "@/lib/utils";
-import type { PlaylistWithTracks, PlaylistTrack } from "@repo/types/library";
+import type { PlaylistWithTracks, PlaylistTrack } from "@repo/types/catalog";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";

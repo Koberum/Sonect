@@ -5,10 +5,10 @@ import type {
   LibraryStats,
   TrackWithRelations,
   SearchResults,
-} from "@repo/types/library";
+} from "@repo/types/catalog";
 
 const apiClient = new ApiClient({
-  baseUrl: `${import.meta.env.VITE_BACKEND_URL ?? ""}/library`,
+  baseUrl: `${import.meta.env.VITE_BACKEND_URL ?? ""}/catalog`,
 });
 
 /**

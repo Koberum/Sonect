@@ -7,9 +7,9 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 
-import type { Artist } from "@repo/types/library";
+import type { Artist } from "@repo/types/catalog";
 import { useTranslation } from "react-i18next";
-import { getTracksByArtist } from "@/features/apis/libraryApis";
+import { getTracksByArtist } from "@/features/apis/catalogApis";
 import { useNavigate } from "react-router-dom";
 import { playSong, addToQueue } from "@/features/apis/mpdApis";
 import { ImageCollage } from "./image-collage";

@@ -9,12 +9,15 @@ import {
   PlayerServiceImpl,
   type PlayerService,
 } from "./player/playerService.js";
-import { LibrarySyncService } from "./library/librarySyncService.js";
-import { CoverServiceImpl, type CoverService } from "./library/coverService.js";
+import { CatalogSyncService } from "./library/catalogSyncService.js";
 import {
-  LibraryServiceImpl,
-  type LibraryService,
-} from "./library/libraryService.js";
+  CoverSyncServiceImpl,
+  type CoverSyncService,
+} from "./library/coverSyncService.js";
+import {
+  CatalogSyncOrchestratorImpl,
+  type CatalogSyncOrchestrator,
+} from "./library/catalogSyncOrchestrator.js";
 import {
   MpdConfigServiceImpl,
   type MpdConfigService,
@@ -48,9 +51,9 @@ let _catalogService: CatalogService;
 let _mpdConnectionManager: MpdConnectionManager;
 let _autoplayService: AutoplayService;
 let _playerService: PlayerService;
-let _librarySyncService: LibrarySyncService;
-let _coverService: CoverService;
-let _libraryService: LibraryService;
+let _catalogSyncService: CatalogSyncService;
+let _coverSyncService: CoverSyncService;
+let _catalogSyncOrchestrator: CatalogSyncOrchestrator;
 let _mpdConfigService: MpdConfigService;
 let _storageService: StorageService;
 let _systemService: SystemServiceInterface;
@@ -87,17 +90,20 @@ export function initializeServices(): void {
     _autoplayService,
   );
 
-  _librarySyncService = new LibrarySyncService(
+  _catalogSyncService = new CatalogSyncService(
     _mpdConnectionManager,
     _logService,
   );
 
-  _coverService = new CoverServiceImpl(_logService);
-  _libraryService = new LibraryServiceImpl(_coverService, _librarySyncService);
+  _coverSyncService = new CoverSyncServiceImpl(_logService);
+  _catalogSyncOrchestrator = new CatalogSyncOrchestratorImpl(
+    _coverSyncService,
+    _catalogSyncService,
+  );
 
   _storageService = new StorageServiceImpl(
     _mpdConnectionManager,
-    _libraryService,
+    _catalogSyncOrchestrator,
     _mpdConfigService,
     _logService,
   );
@@ -154,19 +160,19 @@ export function getPlayerService(): PlayerService {
   return _playerService;
 }
 
-export function getLibrarySyncService(): LibrarySyncService {
+export function getCatalogSyncService(): CatalogSyncService {
   assertInitialized();
-  return _librarySyncService;
+  return _catalogSyncService;
 }
 
-export function getCoverService(): CoverService {
+export function getCoverSyncService(): CoverSyncService {
   assertInitialized();
-  return _coverService;
+  return _coverSyncService;
 }
 
-export function getLibraryService(): LibraryService {
+export function getCatalogSyncOrchestrator(): CatalogSyncOrchestrator {
   assertInitialized();
-  return _libraryService;
+  return _catalogSyncOrchestrator;
 }
 
 export function getMpdConfigService(): MpdConfigService {

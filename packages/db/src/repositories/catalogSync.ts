@@ -116,7 +116,7 @@ function rebuildInTransaction(
   return { synced, errors };
 }
 
-export const librarySyncDb = {
+export const catalogSyncDb = {
   rebuild(
     tracks: MPDTrack[],
     onProgress?: (completed: number, track: MPDTrack) => void,

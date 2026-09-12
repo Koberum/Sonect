@@ -5,7 +5,7 @@ import type { PlaybackStatus, PlaybackState } from "@repo/types";
 import type { CatalogService } from "@services/library/catalogService";
 import type { LogService } from "@services/utils/logService";
 import { parseKeyValue, hashFile } from "../../utils/mpd.js";
-import { TrackWithRelations } from "@repo/types/library";
+import { TrackWithRelations } from "@repo/types/catalog";
 
 const { cmd } = mpd;
 

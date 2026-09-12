@@ -1,8 +1,8 @@
-import { getArtists } from "@/features/apis/libraryApis";
+import { getArtists } from "@/features/apis/catalogApis";
 import { ArtistArtwork } from "@/features/dashboard/components/artist-artwork";
 import { usePlaybackContext } from "@/components/playback-context";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
-import type { Artist } from "@repo/types/library";
+import type { Artist } from "@repo/types/catalog";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";

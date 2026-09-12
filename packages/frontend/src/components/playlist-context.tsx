@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback } from "react";
 import { getPlaylists } from "@/features/apis/playlistApis";
-import type { Playlist } from "@repo/types/library";
+import type { Playlist } from "@repo/types/catalog";
 
 type PlaylistContextType = {
   playlists: Playlist[];

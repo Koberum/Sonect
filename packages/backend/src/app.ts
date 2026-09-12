@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import playerRoutes from "@routes/playerRoutes";
-import libraryRoutes from "@routes/libraryRoutes";
+import catalogRoutes from "@routes/catalogRoutes";
 import playlistRoutes from "@routes/playlistRoutes";
 import systemRoutes from "@routes/systemRoutes";
 import streamRoutes from "@routes/streamRoutes";
@@ -41,7 +41,7 @@ app.use(
 app.use("/stream", streamRoutes);
 
 app.use("/mpd", playerRoutes);
-app.use("/library", libraryRoutes);
+app.use("/catalog", catalogRoutes);
 app.use("/playlists", playlistRoutes);
 app.use("/system", systemRoutes);
 app.use("/dashboard", dashboardRouter);
@@ -55,7 +55,7 @@ if (process.env.NODE_ENV === "production" && fs.existsSync(frontendDist)) {
   app.get("/{*path}", (req, res, next) => {
     if (
       req.path.startsWith("/mpd") ||
-      req.path.startsWith("/library") ||
+      req.path.startsWith("/catalog") ||
       req.path.startsWith("/playlists") ||
       req.path.startsWith("/covers") ||
       req.path.startsWith("/system") ||

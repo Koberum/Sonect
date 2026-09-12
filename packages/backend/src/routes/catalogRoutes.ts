@@ -16,7 +16,7 @@ import {
   getGenres,
   getAlbumsByGenre,
   getTracksByGenre,
-} from "../controllers/libraryController";
+} from "../controllers/catalogController";
 
 const router = Router();
 

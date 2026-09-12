@@ -2,7 +2,7 @@ import {
   initDatabase,
   tracksDb,
   syncMetadataDb,
-  librarySyncDb,
+  catalogSyncDb,
 } from "@repo/db";
 import { MPDTrack } from "@repo/types";
 import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager";
@@ -23,7 +23,7 @@ export type SyncProgress = {
   } | null;
 };
 
-export class LibrarySyncService {
+export class CatalogSyncService {
   constructor(
     private readonly mpdConnectionManager: MpdConnectionManager,
     private readonly logService: LogService,
@@ -165,7 +165,7 @@ export class LibrarySyncService {
         `📀 Found ${mpdTracks.length} tracks (${uniqueTracks.length} unique) in MPD library`,
       );
 
-      const result = librarySyncDb.rebuild(uniqueTracks, (completed, track) => {
+      const result = catalogSyncDb.rebuild(uniqueTracks, (completed, track) => {
         onProgress?.({
           current: completed,
           total: uniqueTracks.length,
@@ -217,7 +217,7 @@ export class LibrarySyncService {
 
   clearAll(): void {
     console.log("⚠️  Clearing all database data...");
-    librarySyncDb.clearAll();
+    catalogSyncDb.clearAll();
     console.log("✅ Database cleared");
   }
 }

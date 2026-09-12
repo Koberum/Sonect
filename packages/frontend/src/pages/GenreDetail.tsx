@@ -3,9 +3,9 @@ import { useTranslation } from "react-i18next";
 import {
   getAlbumsByGenre,
   getTracksByGenre,
-} from "@/features/apis/libraryApis";
+} from "@/features/apis/catalogApis";
 import { useEffect, useState } from "react";
-import type { Album, TrackWithRelations } from "@repo/types/library";
+import type { Album, TrackWithRelations } from "@repo/types/catalog";
 import { useNavigate, useParams } from "react-router-dom";
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";

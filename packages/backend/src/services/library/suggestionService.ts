@@ -1,5 +1,5 @@
 import { albumsDb, tracksDb } from "@repo/db";
-import type { DashboardData, Album, Track } from "@repo/types/library";
+import type { DashboardData, Album, Track } from "@repo/types/catalog";
 
 export interface SuggestionServiceInterface {
   getDashboard(currentAlbumId?: number): DashboardData;

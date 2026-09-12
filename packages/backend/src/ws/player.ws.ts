@@ -1,6 +1,8 @@
 import { WebSocketServer, WebSocket } from "ws";
-import { getMpdConnectionManager } from "@services/factory";
-import { getLibraryService } from "@services/factory";
+import {
+  getMpdConnectionManager,
+  getCatalogSyncOrchestrator,
+} from "@services/factory";
 
 function isWsOpen(ws: WebSocket): boolean {
   return ws.readyState === WebSocket.OPEN;
@@ -15,7 +17,7 @@ export function setupPlayerWebSocket(wss: WebSocketServer) {
     console.log("WS client connected");
 
     const mpdConnectionManager = getMpdConnectionManager();
-    const libraryService = getLibraryService();
+    const catalogSyncOrchestrator = getCatalogSyncOrchestrator();
 
     const sendState = () => {
       sendJson(ws, {
@@ -27,7 +29,7 @@ export function setupPlayerWebSocket(wss: WebSocketServer) {
     sendState();
 
     // Send current sync state if a scan is running
-    const syncState = libraryService.getCurrentSyncProgress();
+    const syncState = catalogSyncOrchestrator.getCurrentSyncProgress();
     if (syncState) {
       sendJson(ws, { type: "sync-progress", ...syncState });
     }

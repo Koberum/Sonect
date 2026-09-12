@@ -12,7 +12,7 @@ export type {
   DBTrackWithRelations,
 } from "./db";
 import type { DBStorageSource, DBSetupProgress } from "./db";
-import { TrackWithRelations } from "./library";
+import { TrackWithRelations } from "./catalog";
 
 export type StorageSource = DBStorageSource;
 export type SetupProgress = DBSetupProgress;
@@ -53,7 +53,7 @@ export type QueuedTrack = {
 export type PlayTrackResponse = { success: boolean };
 
 // Sub-package re-exports for modular imports
-export * from "./library";
+export * from "./catalog";
 export * from "./mpd";
 export * from "./system";
 export * from "./db";

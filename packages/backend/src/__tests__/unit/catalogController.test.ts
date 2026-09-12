@@ -2,12 +2,12 @@ import { expect } from "chai";
 import sinon from "sinon";
 import { createTestDb } from "@tests/helpers/db.js";
 import { initializeServices, getCatalogService } from "@services/factory.js";
-import { getArtists, getArtistById } from "@controllers/libraryController.js";
+import { getArtists, getArtistById } from "@controllers/catalogController.js";
 
 // Layer 3: Controller unit test — service is stubbed, no DB
 // Note: we initialize a real in-memory DB so factory/services exist,
 // then stub the service instance methods (sinon can stub object methods).
-describe("libraryController (controller unit, stubbed service)", () => {
+describe("catalogController (controller unit, stubbed service)", () => {
   let close: () => void;
   let sandbox: sinon.SinonSandbox;
 

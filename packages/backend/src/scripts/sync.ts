@@ -1,23 +1,23 @@
 import "dotenv/config";
 import { initDatabase } from "@repo/db";
-import { initializeServices, getLibrarySyncService } from "@services/factory";
+import { initializeServices, getCatalogSyncService } from "@services/factory";
 
 async function main() {
   try {
     await initDatabase();
     initializeServices();
 
-    const librarySyncService = getLibrarySyncService();
+    const catalogSyncService = getCatalogSyncService();
 
     const command = process.argv[2];
 
     switch (command) {
       case "sync":
-        await librarySyncService.syncAll();
+        await catalogSyncService.syncAll();
         break;
 
       case "stats": {
-        const stats = await librarySyncService.getStats();
+        const stats = await catalogSyncService.getStats();
         console.log("📊 Database Statistics:");
         console.log(`   Total tracks: ${stats.totalTracks}`);
         console.log(`   Last sync: ${stats.lastSync || "Never"}`);
@@ -26,7 +26,7 @@ async function main() {
 
       case "clear":
         console.log("⚠️  WARNING: This will delete all data!");
-        await librarySyncService.clearAll();
+        await catalogSyncService.clearAll();
         break;
 
       default:

@@ -4,7 +4,7 @@ import {
   PlaylistTrack,
   PlaylistWithTracks,
   Track,
-} from "@repo/types/library";
+} from "@repo/types/catalog";
 import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager";
 
 export interface PlaylistService {

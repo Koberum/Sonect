@@ -4,14 +4,14 @@ import { useNavigate } from "react-router-dom";
 import { Search, MicVocal, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { getCoverPath } from "@/lib/utils";
-import { search } from "@/features/apis/libraryApis";
+import { search } from "@/features/apis/catalogApis";
 import { playSong, addToQueue } from "@/features/apis/mpdApis";
 import type {
   TrackWithRelations,
   Album,
   Artist,
   SearchResults,
-} from "@repo/types/library";
+} from "@repo/types/catalog";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "react-responsive";

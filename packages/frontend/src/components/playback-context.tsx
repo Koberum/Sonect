@@ -1,6 +1,6 @@
 // MusicContext.tsx
 import type { PlaybackStatus, OutputMode } from "@repo/types";
-import type { TrackWithRelations } from "@repo/types/library";
+import type { TrackWithRelations } from "@repo/types/catalog";
 import { createContext, useContext, useEffect, useState } from "react";
 
 export type SyncProgress = {

@@ -86,7 +86,7 @@ After making changes:
 
 ```
 Single Node process on port 3000:
-  Express API routes (/mpd, /library, /playlists, /system, /covers)
+  Express API routes (/mpd, /catalog, /playlists, /system, /covers)
   + WebSocket server (ws)
   + Static file serving for built React frontend
   + SPA fallback (index.html for any unmatched GET)
@@ -146,7 +146,7 @@ Single Node process on port 3000:
 - **asyncHandler** (`middleware/asyncHandler.ts`) wraps all async controllers; it **returns the promise chain** so tests can `await` it.
 - **errorHandler** (`middleware/errorHandler.ts`) is registered in `app.ts` as the last middleware. Controllers throw `NotFoundError`/`ValidationError` for centralized handling.
 - **autoplayService** (`services/autoplayService.ts`) is always active. A manual track selection queues that track through the end of its album, without wrapping to earlier tracks. Smart batches then add complete albums in this order: same artist → same genre → library-wide, ranking each tier by the sum of its tracks' `play_count` (title order breaks ties). Ranking stays anchored to the manually selected track as playback advances. A batch stops only after reaching at least 25 tracks, so albums are never split. The connection manager refills below five remaining tracks and prevents overlapping fills; used albums are committed only after MPD accepts them and are not repeated until the cycle is exhausted. The next cycle preserves albums still in the MPD queue. There is no autoplay toggle API.
-- **mpdSyncService** (`services/mpdSyncService.ts`) handles library sync from MPD → SQLite, invoked via `scripts/sync.ts`. Tracks are fetched from MPD and deduplicated **before** any destructive database work — a failed fetch leaves the existing library untouched. The rebuild itself is a single transaction in `librarySyncDb.rebuild()` (`@repo/db` `repositories/librarySync.ts`): `play_count`/`last_played` are snapshotted first and restored for surviving files (they feed smart autoplay ranking), each track persists inside a savepoint, per-track constraint failures are reported and skipped, and any other error rolls the whole rebuild back to the previous library state.
+- **CatalogSyncService** (`services/catalogSyncService.ts`) handles library sync from MPD → SQLite, invoked via `scripts/sync.ts`. Tracks are fetched from MPD and deduplicated **before** any destructive database work — a failed fetch leaves the existing library untouched. The rebuild itself is a single transaction in `catalogSyncDb.rebuild()` (`@repo/db` `repositories/catalogSync.ts`): `play_count`/`last_played` are snapshotted first and restored for surviving files (they feed smart autoplay ranking), each track persists inside a savepoint, per-track constraint failures are reported and skipped, and any other error rolls the whole rebuild back to the previous library state.
 - The backend exposes its build version through `getSystemStatus()` →
   `/system/status[].version`. It reads `backend/.version` (written only by the
   release CI), defaulting to `"dev"`. Sources: `services/appVersion.ts`.
@@ -207,7 +207,7 @@ Single Node process on port 3000:
   its own cwd, and `packages/backend/.env` pins it for `pnpm dev`). The
   relative `./data/music.db` fallback must never be relied on: it resolves
   per-process cwd, so backend and tooling can silently open different files
-  (this exact drift once caused 500s on `/library/scan`).
+  (this exact drift once caused 500s on `/catalog/scan`).
 - **Migrations:** `initDatabase()` (`packages/db/src/schema.ts`) applies
   pending migrations at startup via `migrate()` from
   `drizzle-orm/node-sqlite/migrator`, tracked in the `__drizzle_migrations`

@@ -8,8 +8,8 @@ import { computeSourceStats } from "./storageStats";
 import { ValidationError } from "@middleware/errorHandler";
 import { StorageSource } from "@repo/types";
 import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager";
-import type { LibraryService } from "@services/library/libraryService";
-import type { ConfigService } from "@services/mpd/mpdConfigService";
+import type { CatalogSyncOrchestrator } from "@services/library/catalogSyncOrchestrator";
+import type { MpdConfigService } from "@services/mpd/mpdConfigService";
 
 const MUSIC_DIR = process.env.MUSIC_DIR ?? "/opt/sonect/music";
 
@@ -64,8 +64,8 @@ export interface StorageService {
 export class StorageServiceImpl implements StorageService {
   constructor(
     private mpdConnectionManager: MpdConnectionManager,
-    private libraryService: LibraryService,
-    private configService: ConfigService,
+    private catalogSyncOrchestrator: CatalogSyncOrchestrator,
+    private mpdConfigService: MpdConfigService,
     private logService: LogService,
   ) {}
 
@@ -111,9 +111,9 @@ export class StorageServiceImpl implements StorageService {
     });
 
     if (data.type === "local") {
-      this.configService.ensureFollowOutsideSymlinks();
+      this.mpdConfigService.ensureFollowOutsideSymlinks();
       this.mpdConnectionManager.executeCommand("update").catch(() => {});
-      this.libraryService
+      this.catalogSyncOrchestrator
         .scanLibrary()
         .catch((err) =>
           console.error(
@@ -189,7 +189,7 @@ export class StorageServiceImpl implements StorageService {
           this.removeLocalSymlink(existing.mount_path);
         }
         this.ensureLocalSymlink(source);
-        this.configService.ensureFollowOutsideSymlinks();
+        this.mpdConfigService.ensureFollowOutsideSymlinks();
       }
     }
 
@@ -338,9 +338,9 @@ export class StorageServiceImpl implements StorageService {
     if (source.type === "local") {
       try {
         this.ensureLocalSymlink(source);
-        this.configService.ensureFollowOutsideSymlinks();
+        this.mpdConfigService.ensureFollowOutsideSymlinks();
         await this.mpdConnectionManager.executeCommand("update");
-        await this.libraryService.scanLibrary();
+        await this.catalogSyncOrchestrator.scanLibrary();
         return { success: true };
       } catch (err: any) {
         return { success: false, error: err.message };
@@ -374,7 +374,7 @@ export class StorageServiceImpl implements StorageService {
       }
 
       await this.mpdConnectionManager.executeCommand("update");
-      await this.libraryService.scanLibrary();
+      await this.catalogSyncOrchestrator.scanLibrary();
 
       return { success: true };
     } catch (err: any) {
@@ -457,7 +457,7 @@ export class StorageServiceImpl implements StorageService {
       try {
         if (source.type === "local") {
           this.ensureLocalSymlink(source);
-          this.configService.ensureFollowOutsideSymlinks();
+          this.mpdConfigService.ensureFollowOutsideSymlinks();
         } else {
           const mountPoint = source.mount_path;
           fs.mkdirSync(mountPoint, { recursive: true });
@@ -489,7 +489,7 @@ export class StorageServiceImpl implements StorageService {
       }
     }
     if (mounted > 0) {
-      this.libraryService
+      this.catalogSyncOrchestrator
         .scanLibrary()
         .catch((err) =>
           console.error(

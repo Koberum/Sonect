@@ -14,9 +14,9 @@ graph TD
     Factory --> MpdConfigService
     Factory --> Mpd["MpdConnectionManager:38"]
     Factory --> PlayerService
-    Factory --> LibrarySyncService
-    Factory --> CoverService
-    Factory --> LibraryService
+    Factory --> CatalogSyncService
+    Factory --> CoverSyncService
+    Factory --> CatalogSyncOrchestrator
     Factory --> StorageService
     Factory --> SystemService
     Factory --> PlaylistService
@@ -36,18 +36,18 @@ graph TD
     PlayerService --> DB_Tracks
     PlayerService --> Broadcast
 
-    LibrarySyncService --> Mpd
+    CatalogSyncService --> Mpd
 
-    LibraryService --> PlayerService
-    LibraryService --> CoverService
-    LibraryService --> LibrarySyncService
-    LibraryService --> StorageStats
-    LibraryService --> Broadcast
+    CatalogSyncOrchestrator --> PlayerService
+    CatalogSyncOrchestrator --> CoverSyncService
+    CatalogSyncOrchestrator --> CatalogSyncService
+    CatalogSyncOrchestrator --> StorageStats
+    CatalogSyncOrchestrator --> Broadcast
 
-    CoverService --> LogService
+    CoverSyncService --> LogService
 
     StorageService --> Mpd
-    StorageService --> LibraryService
+    StorageService --> CatalogSyncOrchestrator
     StorageService --> MpdConfigService
     StorageService --> LogService
 
@@ -82,11 +82,11 @@ graph TD
 | `MpdConfigService:1`      | iface+class          | —                                                         | —                                                              | `fs`, `execSync+checkTool`                     | `getMpdConfigService:209` + aliases `getConfig:214`/`getAudio:229`       | unified `MPD_CONFIG_PATH`, `restartMpdInternal`                 |
 | `MpdConnectionManager:38` | class (EventEmitter) | `CatalogService` (`TrackService`), `LogService`           | via `CatalogService.resolveTrack:332`                          | `net`, `mpd@1.3.0`                             | `getMpdConnectionManager:179`                                            | dual TCP, cache, poll 2s/10s, autoplay refill `381`             |
 | `PlayerService:35`        | iface+class          | `LogService`, `Mpd`, `AutoplayService`                    | `tracksDb`, `albumsDb`                                         | `broadcast`, `mpdLogReader`, `path`            | `getPlayerService:189`                                                   | 14 `refreshNow()` paths, `updateLibrary:283` belongs to library |
-| `LibrarySyncService:22`   | class                | `MpdConnectionManager`                                    | `librarySyncDb.rebuild:87`, `tracksDb`, `syncMetadataDb`       | —                                              | `getLibrarySyncService:194`                                              | `fetchAllTracks:29` list+find                                   |
-| `LibraryService:21`       | iface+class          | `PlayerService`, `CoverService`, `LibrarySyncService`     | `statsDb`, `artistsDb`, `albumsDb`, `tracksDb`                 | `broadcast`, `scanStorageStats`                | `getLibraryService:204`                                                  | orchestrator 3 phases                                           |
-| `CoverService:38`         | iface+class          | `LogService`                                              | `albumsDb`, `tracksDb`, `artistsDb`                            | `fs`, `sharp:4`, `music-metadata:5`, `crypto`  | `getCoverService:199`                                                    | sequential `for album:49`                                       |
+| `CatalogSyncService:22`   | class                | `MpdConnectionManager`                                    | `catalogSyncDb.rebuild:87`, `tracksDb`, `syncMetadataDb`       | —                                              | `getCatalogSyncService:194`                                              | `fetchAllTracks:29` list+find                                   |
+| `CatalogSyncOrchestrator:21`       | iface+class          | `PlayerService`, `CoverSyncService`, `CatalogSyncService`     | `statsDb`, `artistsDb`, `albumsDb`, `tracksDb`                 | `broadcast`, `scanStorageStats`                | `getCatalogSyncOrchestrator:204`                                                  | orchestrator 3 phases                                           |
+| `CoverSyncService:38`         | iface+class          | `LogService`                                              | `albumsDb`, `tracksDb`, `artistsDb`                            | `fs`, `sharp:4`, `music-metadata:5`, `crypto`  | `getCoverSyncService:199`                                                    | sequential `for album:49`                                       |
 | `PlaylistService:28`      | iface+class          | `MpdConnectionManager`                                    | `playlistsDb`, `tracksDb`, `artistsDb`, `albumsDb`, `genresDb` | —                                              | `getPlaylistService:240`                                                 | MPD mirror `.catch(()=>{})` silent                              |
-| `StorageService:64`       | iface+class          | `Mpd`, `LibraryService`, `MpdConfigService`, `LogService` | `storageDb`                                                    | `fs symlink`, `child_process mount`, `crypto`  | `getStorageService:219`                                                  | 556 LOC, 4 deps                                                 |
+| `StorageService:64`       | iface+class          | `Mpd`, `CatalogSyncOrchestrator`, `MpdConfigService`, `LogService` | `storageDb`                                                    | `fs symlink`, `child_process mount`, `crypto`  | `getStorageService:219`                                                  | 556 LOC, 4 deps                                                 |
 | `SystemService:22`        | iface+class          | `MpdConnectionManager`                                    | —                                                              | `os`, `execSync aplay/lsusb`, `readAppVersion` | `getSystemService:224`                                                   | delegates `checkTool` to `utils`                                |
 | `PlayTrackingService:11`  | class                | `EventEmitter` (=Mpd)                                     | `tracksDb.incrementPlayCount:33`                               | `events`                                       | `getPlayTrackingService:234`                                             | 38 LOC, debounce 5s                                             |
 | `LogService:16`           | iface+class          | —                                                         | —                                                              | `console`, `broadcast`                         | `getLogService:149`                                                      | ring 500                                                        |
@@ -97,8 +97,8 @@ graph TD
 
 ## Fan-in / Fan-out
 
-- **Highest fan-in:** `MpdConnectionManager` ← 6 (`PlayerService`, `LibrarySyncService`, `StorageService`, `SystemService`, `PlaylistService`, `PlayTrackingService`) + factory callback.
-- **Highest fan-out:** `StorageService` (4), `LibraryService` (3).
+- **Highest fan-in:** `MpdConnectionManager` ← 6 (`PlayerService`, `CatalogSyncService`, `StorageService`, `SystemService`, `PlaylistService`, `PlayTrackingService`) + factory callback.
+- **Highest fan-out:** `StorageService` (4), `CatalogSyncOrchestrator` (3).
 - **Cycle:** `MpdConnectionManager:381 --remaining<5--> factory:103 setAutoplayCallback --> PlayerService.getQueue + AutoplayService.getNextBatch --> MpdConnectionManager`.
 
 ## Leaky Boundaries
@@ -114,7 +114,7 @@ Fixed — `dashboardController.ts` now `getSuggestionService()`, `systemControll
 | **Register leaky 3 in factory**                                                        | **Done** | `getSuggestionService:244`, `getSetupService:249`, `getNetworkService:254`         |
 | **Splittable: StorageService 556 LOC**                                                 | Kept     | Preserved per request — no split                                                   |
 | **Splittable: MpdConnectionManager 510 LOC**                                           | Kept     | Preserved per request — no split                                                   |
-| **Move: PlayerService.updateLibrary:283**                                              | Open     | Reads `mpdLogReader:10`, belongs to `LibraryService`/`LibrarySyncService` — future |
+| **Move: PlayerService.updateLibrary:283**                                              | Open     | Reads `mpdLogReader:10`, belongs to `CatalogSyncOrchestrator`/`CatalogSyncService` — future |
 
 ## How to Regenerate
 

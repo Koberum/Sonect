@@ -9,7 +9,7 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./library": {
+    "./catalog": {
       "types": "./dist/library/index.d.ts",
       "default": "./dist/library/index.js"
     },

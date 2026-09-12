@@ -1,6 +1,6 @@
 import { ApiClient } from "@/lib/apiClient";
 import type { QueuedTrack } from "@repo/types";
-import type { Track } from "@repo/types/library";
+import type { Track } from "@repo/types/catalog";
 
 const apiClient = new ApiClient({
   baseUrl: `${import.meta.env.VITE_BACKEND_URL ?? ""}/mpd`,

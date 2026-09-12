@@ -6,7 +6,7 @@ import type {
   LibraryStats,
   SearchResults,
   TrackWithRelations,
-} from "@repo/types/library";
+} from "@repo/types/catalog";
 
 export interface CatalogService {
   // Artist

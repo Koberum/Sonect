@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { getGenres } from "@/features/apis/libraryApis";
+import { getGenres } from "@/features/apis/catalogApis";
 import { usePlaybackContext } from "@/components/playback-context";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";

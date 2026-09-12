@@ -104,7 +104,7 @@ export const systemSchemas = {
   }),
 };
 
-export const librarySchemas = {
+export const catalogSchemas = {
   idParam: z.object({
     id: z.coerce
       .number()

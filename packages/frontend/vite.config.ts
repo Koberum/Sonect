@@ -14,7 +14,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/mpd": "http://localhost:3000",
-      "/library": "http://localhost:3000",
+      "/catalog": "http://localhost:3000",
       "/playlists": "http://localhost:3000",
       "/covers": "http://localhost:3000",
       "/stream": "http://localhost:3000",

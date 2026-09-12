@@ -26,8 +26,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { createPlaylist } from "@/features/apis/playlistApis";
-import { getLibraryStats, scanLibrary } from "@/features/apis/libraryApis";
-import type { LibraryStats } from "@repo/types/library";
+import { getLibraryStats, scanLibrary } from "@/features/apis/catalogApis";
+import type { LibraryStats } from "@repo/types/catalog";
 import {
   Tooltip,
   TooltipContent,
@@ -169,8 +169,8 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
               {t("sidebar.artists")}
             </Button>
             <Button
-              onClick={() => handleNavigation("/library/stats")}
-              variant={isMenuActive("/library/stats") ? "secondary" : "ghost"}
+              onClick={() => handleNavigation("/catalog/stats")}
+              variant={isMenuActive("/catalog/stats") ? "secondary" : "ghost"}
               className="w-full justify-start"
             >
               <BarChart3 className="mr-2 h-4 w-4" />
@@ -266,7 +266,7 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
           </ScrollArea>
         </div>
       </div>
-      {libraryStats && !isMenuActive("/library/stats") && (
+      {libraryStats && !isMenuActive("/catalog/stats") && (
         <div className="border-t px-3 py-3">
           <p className="text-muted-foreground text-xs">
             {t("sidebar.libraryInfo", {

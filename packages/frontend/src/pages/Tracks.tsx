@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
-import { getAllTracks } from "@/features/apis/libraryApis";
+import { getAllTracks } from "@/features/apis/catalogApis";
 import { useEffect, useState, useRef, useCallback } from "react";
-import type { TrackWithRelations } from "@repo/types/library";
+import type { TrackWithRelations } from "@repo/types/catalog";
 import { formatTime } from "@/lib/utils";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
 import {

@@ -4,8 +4,8 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useTranslation } from "react-i18next";
 import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { getAlbumById, getTracksByAlbum } from "@/features/apis/libraryApis";
-import type { Album, TrackWithRelations } from "@repo/types/library";
+import { getAlbumById, getTracksByAlbum } from "@/features/apis/catalogApis";
+import type { Album, TrackWithRelations } from "@repo/types/catalog";
 import { formatTime, getCoverPath } from "@/lib/utils";
 import {
   Table,

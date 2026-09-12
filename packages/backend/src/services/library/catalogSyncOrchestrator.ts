@@ -1,23 +1,23 @@
 import { albumsDb } from "@repo/db";
 import type {
   SyncProgress,
-  LibrarySyncService,
-} from "@services/library/librarySyncService";
+  CatalogSyncService,
+} from "@services/library/catalogSyncService";
 import { scanStorageStats } from "@services/storage/storageStats";
 import { broadcast } from "../../ws/broadcast";
-import type { CoverService } from "@services/library/coverService";
+import type { CoverSyncService } from "@services/library/coverSyncService";
 
-export interface LibraryService {
+export interface CatalogSyncOrchestrator {
   getCurrentSyncProgress(): Record<string, unknown> | null;
   setCurrentSyncProgress(progress: Record<string, unknown> | null): void;
   scanLibrary(): Promise<void>;
   scanImagesOnly(): Promise<void>;
 }
 
-export class LibraryServiceImpl implements LibraryService {
+export class CatalogSyncOrchestratorImpl implements CatalogSyncOrchestrator {
   constructor(
-    private readonly coverService: CoverService,
-    private readonly librarySyncService: LibrarySyncService,
+    private readonly coverSyncService: CoverSyncService,
+    private readonly catalogSyncService: CatalogSyncService,
   ) {}
 
   private currentSyncProgress: Record<string, unknown> | null = null;
@@ -51,10 +51,10 @@ export class LibraryServiceImpl implements LibraryService {
     broadcast({ type: "sync-progress", ...this.currentSyncProgress });
 
     try {
-      await this.librarySyncService.updateLibrary();
+      await this.catalogSyncService.updateLibrary();
 
       // Phase 1: Sync tracks from MPD
-      await this.librarySyncService.syncAll((progress: SyncProgress) => {
+      await this.catalogSyncService.syncAll((progress: SyncProgress) => {
         this.currentSyncProgress = { ...progress } as Record<string, unknown>;
         broadcast({ type: "sync-progress", ...progress });
       });
@@ -62,7 +62,7 @@ export class LibraryServiceImpl implements LibraryService {
       // Phase 2: Extract covers for all albums
       const albums = albumsDb.getAll();
       if (albums.length > 0) {
-        await this.coverService.syncAllCovers(albums, (progress) => {
+        await this.coverSyncService.syncAllCovers(albums, (progress) => {
           this.currentSyncProgress = {
             phase: "covers",
             current: progress.current,
@@ -112,7 +112,7 @@ export class LibraryServiceImpl implements LibraryService {
       return;
     }
     try {
-      await this.coverService.syncAllCovers(
+      await this.coverSyncService.syncAllCovers(
         albums,
         (progress: {
           current: number;

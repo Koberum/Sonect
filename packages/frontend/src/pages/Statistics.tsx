@@ -1,7 +1,7 @@
-import { getLibraryStats } from "@/features/apis/libraryApis";
+import { getLibraryStats } from "@/features/apis/catalogApis";
 import { usePlaybackContext } from "@/components/playback-context";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
-import type { LibraryStats } from "@repo/types/library";
+import type { LibraryStats } from "@repo/types/catalog";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
