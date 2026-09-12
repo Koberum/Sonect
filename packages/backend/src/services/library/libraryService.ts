@@ -7,7 +7,6 @@ import type {
 import { scanStorageStats } from "@services/storage/storageStats";
 import { broadcast } from "../../ws/broadcast";
 import type { CoverService } from "@services/library/coverService";
-import type { PlayerService } from "@services/player/playerService";
 
 export interface LibraryService {
   getLibraryStats(): LibraryStats;
@@ -20,7 +19,6 @@ export interface LibraryService {
 
 export class LibraryServiceImpl implements LibraryService {
   constructor(
-    private readonly playerService: PlayerService,
     private readonly coverService: CoverService,
     private readonly librarySyncService: LibrarySyncService,
   ) {}
@@ -74,7 +72,7 @@ export class LibraryServiceImpl implements LibraryService {
     broadcast({ type: "sync-progress", ...this.currentSyncProgress });
 
     try {
-      await this.playerService.updateLibrary();
+      await this.librarySyncService.updateLibrary();
 
       // Phase 1: Sync tracks from MPD
       await this.librarySyncService.syncAll((progress: SyncProgress) => {

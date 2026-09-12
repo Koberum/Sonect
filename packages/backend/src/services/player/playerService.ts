@@ -5,10 +5,7 @@ import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager";
 import type { AutoplayService } from "../mpd/autoplayService";
 import { tracksDb, albumsDb } from "@repo/db";
 import type { MPDTrack } from "@repo/types";
-import { parseKeyValue, hashFile } from "../../utils/mpd.js";
-import { broadcast } from "../../ws/broadcast";
-import { readNewMpdLogLines, parseMpdLogLines } from "../mpd/mpdLogReader";
-import path from "path";
+import { hashFile } from "../../utils/mpd.js";
 
 export interface PlayerService {
   getPlaybackStatus(): PlaybackStatus;
@@ -29,7 +26,6 @@ export interface PlayerService {
   removeFromQueue(pos: number): Promise<void>;
   addToQueue(file: string): Promise<void>;
   moveQueueItem(from: number, to: number): Promise<void>;
-  updateLibrary(): Promise<void>;
 }
 
 export class PlayerServiceImpl implements PlayerService {
@@ -278,62 +274,6 @@ export class PlayerServiceImpl implements PlayerService {
     this.mpdConnectionManager.refreshNow().catch((err) => {
       console.error("[Player] refreshNow failed after moveQueueItem:", err);
     });
-  }
-
-  public async updateLibrary(): Promise<void> {
-    const cmdClient = this.mpdConnectionManager.getCmdClient();
-    if (!cmdClient) throw new Error("MPD cmd client not connected");
-
-    let fileCount = 0;
-
-    this.logService.pushLog("info", "Starting MPD library update");
-    await this.mpdConnectionManager.executeCommand("update");
-
-    await new Promise((r) => setTimeout(r, 500));
-
-    const raw = await this.mpdConnectionManager.executeCommand("status");
-    const status = parseKeyValue(raw);
-
-    if (status.updating_db) {
-      const added = readNewMpdLogLines(0);
-      let logPos = added.newPosition;
-
-      while (true) {
-        await new Promise((r) => setTimeout(r, 2000));
-
-        const { lines } = readNewMpdLogLines(logPos);
-        const parsed = parseMpdLogLines(lines);
-        for (const p of parsed) {
-          fileCount++;
-          broadcast({
-            type: "sync-progress",
-            phase: "mpd",
-            current: fileCount,
-            total: 0,
-            track: {
-              title: path.basename(p.filePath),
-              artist: "",
-              album: path.dirname(p.filePath),
-            },
-          });
-        }
-        logPos = readNewMpdLogLines(logPos).newPosition;
-
-        const r = await this.mpdConnectionManager.executeCommand("status");
-        if (!parseKeyValue(r).updating_db) {
-          this.logService.pushLog(
-            "info",
-            `MPD library update finished (${fileCount} files indexed)`,
-          );
-          break;
-        }
-      }
-    } else {
-      this.logService.pushLog(
-        "info",
-        "MPD library update completed (no changes detected)",
-      );
-    }
   }
 }
 

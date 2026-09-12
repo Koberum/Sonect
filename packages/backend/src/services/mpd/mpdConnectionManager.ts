@@ -2,7 +2,7 @@ import { EventEmitter } from "events";
 import net from "net";
 import mpd from "mpd";
 import type { PlaybackStatus, PlaybackState } from "@repo/types";
-import type { TrackService } from "@services/library/catalogService";
+import type { CatalogService } from "@services/library/catalogService";
 import type { LogService } from "@services/utils/logService";
 import { parseKeyValue, hashFile } from "../../utils/mpd.js";
 import { TrackWithRelations } from "@repo/types/library";
@@ -37,7 +37,7 @@ function createDefaultStatus(): PlaybackStatus {
 
 export class MpdConnectionManager extends EventEmitter {
   constructor(
-    private trackService: TrackService,
+    private catalogService: CatalogService,
     private logService: LogService,
   ) {
     super();
@@ -329,7 +329,7 @@ export class MpdConnectionManager extends EventEmitter {
 
             if (song.file && song.Artist && song.Album && song.Title) {
               resolvedTrack =
-                this.trackService.resolveTrack(
+                this.catalogService.resolveTrack(
                   song.Artist,
                   song.Album,
                   song.Title,

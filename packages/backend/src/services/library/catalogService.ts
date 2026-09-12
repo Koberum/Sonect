@@ -163,36 +163,3 @@ export class CatalogServiceImpl implements CatalogService {
     return tracksDb.getByIdWithRelations(id);
   }
 }
-
-// Backwards compat: re-export granular interfaces via catalog
-export type ArtistService = Pick<
-  CatalogService,
-  "getAllArtists" | "getArtistCount" | "getArtistById"
->;
-export type AlbumService = Pick<
-  CatalogService,
-  | "getAlbumsByArtist"
-  | "getAllAlbums"
-  | "getAlbumCount"
-  | "getRecentlyAddedAlbums"
-  | "getAlbumById"
-  | "updateAlbumCoverPath"
-  | "getAlbumsByGenre"
->;
-export type GenreService = Pick<
-  CatalogService,
-  "getGenres" | "getGenreById" | "getById"
->;
-export type TrackService = Pick<
-  CatalogService,
-  | "getTracksByAlbum"
-  | "getTracksByArtist"
-  | "getAllTracks"
-  | "getTrackCount"
-  | "getTrackById"
-  | "resolveTrack"
-  | "getTracksByGenre"
-  | "getRecentlyAddedTracks"
->;
-
-export const catalogService = new CatalogServiceImpl();

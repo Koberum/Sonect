@@ -87,14 +87,13 @@ export function initializeServices(): void {
     _autoplayService,
   );
 
-  _librarySyncService = new LibrarySyncService(_mpdConnectionManager);
+  _librarySyncService = new LibrarySyncService(
+    _mpdConnectionManager,
+    _logService,
+  );
 
   _coverService = new CoverServiceImpl(_logService);
-  _libraryService = new LibraryServiceImpl(
-    _playerService,
-    _coverService,
-    _librarySyncService,
-  );
+  _libraryService = new LibraryServiceImpl(_coverService, _librarySyncService);
 
   _storageService = new StorageServiceImpl(
     _mpdConnectionManager,

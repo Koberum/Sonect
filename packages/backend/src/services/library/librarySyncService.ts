@@ -6,7 +6,11 @@ import {
 } from "@repo/db";
 import { MPDTrack } from "@repo/types";
 import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager";
-import { parseMPDMessageToTracks } from "../../utils/mpd.js";
+import type { LogService } from "@services/utils/logService";
+import { parseKeyValue, parseMPDMessageToTracks } from "../../utils/mpd.js";
+import { readNewMpdLogLines, parseMpdLogLines } from "../mpd/mpdLogReader.js";
+import { broadcast } from "../../ws/broadcast.js";
+import path from "path";
 
 export type SyncProgress = {
   current: number;
@@ -20,7 +24,84 @@ export type SyncProgress = {
 };
 
 export class LibrarySyncService {
-  constructor(private readonly mpdConnectionManager: MpdConnectionManager) {}
+  constructor(
+    private readonly mpdConnectionManager: MpdConnectionManager,
+    private readonly logService: LogService,
+  ) {}
+
+  async updateLibrary(): Promise<void> {
+    const cmdClient = this.mpdConnectionManager.getCmdClient();
+    if (!cmdClient) throw new Error("MPD cmd client not connected");
+
+    let fileCount = 0;
+
+    this.logService.pushLog("info", "Starting MPD library update");
+    await this.mpdConnectionManager.executeCommand("update");
+
+    await new Promise((r) => setTimeout(r, 500));
+
+    const raw = await this.mpdConnectionManager.executeCommand("status");
+    const status = parseKeyValue(raw);
+
+    if (status.updating_db) {
+      const added = readNewMpdLogLines(0);
+      let logPos = added.newPosition;
+      // Broadcast files from first chunk if any (fix first-chunk dropped bug)
+      if (added.lines.length > 0) {
+        const firstParsed = parseMpdLogLines(added.lines);
+        for (const p of firstParsed) {
+          fileCount++;
+          broadcast({
+            type: "sync-progress",
+            phase: "mpd",
+            current: fileCount,
+            total: 0,
+            track: {
+              title: path.basename(p.filePath),
+              artist: "",
+              album: path.dirname(p.filePath),
+            },
+          });
+        }
+      }
+
+      while (true) {
+        await new Promise((r) => setTimeout(r, 2000));
+
+        const { lines } = readNewMpdLogLines(logPos);
+        const parsed = parseMpdLogLines(lines);
+        for (const p of parsed) {
+          fileCount++;
+          broadcast({
+            type: "sync-progress",
+            phase: "mpd",
+            current: fileCount,
+            total: 0,
+            track: {
+              title: path.basename(p.filePath),
+              artist: "",
+              album: path.dirname(p.filePath),
+            },
+          });
+        }
+        logPos = readNewMpdLogLines(logPos).newPosition;
+
+        const r = await this.mpdConnectionManager.executeCommand("status");
+        if (!parseKeyValue(r).updating_db) {
+          this.logService.pushLog(
+            "info",
+            `MPD library update finished (${fileCount} files indexed)`,
+          );
+          break;
+        }
+      }
+    } else {
+      this.logService.pushLog(
+        "info",
+        "MPD library update completed (no changes detected)",
+      );
+    }
+  }
 
   async initDatabase(): Promise<void> {
     await initDatabase();
