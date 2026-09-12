@@ -276,6 +276,53 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 - All connected clients receive the same broadcast via `broadcast.ts` (`ws/broadcast.ts`), a utility that iterates `wss.clients` and sends JSON to all open connections.
 - All WS messages follow a standard format with a `type` field: `"player-status"`, `"sync-progress"`, `"log"`, or `"sync-complete"`.
 
+### Session-based browser playback
+
+- **`browser` output mode does not use MPD for playback.** The frontend
+  streams through an in-memory **session engine** (`services/session/`) that is
+  independent of MPD; MPD always keeps its real audio output and the drop-in
+  config is never rewritten to silence it.
+- **Session identity** — the frontend generates a client id (`lib/session.ts`:
+  `randomUUID` persisted in `localStorage`) and sends it as the
+  `X-Session-Id` header on every `/session/*` REST call and as `?sessionId=` on
+  the WebSocket URL. The backend treats an unknown id as a fresh session; every
+  later touch reuses it (client-generated identity, idempotent).
+- **SessionRegistry** (`services/session/sessionRegistry.ts`) — a
+  `Map<sessionId, SessionPlayer>` singleton. `getOrCreateSession()` is
+  idempotent; idle sessions are cleaned up after 30 minutes (60s sweep);
+  `resolveSessionRegistry()` / `setGlobalSessionRegistry()` /
+  `registryOverrideForTests()` wire the registry into routes/WS and tests.
+- **SessionPlayer** (`services/session/sessionPlayer.ts`) — an in-memory
+  engine with its own queue: playing a track queues it through the end of its
+  album (DB-backed, no wrapping to earlier tracks), advances a **1s server
+  clock** while playing, auto-advances at the duration boundary, and emits
+  `stateChanged` events. No MPD dependency.
+- **Per-session WebSocket** — when a socket connects with `?sessionId=`,
+  `ws/player.ws.ts` sends that session's `{ type: "player-status", ... }`
+  immediately and on every `stateChanged`; sockets without a `sessionId` keep
+  the existing global MPD stream unchanged.
+- **REST surface** — `/session` is gated by the `sessionIdMiddleware`
+  (`middleware/sessionId.ts`), which returns 400 when `X-Session-Id` is
+  missing. It serves `GET /session/status`, `GET/POST /session/queue`,
+  `DELETE /session/queue/:pos`, `POST /session/queue/move`, and
+  `POST /session/player/{play,pause,resume,next,previous,seek}`. Request bodies
+  are validated with `sessionSchemas` from `@repo/types`. The Vite dev proxy
+  forwards `/session` to the backend (`vite.config.ts`).
+- **`mpdConfigService.setOutputMode()` is a backcompat no-op** — browser mode
+  no longer rewrites the `mpd-audio.conf` drop-in to a null output; MPD always
+  stays on its real ALSA output. `GET/PUT /system/output-mode` remain for
+  backcompat.
+- **Frontend** — `outputMode` is client-local (persisted in `localStorage`, no
+  backend GET/PUT on switch). In browser mode `ws-provider.tsx` appends
+  `?sessionId=` to the WS URL, and the transport/seek controls in
+  `music-player.tsx`, `playback-progress-bar.tsx`, and `full-page-player.tsx`
+  drive the session engine instead of `/mpd/*`.
+- **Deferred in sessions** — repeat/random/consume/single modes and the
+  smart-autoplay batches (`autoplayService`) are not implemented for sessions;
+  session status reports repeat/random/single/consume as off. This is an
+  explicit expansion point: the session identity model allows per-user sessions
+  in the future.
+
 ### Cover art pipeline
 
 1. `coverService.ts` (`services/coverService.ts`) handles cover extraction using `music-metadata` for embedded art.

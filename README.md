@@ -39,6 +39,10 @@ no subscriptions, no limits.
   to 500x500 JPEG, served over HTTP, and cached in the browser for 30 days.
 - **In-browser MPD config** — Edit audio outputs and MPD settings from the
   Settings page. Save once, MPD restarts automatically — no SSH needed.
+- **Session-based browser playback** — `browser` output mode streams through a
+  backend session engine independent of MPD, so playback state follows the
+  browser session rather than the shared MPD daemon — the foundation for
+  per-user sessions.
 - **One-line Raspberry Pi install** — A single `curl | bash` command turns a
   Pi 2B into a dedicated music appliance. See below.
 
@@ -136,24 +140,25 @@ a complete database file.
 
 ## API Overview
 
-| Method | Path                          | Description              |
-| ------ | ----------------------------- | ------------------------ |
-| GET    | `/library/albums`             | List all albums          |
-| GET    | `/library/albums/:id`         | Get album by ID          |
-| GET    | `/library/albums/:id/tracks`  | Tracks for an album      |
-| GET    | `/library/artists`            | List all artists         |
-| GET    | `/library/artists/:id/albums` | Albums for an artist     |
-| POST   | `/library/scan`               | Trigger library re-scan  |
-| POST   | `/mpd/play`                   | Play a track or resume   |
-| POST   | `/mpd/pause`                  | Toggle pause             |
-| POST   | `/mpd/next`                   | Next track               |
-| POST   | `/mpd/previous`               | Previous track           |
-| PATCH  | `/mpd/volume`                 | Set volume (0–100)       |
-| GET    | `/system/network/status`      | Read network/DNS status  |
-| GET    | `/system/setup/progress`      | Read setup progress      |
-| POST   | `/system/setup/complete`      | Complete or skip setup   |
-| POST   | `/system/setup/reset`         | Reset the setup wizard   |
-| GET    | `ws://host:3000`              | WebSocket playback state |
+| Method | Path                          | Description                                               |
+| ------ | ----------------------------- | --------------------------------------------------------- |
+| GET    | `/library/albums`             | List all albums                                           |
+| GET    | `/library/albums/:id`         | Get album by ID                                           |
+| GET    | `/library/albums/:id/tracks`  | Tracks for an album                                       |
+| GET    | `/library/artists`            | List all artists                                          |
+| GET    | `/library/artists/:id/albums` | Albums for an artist                                      |
+| POST   | `/library/scan`               | Trigger library re-scan                                   |
+| POST   | `/mpd/play`                   | Play a track or resume                                    |
+| POST   | `/mpd/pause`                  | Toggle pause                                              |
+| POST   | `/mpd/next`                   | Next track                                                |
+| POST   | `/mpd/previous`               | Previous track                                            |
+| PATCH  | `/mpd/volume`                 | Set volume (0–100)                                        |
+| *      | `/session/*`                  | Browser session playback (requires `X-Session-Id` header) |
+| GET    | `/system/network/status`      | Read network/DNS status                                   |
+| GET    | `/system/setup/progress`      | Read setup progress                                       |
+| POST   | `/system/setup/complete`      | Complete or skip setup                                    |
+| POST   | `/system/setup/reset`         | Reset the setup wizard                                    |
+| GET    | `ws://host:3000`              | WebSocket playback state                                  |
 
 ### Environment variables
 
