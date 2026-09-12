@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import sinon from "sinon";
 import { createTestDb } from "@tests/helpers/db.js";
-import { initializeServices, getArtistService } from "@services/factory.js";
+import { initializeServices, getCatalogService } from "@services/factory.js";
 import { getArtists, getArtistById } from "@controllers/libraryController.js";
 
 // Layer 3: Controller unit test — service is stubbed, no DB
@@ -25,9 +25,9 @@ describe("libraryController (controller unit, stubbed service)", () => {
 
   it("getArtists returns {items, total} from service", async () => {
     const fakeArtists = [{ id: 1, name: "A" }];
-    const svc = getArtistService();
-    sandbox.stub(svc, "getAllArtists").resolves(fakeArtists as never);
-    sandbox.stub(svc, "getArtistCount").resolves(1 as never);
+    const svc = getCatalogService();
+    sandbox.stub(svc, "getAllArtists").returns(fakeArtists as never);
+    sandbox.stub(svc, "getArtistCount").returns(1 as never);
 
     const req = { query: {} } as never;
     const res = { json: sandbox.stub() } as never;
@@ -44,8 +44,8 @@ describe("libraryController (controller unit, stubbed service)", () => {
   });
 
   it("getArtistById forwards NotFoundError when service returns null", async () => {
-    const svc = getArtistService();
-    sandbox.stub(svc, "getArtistById").resolves(null as never);
+    const svc = getCatalogService();
+    sandbox.stub(svc, "getArtistById").returns(null as never);
     const req = { params: { id: "999" } } as never;
     const res = {} as never;
     let caught: unknown;

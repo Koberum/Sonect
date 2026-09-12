@@ -2,7 +2,7 @@ import { EventEmitter } from "events";
 import net from "net";
 import mpd from "mpd";
 import type { PlaybackStatus, PlaybackState } from "@repo/types";
-import type { TrackService } from "@services/library/trackService";
+import type { TrackService } from "@services/library/catalogService";
 import type { LogService } from "@services/utils/logService";
 import { parseKeyValue, hashFile } from "../../utils/mpd.js";
 import { TrackWithRelations } from "@repo/types/library";
@@ -329,11 +329,11 @@ export class MpdConnectionManager extends EventEmitter {
 
             if (song.file && song.Artist && song.Album && song.Title) {
               resolvedTrack =
-                (await this.trackService.resolveTrack(
+                this.trackService.resolveTrack(
                   song.Artist,
                   song.Album,
                   song.Title,
-                )) ?? undefined;
+                ) ?? undefined;
             }
 
             if (!resolvedTrack && song.file) {

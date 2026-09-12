@@ -75,7 +75,7 @@ export class PlayerServiceImpl implements PlayerService {
 
       if (this.autoplayService.sessionId === sessionId) {
         try {
-          const tracks = await this.autoplayService.getNextBatch(file);
+          const tracks = this.autoplayService.getNextBatch(file);
           if (
             tracks.length > 0 &&
             this.autoplayService.sessionId === sessionId

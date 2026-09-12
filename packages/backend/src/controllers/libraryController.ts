@@ -1,18 +1,12 @@
 import { Request, Response } from "express";
 import { librarySchemas } from "@repo/types";
-import {
-  getLibraryService,
-  getArtistService,
-  getAlbumService,
-  getGenreService,
-  getTrackService,
-} from "@services/factory";
+import { getLibraryService, getCatalogService } from "@services/factory";
 import { asyncHandler } from "@middleware/asyncHandler";
 import { NotFoundError } from "@middleware/errorHandler";
 
 export const getLibraryStatsHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const stats = await getLibraryService().getLibraryStats();
+    const stats = getLibraryService().getLibraryStats();
     res.json(stats);
   },
 );
@@ -20,17 +14,15 @@ export const getLibraryStatsHandler = asyncHandler(
 export const getArtists = asyncHandler(async (req: Request, res: Response) => {
   const limit = req.query.limit ? Number(req.query.limit) : undefined;
   const offset = req.query.offset ? Number(req.query.offset) : undefined;
-  const [items, total] = await Promise.all([
-    getArtistService().getAllArtists(limit, offset),
-    getArtistService().getArtistCount(),
-  ]);
+  const items = getCatalogService().getAllArtists(limit, offset);
+  const total = getCatalogService().getArtistCount();
   res.json({ items, total });
 });
 
 export const getArtistById = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = librarySchemas.idParam.parse(req.params);
-    const artist = await getArtistService().getArtistById(id);
+    const artist = getCatalogService().getArtistById(id);
     if (!artist) throw new NotFoundError("Artist");
     res.json(artist);
   },
@@ -40,17 +32,15 @@ export const getAlbums = asyncHandler(async (req: Request, res: Response) => {
   const sort = req.query.sort as string | undefined;
   const limit = req.query.limit ? Number(req.query.limit) : undefined;
   const offset = req.query.offset ? Number(req.query.offset) : undefined;
-  const [items, total] = await Promise.all([
-    getAlbumService().getAllAlbums(sort, limit, offset),
-    getAlbumService().getAlbumCount(),
-  ]);
+  const items = getCatalogService().getAllAlbums(sort, limit, offset);
+  const total = getCatalogService().getAlbumCount();
   res.json({ items, total });
 });
 
 export const getAlbumById = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = librarySchemas.idParam.parse(req.params);
-    const album = await getAlbumService().getAlbumById(id);
+    const album = getCatalogService().getAlbumById(id);
     if (!album) throw new NotFoundError("Album");
     res.json(album);
   },
@@ -59,7 +49,7 @@ export const getAlbumById = asyncHandler(
 export const getAlbumsByArtist = asyncHandler(
   async (req: Request, res: Response) => {
     const { artistId } = librarySchemas.artistIdParam.parse(req.params);
-    const albums = await getAlbumService().getAlbumsByArtist(artistId);
+    const albums = getCatalogService().getAlbumsByArtist(artistId);
     res.json(albums);
   },
 );
@@ -67,7 +57,7 @@ export const getAlbumsByArtist = asyncHandler(
 export const getTracksByAlbum = asyncHandler(
   async (req: Request, res: Response) => {
     const { albumId } = librarySchemas.albumIdParam.parse(req.params);
-    const tracks = await getTrackService().getTracksByAlbum(albumId);
+    const tracks = getCatalogService().getTracksByAlbum(albumId);
     res.json(tracks);
   },
 );
@@ -75,7 +65,7 @@ export const getTracksByAlbum = asyncHandler(
 export const getTracksByArtist = asyncHandler(
   async (req: Request, res: Response) => {
     const { artistId } = librarySchemas.artistIdParam.parse(req.params);
-    const tracks = await getTrackService().getTracksByArtist(artistId);
+    const tracks = getCatalogService().getTracksByArtist(artistId);
     res.json(tracks);
   },
 );
@@ -85,10 +75,8 @@ export const getAllTracks = asyncHandler(
     const sort = req.query.sort as string | undefined;
     const limit = req.query.limit ? Number(req.query.limit) : undefined;
     const offset = req.query.offset ? Number(req.query.offset) : undefined;
-    const [items, total] = await Promise.all([
-      getTrackService().getAllTracks(sort, limit, offset),
-      getTrackService().getTrackCount(),
-    ]);
+    const items = getCatalogService().getAllTracks(sort, limit, offset);
+    const total = getCatalogService().getTrackCount();
     res.json({ items, total });
   },
 );
@@ -96,23 +84,21 @@ export const getAllTracks = asyncHandler(
 export const getRecentlyAdded = asyncHandler(
   async (req: Request, res: Response) => {
     const limit = Math.min(Number(req.query.limit) || 20, 100);
-    const [albums, tracks] = await Promise.all([
-      getAlbumService().getRecentlyAddedAlbums(limit),
-      getTrackService().getRecentlyAddedTracks(limit),
-    ]);
+    const albums = getCatalogService().getRecentlyAddedAlbums(limit);
+    const tracks = getCatalogService().getRecentlyAddedTracks(limit);
     res.json({ albums, tracks });
   },
 );
 
 export const getGenres = asyncHandler(async (_req: Request, res: Response) => {
-  const genres = await getGenreService().getGenres();
+  const genres = getCatalogService().getGenres();
   res.json(genres);
 });
 
 export const getAlbumsByGenre = asyncHandler(
   async (req: Request, res: Response) => {
     const { genre } = librarySchemas.genreParam.parse(req.params);
-    const albums = await getAlbumService().getAlbumsByGenre(genre);
+    const albums = getCatalogService().getAlbumsByGenre(genre);
     res.json(albums);
   },
 );
@@ -120,7 +106,7 @@ export const getAlbumsByGenre = asyncHandler(
 export const getTracksByGenre = asyncHandler(
   async (req: Request, res: Response) => {
     const { genre } = librarySchemas.genreParam.parse(req.params);
-    const tracks = await getTrackService().getTracksByGenre(genre);
+    const tracks = getCatalogService().getTracksByGenre(genre);
     res.json(tracks);
   },
 );
@@ -132,7 +118,7 @@ export const searchHandler = asyncHandler(
       res.json({ artists: [], albums: [], tracks: [] });
       return;
     }
-    const results = await getLibraryService().searchTracks(q);
+    const results = getLibraryService().searchTracks(q);
     res.json(results);
   },
 );

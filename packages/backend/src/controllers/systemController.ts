@@ -1,25 +1,19 @@
 import { Request, Response } from "express";
 import { systemSchemas } from "@repo/types";
 import { asyncHandler } from "@middleware/asyncHandler";
-import { getSystemService } from "@services/factory";
-import { getAudioService } from "@services/factory";
-import { getNetworkStatus } from "@services/network/networkService";
-import { getStorageService } from "@services/factory";
 import {
-  getSetupProgress,
-  isSetupComplete,
-  markStepComplete,
-  markStepIncomplete,
-  markSetupCompleted,
-  resetSetup,
-  getNextIncompleteStep,
-} from "@services/system/setupService";
+  getSystemService,
+  getMpdConfigService,
+  getStorageService,
+  getSetupService,
+  getNetworkService,
+} from "@services/factory";
 import { NotFoundError } from "../middleware/errorHandler";
 
 export const getStatusHandler = asyncHandler(
   async (_req: Request, res: Response) => {
     const status = getSystemService().getSystemStatus();
-    const setup = getSetupProgress();
+    const setup = getSetupService().getSetupProgress();
     res.json({
       ...status,
       setupCompleted: setup.filter((s) => s.completed).map((s) => s.step),
@@ -29,7 +23,7 @@ export const getStatusHandler = asyncHandler(
 
 export const getAudioDevicesHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const devices = getAudioService().getCurrentAudioOutput();
+    const devices = getMpdConfigService().getCurrentAudioOutput();
     res.json(devices ? [devices] : []);
   },
 );
@@ -37,22 +31,22 @@ export const getAudioDevicesHandler = asyncHandler(
 export const configureAudioHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const params = systemSchemas.audioConfigure.parse(req.body);
-    const result = getAudioService().configureAudioOutput(params);
+    const result = getMpdConfigService().configureAudioOutput(params);
     res.json(result);
   },
 );
 
 export const getAudioStatusHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const status = getAudioService().getCurrentAudioOutput();
+    const status = getMpdConfigService().getCurrentAudioOutput();
     res.json(status);
   },
 );
 
 export const getOutputModeHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const mode = getAudioService().getOutputMode();
-    const deviceName = getAudioService().getOutputDeviceName();
+    const mode = getMpdConfigService().getOutputMode();
+    const deviceName = getMpdConfigService().getOutputDeviceName();
     res.json({ mode, deviceName });
   },
 );
@@ -60,14 +54,14 @@ export const getOutputModeHandler = asyncHandler(
 export const setOutputModeHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { mode } = systemSchemas.outputMode.parse(req.body);
-    const result = getAudioService().setOutputMode(mode);
+    const result = getMpdConfigService().setOutputMode(mode);
     res.json(result);
   },
 );
 
 export const getNetworkStatusHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const status = await getNetworkStatus();
+    const status = await getNetworkService().getNetworkStatus();
     res.json(status);
   },
 );
@@ -145,18 +139,18 @@ export const unmountStorageHandler = asyncHandler(
 
 export const listMountsHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const mounts = await getStorageService().listMounts();
+    const mounts = getStorageService().listMounts();
     res.json(mounts);
   },
 );
 
 export const getSetupProgressHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const progress = getSetupProgress();
+    const progress = getSetupService().getSetupProgress();
     res.json({
       steps: progress,
-      complete: isSetupComplete(),
-      nextStep: getNextIncompleteStep(),
+      complete: getSetupService().isSetupComplete(),
+      nextStep: getSetupService().getNextIncompleteStep(),
     });
   },
 );
@@ -165,50 +159,50 @@ export const updateSetupProgressHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { step, completed } = systemSchemas.setupProgress.parse(req.body);
     if (completed) {
-      markStepComplete(step);
+      getSetupService().markStepComplete(step);
     } else {
-      markStepIncomplete(step);
+      getSetupService().markStepIncomplete(step);
     }
-    const progress = getSetupProgress();
+    const progress = getSetupService().getSetupProgress();
     res.json({
       steps: progress,
-      complete: isSetupComplete(),
-      nextStep: getNextIncompleteStep(),
+      complete: getSetupService().isSetupComplete(),
+      nextStep: getSetupService().getNextIncompleteStep(),
     });
   },
 );
 
 export const completeSetupHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    markSetupCompleted();
+    getSetupService().markSetupCompleted();
     res.json({ success: true, complete: true });
   },
 );
 
 export const resetSetupHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    resetSetup();
+    getSetupService().resetSetup();
     res.json({ success: true });
   },
 );
 
 export const restartMpdHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const result = getAudioService().restartMPD();
+    const result = getMpdConfigService().restartMPD();
     res.json(result);
   },
 );
 
 export const stopMpdHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const result = getAudioService().stopMPD();
+    const result = getMpdConfigService().stopMPD();
     res.json(result);
   },
 );
 
 export const getMpdStatusHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const status = getAudioService().getMpdStatus();
+    const status = getMpdConfigService().getMpdStatus();
     res.json(status);
   },
 );

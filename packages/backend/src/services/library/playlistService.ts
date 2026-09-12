@@ -7,7 +7,25 @@ import {
 } from "@repo/types/library";
 import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager";
 
-export class PlaylistService {
+export interface PlaylistService {
+  getAllPlaylists(): Playlist[];
+  getPlaylistById(id: number): Playlist | undefined;
+  getPlaylistWithTracks(id: number): PlaylistWithTracks | undefined;
+  createPlaylist(name: string, description?: string): Playlist | undefined;
+  updatePlaylist(
+    id: number,
+    data: { name?: string; description?: string },
+  ): Playlist | undefined;
+  deletePlaylist(id: number): boolean;
+  addTrackToPlaylist(
+    playlistId: number,
+    trackId: number,
+  ): { pt_id: number } | null;
+  removeTrackFromPlaylist(playlistTrackId: number, playlistId: number): boolean;
+  loadPlaylist(id: number): Promise<void>;
+}
+
+export class PlaylistServiceImpl implements PlaylistService {
   constructor(private mpdConnectionManager: MpdConnectionManager) {}
 
   getAllPlaylists(): Playlist[] {

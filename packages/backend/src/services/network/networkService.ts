@@ -46,3 +46,13 @@ function checkDnsReachability(host: string): Promise<boolean> {
     );
   });
 }
+
+export interface NetworkService {
+  getNetworkStatus(): Promise<NetworkStatus>;
+}
+
+export class NetworkServiceImpl implements NetworkService {
+  public getNetworkStatus(): Promise<NetworkStatus> {
+    return getNetworkStatus();
+  }
+}

@@ -1,6 +1,7 @@
 import { execSync } from "child_process";
 import os from "os";
 import { readAppVersion } from "../utils/appVersion.js";
+import { checkTool } from "../utils/utils.js";
 import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager.js";
 import type {
   SystemStatus,
@@ -107,12 +108,7 @@ export class SystemServiceImpl implements SystemServiceInterface {
   }
 
   public checkTool(name: string): boolean {
-    try {
-      execSync(`which ${name}`, { stdio: "ignore" });
-      return true;
-    } catch {
-      return false;
-    }
+    return checkTool(name);
   }
 
   public detectAudioDevices(): AudioDevice[] {

@@ -1,21 +1,17 @@
 import { albumsDb, tracksDb } from "@repo/db";
 import type { DashboardData, Album, Track } from "@repo/types/library";
 
-export class SuggestionService {
-  async getDashboard(currentAlbumId?: number): Promise<DashboardData> {
-    const [
-      continueListening,
-      recentlyPlayed,
-      topTracks,
-      suggestedTracks,
-      genreQuickMix,
-    ] = await Promise.all([
-      this._getContinueListening(currentAlbumId),
-      this._getRecentlyPlayed(),
-      this._getTopTracks(),
-      this._getSuggestedTracks(),
-      this._getGenreQuickMix(),
-    ]);
+export interface SuggestionServiceInterface {
+  getDashboard(currentAlbumId?: number): DashboardData;
+}
+
+export class SuggestionService implements SuggestionServiceInterface {
+  getDashboard(currentAlbumId?: number): DashboardData {
+    const continueListening = this._getContinueListening(currentAlbumId);
+    const recentlyPlayed = this._getRecentlyPlayed();
+    const topTracks = this._getTopTracks();
+    const suggestedTracks = this._getSuggestedTracks();
+    const genreQuickMix = this._getGenreQuickMix();
 
     return {
       continueListening,
@@ -26,22 +22,22 @@ export class SuggestionService {
     };
   }
 
-  private _getContinueListening(excludeAlbumId?: number): Promise<Album[]> {
+  private _getContinueListening(excludeAlbumId?: number): Album[] {
     const albums = albumsDb.getRecentAlbums(10, excludeAlbumId);
-    return Promise.resolve(albums as Album[]);
+    return albums as Album[];
   }
 
-  private _getRecentlyPlayed(): Promise<Track[]> {
+  private _getRecentlyPlayed(): Track[] {
     const tracks = tracksDb.getRecentlyPlayed(20);
-    return Promise.resolve(tracks as unknown as Track[]);
+    return tracks as unknown as Track[];
   }
 
-  private _getTopTracks(): Promise<Track[]> {
+  private _getTopTracks(): Track[] {
     const tracks = tracksDb.getTopTracks(10);
-    return Promise.resolve(tracks as unknown as Track[]);
+    return tracks as unknown as Track[];
   }
 
-  private async _getSuggestedTracks(): Promise<Track[]> {
+  private _getSuggestedTracks(): Track[] {
     const genres = tracksDb.getTopGenres(3);
     const artists = tracksDb.getTopArtists(3);
     const artistIds = artists.map((a) => a.id);
@@ -49,12 +45,12 @@ export class SuggestionService {
     return tracks as unknown as Track[];
   }
 
-  private _getGenreQuickMix(): Promise<{
+  private _getGenreQuickMix(): {
     genre: string;
     tracks: Track[];
-  } | null> {
+  } | null {
     const topGenre = tracksDb.getTopGenre();
-    if (!topGenre) return Promise.resolve(null);
+    if (!topGenre) return null;
     const tracks = tracksDb.getTracksByGenre(
       topGenre,
       25,
@@ -63,6 +59,6 @@ export class SuggestionService {
       const j = Math.floor(Math.random() * (i + 1));
       [tracks[i], tracks[j]] = [tracks[j], tracks[i]];
     }
-    return Promise.resolve({ genre: topGenre, tracks });
+    return { genre: topGenre, tracks };
   }
 }

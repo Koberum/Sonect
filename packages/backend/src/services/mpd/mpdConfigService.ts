@@ -2,9 +2,16 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import type { OutputMode } from "@repo/types";
-import { checkTool } from "@services/utils/utils";
+import { checkTool } from "../utils/utils.js";
 
-export interface AudioService {
+export interface MpdConfigService {
+  // ConfigService
+  getConfig(): { content: string; path: string };
+  updateConfig(content: string): { success: boolean; warning?: string };
+  ensureFollowOutsideSymlinks(): { success: boolean; warning?: string };
+  getConfigPath(): string;
+  restartMpdInternal(): { success: boolean; warning?: string };
+  // AudioService
   getCurrentAudioOutput(): { card: string; name: string } | null;
   configureAudioOutput(params: {
     card: string;
@@ -23,20 +30,90 @@ export interface AudioService {
   getOutputDeviceName(): string | null;
 }
 
-export class AudioServiceImpl implements AudioService {
-  private readonly mpdConfigPath =
+export class MpdConfigServiceImpl implements MpdConfigService {
+  private readonly MPD_CONFIG_PATH =
     process.env.MPD_CONFIG_PATH ?? "/opt/sonect/data/mpd-audio.conf";
+  private readonly FOLLOW_OUTSIDE_SYMLINKS = 'follow_outside_symlinks "yes"';
 
   private _currentOutputMode: OutputMode = "mpd";
   private _lastAlsaConfig: string | null = null;
   private _lastDeviceName: string | null = null;
 
+  // ConfigService
+  public getConfig(): { content: string; path: string } {
+    if (!fs.existsSync(this.MPD_CONFIG_PATH)) {
+      try {
+        fs.mkdirSync(path.dirname(this.MPD_CONFIG_PATH), { recursive: true });
+        fs.writeFileSync(
+          this.MPD_CONFIG_PATH,
+          "# This file is managed by the Sonect frontend.\n# It is owned by the service user, so no sudo is needed for edits.\n",
+          "utf-8",
+        );
+      } catch {
+        return { content: "", path: this.MPD_CONFIG_PATH };
+      }
+    }
+    try {
+      const content = fs.readFileSync(this.MPD_CONFIG_PATH, "utf-8");
+      return { content, path: this.MPD_CONFIG_PATH };
+    } catch {
+      return { content: "", path: this.MPD_CONFIG_PATH };
+    }
+  }
+
+  public updateConfig(content: string): {
+    success: boolean;
+    warning?: string;
+  } {
+    try {
+      fs.mkdirSync(path.dirname(this.MPD_CONFIG_PATH), { recursive: true });
+      fs.writeFileSync(this.MPD_CONFIG_PATH, content, "utf-8");
+    } catch {
+      return {
+        success: false,
+        warning: `Cannot write to ${this.MPD_CONFIG_PATH}. Check file permissions.`,
+      };
+    }
+    return this.restartMpdInternal();
+  }
+
+  public ensureFollowOutsideSymlinks(): {
+    success: boolean;
+    warning?: string;
+  } {
+    const { content } = this.getConfig();
+    if (content.includes("follow_outside_symlinks")) {
+      return { success: true };
+    }
+    const trimmed = content ? content.replace(/\s+$/, "") + "\n" : "";
+    const updated = `${trimmed}# Allow MPD to follow symlinks to local storage folders (managed by Sonect)\n${this.FOLLOW_OUTSIDE_SYMLINKS}\n`;
+    try {
+      fs.mkdirSync(path.dirname(this.MPD_CONFIG_PATH), { recursive: true });
+      fs.writeFileSync(this.MPD_CONFIG_PATH, updated, "utf-8");
+    } catch {
+      return {
+        success: false,
+        warning: `Cannot write to ${this.MPD_CONFIG_PATH}. Check file permissions.`,
+      };
+    }
+    return this.restartMpdInternal();
+  }
+
+  public getConfigPath(): string {
+    return this.MPD_CONFIG_PATH;
+  }
+
+  public restartMpdInternal(): { success: boolean; warning?: string } {
+    return this.restartMPD();
+  }
+
+  // AudioService
   public getCurrentAudioOutput(): {
     card: string;
     name: string;
   } | null {
     try {
-      const config = fs.readFileSync(this.mpdConfigPath, "utf-8");
+      const config = fs.readFileSync(this.MPD_CONFIG_PATH, "utf-8");
       const match = config.match(/audio_output\s*\{[^}]*\}/s);
       if (!match) return null;
       const device = match[0].match(/device\s+"([^"]+)"/)?.[1];
@@ -54,7 +131,6 @@ export class AudioServiceImpl implements AudioService {
     mixerType?: "hardware" | "software" | "none";
   }): { success: boolean; warning?: string } {
     const { card, name, mixerType = "software" } = params;
-
     const newOutput = [
       `audio_output {`,
       `    type        "alsa"`,
@@ -63,14 +139,12 @@ export class AudioServiceImpl implements AudioService {
       `    mixer_type  "${mixerType}"`,
       `}`,
     ].join("\n");
-
-    const dir = path.dirname(this.mpdConfigPath);
-
-    if (!fs.existsSync(this.mpdConfigPath)) {
+    const dir = path.dirname(this.MPD_CONFIG_PATH);
+    if (!fs.existsSync(this.MPD_CONFIG_PATH)) {
       try {
         fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(
-          this.mpdConfigPath,
+          this.MPD_CONFIG_PATH,
           "# This file is managed by the Sonect frontend.\n# It is owned by the service user, so no sudo is needed for edits.\n\n" +
             newOutput +
             "\n",
@@ -79,42 +153,36 @@ export class AudioServiceImpl implements AudioService {
       } catch {
         return {
           success: false,
-          warning: `Cannot write to ${this.mpdConfigPath}. Check file permissions.`,
+          warning: `Cannot write to ${this.MPD_CONFIG_PATH}. Check file permissions.`,
         };
       }
-
       const restartResult = this.restartMPD();
       return { success: true, warning: restartResult.warning };
     }
-
     let config: string;
     try {
-      config = fs.readFileSync(this.mpdConfigPath, "utf-8");
+      config = fs.readFileSync(this.MPD_CONFIG_PATH, "utf-8");
     } catch {
       return {
         success: false,
-        warning: `Cannot read ${this.mpdConfigPath}. File may not exist.`,
+        warning: `Cannot read ${this.MPD_CONFIG_PATH}. File may not exist.`,
       };
     }
-
     const audioOutputRegex = /audio_output\s*\{[^}]*\}/gs;
     const existingMatch = config.match(audioOutputRegex);
-
     if (existingMatch) {
       config = config.replace(audioOutputRegex, newOutput);
     } else {
       config = config.trimEnd() + "\n\n" + newOutput + "\n";
     }
-
     try {
-      fs.writeFileSync(this.mpdConfigPath, config, "utf-8");
+      fs.writeFileSync(this.MPD_CONFIG_PATH, config, "utf-8");
     } catch {
       return {
         success: false,
-        warning: `Cannot write to ${this.mpdConfigPath}. Check file permissions.`,
+        warning: `Cannot write to ${this.MPD_CONFIG_PATH}. Check file permissions.`,
       };
     }
-
     const restartResult = this.restartMPD();
     return { success: true, warning: restartResult.warning };
   }
@@ -134,7 +202,6 @@ export class AudioServiceImpl implements AudioService {
         };
       }
     }
-
     if (checkTool("service")) {
       try {
         execSync("service mpd restart", { stdio: "ignore", timeout: 10000 });
@@ -146,7 +213,6 @@ export class AudioServiceImpl implements AudioService {
         };
       }
     }
-
     return {
       success: true,
       warning: "Config saved. Restart MPD manually for changes to take effect.",
@@ -168,7 +234,6 @@ export class AudioServiceImpl implements AudioService {
         };
       }
     }
-
     if (checkTool("service")) {
       try {
         execSync("service mpd stop", { stdio: "ignore", timeout: 10000 });
@@ -180,7 +245,6 @@ export class AudioServiceImpl implements AudioService {
         };
       }
     }
-
     return {
       success: false,
       warning: "Neither systemctl nor service is available on this system.",
@@ -203,7 +267,6 @@ export class AudioServiceImpl implements AudioService {
         return { running: false };
       }
     }
-
     try {
       const pid = execSync("pgrep -x mpd", {
         encoding: "utf-8",
@@ -222,9 +285,7 @@ export class AudioServiceImpl implements AudioService {
     if (mode === this._currentOutputMode) {
       return { success: true };
     }
-
-    const dir = path.dirname(this.mpdConfigPath);
-
+    const dir = path.dirname(this.MPD_CONFIG_PATH);
     if (mode === "browser") {
       const currentAlsa = this.getCurrentAudioOutput();
       if (currentAlsa) {
@@ -238,20 +299,18 @@ export class AudioServiceImpl implements AudioService {
           `}`,
         ].join("\n");
       }
-
       const nullConfig = [
         `audio_output {`,
         `    type        "null"`,
         `    name        "Browser Mode (Silent)"`,
         `}`,
       ].join("\n");
-
       try {
         if (!fs.existsSync(dir)) {
           fs.mkdirSync(dir, { recursive: true });
         }
         fs.writeFileSync(
-          this.mpdConfigPath,
+          this.MPD_CONFIG_PATH,
           "# This file is managed by the Sonect frontend.\n# Browser output mode — MPD plays silently.\n\n" +
             nullConfig +
             "\n",
@@ -260,7 +319,7 @@ export class AudioServiceImpl implements AudioService {
       } catch {
         return {
           success: false,
-          warning: `Cannot write to ${this.mpdConfigPath}.`,
+          warning: `Cannot write to ${this.MPD_CONFIG_PATH}.`,
         };
       }
     } else {
@@ -271,7 +330,7 @@ export class AudioServiceImpl implements AudioService {
             fs.mkdirSync(dir, { recursive: true });
           }
           fs.writeFileSync(
-            this.mpdConfigPath,
+            this.MPD_CONFIG_PATH,
             "# This file is managed by the Sonect frontend.\n\n" +
               this._lastAlsaConfig +
               "\n",
@@ -280,12 +339,11 @@ export class AudioServiceImpl implements AudioService {
         } catch {
           return {
             success: false,
-            warning: `Cannot write to ${this.mpdConfigPath}.`,
+            warning: `Cannot write to ${this.MPD_CONFIG_PATH}.`,
           };
         }
       }
     }
-
     this._currentOutputMode = mode;
     const restartResult = this.restartMPD();
     return { success: true, warning: restartResult.warning };
@@ -302,13 +360,27 @@ export class AudioServiceImpl implements AudioService {
     }
     return this._lastDeviceName;
   }
-
-  public checkTool(name: string): boolean {
-    try {
-      execSync(`which ${name}`, { stdio: "ignore" });
-      return true;
-    } catch {
-      return false;
-    }
-  }
 }
+
+// Backward compat aliases
+export type ConfigService = Pick<
+  MpdConfigService,
+  | "getConfig"
+  | "updateConfig"
+  | "ensureFollowOutsideSymlinks"
+  | "getConfigPath"
+  | "restartMpdInternal"
+>;
+export type AudioService = Pick<
+  MpdConfigService,
+  | "getCurrentAudioOutput"
+  | "configureAudioOutput"
+  | "restartMPD"
+  | "stopMPD"
+  | "getMpdStatus"
+  | "setOutputMode"
+  | "getOutputMode"
+  | "getOutputDeviceName"
+>;
+export const ConfigServiceImpl = MpdConfigServiceImpl;
+export const AudioServiceImpl = MpdConfigServiceImpl;

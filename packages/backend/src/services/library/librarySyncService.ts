@@ -124,17 +124,17 @@ export class LibrarySyncService {
     }
   }
 
-  async getStats(): Promise<{
+  getStats(): {
     totalTracks: number;
     lastSync?: Date;
-  }> {
+  } {
     return {
       totalTracks: tracksDb.count(),
       lastSync: syncMetadataDb.getLastSync(),
     };
   }
 
-  async clearAll(): Promise<void> {
+  clearAll(): void {
     console.log("⚠️  Clearing all database data...");
     librarySyncDb.clearAll();
     console.log("✅ Database cleared");

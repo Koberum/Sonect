@@ -48,3 +48,37 @@ export function resetSetup(): void {
   }
   setupDb.setIncomplete(SETUP_DONE_STEP);
 }
+
+export interface SetupService {
+  getSetupProgress(): ReturnType<typeof getSetupProgress>;
+  isSetupComplete(): boolean;
+  getNextIncompleteStep(): SetupStep | null;
+  markStepComplete(step: string): void;
+  markStepIncomplete(step: string): void;
+  markSetupCompleted(): void;
+  resetSetup(): void;
+}
+
+export class SetupServiceImpl implements SetupService {
+  public getSetupProgress() {
+    return getSetupProgress();
+  }
+  public isSetupComplete() {
+    return isSetupComplete();
+  }
+  public getNextIncompleteStep() {
+    return getNextIncompleteStep();
+  }
+  public markStepComplete(step: string) {
+    return markStepComplete(step);
+  }
+  public markStepIncomplete(step: string) {
+    return markStepIncomplete(step);
+  }
+  public markSetupCompleted() {
+    return markSetupCompleted();
+  }
+  public resetSetup() {
+    return resetSetup();
+  }
+}

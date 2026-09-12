@@ -39,10 +39,10 @@ export class AutoplayService {
     }
   }
 
-  async getNextBatch(
+  getNextBatch(
     currentFile: string,
     { queuedFiles = [] }: BatchOptions = {},
-  ): Promise<string[]> {
+  ): string[] {
     const result: string[] = [];
     const currentTrack = tracksDb.getByFile(currentFile);
     const seedTrack = tracksDb.getByFile(this.seedFile ?? currentFile);

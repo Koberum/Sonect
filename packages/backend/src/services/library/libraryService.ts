@@ -10,13 +10,12 @@ import type { CoverService } from "@services/library/coverService";
 import type { PlayerService } from "@services/player/playerService";
 
 export interface LibraryService {
-  getLibraryStats(): Promise<LibraryStats>;
-  searchTracks(query: string): Promise<SearchResults>;
+  getLibraryStats(): LibraryStats;
+  searchTracks(query: string): SearchResults;
   getCurrentSyncProgress(): Record<string, unknown> | null;
   setCurrentSyncProgress(progress: Record<string, unknown> | null): void;
   scanLibrary(): Promise<void>;
   scanImagesOnly(): Promise<void>;
-  searchTracks(query: string): Promise<SearchResults>;
 }
 
 export class LibraryServiceImpl implements LibraryService {
@@ -29,11 +28,11 @@ export class LibraryServiceImpl implements LibraryService {
   private currentSyncProgress: Record<string, unknown> | null = null;
   private syncRunning = false;
 
-  public async getLibraryStats(): Promise<LibraryStats> {
+  public getLibraryStats(): LibraryStats {
     return statsDb.getStats();
   }
 
-  public async searchTracks(query: string): Promise<SearchResults> {
+  public searchTracks(query: string): SearchResults {
     const q = query.toLowerCase();
 
     const matchedArtists = artistsDb.search(q);

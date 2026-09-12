@@ -9,7 +9,7 @@ import { ValidationError } from "@middleware/errorHandler";
 import { StorageSource } from "@repo/types";
 import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager";
 import type { LibraryService } from "@services/library/libraryService";
-import type { ConfigService } from "@services/mpd/configService";
+import type { ConfigService } from "@services/mpd/mpdConfigService";
 
 const MUSIC_DIR = process.env.MUSIC_DIR ?? "/opt/sonect/music";
 
@@ -19,7 +19,7 @@ interface MountInfo {
 }
 export interface StorageService {
   getStorageSourcesHandler(): Promise<StorageSource[]>;
-  getStorageSource(id: number): any;
+  getStorageSource(id: number): StorageSource | undefined;
   createStorageSource(data: {
     name: string;
     type: "smb" | "nfs" | "local";
@@ -28,7 +28,7 @@ export interface StorageService {
     username?: string;
     password?: string;
     enabled?: boolean;
-  }): any;
+  }): StorageSource | undefined;
   updateStorageSource(
     id: number,
     data: {
@@ -40,7 +40,7 @@ export interface StorageService {
       password?: string;
       enabled?: boolean;
     },
-  ): any;
+  ): StorageSource | undefined;
   deleteStorageSource(id: number): boolean;
   slugifyName(name: string): string;
   generateUniqueMountSegment(baseSlug: string): string;
@@ -73,8 +73,8 @@ export class StorageServiceImpl implements StorageService {
     return storageDb.getAll() as StorageSource[];
   }
 
-  public getStorageSource(id: number) {
-    return storageDb.getById(id);
+  public getStorageSource(id: number): StorageSource | undefined {
+    return storageDb.getById(id) as StorageSource | undefined;
   }
 
   public createStorageSource(data: {
@@ -85,7 +85,7 @@ export class StorageServiceImpl implements StorageService {
     username?: string;
     password?: string;
     enabled?: boolean;
-  }) {
+  }): StorageSource | undefined {
     let segment = data.mount_path?.trim();
 
     // mount_path is an internal detail (symlink target for local, mount point for
@@ -156,7 +156,7 @@ export class StorageServiceImpl implements StorageService {
       password?: string;
       enabled?: boolean;
     },
-  ) {
+  ): StorageSource | undefined {
     const existing = storageDb.getById(id);
     const nextType = data.type ?? existing?.type;
     const wasLocal = existing?.type === "local";
@@ -196,7 +196,7 @@ export class StorageServiceImpl implements StorageService {
     return storageDb.getById(id);
   }
 
-  public deleteStorageSource(id: number) {
+  public deleteStorageSource(id: number): boolean {
     const source = storageDb.getById(id);
     if (!source) return false;
     if (source.type === "local") {
