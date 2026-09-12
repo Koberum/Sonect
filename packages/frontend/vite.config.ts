@@ -20,6 +20,7 @@ export default defineConfig({
       "/stream": "http://localhost:3000",
       "/system": "http://localhost:3000",
       "/dashboard": "http://localhost:3000",
+      "/session": "http://localhost:3000",
       "/ws": {
         target: "ws://localhost:3000",
         ws: true,

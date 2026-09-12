@@ -7,6 +7,7 @@ import playlistRoutes from "@routes/playlistRoutes";
 import systemRoutes from "@routes/systemRoutes";
 import streamRoutes from "@routes/streamRoutes";
 import dashboardRouter from "@routes/dashboardRoutes";
+import sessionRoutes from "@routes/sessionRoutes";
 import { errorHandler } from "@middleware/errorHandler";
 import { requestLogger } from "@middleware/requestLogger";
 import { getLogService } from "@services/factory";
@@ -45,6 +46,7 @@ app.use("/catalog", catalogRoutes);
 app.use("/playlists", playlistRoutes);
 app.use("/system", systemRoutes);
 app.use("/dashboard", dashboardRouter);
+app.use("/session", sessionRoutes);
 
 // In production, serve the built frontend from the same process
 const frontendDist =
@@ -60,7 +62,8 @@ if (process.env.NODE_ENV === "production" && fs.existsSync(frontendDist)) {
       req.path.startsWith("/covers") ||
       req.path.startsWith("/system") ||
       req.path.startsWith("/stream") ||
-      req.path.startsWith("/dashboard")
+      req.path.startsWith("/dashboard") ||
+      req.path.startsWith("/session")
     ) {
       return next();
     }
