@@ -1,5 +1,4 @@
-import { tracksDb, artistsDb, albumsDb, statsDb } from "@repo/db";
-import { LibraryStats, SearchResults } from "@repo/types/library";
+import { albumsDb } from "@repo/db";
 import type {
   SyncProgress,
   LibrarySyncService,
@@ -9,8 +8,6 @@ import { broadcast } from "../../ws/broadcast";
 import type { CoverService } from "@services/library/coverService";
 
 export interface LibraryService {
-  getLibraryStats(): LibraryStats;
-  searchTracks(query: string): SearchResults;
   getCurrentSyncProgress(): Record<string, unknown> | null;
   setCurrentSyncProgress(progress: Record<string, unknown> | null): void;
   scanLibrary(): Promise<void>;
@@ -25,24 +22,6 @@ export class LibraryServiceImpl implements LibraryService {
 
   private currentSyncProgress: Record<string, unknown> | null = null;
   private syncRunning = false;
-
-  public getLibraryStats(): LibraryStats {
-    return statsDb.getStats();
-  }
-
-  public searchTracks(query: string): SearchResults {
-    const q = query.toLowerCase();
-
-    const matchedArtists = artistsDb.search(q);
-    const artists = matchedArtists.map((artist) => ({
-      ...artist,
-      coverPreviews: albumsDb.getCoverPreviews(artist.id, 4),
-    }));
-    const albums = albumsDb.search(q);
-    const tracks = tracksDb.search(query);
-
-    return { artists, albums, tracks };
-  }
 
   public getCurrentSyncProgress(): Record<string, unknown> | null {
     return this.currentSyncProgress;

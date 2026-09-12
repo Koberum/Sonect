@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import { librarySchemas } from "@repo/types";
-import { getLibraryService, getCatalogService } from "@services/factory";
+import { getCatalogService, getLibraryService } from "@services/factory";
 import { asyncHandler } from "@middleware/asyncHandler";
 import { NotFoundError } from "@middleware/errorHandler";
 
 export const getLibraryStatsHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const stats = getLibraryService().getLibraryStats();
+    const stats = getCatalogService().getLibraryStats();
     res.json(stats);
   },
 );
@@ -118,7 +118,7 @@ export const searchHandler = asyncHandler(
       res.json({ artists: [], albums: [], tracks: [] });
       return;
     }
-    const results = getLibraryService().searchTracks(q);
+    const results = getCatalogService().searchTracks(q);
     res.json(results);
   },
 );

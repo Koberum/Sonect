@@ -1,8 +1,10 @@
-import { albumsDb, artistsDb, genresDb, tracksDb } from "@repo/db";
+import { albumsDb, artistsDb, genresDb, statsDb, tracksDb } from "@repo/db";
 import type {
   Album,
   Artist,
   Genre,
+  LibraryStats,
+  SearchResults,
   TrackWithRelations,
 } from "@repo/types/library";
 
@@ -44,6 +46,12 @@ export interface CatalogService {
   ): TrackWithRelations | null;
   getTracksByGenre(genre: string): TrackWithRelations[];
   getRecentlyAddedTracks(limit?: number): TrackWithRelations[];
+
+  // Search
+  searchTracks(query: string): SearchResults;
+
+  // Stats
+  getLibraryStats(): LibraryStats;
 }
 
 export class CatalogServiceImpl implements CatalogService {
@@ -160,5 +168,21 @@ export class CatalogServiceImpl implements CatalogService {
 
   public getTrackById(id: number): TrackWithRelations | undefined {
     return tracksDb.getByIdWithRelations(id);
+  }
+
+  public searchTracks(query: string): SearchResults {
+    const q = query.toLowerCase();
+    const matchedArtists = artistsDb.search(q);
+    const artists = matchedArtists.map((artist) => ({
+      ...artist,
+      coverPreviews: albumsDb.getCoverPreviews(artist.id, 4),
+    }));
+    const albums = albumsDb.search(q);
+    const tracks = tracksDb.search(query);
+    return { artists, albums, tracks };
+  }
+
+  public getLibraryStats(): LibraryStats {
+    return statsDb.getStats();
   }
 }
