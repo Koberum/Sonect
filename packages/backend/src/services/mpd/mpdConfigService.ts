@@ -36,7 +36,6 @@ export class MpdConfigServiceImpl implements MpdConfigService {
   private readonly FOLLOW_OUTSIDE_SYMLINKS = 'follow_outside_symlinks "yes"';
 
   private _currentOutputMode: OutputMode = "mpd";
-  private _lastAlsaConfig: string | null = null;
   private _lastDeviceName: string | null = null;
 
   // ConfigService
@@ -278,75 +277,17 @@ export class MpdConfigServiceImpl implements MpdConfigService {
     }
   }
 
+  /**
+   * Backcompat no-op: browser sessions run on a separate playback engine, so
+   * MPD always stays on the physical speakers. The drop-in config file is
+   * never rewritten. Kept for the GET/PUT /system/output-mode endpoints.
+   */
   public setOutputMode(mode: OutputMode): {
     success: boolean;
     warning?: string;
   } {
-    if (mode === this._currentOutputMode) {
-      return { success: true };
-    }
-    const dir = path.dirname(this.MPD_CONFIG_PATH);
-    if (mode === "browser") {
-      const currentAlsa = this.getCurrentAudioOutput();
-      if (currentAlsa) {
-        this._lastDeviceName = currentAlsa.name;
-        this._lastAlsaConfig = [
-          `audio_output {`,
-          `    type        "alsa"`,
-          `    name        "${currentAlsa.name}"`,
-          `    device      "${currentAlsa.card}"`,
-          `    mixer_type  "software"`,
-          `}`,
-        ].join("\n");
-      }
-      const nullConfig = [
-        `audio_output {`,
-        `    type        "null"`,
-        `    name        "Browser Mode (Silent)"`,
-        `}`,
-      ].join("\n");
-      try {
-        if (!fs.existsSync(dir)) {
-          fs.mkdirSync(dir, { recursive: true });
-        }
-        fs.writeFileSync(
-          this.MPD_CONFIG_PATH,
-          "# This file is managed by the Sonect frontend.\n# Browser output mode — MPD plays silently.\n\n" +
-            nullConfig +
-            "\n",
-          "utf-8",
-        );
-      } catch {
-        return {
-          success: false,
-          warning: `Cannot write to ${this.MPD_CONFIG_PATH}.`,
-        };
-      }
-    } else {
-      this._lastDeviceName = null;
-      if (this._lastAlsaConfig) {
-        try {
-          if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-          }
-          fs.writeFileSync(
-            this.MPD_CONFIG_PATH,
-            "# This file is managed by the Sonect frontend.\n\n" +
-              this._lastAlsaConfig +
-              "\n",
-            "utf-8",
-          );
-        } catch {
-          return {
-            success: false,
-            warning: `Cannot write to ${this.MPD_CONFIG_PATH}.`,
-          };
-        }
-      }
-    }
     this._currentOutputMode = mode;
-    const restartResult = this.restartMPD();
-    return { success: true, warning: restartResult.warning };
+    return { success: true };
   }
 
   public getOutputMode(): OutputMode {
