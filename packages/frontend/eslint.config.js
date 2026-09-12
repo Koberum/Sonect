@@ -27,7 +27,6 @@ export default defineConfig([
     },
     rules: {
       "react-hooks/set-state-in-effect": "off",
-      "react-hooks/refs": "off",
       "no-console": ["warn", { allow: ["warn", "error"] }],
       "@typescript-eslint/no-misused-promises": [
         "error",
@@ -37,11 +36,8 @@ export default defineConfig([
       "@typescript-eslint/no-unsafe-return": "off",
       "@typescript-eslint/no-unsafe-assignment": "off",
       "@typescript-eslint/no-unsafe-argument": "off",
-      "@typescript-eslint/no-unsafe-member-access": "off",
-      "@typescript-eslint/no-unsafe-call": "off",
-      "@typescript-eslint/no-redundant-type-constituents": "off",
-      "@typescript-eslint/no-unnecessary-type-assertion": "off",
       "@typescript-eslint/unbound-method": "off",
+      "@typescript-eslint/no-unnecessary-type-assertion": "off",
       "@tanstack/query/no-unstable-deps": "off",
     },
   },

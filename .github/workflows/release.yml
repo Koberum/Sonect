@@ -36,19 +36,27 @@ jobs:
           ref: ${{ needs.release-please.outputs.tag_name }}
 
       - uses: pnpm/action-setup@v6
+        with:
+          version: 9.0.0
 
       - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: pnpm
 
+      - name: Cache Turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            turbo-${{ runner.os }}-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build shared packages
-        run: |
-          pnpm --filter @repo/types build
-          pnpm --filter @repo/db build
+        run: pnpm build
 
       - name: Bundle backend
         run: pnpm --filter backend bundle

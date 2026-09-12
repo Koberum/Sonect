@@ -10,8 +10,8 @@
       "default": "./dist/index.js"
     },
     "./catalog": {
-      "types": "./dist/library/index.d.ts",
-      "default": "./dist/library/index.js"
+      "types": "./dist/catalog/index.d.ts",
+      "default": "./dist/catalog/index.js"
     },
     "./mpd": {
       "types": "./dist/mpd/index.d.ts",
