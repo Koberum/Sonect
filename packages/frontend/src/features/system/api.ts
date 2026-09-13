@@ -202,7 +202,7 @@ export function setOutputMode(
   mode: OutputMode,
 ): Promise<{ success: boolean; warning?: string }> {
   return apiFetch("/system/output-mode", {
-    method: "PUT",
+    method: "PATCH",
     body: { mode },
   });
 }
