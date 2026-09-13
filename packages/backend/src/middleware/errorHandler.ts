@@ -59,3 +59,12 @@ export class NotFoundError extends Error {
     this.name = "NotFoundError";
   }
 }
+
+export class LockedError extends Error {
+  statusCode = 423;
+
+  constructor(message = "MPD output locked by another session") {
+    super(message);
+    this.name = "LockedError";
+  }
+}

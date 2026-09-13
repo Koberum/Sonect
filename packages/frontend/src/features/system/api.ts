@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api";
+import { sessionHeaders } from "@/lib/session";
 import type { NetworkStatus, OutputMode } from "@repo/types";
 import type { DashboardData } from "@repo/types/catalog";
 
@@ -203,6 +204,7 @@ export function setOutputMode(
 ): Promise<{ success: boolean; warning?: string }> {
   return apiFetch("/system/output-mode", {
     method: "PATCH",
+    headers: sessionHeaders(),
     body: { mode },
   });
 }

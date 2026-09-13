@@ -18,7 +18,11 @@ import {
   moveQueueItemHandler,
 } from "../controllers/playerController";
 
+import { mpdLockMiddleware } from "@middleware/mpdLock";
+
 const router = Router();
+
+router.use(mpdLockMiddleware);
 
 router.post("/play", playTrackHandler);
 router.post("/pause", pauseTrackHandler);

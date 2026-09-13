@@ -22,7 +22,10 @@ app.use((_req, res, next) => {
     "Access-Control-Allow-Methods",
     "GET, POST, PUT, PATCH, DELETE, OPTIONS",
   );
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Session-Id",
+  );
   if (_req.method === "OPTIONS") {
     res.sendStatus(204);
     return;

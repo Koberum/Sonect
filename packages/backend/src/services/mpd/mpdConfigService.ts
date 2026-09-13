@@ -28,6 +28,10 @@ export interface MpdConfigService {
   setOutputMode(mode: OutputMode): { success: boolean; warning?: string };
   getOutputMode(): OutputMode;
   getOutputDeviceName(): string | null;
+  getMpdOwner(): string | null;
+  tryAcquireMpd(sessionId: string): { success: boolean; owner?: string };
+  releaseMpd(sessionId: string): boolean;
+  isMpdLockedByOther(sessionId: string): boolean;
 }
 
 export class MpdConfigServiceImpl implements MpdConfigService {
@@ -37,6 +41,7 @@ export class MpdConfigServiceImpl implements MpdConfigService {
 
   private _currentOutputMode: OutputMode = "mpd";
   private _lastDeviceName: string | null = null;
+  private _mpdOwnerSessionId: string | null = null;
 
   // ConfigService
   public getConfig(): { content: string; path: string } {
@@ -300,6 +305,38 @@ export class MpdConfigServiceImpl implements MpdConfigService {
       return status?.name ?? null;
     }
     return this._lastDeviceName;
+  }
+
+  public getMpdOwner(): string | null {
+    return this._mpdOwnerSessionId;
+  }
+
+  public tryAcquireMpd(sessionId: string): {
+    success: boolean;
+    owner?: string;
+  } {
+    if (!sessionId)
+      return { success: false, owner: this._mpdOwnerSessionId ?? undefined };
+    if (this._mpdOwnerSessionId === null) {
+      this._mpdOwnerSessionId = sessionId;
+      return { success: true };
+    }
+    if (this._mpdOwnerSessionId === sessionId) return { success: true };
+    return { success: false, owner: this._mpdOwnerSessionId };
+  }
+
+  public releaseMpd(sessionId: string): boolean {
+    if (this._mpdOwnerSessionId === sessionId) {
+      this._mpdOwnerSessionId = null;
+      return true;
+    }
+    return false;
+  }
+
+  public isMpdLockedByOther(sessionId: string): boolean {
+    return (
+      this._mpdOwnerSessionId !== null && this._mpdOwnerSessionId !== sessionId
+    );
   }
 }
 

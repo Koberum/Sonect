@@ -8,7 +8,7 @@ import {
   getSetupService,
   getNetworkService,
 } from "@services/factory";
-import { NotFoundError } from "../middleware/errorHandler";
+import { LockedError, NotFoundError } from "../middleware/errorHandler";
 
 export const getStatusHandler = asyncHandler(
   async (_req: Request, res: Response) => {
@@ -45,16 +45,29 @@ export const getAudioStatusHandler = asyncHandler(
 
 export const getOutputModeHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const mode = getMpdConfigService().getOutputMode();
-    const deviceName = getMpdConfigService().getOutputDeviceName();
-    res.json({ mode, deviceName });
+    const svc = getMpdConfigService();
+    const mode = svc.getOutputMode();
+    const deviceName = svc.getOutputDeviceName();
+    res.json({ mode, deviceName, mpdOwner: svc.getMpdOwner() });
   },
 );
 
 export const setOutputModeHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { mode } = systemSchemas.outputMode.parse(req.body);
-    const result = getMpdConfigService().setOutputMode(mode);
+    const sessionId = req.header("X-Session-Id")?.trim();
+    const svc = getMpdConfigService();
+    if (sessionId) {
+      if (mode === "mpd") {
+        const acquired = svc.tryAcquireMpd(sessionId);
+        if (!acquired.success) {
+          throw new LockedError("MPD output locked by another session");
+        }
+      } else if (mode === "browser") {
+        svc.releaseMpd(sessionId);
+      }
+    }
+    const result = svc.setOutputMode(mode);
     res.json(result);
   },
 );
