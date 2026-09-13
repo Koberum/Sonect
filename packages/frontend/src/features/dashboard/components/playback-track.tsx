@@ -1,21 +1,17 @@
 import { getCoverPath } from "@/lib/utils";
+import { Link } from "react-router-dom";
+import type { TrackWithRelations } from "@repo/types";
 
 type PlaybackTrack = {
-  title: string;
-  artist: string;
-  cover_path?: string;
+  track: TrackWithRelations;
 };
 
-export function PlayedTrack({
-  title,
-  artist,
-  cover_path,
-}: PlaybackTrack): React.ReactElement {
+export function PlayedTrack({ track }: PlaybackTrack): React.ReactElement {
   return (
     <div className="flex h-full items-center gap-2 p-2">
       <img
-        src={getCoverPath(cover_path)}
-        alt={title}
+        src={getCoverPath(track.cover_path)}
+        alt={track.title}
         loading="lazy"
         onError={(e) => {
           e.currentTarget.src = "/default_cover.png";
@@ -26,17 +22,25 @@ export function PlayedTrack({
         <div className="overflow-hidden md:hidden">
           <div className="animate-marquee flex whitespace-nowrap will-change-transform">
             <span className="font-mono text-sm leading-none font-medium">
-              {title}
+              {track.title}
             </span>
             <span className="ml-8 font-mono text-sm leading-none font-medium">
-              {title}
+              {track.title}
             </span>
           </div>
         </div>
         <h3 className="hidden truncate font-mono text-sm leading-none font-medium md:block">
-          {title}
+          {track.title}
         </h3>
-        <p className="text-muted-foreground truncate text-xs">{artist}</p>
+
+        <Link
+          to={`/artists/${track.artist_id}/albums`}
+          className="hover:underline"
+        >
+          <p className="text-muted-foreground truncate text-xs">
+            {track.artist_name}
+          </p>
+        </Link>
       </div>
     </div>
   );
