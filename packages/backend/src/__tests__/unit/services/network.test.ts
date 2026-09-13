@@ -1,8 +1,8 @@
 import { expect } from "chai";
 import sinon from "sinon";
-import esmock from "esmock";
+import { NetworkServiceImpl } from "@services/network/networkService.js";
 
-describe("NetworkService (unit, esmock)", () => {
+describe("NetworkService (unit, DI)", () => {
   let clock: sinon.SinonFakeTimers;
 
   beforeEach(() => {
@@ -14,33 +14,25 @@ describe("NetworkService (unit, esmock)", () => {
     delete process.env.DNS_CHECK_HOST;
   });
 
-  async function loadService(overrides: {
+  function createService(overrides: {
     networkInterfaces?: () => ReturnType<
       typeof import("node:os").networkInterfaces
     >;
     lookup?: typeof import("node:dns/promises").lookup;
-  }) {
-    const osStub: Record<string, unknown> = {};
-    if (overrides.networkInterfaces)
-      osStub.networkInterfaces = overrides.networkInterfaces;
-    const dnsStub: Record<string, unknown> = {};
-    if (overrides.lookup) dnsStub.lookup = overrides.lookup;
-    const mod = await esmock("../../services/network/networkService.js", {
-      "node:os": osStub,
-      "node:dns/promises": dnsStub,
-    });
-    return new mod.NetworkServiceImpl() as {
-      getNetworkStatus(): Promise<{
-        connected: boolean;
-        dnsReachable: boolean;
-      }>;
-    };
+  }): NetworkServiceImpl {
+    const osStub = {
+      networkInterfaces: overrides.networkInterfaces ?? (() => ({}) as never),
+    } as unknown as typeof import("node:os");
+    const lookupStub =
+      overrides.lookup ??
+      (async () => ({ address: "1.1.1.1", family: 4 }) as never);
+    return new NetworkServiceImpl(osStub, lookupStub);
   }
 
   describe("getNetworkStatus", () => {
     it("returns disconnected when no non-loopback interface", async () => {
       let lookupCalled = false;
-      const service = await loadService({
+      const service = createService({
         networkInterfaces: () => ({
           lo: [
             { family: "IPv4", internal: true, address: "127.0.0.1" } as never,
@@ -57,7 +49,7 @@ describe("NetworkService (unit, esmock)", () => {
     });
 
     it("returns dnsReachable true when lookup resolves", async () => {
-      const service = await loadService({
+      const service = createService({
         networkInterfaces: () => ({
           eth0: [
             {
@@ -78,7 +70,7 @@ describe("NetworkService (unit, esmock)", () => {
     });
 
     it("returns dnsReachable false when lookup rejects", async () => {
-      const service = await loadService({
+      const service = createService({
         networkInterfaces: () => ({
           eth0: [
             { family: "IPv6", internal: false, address: "fe80::1" } as never,
@@ -91,7 +83,7 @@ describe("NetworkService (unit, esmock)", () => {
     });
 
     it("returns dnsReachable false on timeout", async () => {
-      const service = await loadService({
+      const service = createService({
         networkInterfaces: () => ({
           eth0: [
             { family: "IPv4", internal: false, address: "10.0.0.5" } as never,
@@ -108,7 +100,7 @@ describe("NetworkService (unit, esmock)", () => {
     it("uses DNS_CHECK_HOST env when set", async () => {
       process.env.DNS_CHECK_HOST = "custom.example.org";
       let calledHost: unknown = null;
-      const service = await loadService({
+      const service = createService({
         networkInterfaces: () => ({
           eth0: [
             {

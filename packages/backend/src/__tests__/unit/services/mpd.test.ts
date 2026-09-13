@@ -4,7 +4,7 @@ import {
   hashFile,
   parseEntities,
   parseMPDMessageToTracks,
-} from "../../utils/mpd.js";
+} from "../../../utils/mpd.js";
 
 // Layer 1: Pure functions — no DB, no mocks, cheap & fast
 describe("parseKeyValue (pure unit)", () => {

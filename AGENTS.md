@@ -247,7 +247,11 @@ Single Node process on port 3000:
 ### Testing
 
 - Backend test suite in `packages/backend/src/__tests__/` using **Mocha**, **Chai**, **Sinon**, **esmock**, and **Supertest**.
-- Tests live in subdirectories mirroring `src/`: `controllers/`, `services/`, `routes/`, `ws/`.
+- Tests mirror `src/`:
+  - `unit/controllers/`, `unit/services/` — pure/unit tests (esmock for ESM where needed, otherwise DI)
+  - `integration/services/`, `integration/repositories/` (`db.*` + tracks), `integration/routes/`, `integration/ws/` — service/repo/route/ws integration (real `:memory:` DB via `helpers/db.ts`)
+  - `e2e/` — full-stack `app` + `supertest`
+    (`NetworkService` uses constructor DI → no `esmock` relative path)
 - Mock external dependencies (MPD, DB, filesystem) with **esmock** (for ESM imports) and **Sinon** (for stubs/spies).
 - **esmock** only exports default (`import esmock from "esmock"`), not `{ esmock }`.
 - esmock cannot resolve relative imports in route/service/WS tests with our tsx setup; sinon + dynamic `import()` is used instead for route tests.

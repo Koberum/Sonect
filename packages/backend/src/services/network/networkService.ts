@@ -1,5 +1,5 @@
-import { lookup } from "node:dns/promises";
-import * as os from "node:os";
+import { lookup as defaultLookup } from "node:dns/promises";
+import * as defaultOs from "node:os";
 import type { NetworkStatus } from "@repo/types";
 
 const DNS_CHECK_TIMEOUT_MS = 3000;
@@ -9,8 +9,13 @@ export interface NetworkService {
 }
 
 export class NetworkServiceImpl implements NetworkService {
+  constructor(
+    private readonly os: typeof defaultOs = defaultOs,
+    private readonly lookup: typeof defaultLookup = defaultLookup,
+  ) {}
+
   public async getNetworkStatus(): Promise<NetworkStatus> {
-    const connected = Object.values(os.networkInterfaces()).some(
+    const connected = Object.values(this.os.networkInterfaces()).some(
       (addresses) =>
         addresses?.some(
           ({ family, internal }) =>
@@ -35,7 +40,7 @@ export class NetworkServiceImpl implements NetworkService {
         resolve(false);
       }, DNS_CHECK_TIMEOUT_MS);
 
-      lookup(host).then(
+      this.lookup(host).then(
         () => {
           if (settled) return;
           settled = true;

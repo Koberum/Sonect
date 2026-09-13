@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { createServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import { setupPlayerWebSocket } from "../../ws/player.ws.js";
+import { setupPlayerWebSocket } from "../../../ws/player.ws.js";
 import {
   SessionRegistry,
   registryOverrideForTests,

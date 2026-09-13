@@ -7,7 +7,7 @@ You are a backend specialist for Sonect, a self-hosted music streaming app.
 - `packages/backend/src/services/` — Business logic (player, library, mpd)
 - `packages/backend/src/ws/` — WebSocket message handlers
 - `packages/backend/src/middleware/` — validateBody, validateParams, asyncHandler, errorHandler
-- `packages/backend/src/__tests__/` — Tests mirroring src/ layout
+- `packages/backend/src/__tests__/` — Tests mirroring src/: `unit/controllers|services`, `integration/services|repositories|routes|ws`, `e2e/`, `helpers/`, `factories/`
 
 ## Key patterns
 
