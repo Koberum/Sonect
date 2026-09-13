@@ -17,6 +17,10 @@ type SessionRecord = {
   engine: PlaybackEngine & EventEmitter;
 };
 
+function fmtSid(id: string): string {
+  return id.slice(0, 8);
+}
+
 export class PlayerRouter {
   private records = new Map<string, SessionRecord>();
 
@@ -47,12 +51,13 @@ export class PlayerRouter {
     return emitter as unknown as PlaybackEngine & EventEmitter;
   }
 
-  private createMpdEngine(): PlaybackEngine & EventEmitter {
+  private createMpdEngine(sessionId?: string): PlaybackEngine & EventEmitter {
     return new MpdAdapter(
       this.playerService,
       this.mpdConnectionManager,
       this.logService,
       this.autoplayService,
+      sessionId,
     ) as unknown as PlaybackEngine & EventEmitter;
   }
 
@@ -63,6 +68,14 @@ export class PlayerRouter {
     const engine = this.wrapSessionPlayer(sessionId);
     rec = { mode: "browser", engine };
     this.records.set(sessionId, rec);
+    this.logService?.pushLog?.(
+      "debug",
+      `[Session ${fmtSid(sessionId)}][browser] created isolated session`,
+      {
+        sessionId: fmtSid(sessionId),
+        mode: "browser",
+      },
+    );
     return rec;
   }
 
@@ -165,11 +178,30 @@ export class PlayerRouter {
     mode: OutputMode,
   ): { success: boolean; warning?: string } {
     const rec = this.ensureRecord(sessionId);
-    if (rec.mode === mode) return { success: true };
+    if (rec.mode === mode) {
+      this.logService?.pushLog?.(
+        "debug",
+        `[Session ${fmtSid(sessionId)}][${mode}] outputMode already ${mode}`,
+        {
+          sessionId: fmtSid(sessionId),
+          mode,
+        },
+      );
+      return { success: true };
+    }
 
     if (mode === "mpd") {
       const acquired = this.mpdConfigService.tryAcquireMpd(sessionId);
       if (!acquired.success) {
+        this.logService?.pushLog?.(
+          "warn",
+          `[Session ${fmtSid(sessionId)}] outputMode → mpd failed: locked by ${fmtSid(acquired.owner ?? "unknown")}`,
+          {
+            sessionId: fmtSid(sessionId),
+            requestedMode: mode,
+            owner: acquired.owner ? fmtSid(acquired.owner) : undefined,
+          },
+        );
         return {
           success: false,
           warning: `MPD locked by ${acquired.owner ?? "another session"}`,
@@ -177,8 +209,18 @@ export class PlayerRouter {
       }
       // Dispose old browser adapter listeners if needed
       rec.engine.removeAllListeners("stateChanged");
-      const mpdEngine = this.createMpdEngine();
+      const mpdEngine = this.createMpdEngine(sessionId);
       this.records.set(sessionId, { mode, engine: mpdEngine });
+      this.logService?.pushLog?.(
+        "info",
+        `[Session ${fmtSid(sessionId)}] outputMode ${rec.mode} → mpd (acquired)`,
+        {
+          sessionId: fmtSid(sessionId),
+          from: rec.mode,
+          to: mode,
+          engine: "mpd",
+        },
+      );
       return this.mpdConfigService.setOutputMode(mode);
     } else {
       this.mpdConfigService.releaseMpd(sessionId);
@@ -192,6 +234,16 @@ export class PlayerRouter {
       }
       const browserEngine = this.wrapSessionPlayer(sessionId);
       this.records.set(sessionId, { mode, engine: browserEngine });
+      this.logService?.pushLog?.(
+        "info",
+        `[Session ${fmtSid(sessionId)}] outputMode ${rec.mode} → browser (released)`,
+        {
+          sessionId: fmtSid(sessionId),
+          from: rec.mode,
+          to: mode,
+          engine: "browser",
+        },
+      );
       return this.mpdConfigService.setOutputMode(mode);
     }
   }

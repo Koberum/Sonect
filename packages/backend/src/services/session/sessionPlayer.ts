@@ -23,6 +23,18 @@ export class SessionPlayer extends EventEmitter {
     super();
   }
 
+  private log(
+    level: Parameters<LogService["pushLog"]>[0],
+    msg: string,
+    data?: unknown,
+  ): void {
+    try {
+      this.logService?.pushLog?.(level, msg, data);
+    } catch {
+      // ignore in tests with stub logService
+    }
+  }
+
   get state(): "play" | "pause" | "stop" {
     return this.stateInternal;
   }
@@ -129,9 +141,10 @@ export class SessionPlayer extends EventEmitter {
   playTrack(file: string): void {
     const dbTrack = tracksDb.getByFile(file);
     if (!dbTrack) {
-      this.logService.pushLog(
+      this.log(
         "warn",
-        `Session ${this.sessionId}: unknown track '${file}'`,
+        `[Session ${this.sessionId.slice(0, 8)}][browser] play unknown track '${file}'`,
+        { sessionId: this.sessionId.slice(0, 8), file },
       );
       return;
     }
@@ -151,6 +164,15 @@ export class SessionPlayer extends EventEmitter {
     this.position = 0;
     this.stateInternal = "play";
     this.startClock();
+    this.log(
+      "debug",
+      `[Session ${this.sessionId.slice(0, 8)}][browser] play file="${file}" queueLen=${entries.length}`,
+      {
+        sessionId: this.sessionId.slice(0, 8),
+        file,
+        queueLength: entries.length,
+      },
+    );
     this.emit("stateChanged");
   }
 
@@ -158,20 +180,66 @@ export class SessionPlayer extends EventEmitter {
     if (this.state !== "play") return;
     this.stateInternal = "pause";
     this.stopClock();
+    this.log(
+      "debug",
+      `[Session ${this.sessionId.slice(0, 8)}][browser] pause at ${this.position}s`,
+      {
+        sessionId: this.sessionId.slice(0, 8),
+        position: this.position,
+      },
+    );
     this.emit("stateChanged");
   }
 
   resume(): void {
-    if (this.queueInternal.length === 0) return;
+    if (this.queueInternal.length === 0) {
+      this.log(
+        "debug",
+        `[Session ${this.sessionId.slice(0, 8)}][browser] resume ignored: empty queue`,
+        {
+          sessionId: this.sessionId.slice(0, 8),
+        },
+      );
+      return;
+    }
     if (this.indexInternal < 0) this.indexInternal = 0;
     this.stateInternal = "play";
     this.startClock();
+    this.log(
+      "debug",
+      `[Session ${this.sessionId.slice(0, 8)}][browser] resume at ${this.position}s queueLen=${this.queueInternal.length}`,
+      {
+        sessionId: this.sessionId.slice(0, 8),
+        position: this.position,
+        queueLength: this.queueInternal.length,
+      },
+    );
     this.emit("stateChanged");
   }
 
   next(): void {
-    if (this.queueInternal.length === 0) return;
+    if (this.queueInternal.length === 0) {
+      this.log(
+        "debug",
+        `[Session ${this.sessionId.slice(0, 8)}][browser] next ignored: empty queue`,
+        {
+          sessionId: this.sessionId.slice(0, 8),
+        },
+      );
+      return;
+    }
+    const prevIdx = this.indexInternal;
     this.advance();
+    this.log(
+      "debug",
+      `[Session ${this.sessionId.slice(0, 8)}][browser] next ${prevIdx}→${this.indexInternal} state=${this.stateInternal}`,
+      {
+        sessionId: this.sessionId.slice(0, 8),
+        from: prevIdx,
+        to: this.indexInternal,
+        state: this.stateInternal,
+      },
+    );
     if (this.stateInternal === "stop") {
       // Queue end reached: emit so WS consumers observe the final stop.
       this.emit("stateChanged");
@@ -184,19 +252,48 @@ export class SessionPlayer extends EventEmitter {
 
   previous(): void {
     if (this.queueInternal.length === 0) return;
+    const prevIdx = this.indexInternal;
     if (this.indexInternal > 0) {
       this.indexInternal -= 1;
     }
     this.position = 0;
     if (this.queueInternal.length > 0) this.stateInternal = "play";
     this.startClock();
+    this.log(
+      "debug",
+      `[Session ${this.sessionId.slice(0, 8)}][browser] previous ${prevIdx}→${this.indexInternal}`,
+      {
+        sessionId: this.sessionId.slice(0, 8),
+        from: prevIdx,
+        to: this.indexInternal,
+      },
+    );
     this.emit("stateChanged");
   }
 
   seek(position: number): void {
     const current = this.queueInternal[this.indexInternal];
-    if (!current) return;
-    this.position = Math.max(0, Math.min(position, current.duration));
+    if (!current) {
+      this.log(
+        "debug",
+        `[Session ${this.sessionId.slice(0, 8)}][browser] seek ignored: no current track`,
+        {
+          sessionId: this.sessionId.slice(0, 8),
+        },
+      );
+      return;
+    }
+    const clamped = Math.max(0, Math.min(position, current.duration));
+    this.position = clamped;
+    this.log(
+      "debug",
+      `[Session ${this.sessionId.slice(0, 8)}][browser] seek ${position}→${clamped}`,
+      {
+        sessionId: this.sessionId.slice(0, 8),
+        requested: position,
+        clamped,
+      },
+    );
     this.emit("stateChanged");
   }
 
@@ -204,7 +301,25 @@ export class SessionPlayer extends EventEmitter {
     const t = tracksDb.getByFile(file);
     if (t) {
       this.queueInternal.push(this.buildEntry(t));
+      this.log(
+        "debug",
+        `[Session ${this.sessionId.slice(0, 8)}][browser] addToQueue file="${file}" queueLen=${this.queueInternal.length}`,
+        {
+          sessionId: this.sessionId.slice(0, 8),
+          file,
+          queueLength: this.queueInternal.length,
+        },
+      );
       this.emit("stateChanged");
+    } else {
+      this.log(
+        "warn",
+        `[Session ${this.sessionId.slice(0, 8)}][browser] addToQueue unknown file="${file}"`,
+        {
+          sessionId: this.sessionId.slice(0, 8),
+          file,
+        },
+      );
     }
   }
 

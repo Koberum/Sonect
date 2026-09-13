@@ -3,9 +3,14 @@ import { playerSchemas, sessionSchemas, systemSchemas } from "@repo/types";
 import { asyncHandler } from "@middleware/asyncHandler";
 import { resolvePlayerRouter } from "@services/player/playerRouter.js";
 import { LockedError } from "../middleware/errorHandler.js";
+import { getLogService } from "@services/factory";
 
 function router() {
   return resolvePlayerRouter();
+}
+
+function fmtSid(id: string): string {
+  return id.slice(0, 8);
 }
 
 export const unifiedGetStatusHandler = asyncHandler(
@@ -18,49 +23,166 @@ export const unifiedGetStatusHandler = asyncHandler(
 export const unifiedPlayHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { file } = playerSchemas.play.parse(req.body);
+    const sid = req.sessionId as string;
+    const mode = router().getMode(sid);
+    getLogService().pushLog(
+      "debug",
+      `[Session ${fmtSid(sid)}][${mode}] play file="${file}"`,
+      {
+        sessionId: fmtSid(sid),
+        mode,
+        file,
+      },
+    );
     if (!file) {
+      getLogService().pushLog(
+        "warn",
+        `[Session ${fmtSid(sid)}] play failed: file required`,
+        {
+          sessionId: fmtSid(sid),
+        },
+      );
       res.status(400).json({ error: "file is required" });
       return;
     }
-    await router()
-      .forSession(req.sessionId as string)
-      .playTrack(file);
+    try {
+      await router().forSession(sid).playTrack(file);
+      getLogService().pushLog(
+        "debug",
+        `[Session ${fmtSid(sid)}][${mode}] play ok`,
+        {
+          sessionId: fmtSid(sid),
+          mode,
+        },
+      );
+    } catch (err) {
+      getLogService().pushLog(
+        "error",
+        `[Session ${fmtSid(sid)}][${mode}] play error: ${String(err)}`,
+        {
+          sessionId: fmtSid(sid),
+          mode,
+          error: String(err),
+        },
+      );
+      throw err;
+    }
     res.json({ success: true });
   },
 );
 
 export const unifiedPauseHandler = asyncHandler(
   async (req: Request, res: Response) => {
-    await router()
-      .forSession(req.sessionId as string)
-      .pause();
+    const sid = req.sessionId as string;
+    const mode = router().getMode(sid);
+    getLogService().pushLog(
+      "debug",
+      `[Session ${fmtSid(sid)}][${mode}] pause`,
+      {
+        sessionId: fmtSid(sid),
+        mode,
+      },
+    );
+    try {
+      await router().forSession(sid).pause();
+    } catch (err) {
+      getLogService().pushLog(
+        "error",
+        `[Session ${fmtSid(sid)}][${mode}] pause error: ${String(err)}`,
+        {
+          sessionId: fmtSid(sid),
+          mode,
+          error: String(err),
+        },
+      );
+      throw err;
+    }
     res.json({ success: true });
   },
 );
 
 export const unifiedResumeHandler = asyncHandler(
   async (req: Request, res: Response) => {
-    await router()
-      .forSession(req.sessionId as string)
-      .resume();
+    const sid = req.sessionId as string;
+    const mode = router().getMode(sid);
+    getLogService().pushLog(
+      "debug",
+      `[Session ${fmtSid(sid)}][${mode}] resume`,
+      {
+        sessionId: fmtSid(sid),
+        mode,
+      },
+    );
+    try {
+      await router().forSession(sid).resume();
+    } catch (err) {
+      getLogService().pushLog(
+        "error",
+        `[Session ${fmtSid(sid)}][${mode}] resume error: ${String(err)}`,
+        {
+          sessionId: fmtSid(sid),
+          mode,
+          error: String(err),
+        },
+      );
+      throw err;
+    }
     res.json({ success: true });
   },
 );
 
 export const unifiedNextHandler = asyncHandler(
   async (req: Request, res: Response) => {
-    await router()
-      .forSession(req.sessionId as string)
-      .next();
+    const sid = req.sessionId as string;
+    const mode = router().getMode(sid);
+    getLogService().pushLog("debug", `[Session ${fmtSid(sid)}][${mode}] next`, {
+      sessionId: fmtSid(sid),
+      mode,
+    });
+    try {
+      await router().forSession(sid).next();
+    } catch (err) {
+      getLogService().pushLog(
+        "error",
+        `[Session ${fmtSid(sid)}][${mode}] next error: ${String(err)}`,
+        {
+          sessionId: fmtSid(sid),
+          mode,
+          error: String(err),
+        },
+      );
+      throw err;
+    }
     res.json({ success: true });
   },
 );
 
 export const unifiedPreviousHandler = asyncHandler(
   async (req: Request, res: Response) => {
-    await router()
-      .forSession(req.sessionId as string)
-      .previous();
+    const sid = req.sessionId as string;
+    const mode = router().getMode(sid);
+    getLogService().pushLog(
+      "debug",
+      `[Session ${fmtSid(sid)}][${mode}] previous`,
+      {
+        sessionId: fmtSid(sid),
+        mode,
+      },
+    );
+    try {
+      await router().forSession(sid).previous();
+    } catch (err) {
+      getLogService().pushLog(
+        "error",
+        `[Session ${fmtSid(sid)}][${mode}] previous error: ${String(err)}`,
+        {
+          sessionId: fmtSid(sid),
+          mode,
+          error: String(err),
+        },
+      );
+      throw err;
+    }
     res.json({ success: true });
   },
 );
@@ -68,9 +190,31 @@ export const unifiedPreviousHandler = asyncHandler(
 export const unifiedSeekHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { position } = playerSchemas.position.parse(req.body);
-    await router()
-      .forSession(req.sessionId as string)
-      .seek(position);
+    const sid = req.sessionId as string;
+    const mode = router().getMode(sid);
+    getLogService().pushLog(
+      "debug",
+      `[Session ${fmtSid(sid)}][${mode}] seek position=${position}`,
+      {
+        sessionId: fmtSid(sid),
+        mode,
+        position,
+      },
+    );
+    try {
+      await router().forSession(sid).seek(position);
+    } catch (err) {
+      getLogService().pushLog(
+        "error",
+        `[Session ${fmtSid(sid)}][${mode}] seek error: ${String(err)}`,
+        {
+          sessionId: fmtSid(sid),
+          mode,
+          error: String(err),
+        },
+      );
+      throw err;
+    }
     res.json({ success: true });
   },
 );
@@ -87,9 +231,16 @@ export const unifiedGetQueueHandler = asyncHandler(
 export const unifiedAddToQueueHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { file } = playerSchemas.addToQueue.parse(req.body);
-    await router()
-      .forSession(req.sessionId as string)
-      .addToQueue(file);
+    const sid = req.sessionId as string;
+    getLogService().pushLog(
+      "debug",
+      `[Session ${fmtSid(sid)}][${router().getMode(sid)}] addToQueue file="${file}"`,
+      {
+        sessionId: fmtSid(sid),
+        file,
+      },
+    );
+    await router().forSession(sid).addToQueue(file);
     res.json({ success: true });
   },
 );
@@ -97,9 +248,16 @@ export const unifiedAddToQueueHandler = asyncHandler(
 export const unifiedRemoveFromQueueHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { pos } = sessionSchemas.queuePos.parse(req.params);
-    await router()
-      .forSession(req.sessionId as string)
-      .removeFromQueue(pos);
+    const sid = req.sessionId as string;
+    getLogService().pushLog(
+      "debug",
+      `[Session ${fmtSid(sid)}][${router().getMode(sid)}] removeFromQueue pos=${pos}`,
+      {
+        sessionId: fmtSid(sid),
+        pos,
+      },
+    );
+    await router().forSession(sid).removeFromQueue(pos);
     res.json({ success: true });
   },
 );
@@ -107,9 +265,17 @@ export const unifiedRemoveFromQueueHandler = asyncHandler(
 export const unifiedMoveQueueHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { from, to } = playerSchemas.moveQueue.parse(req.body);
-    await router()
-      .forSession(req.sessionId as string)
-      .moveQueueItem(from, to);
+    const sid = req.sessionId as string;
+    getLogService().pushLog(
+      "debug",
+      `[Session ${fmtSid(sid)}][${router().getMode(sid)}] moveQueue ${from}→${to}`,
+      {
+        sessionId: fmtSid(sid),
+        from,
+        to,
+      },
+    );
+    await router().forSession(sid).moveQueueItem(from, to);
     res.json({ success: true });
   },
 );
@@ -117,9 +283,16 @@ export const unifiedMoveQueueHandler = asyncHandler(
 export const unifiedPlayPositionHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { pos } = playerSchemas.playPosition.parse(req.body);
-    await router()
-      .forSession(req.sessionId as string)
-      .playPosition(pos);
+    const sid = req.sessionId as string;
+    getLogService().pushLog(
+      "debug",
+      `[Session ${fmtSid(sid)}][${router().getMode(sid)}] playPosition pos=${pos}`,
+      {
+        sessionId: fmtSid(sid),
+        pos,
+      },
+    );
+    await router().forSession(sid).playPosition(pos);
     res.json({ success: true });
   },
 );
@@ -127,9 +300,16 @@ export const unifiedPlayPositionHandler = asyncHandler(
 export const unifiedSetVolumeHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { volume } = playerSchemas.volume.parse(req.body);
-    await router()
-      .forSession(req.sessionId as string)
-      .setVolume(volume);
+    const sid = req.sessionId as string;
+    getLogService().pushLog(
+      "debug",
+      `[Session ${fmtSid(sid)}][${router().getMode(sid)}] setVolume ${volume}`,
+      {
+        sessionId: fmtSid(sid),
+        volume,
+      },
+    );
+    await router().forSession(sid).setVolume(volume);
     res.json({ success: true });
   },
 );
@@ -138,8 +318,17 @@ export const unifiedGetOutputModeHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const id = req.sessionId as string;
     const r = router();
+    const mode = r.getMode(id);
+    getLogService().pushLog(
+      "debug",
+      `[Session ${fmtSid(id)}] getOutputMode → ${mode}`,
+      {
+        sessionId: fmtSid(id),
+        mode,
+      },
+    );
     res.json({
-      mode: r.getMode(id),
+      mode,
       deviceName: r.getOutputDeviceName(),
       mpdOwner: r.getMpdOwner(),
     });
@@ -150,10 +339,35 @@ export const unifiedSetOutputModeHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { mode } = systemSchemas.outputMode.parse(req.body);
     const id = req.sessionId as string;
+    getLogService().pushLog(
+      "debug",
+      `[Session ${fmtSid(id)}] setOutputMode → ${mode}`,
+      {
+        sessionId: fmtSid(id),
+        mode,
+      },
+    );
     const result = router().setMode(id, mode);
     if (!result.success) {
+      getLogService().pushLog(
+        "warn",
+        `[Session ${fmtSid(id)}] setOutputMode failed: ${result.warning}`,
+        {
+          sessionId: fmtSid(id),
+          mode,
+          warning: result.warning,
+        },
+      );
       throw new LockedError(result.warning ?? "MPD locked by another session");
     }
+    getLogService().pushLog(
+      "info",
+      `[Session ${fmtSid(id)}] outputMode set to ${mode}`,
+      {
+        sessionId: fmtSid(id),
+        mode,
+      },
+    );
     res.json(result);
   },
 );
@@ -161,9 +375,16 @@ export const unifiedSetOutputModeHandler = asyncHandler(
 export const unifiedEnableRandomHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { enabled } = playerSchemas.toggle.parse(req.body);
-    await router()
-      .forSession(req.sessionId as string)
-      .enableRandom(enabled);
+    const sid = req.sessionId as string;
+    getLogService().pushLog(
+      "debug",
+      `[Session ${fmtSid(sid)}][${router().getMode(sid)}] setRandom ${enabled}`,
+      {
+        sessionId: fmtSid(sid),
+        enabled,
+      },
+    );
+    await router().forSession(sid).enableRandom(enabled);
     res.json({ success: true });
   },
 );
@@ -171,9 +392,16 @@ export const unifiedEnableRandomHandler = asyncHandler(
 export const unifiedEnableRepeatHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { enabled } = playerSchemas.toggle.parse(req.body);
-    await router()
-      .forSession(req.sessionId as string)
-      .enableRepeat(enabled);
+    const sid = req.sessionId as string;
+    getLogService().pushLog(
+      "debug",
+      `[Session ${fmtSid(sid)}][${router().getMode(sid)}] setRepeat ${enabled}`,
+      {
+        sessionId: fmtSid(sid),
+        enabled,
+      },
+    );
+    await router().forSession(sid).enableRepeat(enabled);
     res.json({ success: true });
   },
 );

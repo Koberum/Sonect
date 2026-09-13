@@ -33,14 +33,19 @@ export class MpdAdapter extends EventEmitter implements PlaybackEngine {
   constructor(
     private readonly playerService: PlayerServiceImpl,
     private readonly mpdConnectionManager: MpdConnectionManager,
-    private readonly _logService: LogService,
+    private readonly logService: LogService,
     private readonly _autoplayService: AutoplayService,
+    private readonly sessionId?: string,
   ) {
     super();
     this.statusForwarder = () => {
       this.emit("stateChanged");
     };
     this.mpdConnectionManager.on("stateChanged", this.statusForwarder);
+  }
+
+  private fmtSid(): string {
+    return this.sessionId ? this.sessionId.slice(0, 8) : "unknown";
   }
 
   dispose(): void {
@@ -55,29 +60,140 @@ export class MpdAdapter extends EventEmitter implements PlaybackEngine {
   }
 
   async playTrack(file: string): Promise<void> {
-    await this.playerService.playTrack(file);
+    this.logService?.pushLog?.(
+      "debug",
+      `[Session ${this.fmtSid()}][mpd] play file="${file}"`,
+      {
+        sessionId: this.fmtSid(),
+        file,
+        engine: "mpd",
+      },
+    );
+    try {
+      await this.playerService.playTrack(file);
+    } catch (err) {
+      this.logService?.pushLog?.(
+        "error",
+        `[Session ${this.fmtSid()}][mpd] play error: ${String(err)}`,
+        {
+          sessionId: this.fmtSid(),
+          error: String(err),
+        },
+      );
+      throw err;
+    }
   }
 
   async pause(): Promise<void> {
-    await this.playerService.pauseTrack();
+    this.logService?.pushLog?.("debug", `[Session ${this.fmtSid()}][mpd] pause`, {
+      sessionId: this.fmtSid(),
+      engine: "mpd",
+    });
+    try {
+      await this.playerService.pauseTrack();
+    } catch (err) {
+      this.logService?.pushLog?.(
+        "error",
+        `[Session ${this.fmtSid()}][mpd] pause error: ${String(err)}`,
+        {
+          sessionId: this.fmtSid(),
+          error: String(err),
+        },
+      );
+      throw err;
+    }
   }
 
   async resume(): Promise<void> {
-    // Explicit unpause — avoid toggle semantics of bare "pause"
-    await this.mpdConnectionManager.executeCommand("pause", ["0"]);
-    this.mpdConnectionManager.refreshNow().catch(() => {});
+    this.logService?.pushLog?.(
+      "debug",
+      `[Session ${this.fmtSid()}][mpd] resume (pause 0)`,
+      {
+        sessionId: this.fmtSid(),
+        engine: "mpd",
+      },
+    );
+    try {
+      // Explicit unpause — avoid toggle semantics of bare "pause"
+      await this.mpdConnectionManager.executeCommand("pause", ["0"]);
+      this.mpdConnectionManager.refreshNow().catch(() => {});
+    } catch (err) {
+      this.logService?.pushLog?.(
+        "error",
+        `[Session ${this.fmtSid()}][mpd] resume error: ${String(err)}`,
+        {
+          sessionId: this.fmtSid(),
+          error: String(err),
+        },
+      );
+      throw err;
+    }
   }
 
   async next(): Promise<void> {
-    await this.playerService.nextTrack();
+    this.logService?.pushLog?.("debug", `[Session ${this.fmtSid()}][mpd] next`, {
+      sessionId: this.fmtSid(),
+    });
+    try {
+      await this.playerService.nextTrack();
+    } catch (err) {
+      this.logService?.pushLog?.(
+        "error",
+        `[Session ${this.fmtSid()}][mpd] next error: ${String(err)}`,
+        {
+          sessionId: this.fmtSid(),
+          error: String(err),
+        },
+      );
+      throw err;
+    }
   }
 
   async previous(): Promise<void> {
-    await this.playerService.previousTrack();
+    this.logService?.pushLog?.(
+      "debug",
+      `[Session ${this.fmtSid()}][mpd] previous`,
+      {
+        sessionId: this.fmtSid(),
+      },
+    );
+    try {
+      await this.playerService.previousTrack();
+    } catch (err) {
+      this.logService?.pushLog?.(
+        "error",
+        `[Session ${this.fmtSid()}][mpd] previous error: ${String(err)}`,
+        {
+          sessionId: this.fmtSid(),
+          error: String(err),
+        },
+      );
+      throw err;
+    }
   }
 
   async seek(position: number): Promise<void> {
-    await this.playerService.goToPosition(position);
+    this.logService?.pushLog?.(
+      "debug",
+      `[Session ${this.fmtSid()}][mpd] seek position=${position}`,
+      {
+        sessionId: this.fmtSid(),
+        position,
+      },
+    );
+    try {
+      await this.playerService.goToPosition(position);
+    } catch (err) {
+      this.logService?.pushLog?.(
+        "error",
+        `[Session ${this.fmtSid()}][mpd] seek error: ${String(err)}`,
+        {
+          sessionId: this.fmtSid(),
+          error: String(err),
+        },
+      );
+      throw err;
+    }
   }
 
   async getQueue(): Promise<QueuedTrack[]> {
