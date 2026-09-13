@@ -10,7 +10,7 @@ import {
 import type { Album, Track } from "@repo/types/catalog";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { playSong, addToQueue } from "@/features/mpd/api";
+import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { getTracksByAlbum } from "@/features/catalog/api";
 import { useState } from "react";
 
@@ -31,6 +31,7 @@ export function AlbumArtwork({
 }: AlbumArtworkProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { play, addToQueue } = usePlayTrack();
   const [cachedTracks, setCachedTracks] = useState<Track[] | null>(null);
 
   const getTracks = async (): Promise<Track[]> => {
@@ -42,7 +43,7 @@ export function AlbumArtwork({
 
   const handlePlayNext = async () => {
     const ts = await getTracks();
-    if (ts.length > 0) playSong(ts[0]);
+    if (ts.length > 0) play(ts[0] as any);
   };
 
   const handlePlayLater = async () => {

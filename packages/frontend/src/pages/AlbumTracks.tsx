@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PlayIcon, ListPlus } from "lucide-react";
-import { playSong, addToQueue } from "@/features/mpd/api";
+import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
 import { usePlaybackContext } from "@/components/playback-context";
 import {
@@ -43,6 +43,7 @@ export default function AlbumPage() {
   const isPending = albumPending || tracksPending;
 
   const { trackPlayed } = usePlaybackContext();
+  const { play, addToQueue } = usePlayTrack();
   return (
     <>
       <PageTitle
@@ -87,7 +88,7 @@ export default function AlbumPage() {
                     <ContextMenuTrigger asChild>
                       <TableRow
                         className="group h-15 cursor-pointer"
-                        onClick={() => playSong(track)}
+                        onClick={() => play(track)}
                       >
                         <TableCell className="hidden lg:table-cell">
                           {trackPlayed?.id === track.id ? (
@@ -144,7 +145,7 @@ export default function AlbumPage() {
                       </TableRow>
                     </ContextMenuTrigger>
                     <ContextMenuContent className="w-48">
-                      <ContextMenuItem onClick={() => playSong(track)}>
+                      <ContextMenuItem onClick={() => play(track)}>
                         {t("contextMenu.playNext")}
                       </ContextMenuItem>
                       <ContextMenuItem

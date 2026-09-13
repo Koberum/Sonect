@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PlayIcon, ListPlus } from "lucide-react";
-import { playSong, addToQueue } from "@/features/mpd/api";
+import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { usePlaybackContext } from "@/components/playback-context";
 import {
   ContextMenu,
@@ -32,6 +32,7 @@ export default function GenreDetail() {
   const { genre } = useParams<{ genre: string }>();
   const navigate = useNavigate();
   const { trackPlayed } = usePlaybackContext();
+  const { play, addToQueue } = usePlayTrack();
 
   const { data: albums = [], isPending: albumsPending } = useQuery({
     ...catalogQueries.albumsByGenre(genre ?? ""),
@@ -110,7 +111,7 @@ export default function GenreDetail() {
                   <ContextMenuTrigger asChild>
                     <TableRow
                       className="group h-12 cursor-pointer"
-                      onClick={() => playSong(track)}
+                      onClick={() => play(track)}
                     >
                       <TableCell>
                         {trackPlayed?.id === track.id ? (
@@ -178,7 +179,7 @@ export default function GenreDetail() {
                     </TableRow>
                   </ContextMenuTrigger>
                   <ContextMenuContent className="w-48">
-                    <ContextMenuItem onClick={() => playSong(track)}>
+                    <ContextMenuItem onClick={() => play(track)}>
                       {t("contextMenu.playNext")}
                     </ContextMenuItem>
                     <ContextMenuItem

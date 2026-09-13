@@ -44,6 +44,11 @@ import {
   NetworkServiceImpl,
   type NetworkService,
 } from "./network/networkService.js";
+import {
+  SessionRegistry,
+  setGlobalSessionRegistry,
+} from "./session/sessionRegistry.js";
+import { PlayerRouter, setGlobalPlayerRouter } from "./player/playerRouter.js";
 
 let _initialized = false;
 let _logService: LogService;
@@ -62,6 +67,8 @@ let _playlistService: PlaylistService;
 let _suggestionService: SuggestionServiceInterface;
 let _setupService: SetupService;
 let _networkService: NetworkService;
+let _sessionRegistry: SessionRegistry;
+let _playerRouter: PlayerRouter;
 
 function assertInitialized(): void {
   if (!_initialized) {
@@ -117,6 +124,19 @@ export function initializeServices(): void {
   _suggestionService = new SuggestionService();
   _setupService = new SetupServiceImpl();
   _networkService = new NetworkServiceImpl();
+
+  _sessionRegistry = new SessionRegistry(_logService);
+  setGlobalSessionRegistry(_sessionRegistry);
+
+  _playerRouter = new PlayerRouter(
+    _sessionRegistry,
+    _mpdConfigService,
+    _playerService as PlayerServiceImpl,
+    _mpdConnectionManager,
+    _autoplayService,
+    _logService,
+  );
+  setGlobalPlayerRouter(_playerRouter);
 
   _mpdConnectionManager.setAutoplayCallback(async (currentFile: string) => {
     const sessionId = _autoplayService.sessionId;
@@ -213,6 +233,16 @@ export function getSetupService(): SetupService {
 export function getNetworkService(): NetworkService {
   assertInitialized();
   return _networkService;
+}
+
+export function getSessionRegistry(): SessionRegistry {
+  assertInitialized();
+  return _sessionRegistry;
+}
+
+export function getPlayerRouter(): PlayerRouter {
+  assertInitialized();
+  return _playerRouter;
 }
 
 export function isServicesInitialized(): boolean {

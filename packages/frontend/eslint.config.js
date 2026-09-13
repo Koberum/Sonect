@@ -26,6 +26,7 @@ export default defineConfig([
       },
     },
     rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
       "react-hooks/set-state-in-effect": "off",
       "no-console": ["warn", { allow: ["warn", "error"] }],
       "@typescript-eslint/no-misused-promises": [

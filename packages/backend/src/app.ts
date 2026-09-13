@@ -1,12 +1,13 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
-import playerRoutes from "@routes/playerRoutes";
 import catalogRoutes from "@routes/catalogRoutes";
 import playlistRoutes from "@routes/playlistRoutes";
 import systemRoutes from "@routes/systemRoutes";
 import streamRoutes from "@routes/streamRoutes";
 import dashboardRouter from "@routes/dashboardRoutes";
+import sessionRoutes from "@routes/sessionRoutes";
+import unifiedPlayerRoutes from "@routes/unifiedPlayerRoutes";
 import { errorHandler } from "@middleware/errorHandler";
 import { requestLogger } from "@middleware/requestLogger";
 import { getLogService } from "@services/factory";
@@ -19,9 +20,12 @@ app.use((_req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header(
     "Access-Control-Allow-Methods",
-    "GET, POST, PATCH, DELETE, OPTIONS",
+    "GET, POST, PUT, PATCH, DELETE, OPTIONS",
   );
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Session-Id",
+  );
   if (_req.method === "OPTIONS") {
     res.sendStatus(204);
     return;
@@ -40,11 +44,12 @@ app.use(
 
 app.use("/stream", streamRoutes);
 
-app.use("/mpd", playerRoutes);
+app.use("/player", unifiedPlayerRoutes);
 app.use("/catalog", catalogRoutes);
 app.use("/playlists", playlistRoutes);
 app.use("/system", systemRoutes);
 app.use("/dashboard", dashboardRouter);
+app.use("/session", sessionRoutes);
 
 // In production, serve the built frontend from the same process
 const frontendDist =
@@ -54,13 +59,14 @@ if (process.env.NODE_ENV === "production" && fs.existsSync(frontendDist)) {
   app.use(express.static(frontendDist, { maxAge: "30d", immutable: true }));
   app.get("/{*path}", (req, res, next) => {
     if (
-      req.path.startsWith("/mpd") ||
+      req.path.startsWith("/player") ||
       req.path.startsWith("/catalog") ||
       req.path.startsWith("/playlists") ||
       req.path.startsWith("/covers") ||
       req.path.startsWith("/system") ||
       req.path.startsWith("/stream") ||
-      req.path.startsWith("/dashboard")
+      req.path.startsWith("/dashboard") ||
+      req.path.startsWith("/session")
     ) {
       return next();
     }

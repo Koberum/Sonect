@@ -28,6 +28,10 @@ export interface MpdConfigService {
   setOutputMode(mode: OutputMode): { success: boolean; warning?: string };
   getOutputMode(): OutputMode;
   getOutputDeviceName(): string | null;
+  getMpdOwner(): string | null;
+  tryAcquireMpd(sessionId: string): { success: boolean; owner?: string };
+  releaseMpd(sessionId: string): boolean;
+  isMpdLockedByOther(sessionId: string): boolean;
 }
 
 export class MpdConfigServiceImpl implements MpdConfigService {
@@ -36,8 +40,8 @@ export class MpdConfigServiceImpl implements MpdConfigService {
   private readonly FOLLOW_OUTSIDE_SYMLINKS = 'follow_outside_symlinks "yes"';
 
   private _currentOutputMode: OutputMode = "mpd";
-  private _lastAlsaConfig: string | null = null;
   private _lastDeviceName: string | null = null;
+  private _mpdOwnerSessionId: string | null = null;
 
   // ConfigService
   public getConfig(): { content: string; path: string } {
@@ -278,75 +282,17 @@ export class MpdConfigServiceImpl implements MpdConfigService {
     }
   }
 
+  /**
+   * Backcompat no-op: browser sessions run on a separate playback engine, so
+   * MPD always stays on the physical speakers. The drop-in config file is
+   * never rewritten. Kept for the GET/PUT /system/output-mode endpoints.
+   */
   public setOutputMode(mode: OutputMode): {
     success: boolean;
     warning?: string;
   } {
-    if (mode === this._currentOutputMode) {
-      return { success: true };
-    }
-    const dir = path.dirname(this.MPD_CONFIG_PATH);
-    if (mode === "browser") {
-      const currentAlsa = this.getCurrentAudioOutput();
-      if (currentAlsa) {
-        this._lastDeviceName = currentAlsa.name;
-        this._lastAlsaConfig = [
-          `audio_output {`,
-          `    type        "alsa"`,
-          `    name        "${currentAlsa.name}"`,
-          `    device      "${currentAlsa.card}"`,
-          `    mixer_type  "software"`,
-          `}`,
-        ].join("\n");
-      }
-      const nullConfig = [
-        `audio_output {`,
-        `    type        "null"`,
-        `    name        "Browser Mode (Silent)"`,
-        `}`,
-      ].join("\n");
-      try {
-        if (!fs.existsSync(dir)) {
-          fs.mkdirSync(dir, { recursive: true });
-        }
-        fs.writeFileSync(
-          this.MPD_CONFIG_PATH,
-          "# This file is managed by the Sonect frontend.\n# Browser output mode — MPD plays silently.\n\n" +
-            nullConfig +
-            "\n",
-          "utf-8",
-        );
-      } catch {
-        return {
-          success: false,
-          warning: `Cannot write to ${this.MPD_CONFIG_PATH}.`,
-        };
-      }
-    } else {
-      this._lastDeviceName = null;
-      if (this._lastAlsaConfig) {
-        try {
-          if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-          }
-          fs.writeFileSync(
-            this.MPD_CONFIG_PATH,
-            "# This file is managed by the Sonect frontend.\n\n" +
-              this._lastAlsaConfig +
-              "\n",
-            "utf-8",
-          );
-        } catch {
-          return {
-            success: false,
-            warning: `Cannot write to ${this.MPD_CONFIG_PATH}.`,
-          };
-        }
-      }
-    }
     this._currentOutputMode = mode;
-    const restartResult = this.restartMPD();
-    return { success: true, warning: restartResult.warning };
+    return { success: true };
   }
 
   public getOutputMode(): OutputMode {
@@ -360,27 +306,36 @@ export class MpdConfigServiceImpl implements MpdConfigService {
     }
     return this._lastDeviceName;
   }
-}
 
-// Backward compat aliases
-export type ConfigService = Pick<
-  MpdConfigService,
-  | "getConfig"
-  | "updateConfig"
-  | "ensureFollowOutsideSymlinks"
-  | "getConfigPath"
-  | "restartMpdInternal"
->;
-export type AudioService = Pick<
-  MpdConfigService,
-  | "getCurrentAudioOutput"
-  | "configureAudioOutput"
-  | "restartMPD"
-  | "stopMPD"
-  | "getMpdStatus"
-  | "setOutputMode"
-  | "getOutputMode"
-  | "getOutputDeviceName"
->;
-export const ConfigServiceImpl = MpdConfigServiceImpl;
-export const AudioServiceImpl = MpdConfigServiceImpl;
+  public getMpdOwner(): string | null {
+    return this._mpdOwnerSessionId;
+  }
+
+  public tryAcquireMpd(sessionId: string): {
+    success: boolean;
+    owner?: string;
+  } {
+    if (!sessionId)
+      return { success: false, owner: this._mpdOwnerSessionId ?? undefined };
+    if (this._mpdOwnerSessionId === null) {
+      this._mpdOwnerSessionId = sessionId;
+      return { success: true };
+    }
+    if (this._mpdOwnerSessionId === sessionId) return { success: true };
+    return { success: false, owner: this._mpdOwnerSessionId };
+  }
+
+  public releaseMpd(sessionId: string): boolean {
+    if (this._mpdOwnerSessionId === sessionId) {
+      this._mpdOwnerSessionId = null;
+      return true;
+    }
+    return false;
+  }
+
+  public isMpdLockedByOther(sessionId: string): boolean {
+    return (
+      this._mpdOwnerSessionId !== null && this._mpdOwnerSessionId !== sessionId
+    );
+  }
+}

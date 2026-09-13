@@ -34,7 +34,7 @@ router.post("/audio/configure", configureAudioHandler);
 router.get("/audio/status", getAudioStatusHandler);
 
 router.get("/output-mode", getOutputModeHandler);
-router.put("/output-mode", setOutputModeHandler);
+router.patch("/output-mode", setOutputModeHandler);
 
 router.get("/network/status", getNetworkStatusHandler);
 

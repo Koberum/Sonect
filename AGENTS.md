@@ -86,11 +86,13 @@ After making changes:
 
 ```
 Single Node process on port 3000:
-  Express API routes (/mpd, /catalog, /playlists, /system, /covers)
+  Express API routes (/player [unified per-session], /catalog, /playlists, /system, /covers)
   + WebSocket server (ws)
   + Static file serving for built React frontend
   + SPA fallback (index.html for any unmatched GET)
 ```
+
+` /player` is the single playback API (requires `X-Session-Id`). Legacy `/mpd` routes were removed; `/session` remains only for legacy backend tests.
 
 ### Build pipeline
 
@@ -275,6 +277,18 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 - Subsequent updates pushed via `stateChanged` events from the polling loop.
 - All connected clients receive the same broadcast via `broadcast.ts` (`ws/broadcast.ts`), a utility that iterates `wss.clients` and sends JSON to all open connections.
 - All WS messages follow a standard format with a `type` field: `"player-status"`, `"sync-progress"`, `"log"`, or `"sync-complete"`.
+
+### Unified per-session playback (`/player`)
+
+` /player` is the **single** playback API (`routes/unifiedPlayerRoutes.ts`, controllers in `controllers/unifiedPlayerController.ts`). Every request requires `X-Session-Id` (`middleware/sessionId.ts` → 400 if missing) and always appends `?sessionId=` on the WS URL. There is **no frontend fork** between browser/MPD — `features/player/api.ts` calls only `/player/*`; the backend decides per session.
+
+- **Session identity** — `lib/session.ts` generates a client UUID persisted in `localStorage`; sent as `X-Session-Id` and `?sessionId=`. Unknown id → fresh session (idempotent).
+- **PlayerRouter** (`services/player/playerRouter.ts`) — `Map<sessionId, {mode, engine}>` singleton (`setGlobalPlayerRouter`/`resolvePlayerRouter`). `mode` is per-session (`browser` default, `mpd` requires lock). `engine` is either an isolated `SessionPlayer` wrapper or a shared `MpdAdapter` (`services/player/mpdAdapter.ts`). `getOrCreateSession()` via `resolveSessionRegistry()` so tests with `registryOverrideForTests` see the same data.
+- **Browser engine (isolated)** — `SessionPlayer` (`services/session/sessionPlayer.ts`) per `SessionRegistry` (`services/session/sessionRegistry.ts` 30m idle sweep): own queue, 1s server clock, auto-advance, `playTrack` queues through end of album, `pause`/`resume` control the clock. `setVolume` is no-op (local `useBrowserAudio`). `random/repeat` are no-ops (reported off).
+- **MPD engine (shared, single-owner)** — `MpdAdapter` wraps `PlayerServiceImpl` + `MpdConnectionManager`. Shared global queue/daemon. `resume` uses explicit `pause 0` (not toggle). `random`/`repeat` delegate to MPD. Lock via `MpdConfigService.tryAcquireMpd(sessionId)` (`services/mpd/mpdConfigService.ts`); `PUT /player/output-mode {mode}` returns 423 if another session owns MPD. Only one session at a time can own `mpd` output; others stay `browser` with isolated queues.
+- **WebSocket** — `ws/player.ws.ts` always resolves `PlayerRouter.forSession(q).getStatus()` + `on("stateChanged")` for that engine; no global MPD fallback for missing `sessionId` except legacy path. Browser sessions never see each other’s state; mpd sessions share the same `PlaybackStatus` cache.
+- **Legacy routes** — `/mpd` was removed. `/session` remains only for backend integration tests (not used by frontend). Vite proxy forwards `/player` (`frontend/vite.config.ts`).
+- **Deferred in sessions** — smart-autoplay batches (`autoplayService`) remain MPD-only; browser sessions still report `consume/single/off`.
 
 ### Cover art pipeline
 

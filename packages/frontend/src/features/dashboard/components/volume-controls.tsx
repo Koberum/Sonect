@@ -5,7 +5,7 @@ import {
   Popover,
 } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
-import { setVolume } from "@/features/mpd/api";
+import { setVolume } from "@/features/player/api";
 import {
   Volume1Icon,
   Volume2Icon,

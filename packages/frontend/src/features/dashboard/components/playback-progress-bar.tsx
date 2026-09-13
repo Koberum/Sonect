@@ -1,18 +1,23 @@
-import { goToPosition } from "@/features/mpd/api";
+import { goToPosition } from "@/features/player/api";
 import { formatTime } from "@/lib/utils";
+import type { OutputMode } from "@repo/types";
 
 type PlaybackProgressBar = {
   elapsed: number;
   duration: number;
   className?: string;
+  outputMode?: OutputMode;
 };
 
 export function PlaybackProgressBar({
   elapsed,
   duration,
   className,
+  outputMode: _outputMode = "mpd",
 }: PlaybackProgressBar): React.ReactElement {
+  void _outputMode;
   const pct = duration > 0 ? Math.min(100, (elapsed / duration) * 100) : 0;
+  const seek = goToPosition;
 
   return (
     <div className={`flex w-full items-center gap-2 ${className}`}>
@@ -27,7 +32,7 @@ export function PlaybackProgressBar({
           const x = e.clientX - rect.left;
           const percentage = x / rect.width;
           const newPosition = percentage * duration;
-          goToPosition(newPosition);
+          seek(newPosition);
         }}
       >
         <div

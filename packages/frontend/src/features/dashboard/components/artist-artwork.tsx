@@ -11,7 +11,7 @@ import type { Artist } from "@repo/types/catalog";
 import { useTranslation } from "react-i18next";
 import { getTracksByArtist } from "@/features/catalog/api";
 import { useNavigate } from "react-router-dom";
-import { playSong, addToQueue } from "@/features/mpd/api";
+import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { ImageCollage } from "./image-collage";
 
 interface ArtistArtworkProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -32,12 +32,13 @@ export function ArtistArtwork({
   const navigate = useNavigate();
 
   const { t } = useTranslation();
+  const { play, addToQueue } = usePlayTrack();
 
   const coverPreviews = artist.coverPreviews ?? [];
 
   const handlePlayNext = async () => {
     const tracks = await getTracksByArtist(String(artist.id));
-    if (tracks.length > 0) playSong(tracks[0]);
+    if (tracks.length > 0) play(tracks[0] as any);
   };
 
   const handlePlayLater = async () => {

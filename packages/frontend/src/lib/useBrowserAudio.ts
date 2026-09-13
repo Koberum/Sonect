@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export type BrowserAudioState =
-  | "idle"
-  | "loading"
-  | "playing"
-  | "paused"
-  | "ended"
-  | "error";
+  "idle" | "loading" | "playing" | "paused" | "ended" | "error";
 
 interface UseBrowserAudioReturn {
   play: () => void;
@@ -24,6 +19,7 @@ interface UseBrowserAudioReturn {
 export function useBrowserAudio(): UseBrowserAudioReturn {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const pendingSeekRef = useRef<number | null>(null);
+  const pendingPlayRef = useRef(false);
   const autoplayBlockedRef = useRef(false);
   const [state, setState] = useState<BrowserAudioState>("idle");
   const [currentTime, setCurrentTime] = useState(0);
@@ -50,6 +46,15 @@ export function useBrowserAudio(): UseBrowserAudioReturn {
     };
     const onCanPlay = () => {
       if (!audio.paused) setState("playing");
+      if (pendingPlayRef.current) {
+        pendingPlayRef.current = false;
+        audio.play().catch((err: unknown) => {
+          if ((err as DOMException)?.name === "NotAllowedError") {
+            autoplayBlockedRef.current = true;
+            setAutoplayBlocked(true);
+          }
+        });
+      }
     };
     const onTimeUpdate = () => setCurrentTime(audio.currentTime);
 
@@ -99,6 +104,11 @@ export function useBrowserAudio(): UseBrowserAudioReturn {
   const play = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    // If audio not ready, defer until canplay
+    if (audio.readyState < 2) {
+      pendingPlayRef.current = true;
+      return;
+    }
     audio.play().catch((err: unknown) => {
       if ((err as DOMException)?.name === "NotAllowedError") {
         autoplayBlockedRef.current = true;
@@ -108,6 +118,7 @@ export function useBrowserAudio(): UseBrowserAudioReturn {
   }, []);
 
   const pause = useCallback(() => {
+    pendingPlayRef.current = false;
     audioRef.current?.pause();
   }, []);
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { getClientSessionId } from "@/lib/session";
 import { usePlaybackContext, type SyncProgress } from "./playback-context";
 import type { PlaybackStatus } from "@repo/types";
 
@@ -27,7 +28,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const intentionalCloseRef = useRef(false);
   const trackIdRef = useRef<number | null>(null);
 
-  const wsUrl =
+  const wsUrl: string =
     import.meta.env.VITE_WEBSOCKET_URL ||
     `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`;
 
@@ -46,7 +47,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       if (cancelled) return;
       wsRef.current?.close();
 
-      const ws = new WebSocket(wsUrl);
+      const sessionUrl = `${wsUrl}${wsUrl.includes("?") ? "&" : "?"}sessionId=${encodeURIComponent(getClientSessionId())}`;
+      const ws = new WebSocket(sessionUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {

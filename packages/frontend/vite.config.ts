@@ -13,13 +13,14 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/mpd": "http://localhost:3000",
+      "/player": "http://localhost:3000",
       "/catalog": "http://localhost:3000",
       "/playlists": "http://localhost:3000",
       "/covers": "http://localhost:3000",
       "/stream": "http://localhost:3000",
       "/system": "http://localhost:3000",
       "/dashboard": "http://localhost:3000",
+      "/session": "http://localhost:3000",
       "/ws": {
         target: "ws://localhost:3000",
         ws: true,

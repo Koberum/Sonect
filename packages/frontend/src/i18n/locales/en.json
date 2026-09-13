@@ -73,8 +73,11 @@
     "title": "Now Playing",
     "outputMpd": "MPD Output",
     "outputBrowser": "Browser Output",
+    "sessionPlayback": "Session playback",
     "outputModeError": "Failed to switch output mode",
-    "tapToPlay": "Tap to play"
+    "tapToPlay": "Tap to play",
+    "mpdLocked": "MPD locked",
+    "outputModeLocked": "MPD output locked by another session"
   },
   "theme": {
     "toggle": "Toggle theme",

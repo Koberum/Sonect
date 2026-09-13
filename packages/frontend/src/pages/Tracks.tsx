@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { PlayIcon, ListPlus } from "lucide-react";
-import { playSong, addToQueue } from "@/features/mpd/api";
+import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { usePlaybackContext } from "@/components/playback-context";
 import { SortTabs } from "@/features/dashboard/components/sort-tabs";
 import {
@@ -35,6 +35,7 @@ export default function Tracks() {
   const navigate = useNavigate();
   const [sort, setSort] = useState<SortOption>("title");
   const { trackPlayed } = usePlaybackContext();
+  const { play, addToQueue } = usePlayTrack();
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
@@ -111,7 +112,7 @@ export default function Tracks() {
                     <ContextMenuTrigger asChild>
                       <TableRow
                         className="group h-12 cursor-pointer"
-                        onClick={() => playSong(track)}
+                        onClick={() => play(track)}
                       >
                         <TableCell>
                           {trackPlayed?.id === track.id ? (
@@ -179,7 +180,7 @@ export default function Tracks() {
                       </TableRow>
                     </ContextMenuTrigger>
                     <ContextMenuContent className="w-48">
-                      <ContextMenuItem onClick={() => playSong(track)}>
+                      <ContextMenuItem onClick={() => play(track)}>
                         {t("contextMenu.playNext")}
                       </ContextMenuItem>
                       <ContextMenuItem

@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   playSong,
   pauseSong,
+  resumeSong,
   nextTrack,
   previousTrack,
   setRandom,
@@ -17,7 +18,7 @@ import {
   getQueue,
   playQueueItem,
   removeFromQueue,
-} from "@/features/mpd/api";
+} from "@/features/player/api";
 import type { QueuedTrack } from "@repo/types";
 import { Badge } from "@/components/ui/badge";
 import VolumeControls from "./volume-controls";
@@ -43,6 +44,7 @@ export function FullPagePlayer({
   const { trackPlayed, playbackStatus, outputMode } = usePlaybackContext();
   const [queue, setQueue] = useState<QueuedTrack[]>([]);
   const fetchedRef = useRef(false);
+  const doToggle = (fn: () => Promise<void>) => fn();
 
   useEffect(() => {
     if (fetchedRef.current) return;
@@ -105,6 +107,7 @@ export function FullPagePlayer({
           elapsed={displayElapsed}
           duration={playbackStatus.duration}
           className="w-full"
+          outputMode={outputMode}
         />
       </div>
 
@@ -112,19 +115,14 @@ export function FullPagePlayer({
         <PlaybackControls
           playbackStatus={playbackStatus}
           playTrack={() => {
-            if (trackPlayed) playSong(trackPlayed);
+            if (trackPlayed) return playSong(trackPlayed);
           }}
-          pauseTrack={() => {
-            pauseSong();
-          }}
-          nextTrack={() => {
-            nextTrack();
-          }}
-          previousTrack={() => {
-            previousTrack();
-          }}
-          setRandom={(enabled) => setRandom(enabled)}
-          setRepeat={(enabled) => setRepeat(enabled)}
+          pauseTrack={() => pauseSong()}
+          resumeTrack={() => resumeSong()}
+          nextTrack={() => nextTrack()}
+          previousTrack={() => previousTrack()}
+          setRandom={(enabled) => doToggle(() => setRandom(enabled))}
+          setRepeat={(enabled) => doToggle(() => setRepeat(enabled))}
           showAllControls
         />
       </div>
