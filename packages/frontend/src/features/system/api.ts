@@ -165,6 +165,19 @@ export function getNetworkStatus(signal?: AbortSignal): Promise<NetworkStatus> {
   return apiFetch("/system/network/status", { signal });
 }
 
+export interface HealthResponse {
+  tools: { aplay: boolean; lsusb: boolean; systemctl: boolean; mpd: boolean };
+  audio: { available: boolean; cards: AudioDevice[] };
+  mpdConnected: boolean;
+  setupCompleted: string[];
+  version: string;
+  network: NetworkStatus;
+}
+
+export function getHealth(signal?: AbortSignal): Promise<HealthResponse> {
+  return apiFetch("/system/health", { signal });
+}
+
 export function restartMpd(): Promise<{ success: boolean; warning?: string }> {
   return apiFetch("/system/mpd/restart", { method: "POST" });
 }

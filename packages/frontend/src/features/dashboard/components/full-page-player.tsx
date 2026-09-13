@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Play, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,18 +14,20 @@ import {
   previousTrack,
   setRandom,
   setRepeat,
-  getQueue,
   playQueueItem,
   removeFromQueue,
 } from "@/features/player/api";
-import type { QueuedTrack } from "@repo/types";
 import { Badge } from "@/components/ui/badge";
 import VolumeControls from "./volume-controls";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { playerQueries } from "@/features/player/queries";
+import { qk } from "@/lib/queryKeys";
 
 interface FullPagePlayerProps {
   displayElapsed: number;
   browserVolume: number;
   browserSetVolume: (vol: number) => void;
+  open?: boolean;
 }
 
 function formatDuration(seconds: number): string {
@@ -39,29 +40,13 @@ export function FullPagePlayer({
   displayElapsed,
   browserVolume,
   browserSetVolume,
+  open = true,
 }: FullPagePlayerProps) {
   const { t } = useTranslation();
   const { trackPlayed, playbackStatus, outputMode } = usePlaybackContext();
-  const [queue, setQueue] = useState<QueuedTrack[]>([]);
-  const fetchedRef = useRef(false);
+  const qc = useQueryClient();
+  const { data: queue = [] } = useQuery(playerQueries.queue(open));
   const doToggle = (fn: () => Promise<void>) => fn();
-
-  useEffect(() => {
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
-
-    const fetchQueue = async () => {
-      try {
-        const data = await getQueue();
-        setQueue(data);
-      } catch {
-        setQueue([]);
-      }
-    };
-    fetchQueue();
-    const id = setInterval(fetchQueue, 5000);
-    return () => clearInterval(id);
-  }, []);
 
   const handlePlay = async (pos: number) => {
     await playQueueItem(pos);
@@ -70,7 +55,9 @@ export function FullPagePlayer({
   const handleRemove = async (e: React.MouseEvent, pos: number) => {
     e.stopPropagation();
     await removeFromQueue(pos);
-    setQueue((prev) => prev.filter((t) => t.pos !== pos));
+    qc.setQueryData(qk.player.queue(), (old: typeof queue) =>
+      old ? old.filter((tr) => tr.pos !== pos) : old,
+    );
   };
 
   if (!trackPlayed) return null;

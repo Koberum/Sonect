@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   getStatusHandler,
+  getHealthHandler,
   getAudioDevicesHandler,
   configureAudioHandler,
   getAudioStatusHandler,
@@ -28,6 +29,7 @@ import {
 const router = Router();
 
 router.get("/status", getStatusHandler);
+router.get("/health", getHealthHandler);
 
 router.get("/audio/devices", getAudioDevicesHandler);
 router.post("/audio/configure", configureAudioHandler);

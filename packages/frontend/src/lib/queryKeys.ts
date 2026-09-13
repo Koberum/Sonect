@@ -39,6 +39,7 @@ export const qk = {
     activeMounts: () => ["system", "storage", "mounts"] as const,
     networkStatus: () => ["system", "network", "status"] as const,
     backendStatus: () => ["system", "backend", "status"] as const,
+    health: () => ["system", "health"] as const,
     hardwareUsage: () => ["system", "hardware", "usage"] as const,
     outputMode: () => ["system", "outputMode"] as const,
     mpdStatus: () => ["system", "mpd", "status"] as const,

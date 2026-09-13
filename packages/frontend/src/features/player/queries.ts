@@ -9,7 +9,8 @@ export const playerQueries = {
       queryFn: ({ signal }) => getQueue(signal),
       enabled,
       staleTime: 0,
-      refetchInterval: enabled ? 5000 : false,
+      refetchInterval: enabled ? 10_000 : false,
+      refetchIntervalInBackground: false,
     }),
 };
 

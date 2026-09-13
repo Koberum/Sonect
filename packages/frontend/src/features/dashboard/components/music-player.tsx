@@ -271,6 +271,7 @@ export default function MusicPlayer() {
             displayElapsed={displayElapsed}
             browserVolume={browserAudio.volume}
             browserSetVolume={browserAudio.setVolume}
+            open={playerSheetOpen}
           />
         </SheetContent>
       </Sheet>

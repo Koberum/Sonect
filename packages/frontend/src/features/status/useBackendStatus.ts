@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { usePlaybackContext } from "@/components/playback-context";
 import { useRef, useEffect, useState } from "react";
+import { systemQueries } from "@/features/system/queries";
 
 const FAILURE_THRESHOLD = 3;
 
@@ -17,20 +18,8 @@ export function useBackendStatus(): BackendStatus {
   const [isOnline, setIsOnline] = useState(true);
 
   const { isFetching, isError, isSuccess } = useQuery({
-    queryKey: ["system", "backend", "status", isSyncing ? "syncing" : "idle"],
-    queryFn: async ({ signal }) => {
-      const res = await fetch("/system/status", {
-        method: "GET",
-        signal: signal ?? AbortSignal.timeout(5_000),
-      });
-      if (!res.ok) throw new Error("offline");
-      return true;
-    },
-    refetchInterval: isSyncing ? 60_000 : 15_000,
-    refetchIntervalInBackground: false,
-    retry: false,
-    staleTime: 0,
-    gcTime: 0,
+    ...systemQueries.health(),
+    refetchInterval: isSyncing ? 60_000 : 30_000,
   });
 
   useEffect(() => {

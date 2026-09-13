@@ -6,6 +6,7 @@ import {
   getAudioDevices,
   getAudioStatus,
   getHardwareUsage,
+  getHealth,
   getMpdStatus,
   getNetworkStatus,
   getOutputMode,
@@ -54,6 +55,18 @@ export const systemQueries = {
       queryFn: ({ signal }) => getNetworkStatus(signal),
       staleTime: 0,
       refetchInterval: 15_000,
+      refetchIntervalInBackground: false,
+    }),
+
+  health: () =>
+    queryOptions({
+      queryKey: qk.system.health(),
+      queryFn: ({ signal }) => getHealth(signal),
+      staleTime: 0,
+      gcTime: 0,
+      retry: false,
+      refetchInterval: 30_000,
+      refetchIntervalInBackground: false,
     }),
 
   hardwareUsage: (enabled = true) =>
@@ -62,7 +75,8 @@ export const systemQueries = {
       queryFn: ({ signal }) => getHardwareUsage(signal),
       enabled,
       staleTime: 0,
-      refetchInterval: enabled ? 2000 : false,
+      refetchInterval: enabled ? 5000 : false,
+      refetchIntervalInBackground: false,
     }),
 
   outputMode: () =>

@@ -79,6 +79,19 @@ export const getNetworkStatusHandler = asyncHandler(
   },
 );
 
+export const getHealthHandler = asyncHandler(
+  async (_req: Request, res: Response) => {
+    const status = getSystemService().getSystemStatus();
+    const setup = getSetupService().getSetupProgress();
+    const network = await getNetworkService().getNetworkStatus();
+    res.json({
+      ...status,
+      setupCompleted: setup.filter((s) => s.completed).map((s) => s.step),
+      network,
+    });
+  },
+);
+
 export const getStorageSourcesHandler = asyncHandler(
   async (_req: Request, res: Response) => {
     const sources = await getStorageService().getStorageSourcesHandler();

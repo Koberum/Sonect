@@ -152,13 +152,14 @@ Single Node process on port 3000:
 - The backend exposes its build version through `getSystemStatus()` →
   `/system/status[].version`. It reads `backend/.version` (written only by the
   release CI), defaulting to `"dev"`. Sources: `services/appVersion.ts`.
-- Host network management is intentionally not part of Sonect. The only network
-  status endpoint is `GET /system/network/status`, which returns
-  `{ connected, dnsReachable }`. `connected` checks for a non-loopback IPv4 or
-  IPv6 address, while `dnsReachable` resolves `DNS_CHECK_HOST` (default
-  `example.com`) through the system resolver with a short timeout. The frontend
-  polls this endpoint every 15 seconds and shows one localized indicator in the
-  desktop top bar; it does not expose Wi-Fi scan, connect, or disconnect controls.
+- Host network management is intentionally not part of Sonect. Network status is
+  exposed via `GET /system/health` (aggregated) and legacy `GET /system/network/status`,
+  both returning `{ connected, dnsReachable }`. `connected` checks for a non-loopback
+  IPv4 or IPv6 address, while `dnsReachable` resolves `DNS_CHECK_HOST` (default
+  `example.com`) with a 3s timeout. The frontend polls **health** every **30s**
+  (60s during library sync) for both backend liveness and network indicator —
+  deduplicated via shared `qk.system.health()` key — and shows one localized
+  indicator in the desktop top bar; it does not expose Wi-Fi scan/connect controls.
 
 ### Frontend
 
