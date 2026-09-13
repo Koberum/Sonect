@@ -26,8 +26,11 @@ export const qk = {
     list: () => ["playlists", "list"] as const,
     detail: (id: number) => ["playlists", "detail", id] as const,
   },
+  player: {
+    queue: () => ["player", "queue"] as const,
+  },
   mpd: {
-    queue: () => ["mpd", "queue"] as const,
+    queue: () => ["player", "queue"] as const,
   },
   system: {
     audioDevices: () => ["system", "audio", "devices"] as const,

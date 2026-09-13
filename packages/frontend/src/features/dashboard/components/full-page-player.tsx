@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   playSong,
   pauseSong,
+  resumeSong,
   nextTrack,
   previousTrack,
   setRandom,
@@ -17,13 +18,7 @@ import {
   getQueue,
   playQueueItem,
   removeFromQueue,
-} from "@/features/mpd/api";
-import {
-  sessionNext,
-  sessionPause,
-  sessionPlay,
-  sessionPrevious,
-} from "@/features/session/api";
+} from "@/features/player/api";
 import type { QueuedTrack } from "@repo/types";
 import { Badge } from "@/components/ui/badge";
 import VolumeControls from "./volume-controls";
@@ -49,9 +44,7 @@ export function FullPagePlayer({
   const { trackPlayed, playbackStatus, outputMode } = usePlaybackContext();
   const [queue, setQueue] = useState<QueuedTrack[]>([]);
   const fetchedRef = useRef(false);
-  const sessionMode = outputMode === "browser";
-  const noop = () => Promise.resolve();
-  const doToggle = (fn: () => Promise<void>) => (sessionMode ? noop() : fn());
+  const doToggle = (fn: () => Promise<void>) => fn();
 
   useEffect(() => {
     if (fetchedRef.current) return;
@@ -122,17 +115,12 @@ export function FullPagePlayer({
         <PlaybackControls
           playbackStatus={playbackStatus}
           playTrack={() => {
-            if (trackPlayed) {
-              return sessionMode
-                ? sessionPlay(trackPlayed.file)
-                : playSong(trackPlayed);
-            }
+            if (trackPlayed) return playSong(trackPlayed);
           }}
-          pauseTrack={() => (sessionMode ? sessionPause() : pauseSong())}
-          nextTrack={() => (sessionMode ? sessionNext() : nextTrack())}
-          previousTrack={() =>
-            sessionMode ? sessionPrevious() : previousTrack()
-          }
+          pauseTrack={() => pauseSong()}
+          resumeTrack={() => resumeSong()}
+          nextTrack={() => nextTrack()}
+          previousTrack={() => previousTrack()}
           setRandom={(enabled) => doToggle(() => setRandom(enabled))}
           setRepeat={(enabled) => doToggle(() => setRepeat(enabled))}
           showAllControls

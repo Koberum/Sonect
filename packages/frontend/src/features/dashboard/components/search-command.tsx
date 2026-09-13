@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Search, MicVocal, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { getCoverPath } from "@/lib/utils";
-import { playSong, addToQueue } from "@/features/mpd/api";
+import { usePlayTrack } from "@/features/player/usePlayTrack";
 import type { TrackWithRelations, Album, Artist } from "@repo/types/catalog";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ type SectionType = "artists" | "albums" | "tracks";
 export function SearchCommand() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { play, addToQueue } = usePlayTrack();
   const isDesktop = useMediaQuery({ minWidth: 768 });
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -47,7 +48,7 @@ export function SearchCommand() {
   };
 
   const handlePlayTrack = useCallback(async (track: TrackWithRelations) => {
-    await playSong(track);
+    await play(track as any);
     setOverlayOpen(false);
     setShowDropdown(false);
   }, []);

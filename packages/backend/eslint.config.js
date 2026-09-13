@@ -4,6 +4,9 @@ import { defineConfig } from "eslint/config";
 
 export default defineConfig([
   {
+    ignores: ["dist/**", "coverage/**"],
+  },
+  {
     files: ["**/*.ts"],
     ignores: ["**/*.d.ts"],
     extends: [js.configs.recommended, tseslint.configs.recommended],

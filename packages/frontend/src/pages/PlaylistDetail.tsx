@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { playSong, addToQueue } from "@/features/mpd/api";
+import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +65,7 @@ export default function PlaylistDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
+  const { play, addToQueue } = usePlayTrack();
   const pid = id ? parseInt(id, 10) : 0;
 
   const { data: playlist, isPending } = useQuery({
@@ -90,7 +91,7 @@ export default function PlaylistDetail() {
   }, [playlist]);
 
   const handlePlay = useCallback(async (track: PlaylistTrack) => {
-    await playSong(track);
+    await play(track as any);
   }, []);
 
   const handlePlayAll = useCallback(async () => {

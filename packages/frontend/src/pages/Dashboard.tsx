@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
 import { ScrollBar, ScrollArea } from "@/components/ui/scroll-area";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
-import { playSong } from "@/features/mpd/api";
+import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { systemQueries } from "@/features/system/queries";
 import { qk } from "@/lib/queryKeys";
@@ -14,6 +14,7 @@ export default function Dashboard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { playbackStatus } = usePlaybackContext();
+  const { play } = usePlayTrack();
   const qc = useQueryClient();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -79,7 +80,7 @@ export default function Dashboard() {
                 <div
                   key={track.id}
                   className="bg-card flex w-44 shrink-0 cursor-pointer flex-col gap-2 rounded-md p-3"
-                  onClick={() => track.file && playSong(track)}
+                  onClick={() => track.file && play(track)}
                 >
                   <div className="bg-muted aspect-square w-full overflow-hidden rounded-md">
                     {track.cover_path && (
@@ -120,7 +121,7 @@ export default function Dashboard() {
                 <div
                   key={track.id}
                   className="bg-card flex w-44 flex-shrink-0 cursor-pointer flex-col gap-2 rounded-md p-3"
-                  onClick={() => track.file && playSong(track)}
+                  onClick={() => track.file && play(track)}
                 >
                   <div className="bg-muted aspect-square w-full overflow-hidden rounded-md">
                     {track.cover_path && (
@@ -161,7 +162,7 @@ export default function Dashboard() {
                 <div
                   key={track.id}
                   className="bg-card flex w-44 flex-shrink-0 cursor-pointer flex-col gap-2 rounded-md p-3"
-                  onClick={() => track.file && playSong(track)}
+                  onClick={() => track.file && play(track)}
                 >
                   <div className="bg-muted aspect-square w-full overflow-hidden rounded-md">
                     {track.cover_path && (
@@ -202,7 +203,7 @@ export default function Dashboard() {
             className="flex cursor-pointer items-center justify-between rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-600/20 p-6"
             onClick={() =>
               data.genreQuickMix!.tracks[0]?.file &&
-              playSong(data.genreQuickMix!.tracks[0])
+              play(data.genreQuickMix!.tracks[0])
             }
           >
             <div>
@@ -220,7 +221,7 @@ export default function Dashboard() {
               onClick={(e) => {
                 e.stopPropagation();
                 if (data.genreQuickMix!.tracks[0]?.file)
-                  playSong(data.genreQuickMix!.tracks[0]);
+                  play(data.genreQuickMix!.tracks[0]);
               }}
             >
               {t("dashboard.playMix")}

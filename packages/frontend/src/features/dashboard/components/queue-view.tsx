@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { playQueueItem, removeFromQueue } from "@/features/mpd/api";
+import { playQueueItem, removeFromQueue } from "@/features/player/api";
 import { getCoverPath } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTranslation } from "react-i18next";
 import PlayStatus from "@/features/dashboard/components/play-status";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { mpdQueries } from "@/features/mpd/queries";
+import { playerQueries } from "@/features/player/queries";
 import { qk } from "@/lib/queryKeys";
 
 function formatTime(seconds: number): string {
@@ -31,7 +31,7 @@ export function QueueView({ currentTrackFile }: QueueViewProps) {
   const qc = useQueryClient();
 
   const { data: queue = [] } = useQuery({
-    ...mpdQueries.queue(open),
+    ...playerQueries.queue(open),
     enabled: open,
   });
 
@@ -42,7 +42,7 @@ export function QueueView({ currentTrackFile }: QueueViewProps) {
   const handleRemove = async (e: React.MouseEvent, pos: number) => {
     e.stopPropagation();
     await removeFromQueue(pos);
-    qc.setQueryData(qk.mpd.queue(), (old: typeof queue) =>
+    qc.setQueryData(qk.player.queue(), (old: typeof queue) =>
       old ? old.filter((trk) => trk.pos !== pos) : old,
     );
   };

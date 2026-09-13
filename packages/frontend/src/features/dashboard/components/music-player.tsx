@@ -12,20 +12,15 @@ import {
   pauseSong,
   playSong,
   previousTrack,
+  resumeSong,
   setRandom,
   setRepeat,
-} from "@/features/mpd/api";
+} from "@/features/player/api";
 import { usePlaybackContext } from "@/components/playback-context";
 import VolumeControls from "./volume-controls";
 import { useBrowserAudio } from "@/lib/useBrowserAudio";
 import { OutputSelector } from "./output-selector";
 import type { TrackWithRelations } from "@repo/types/catalog";
-import {
-  sessionNext,
-  sessionPause,
-  sessionPlay,
-  sessionPrevious,
-} from "@/features/session/api";
 import { useTranslation } from "react-i18next";
 import { Play } from "lucide-react";
 
@@ -89,15 +84,15 @@ export default function MusicPlayer() {
     setOutputMode(mode);
   };
 
-  const sessionMode = outputMode === "browser";
-  const doPlay = (t: TrackWithRelations | null) =>
-    t && (sessionMode ? sessionPlay(t.file) : playSong(t));
-  const doPause = () => (sessionMode ? sessionPause() : pauseSong());
-  const doNext = () => (sessionMode ? sessionNext() : nextTrack());
-  const doPrev = () => (sessionMode ? sessionPrevious() : previousTrack());
+  // Unified backend: single /player interface, backend decides per-session engine.
+  // Browser queues are isolated per X-Session-Id; MPD queue is shared but locked to one session.
+  const doPlay = (t: TrackWithRelations | null) => t && playSong(t);
+  const doPause = () => pauseSong();
+  const doResume = () => resumeSong();
+  const doNext = () => nextTrack();
+  const doPrev = () => previousTrack();
 
-  const noop = () => Promise.resolve();
-  const doToggle = (fn: () => Promise<void>) => (sessionMode ? noop() : fn());
+  const doToggle = (fn: () => Promise<void>) => fn();
 
   useEffect(() => {
     if (playbackStatus.state !== "play") {
@@ -181,6 +176,9 @@ export default function MusicPlayer() {
               }}
               pauseTrack={() => {
                 doPause();
+              }}
+              resumeTrack={() => {
+                doResume();
               }}
               nextTrack={() => {
                 doNext();

@@ -1,5 +1,4 @@
-import { goToPosition } from "@/features/mpd/api";
-import { sessionSeek } from "@/features/session/api";
+import { goToPosition } from "@/features/player/api";
 import { formatTime } from "@/lib/utils";
 import type { OutputMode } from "@repo/types";
 
@@ -14,10 +13,11 @@ export function PlaybackProgressBar({
   elapsed,
   duration,
   className,
-  outputMode = "mpd",
+  outputMode: _outputMode = "mpd",
 }: PlaybackProgressBar): React.ReactElement {
+  void _outputMode;
   const pct = duration > 0 ? Math.min(100, (elapsed / duration) * 100) : 0;
-  const seek = outputMode === "browser" ? sessionSeek : goToPosition;
+  const seek = goToPosition;
 
   return (
     <div className={`flex w-full items-center gap-2 ${className}`}>

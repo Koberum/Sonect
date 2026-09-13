@@ -195,15 +195,16 @@ export function getHardwareUsage(signal?: AbortSignal): Promise<HardwareUsage> {
 export function getOutputMode(signal?: AbortSignal): Promise<{
   mode: OutputMode;
   deviceName: string | null;
+  mpdOwner?: string | null;
 }> {
-  return apiFetch("/system/output-mode", { signal });
+  return apiFetch("/player/output-mode", { headers: sessionHeaders(), signal });
 }
 
 export function setOutputMode(
   mode: OutputMode,
 ): Promise<{ success: boolean; warning?: string }> {
-  return apiFetch("/system/output-mode", {
-    method: "PATCH",
+  return apiFetch("/player/output-mode", {
+    method: "PUT",
     headers: sessionHeaders(),
     body: { mode },
   });

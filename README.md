@@ -120,14 +120,18 @@ sonect/
 ```
 
 ```
-Browser ──HTTP──► Express API ──► MPD (port 6600)
-        ──WS───► WebSocket server ──► MPD idle listener
+Browser ──HTTP──► Express /player (per-session, requires X-Session-Id) ─┬─► Browser engine: isolated SessionPlayer per session
+        ──WS───► WebSocket ?sessionId= ─────────────────────────────────┘
+                                                                      └─► MPD engine: shared MPD daemon (locked to one session)
+
+Browser queues are isolated per X-Session-Id; MPD queue is shared but MPD output is single-owner (PUT /player/output-mode {mpd} → 423 if busy).
+Frontend uses only /player/* — there is no frontend fork between browser/MPD.
 ```
 
 The backend maintains two TCP connections to MPD: a command client for
 playback control and a polling client for status updates. The in-memory cache
 is refreshed every 2 seconds during play (10 s during pause/stop) and
-immediately after user-initiated commands.
+immediately after user-initiated commands. Browser sessions run entirely in-memory (SessionPlayer) without MPD.
 
 The database is native SQLite through Node's built-in `node:sqlite` module,
 accessed via a synchronous Drizzle repository layer in `@repo/db` — no WASM
@@ -140,25 +144,28 @@ a complete database file.
 
 ## API Overview
 
-| Method | Path                          | Description                                               |
-| ------ | ----------------------------- | --------------------------------------------------------- |
-| GET    | `/library/albums`             | List all albums                                           |
-| GET    | `/library/albums/:id`         | Get album by ID                                           |
-| GET    | `/library/albums/:id/tracks`  | Tracks for an album                                       |
-| GET    | `/library/artists`            | List all artists                                          |
-| GET    | `/library/artists/:id/albums` | Albums for an artist                                      |
-| POST   | `/library/scan`               | Trigger library re-scan                                   |
-| POST   | `/mpd/play`                   | Play a track or resume                                    |
-| POST   | `/mpd/pause`                  | Toggle pause                                              |
-| POST   | `/mpd/next`                   | Next track                                                |
-| POST   | `/mpd/previous`               | Previous track                                            |
-| PATCH  | `/mpd/volume`                 | Set volume (0–100)                                        |
-| *      | `/session/*`                  | Browser session playback (requires `X-Session-Id` header) |
-| GET    | `/system/network/status`      | Read network/DNS status                                   |
-| GET    | `/system/setup/progress`      | Read setup progress                                       |
-| POST   | `/system/setup/complete`      | Complete or skip setup                                    |
-| POST   | `/system/setup/reset`         | Reset the setup wizard                                    |
-| GET    | `ws://host:3000`              | WebSocket playback state                                  |
+| Method | Path                           | Description                                                                         |
+| ------ | ------------------------------ | ----------------------------------------------------------------------------------- |
+| GET    | `/library/albums`              | List all albums                                                                     |
+| GET    | `/library/albums/:id`          | Get album by ID                                                                     |
+| GET    | `/library/albums/:id/tracks`   | Tracks for an album                                                                 |
+| GET    | `/library/artists`             | List all artists                                                                    |
+| GET    | `/library/artists/:id/albums`  | Albums for an artist                                                                |
+| POST   | `/library/scan`                | Trigger library re-scan                                                             |
+| POST   | `/player/play`                 | Play track (per-session, requires `X-Session-Id`) — queues through end of album     |
+| POST   | `/player/pause`                | Pause (per-session)                                                                 |
+| POST   | `/player/resume`               | Resume (per-session) — fixes `pause`/`play` toggle; uses explicit `pause 0` for MPD |
+| POST   | `/player/next`                 | Next track (per-session)                                                            |
+| POST   | `/player/previous`             | Previous track (per-session)                                                        |
+| POST   | `/player/seek`                 | Seek to position (per-session)                                                      |
+| GET    | `/player/queue`                | Queue for this session (browser: isolated, MPD: shared)                             |
+| PUT    | `/player/output-mode`          | Switch `browser`↔`mpd` (per-session, `mpd` locked to one session → 423 if busy)     |
+| PATCH  | `/player/volume`               | Set volume (MPD only; browser volume is local)                                      |
+| GET    | `/system/network/status`       | Read network/DNS status                                                             |
+| GET    | `/system/setup/progress`       | Read setup progress                                                                 |
+| POST   | `/system/setup/complete`       | Complete or skip setup                                                              |
+| POST   | `/system/setup/reset`          | Reset the setup wizard                                                              |
+| GET    | `ws://host:3000/ws?sessionId=` | WebSocket playback state (per-session, requires `sessionId` param)                  |
 
 ### Environment variables
 

@@ -339,26 +339,3 @@ export class MpdConfigServiceImpl implements MpdConfigService {
     );
   }
 }
-
-// Backward compat aliases
-export type ConfigService = Pick<
-  MpdConfigService,
-  | "getConfig"
-  | "updateConfig"
-  | "ensureFollowOutsideSymlinks"
-  | "getConfigPath"
-  | "restartMpdInternal"
->;
-export type AudioService = Pick<
-  MpdConfigService,
-  | "getCurrentAudioOutput"
-  | "configureAudioOutput"
-  | "restartMPD"
-  | "stopMPD"
-  | "getMpdStatus"
-  | "setOutputMode"
-  | "getOutputMode"
-  | "getOutputDeviceName"
->;
-export const ConfigServiceImpl = MpdConfigServiceImpl;
-export const AudioServiceImpl = MpdConfigServiceImpl;

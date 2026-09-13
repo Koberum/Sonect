@@ -1,13 +1,13 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
-import playerRoutes from "@routes/playerRoutes";
 import catalogRoutes from "@routes/catalogRoutes";
 import playlistRoutes from "@routes/playlistRoutes";
 import systemRoutes from "@routes/systemRoutes";
 import streamRoutes from "@routes/streamRoutes";
 import dashboardRouter from "@routes/dashboardRoutes";
 import sessionRoutes from "@routes/sessionRoutes";
+import unifiedPlayerRoutes from "@routes/unifiedPlayerRoutes";
 import { errorHandler } from "@middleware/errorHandler";
 import { requestLogger } from "@middleware/requestLogger";
 import { getLogService } from "@services/factory";
@@ -44,7 +44,7 @@ app.use(
 
 app.use("/stream", streamRoutes);
 
-app.use("/mpd", playerRoutes);
+app.use("/player", unifiedPlayerRoutes);
 app.use("/catalog", catalogRoutes);
 app.use("/playlists", playlistRoutes);
 app.use("/system", systemRoutes);
@@ -59,7 +59,7 @@ if (process.env.NODE_ENV === "production" && fs.existsSync(frontendDist)) {
   app.use(express.static(frontendDist, { maxAge: "30d", immutable: true }));
   app.get("/{*path}", (req, res, next) => {
     if (
-      req.path.startsWith("/mpd") ||
+      req.path.startsWith("/player") ||
       req.path.startsWith("/catalog") ||
       req.path.startsWith("/playlists") ||
       req.path.startsWith("/covers") ||

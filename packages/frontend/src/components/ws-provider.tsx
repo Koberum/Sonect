@@ -4,13 +4,8 @@ import { usePlaybackContext, type SyncProgress } from "./playback-context";
 import type { PlaybackStatus } from "@repo/types";
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
-  const {
-    setPlaybackStatus,
-    setTrackPlayed,
-    setSyncProgress,
-    setWsConnected,
-    outputMode,
-  } = usePlaybackContext();
+  const { setPlaybackStatus, setTrackPlayed, setSyncProgress, setWsConnected } =
+    usePlaybackContext();
 
   const settersRef = useRef({
     setPlaybackStatus,
@@ -52,12 +47,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       if (cancelled) return;
       wsRef.current?.close();
 
-      const modeUrl =
-        outputMode === "browser"
-          ? `${wsUrl}${wsUrl.includes("?") ? "&" : "?"}sessionId=${encodeURIComponent(getClientSessionId())}`
-          : wsUrl;
-
-      const ws = new WebSocket(modeUrl);
+      const sessionUrl = `${wsUrl}${wsUrl.includes("?") ? "&" : "?"}sessionId=${encodeURIComponent(getClientSessionId())}`;
+      const ws = new WebSocket(sessionUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -147,7 +138,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       wsRef.current = null;
       setWsConnected(false);
     };
-  }, [wsUrl, outputMode]);
+  }, [wsUrl]);
 
   return <>{children}</>;
 }
