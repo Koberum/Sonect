@@ -16,6 +16,9 @@ interface OutputSelectorProps {
   onModeChange: (mode: OutputMode) => void;
   deviceName: string | null;
   disabled?: boolean;
+  mpdOwner?: string | null;
+  mySid?: string;
+  disabledMpd?: boolean;
 }
 
 export function OutputSelector({
@@ -23,6 +26,8 @@ export function OutputSelector({
   onModeChange,
   deviceName,
   disabled,
+  mpdOwner,
+  disabledMpd,
 }: OutputSelectorProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -47,8 +52,17 @@ export function OutputSelector({
             setOpen(false);
           }}
         >
-          <DropdownMenuRadioItem value="mpd">
+          <DropdownMenuRadioItem
+            value="mpd"
+            disabled={!!disabledMpd}
+            title={
+              disabledMpd
+                ? `MPD locked by ${mpdOwner?.slice(0, 8) ?? "another session"}`
+                : undefined
+            }
+          >
             {deviceName || t("player.outputMpd")}
+            {disabledMpd ? ` (${t("player.mpdLocked") ?? "locked"})` : ""}
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="browser">
             {t("player.outputBrowser")}

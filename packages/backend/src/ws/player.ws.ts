@@ -39,7 +39,6 @@ export function setupPlayerWebSocket(wss: WebSocketServer) {
       // Unified path: per-session isolated, backend decides engine via PlayerRouter
       try {
         const router = resolvePlayerRouter();
-        const engine = router.forSession(sid);
         const mode = router.getMode(sid);
         safeLog(
           "debug",
@@ -51,20 +50,14 @@ export function setupPlayerWebSocket(wss: WebSocketServer) {
           },
         );
         const sendStatus = () =>
-          sendJson(ws, { type: "player-status", ...engine.getStatus() });
-        // primes lastActiveAt for browser engine
-        try {
-          engine.getStatus();
-        } catch {
-          // ignore for mpd adapter
-        }
+          sendJson(ws, { type: "player-status", ...router.getStatus(sid) });
         sendStatus();
-        engine.on("stateChanged", sendStatus);
+        const off = router.onStateChanged(sid, sendStatus);
         ws.on("close", () => {
           safeLog("debug", `[WS][Session ${fmtSid}] disconnected`, {
             sessionId: fmtSid,
           });
-          engine.off("stateChanged", sendStatus);
+          off();
         });
         ws.on("error", (err) => {
           console.error("WS error:", err);
@@ -72,7 +65,7 @@ export function setupPlayerWebSocket(wss: WebSocketServer) {
             sessionId: fmtSid,
             error: String(err),
           });
-          engine.off("stateChanged", sendStatus);
+          off();
         });
 
         // Also send current sync state if a scan is running

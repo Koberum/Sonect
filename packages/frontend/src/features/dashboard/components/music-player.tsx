@@ -13,6 +13,7 @@ import {
   playSong,
   previousTrack,
   resumeSong,
+  setOutputMode as apiSetOutputMode,
   setRandom,
   setRepeat,
 } from "@/features/player/api";
@@ -20,9 +21,16 @@ import { usePlaybackContext } from "@/components/playback-context";
 import VolumeControls from "./volume-controls";
 import { useBrowserAudio } from "@/lib/useBrowserAudio";
 import { OutputSelector } from "./output-selector";
+import { useQuery } from "@tanstack/react-query";
+import { systemQueries } from "@/features/system/queries";
+import { getClientSessionId } from "@/lib/session";
 import type { TrackWithRelations } from "@repo/types/catalog";
 import { useTranslation } from "react-i18next";
 import { Play } from "lucide-react";
+import { toast } from "sonner";
+import { ApiError } from "@/lib/api";
+import { queryClient } from "@/lib/queryClient";
+import { qk } from "@/lib/queryKeys";
 
 export default function MusicPlayer() {
   const {
@@ -40,6 +48,11 @@ export default function MusicPlayer() {
   const browserAudio = useBrowserAudio();
   const prevTrackFileRef = useRef<string | null>(null);
   const { t } = useTranslation();
+  const { data: outputModeData } = useQuery(systemQueries.outputMode());
+  const mpdOwner = outputModeData?.mpdOwner ?? null;
+  const mySid = getClientSessionId();
+  const isMpdLockedForMe =
+    !!mpdOwner && mpdOwner !== mySid && outputMode !== "mpd";
 
   useEffect(() => {
     prevTrackFileRef.current = null;
@@ -47,7 +60,10 @@ export default function MusicPlayer() {
 
   // Browser audio sync
   useEffect(() => {
-    if (outputMode !== "browser") return;
+    if (outputMode !== "browser") {
+      browserAudio.pause();
+      return;
+    }
 
     const track = playbackStatus.track;
     if (track?.file) {
@@ -73,6 +89,15 @@ export default function MusicPlayer() {
     }
   }, [playbackStatus, outputMode, browserAudio]);
 
+  // Ensure browser audio stops immediately when switching away from browser output
+  useEffect(() => {
+    if (outputMode !== "browser") {
+      browserAudio.pause();
+      // Reset prev file so returning to browser reloads at new seek
+      prevTrackFileRef.current = null;
+    }
+  }, [outputMode, browserAudio]);
+
   // Track change detection
   useEffect(() => {
     if (playbackStatus.track && playbackStatus.track.id !== trackPlayed?.id) {
@@ -80,8 +105,25 @@ export default function MusicPlayer() {
     }
   }, [playbackStatus.track, trackPlayed, setTrackPlayed]);
 
-  const handleOutputModeChange = (mode: OutputMode) => {
+  const handleOutputModeChange = async (mode: OutputMode) => {
+    const prev = outputMode;
     setOutputMode(mode);
+    try {
+      await apiSetOutputMode(mode);
+      queryClient.invalidateQueries({ queryKey: qk.player.queue() });
+      queryClient.invalidateQueries({ queryKey: qk.system.outputMode() });
+    } catch (err) {
+      setOutputMode(prev);
+      if (err instanceof ApiError && err.status === 423) {
+        toast.error(
+          t("player.outputModeLocked", {
+            defaultValue: "MPD output locked by another session",
+          }),
+        );
+      } else {
+        toast.error(t("player.outputModeError"));
+      }
+    }
   };
 
   // Unified backend: single /player interface, backend decides per-session engine.
@@ -205,6 +247,9 @@ export default function MusicPlayer() {
               currentMode={outputMode}
               onModeChange={handleOutputModeChange}
               deviceName={null}
+              mpdOwner={mpdOwner}
+              mySid={mySid}
+              disabledMpd={isMpdLockedForMe}
             />
             <VolumeControls
               volume={

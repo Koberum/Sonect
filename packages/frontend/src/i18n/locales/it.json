@@ -74,7 +74,9 @@
     "outputMpd": "Uscita MPD",
     "outputBrowser": "Uscita del Browser",
     "outputModeError": "Errore nel cambio della modalità di uscita",
-    "tapToPlay": "Tocca per riprodurre"
+    "tapToPlay": "Tocca per riprodurre",
+    "mpdLocked": "MPD bloccato",
+    "outputModeLocked": "Uscita MPD bloccata da un'altra sessione"
   },
   "theme": {
     "toggle": "Cambia tema",

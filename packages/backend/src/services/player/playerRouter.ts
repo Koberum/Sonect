@@ -21,8 +21,9 @@ function fmtSid(id: string): string {
   return id.slice(0, 8);
 }
 
-export class PlayerRouter {
+export class PlayerRouter extends EventEmitter {
   private records = new Map<string, SessionRecord>();
+  private forwarders = new Map<string, () => void>();
 
   constructor(
     private readonly _sessionRegistry: SessionRegistry,
@@ -31,7 +32,9 @@ export class PlayerRouter {
     private readonly mpdConnectionManager: MpdConnectionManager,
     private readonly autoplayService: AutoplayService,
     private readonly logService: LogService,
-  ) {}
+  ) {
+    super();
+  }
 
   private get sessionRegistry(): SessionRegistry {
     try {
@@ -45,9 +48,7 @@ export class PlayerRouter {
     sessionId: string,
   ): PlaybackEngine & EventEmitter {
     const s = this.sessionRegistry.getOrCreateSession(sessionId);
-    // Wrap SessionPlayer to PlaybackEngine interface
     const emitter = s as unknown as PlaybackEngine & EventEmitter;
-    // Ensure SessionPlayer already extends EventEmitter
     return emitter as unknown as PlaybackEngine & EventEmitter;
   }
 
@@ -61,13 +62,32 @@ export class PlayerRouter {
     ) as unknown as PlaybackEngine & EventEmitter;
   }
 
+  private attachForwarder(
+    sessionId: string,
+    engine: PlaybackEngine & EventEmitter,
+  ): void {
+    const prev = this.forwarders.get(sessionId);
+    if (prev) prev();
+    const handler = () => this.emit(`session:${sessionId}:stateChanged`);
+    engine.on("stateChanged", handler);
+    this.forwarders.set(sessionId, () => engine.off("stateChanged", handler));
+  }
+
+  private detachForwarder(sessionId: string): void {
+    const off = this.forwarders.get(sessionId);
+    if (off) {
+      off();
+      this.forwarders.delete(sessionId);
+    }
+  }
+
   private ensureRecord(sessionId: string): SessionRecord {
     let rec = this.records.get(sessionId);
     if (rec) return rec;
-    // Default to browser (isolated) — per spec; MPD requires explicit acquire
     const engine = this.wrapSessionPlayer(sessionId);
     rec = { mode: "browser", engine };
     this.records.set(sessionId, rec);
+    this.attachForwarder(sessionId, engine);
     this.logService?.pushLog?.(
       "debug",
       `[Session ${fmtSid(sessionId)}][browser] created isolated session`,
@@ -81,7 +101,6 @@ export class PlayerRouter {
 
   private wrapSessionPlayer(sessionId: string): PlaybackEngine & EventEmitter {
     const s = this.sessionRegistry.getOrCreateSession(sessionId);
-    // Adapt SessionPlayer to PlaybackEngine shape
     const adapter = new (class extends EventEmitter implements PlaybackEngine {
       constructor(private p: SessionPlayer) {
         super();
@@ -131,26 +150,17 @@ export class PlayerRouter {
       async moveQueueItem(from: number, to: number): Promise<void> {
         this.p.moveQueueItem(from, to);
       }
-      async setVolume(_volume: number): Promise<void> {
-        // Browser volume is local (useBrowserAudio) — no-op server side
-      }
-      async enableRandom(_enabled: boolean): Promise<void> {
-        // Not supported in browser sessions — no-op
-      }
-      async enableRepeat(_enabled: boolean): Promise<void> {
-        // Not supported in browser sessions — no-op
-      }
+      async setVolume(_volume: number): Promise<void> {}
+      async enableRandom(_enabled: boolean): Promise<void> {}
+      async enableRepeat(_enabled: boolean): Promise<void> {}
       async playPosition(pos: number): Promise<void> {
         const q = this.p.getQueue();
         if (pos < 0 || pos >= q.length) return;
-        // Jump to position: set index and play
-        // Use internal move via next/previous or direct index manipulation via private? Use playTrack of that file
         const target = q[pos];
         if (target) this.p.playTrack(target.file);
-        // If file-based play re-queues album, just advance to pos via internal API
         const anyP = this.p as unknown as Record<string, unknown>;
         if (typeof anyP["indexInternal"] !== "undefined") {
-          // Fallback: already handled by playTrack
+          // fallback
         }
       }
     })(s);
@@ -173,10 +183,10 @@ export class PlayerRouter {
     return this.mpdConfigService.getOutputDeviceName();
   }
 
-  setMode(
+  async setMode(
     sessionId: string,
     mode: OutputMode,
-  ): { success: boolean; warning?: string } {
+  ): Promise<{ success: boolean; warning?: string }> {
     const rec = this.ensureRecord(sessionId);
     if (rec.mode === mode) {
       this.logService?.pushLog?.(
@@ -188,6 +198,53 @@ export class PlayerRouter {
         },
       );
       return { success: true };
+    }
+
+    // Capture current track + seek before swapping (re-play semantics)
+    let prevFile: string | undefined;
+    let prevElapsed = 0;
+    let prevState: string = "stop";
+    try {
+      const st = rec.engine.getStatus();
+      prevFile = st.track?.file;
+      prevElapsed = st.elapsed ?? 0;
+      prevState = st.state;
+    } catch {
+      // ignore
+    }
+
+    // Pause old engine to stop playback (clear browser clock / pause MPD)
+    try {
+      if (rec.mode === "browser") {
+        await rec.engine.pause();
+        this.logService?.pushLog?.(
+          "debug",
+          `[Session ${fmtSid(sessionId)}][browser] pause on outputMode → ${mode}`,
+          {
+            sessionId: fmtSid(sessionId),
+            to: mode,
+          },
+        );
+      } else if (rec.mode === "mpd") {
+        await (rec.engine as unknown as MpdAdapter).pause();
+        this.logService?.pushLog?.(
+          "debug",
+          `[Session ${fmtSid(sessionId)}][mpd] pause on outputMode → ${mode}`,
+          {
+            sessionId: fmtSid(sessionId),
+            to: mode,
+          },
+        );
+      }
+    } catch (err) {
+      this.logService?.pushLog?.(
+        "warn",
+        `[Session ${fmtSid(sessionId)}] pause old engine failed: ${String(err)}`,
+        {
+          sessionId: fmtSid(sessionId),
+          error: String(err),
+        },
+      );
     }
 
     if (mode === "mpd") {
@@ -207,10 +264,43 @@ export class PlayerRouter {
           warning: `MPD locked by ${acquired.owner ?? "another session"}`,
         };
       }
-      // Dispose old browser adapter listeners if needed
+      this.detachForwarder(sessionId);
       rec.engine.removeAllListeners("stateChanged");
       const mpdEngine = this.createMpdEngine(sessionId);
       this.records.set(sessionId, { mode, engine: mpdEngine });
+      this.attachForwarder(sessionId, mpdEngine);
+      // Re-play with clear semantics at same seek
+      if (prevFile) {
+        try {
+          await mpdEngine.playTrack(prevFile);
+          if (prevState !== "stop" && prevElapsed > 0) {
+            await mpdEngine.seek(prevElapsed);
+          }
+          if (prevState === "pause") {
+            await mpdEngine.pause();
+          }
+          this.logService?.pushLog?.(
+            "info",
+            `[Session ${fmtSid(sessionId)}] browser→mpd re-play file="${prevFile}" seek=${prevElapsed} state=${prevState}`,
+            {
+              sessionId: fmtSid(sessionId),
+              file: prevFile,
+              seek: prevElapsed,
+              state: prevState,
+            },
+          );
+        } catch (err) {
+          this.logService?.pushLog?.(
+            "error",
+            `[Session ${fmtSid(sessionId)}] browser→mpd handoff failed: ${String(err)}`,
+            {
+              sessionId: fmtSid(sessionId),
+              error: String(err),
+            },
+          );
+        }
+      }
+      this.emit(`session:${sessionId}:stateChanged`);
       this.logService?.pushLog?.(
         "info",
         `[Session ${fmtSid(sessionId)}] outputMode ${rec.mode} → mpd (acquired)`,
@@ -224,8 +314,8 @@ export class PlayerRouter {
       return this.mpdConfigService.setOutputMode(mode);
     } else {
       this.mpdConfigService.releaseMpd(sessionId);
+      this.detachForwarder(sessionId);
       rec.engine.removeAllListeners("stateChanged");
-      // Dispose mpd adapter if needed
       if (
         typeof (rec.engine as unknown as { dispose?: () => void }).dispose ===
         "function"
@@ -234,6 +324,38 @@ export class PlayerRouter {
       }
       const browserEngine = this.wrapSessionPlayer(sessionId);
       this.records.set(sessionId, { mode, engine: browserEngine });
+      this.attachForwarder(sessionId, browserEngine);
+      if (prevFile) {
+        try {
+          await browserEngine.playTrack(prevFile);
+          if (prevState !== "stop" && prevElapsed > 0) {
+            await browserEngine.seek(prevElapsed);
+          }
+          if (prevState === "pause") {
+            await browserEngine.pause();
+          }
+          this.logService?.pushLog?.(
+            "info",
+            `[Session ${fmtSid(sessionId)}] mpd→browser re-play file="${prevFile}" seek=${prevElapsed} state=${prevState}`,
+            {
+              sessionId: fmtSid(sessionId),
+              file: prevFile,
+              seek: prevElapsed,
+              state: prevState,
+            },
+          );
+        } catch (err) {
+          this.logService?.pushLog?.(
+            "error",
+            `[Session ${fmtSid(sessionId)}] mpd→browser handoff failed: ${String(err)}`,
+            {
+              sessionId: fmtSid(sessionId),
+              error: String(err),
+            },
+          );
+        }
+      }
+      this.emit(`session:${sessionId}:stateChanged`);
       this.logService?.pushLog?.(
         "info",
         `[Session ${fmtSid(sessionId)}] outputMode ${rec.mode} → browser (released)`,
@@ -252,14 +374,18 @@ export class PlayerRouter {
     return this.forSession(sessionId).getStatus();
   }
 
-  // For WS: subscribe helper
   onStateChanged(sessionId: string, cb: () => void): () => void {
-    const eng = this.forSession(sessionId);
-    eng.on("stateChanged", cb);
-    return () => eng.off("stateChanged", cb);
+    const rec = this.ensureRecord(sessionId);
+    // ensure forwarder exists
+    if (!this.forwarders.has(sessionId)) {
+      this.attachForwarder(sessionId, rec.engine);
+    }
+    this.on(`session:${sessionId}:stateChanged`, cb);
+    return () => this.off(`session:${sessionId}:stateChanged`, cb);
   }
 
   dispose(): void {
+    for (const sid of this.forwarders.keys()) this.detachForwarder(sid);
     for (const rec of this.records.values()) {
       rec.engine.removeAllListeners();
       if (

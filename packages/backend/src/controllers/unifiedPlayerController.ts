@@ -347,7 +347,7 @@ export const unifiedSetOutputModeHandler = asyncHandler(
         mode,
       },
     );
-    const result = router().setMode(id, mode);
+    const result = await router().setMode(id, mode);
     if (!result.success) {
       getLogService().pushLog(
         "warn",

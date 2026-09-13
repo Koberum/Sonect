@@ -2,6 +2,7 @@
 import type { PlaybackStatus, OutputMode } from "@repo/types";
 import type { TrackWithRelations } from "@repo/types/catalog";
 import { createContext, useContext, useEffect, useState } from "react";
+import { getOutputMode } from "@/features/player/api";
 
 export type SyncProgress = {
   current: number;
@@ -60,6 +61,29 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem("outputMode", outputMode);
   }, [outputMode]);
+
+  // Hydrate outputMode from backend (per-session, PlayerRouter default browser).
+  // Backend is source of truth; localStorage is only a fallback.
+  useEffect(() => {
+    let cancelled = false;
+    getOutputMode()
+      .then((res) => {
+        if (
+          !cancelled &&
+          (res.mode === "browser" || res.mode === "mpd") &&
+          res.mode !== outputMode
+        ) {
+          setOutputMode(res.mode);
+        }
+      })
+      .catch(() => {
+        // keep localStorage fallback
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <PlaybackContext.Provider
