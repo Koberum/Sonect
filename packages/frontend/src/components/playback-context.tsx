@@ -4,6 +4,7 @@ import type { TrackWithRelations } from "@repo/types/catalog";
 import { createContext, useContext, useEffect, useState } from "react";
 import { getOutputMode } from "@/features/player/api";
 import { getDeviceId, getDeviceName, getDeviceType } from "@/lib/deviceId";
+import { defaultPlayerState } from "@/lib/playbackState";
 
 export type SyncProgress = {
   current: number;
@@ -41,18 +42,6 @@ type PlaybackContextType = {
 const PlaybackContext = createContext<PlaybackContextType | undefined>(
   undefined,
 );
-
-const defaultPlayerState: PlaybackStatus = {
-  elapsed: 0,
-  duration: 0,
-  volume: 0,
-  repeat: false,
-  random: false,
-  single: false,
-  consume: false,
-  state: "stop",
-  queueLength: 0,
-};
 
 export function PlaybackProvider({ children }: { children: React.ReactNode }) {
   const [trackPlayed, setTrackPlayed] = useState<TrackWithRelations | null>(
