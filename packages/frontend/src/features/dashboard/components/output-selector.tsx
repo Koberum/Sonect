@@ -19,6 +19,8 @@ interface OutputSelectorProps {
   mpdOwner?: string | null;
   mySid?: string;
   disabledMpd?: boolean;
+  activeDeviceId?: string | null;
+  myDeviceId?: string;
 }
 
 export function OutputSelector({
@@ -28,9 +30,18 @@ export function OutputSelector({
   disabled,
   mpdOwner,
   disabledMpd,
+  activeDeviceId,
+  myDeviceId,
 }: OutputSelectorProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const isBrowserActiveForMe =
+    currentMode === "browser" &&
+    (!activeDeviceId || activeDeviceId === myDeviceId);
+  const isPlayingElsewhere =
+    currentMode === "browser" &&
+    !!activeDeviceId &&
+    activeDeviceId !== myDeviceId;
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -66,6 +77,10 @@ export function OutputSelector({
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="browser">
             {t("player.outputBrowser")}
+            {isBrowserActiveForMe ? ` (${t("player.outputThisBrowser")})` : ""}
+            {isPlayingElsewhere
+              ? ` (${t("player.playingOnOtherBrowser")})`
+              : ""}
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>

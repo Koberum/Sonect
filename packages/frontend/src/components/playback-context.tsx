@@ -3,6 +3,7 @@ import type { PlaybackStatus, OutputMode } from "@repo/types";
 import type { TrackWithRelations } from "@repo/types/catalog";
 import { createContext, useContext, useEffect, useState } from "react";
 import { getOutputMode } from "@/features/player/api";
+import { getDeviceId } from "@/lib/deviceId";
 
 export type SyncProgress = {
   current: number;
@@ -25,6 +26,9 @@ type PlaybackContextType = {
   setSyncProgress: (progress: SyncProgress | null) => void;
   outputMode: OutputMode;
   setOutputMode: (mode: OutputMode) => void;
+  activeDeviceId: string | null;
+  myDeviceId: string;
+  setActiveDeviceId: (id: string | null) => void;
   setWsConnected: (connected: boolean) => void;
 };
 
@@ -57,23 +61,31 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     const v = localStorage.getItem("outputMode");
     return v === "browser" || v === "mpd" ? v : "mpd";
   });
+  const [myDeviceId] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    return getDeviceId();
+  });
+  const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem("outputMode", outputMode);
   }, [outputMode]);
 
-  // Hydrate outputMode from backend (per-session, PlayerRouter default browser).
+  // Hydrate outputMode + activeDevice from backend (per-profile, PlayerRouter default browser).
   // Backend is source of truth; localStorage is only a fallback.
   useEffect(() => {
     let cancelled = false;
     getOutputMode()
       .then((res) => {
+        if (cancelled) return;
         if (
-          !cancelled &&
           (res.mode === "browser" || res.mode === "mpd") &&
           res.mode !== outputMode
         ) {
           setOutputMode(res.mode);
+        }
+        if ("activeDeviceId" in res && res.activeDeviceId !== undefined) {
+          setActiveDeviceId(res.activeDeviceId ?? null);
         }
       })
       .catch(() => {
@@ -97,6 +109,9 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         setSyncProgress,
         outputMode,
         setOutputMode,
+        activeDeviceId,
+        myDeviceId,
+        setActiveDeviceId,
         setWsConnected,
       }}
     >

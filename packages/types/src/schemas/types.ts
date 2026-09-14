@@ -101,6 +101,7 @@ export const systemSchemas = {
   }),
   outputMode: z.object({
     mode: z.enum(["mpd", "browser"]),
+    deviceId: z.string().min(1).optional(),
   }),
 };
 

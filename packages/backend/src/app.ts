@@ -26,7 +26,7 @@ app.use((_req, res, next) => {
   );
   res.header(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Session-Id",
+    "Content-Type, Authorization, X-Session-Id, X-Device-Id",
   );
   if (_req.method === "OPTIONS") {
     res.sendStatus(204);

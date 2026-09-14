@@ -60,6 +60,20 @@ export async function apiFetch<T>(
     } catch {
       // ignore
     }
+    try {
+      const did = localStorage.getItem("sonect.deviceId");
+      if (did) sessionHeader = { ...sessionHeader, "X-Device-Id": did };
+      else {
+        // generate via crypto if not exists (lazy)
+        const generated =
+          Math.random().toString(36).substring(2, 15) +
+          Math.random().toString(36).substring(2, 15);
+        localStorage.setItem("sonect.deviceId", generated);
+        sessionHeader = { ...sessionHeader, "X-Device-Id": generated };
+      }
+    } catch {
+      // ignore
+    }
   }
 
   const finalHeaders: Record<string, string> = {

@@ -40,6 +40,8 @@ export default function MusicPlayer() {
     playbackStatus,
     outputMode,
     setOutputMode,
+    activeDeviceId,
+    myDeviceId,
   } = usePlaybackContext();
 
   const lastAnchorRef = useRef({ time: 0, elapsed: 0 });
@@ -59,9 +61,13 @@ export default function MusicPlayer() {
     prevTrackFileRef.current = null;
   }, []);
 
-  // Browser audio sync
+  // Browser audio sync - only active browser device renders audio
+  const isActiveBrowser =
+    outputMode === "browser" &&
+    (!activeDeviceId || activeDeviceId === myDeviceId);
+
   useEffect(() => {
-    if (outputMode !== "browser") {
+    if (!isActiveBrowser) {
       browserAudio.pause();
       return;
     }
@@ -88,16 +94,21 @@ export default function MusicPlayer() {
     } else {
       browserAudio.pause();
     }
-  }, [playbackStatus, outputMode, browserAudio]);
+  }, [playbackStatus, outputMode, browserAudio, isActiveBrowser]);
 
-  // Ensure browser audio stops immediately when switching away from browser output
+  // Ensure browser audio stops immediately when switching away from active browser output
   useEffect(() => {
-    if (outputMode !== "browser") {
+    if (!isActiveBrowser) {
       browserAudio.pause();
       // Reset prev file so returning to browser reloads at new seek
-      prevTrackFileRef.current = null;
+      if (
+        outputMode !== "browser" ||
+        (activeDeviceId && activeDeviceId !== myDeviceId)
+      ) {
+        prevTrackFileRef.current = null;
+      }
     }
-  }, [outputMode, browserAudio]);
+  }, [outputMode, browserAudio, isActiveBrowser, activeDeviceId, myDeviceId]);
 
   // Track change detection
   useEffect(() => {
@@ -111,6 +122,7 @@ export default function MusicPlayer() {
     setOutputMode(mode);
     try {
       await apiSetOutputMode(mode);
+      // optimistic active device for browser handoff
       queryClient.invalidateQueries({ queryKey: qk.player.queue() });
       queryClient.invalidateQueries({ queryKey: qk.system.outputMode() });
     } catch (err) {
@@ -162,17 +174,19 @@ export default function MusicPlayer() {
 
   return (
     <>
-      {browserAudio.autoplayBlocked && playbackStatus.state === "play" && (
-        <div className="animate-in fade-in slide-in-from-bottom-4 fixed bottom-24 left-1/2 z-[60] -translate-x-1/2">
-          <button
-            onClick={() => browserAudio.play()}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium shadow-lg"
-          >
-            <Play className="h-4 w-4" />
-            {t("player.tapToPlay")}
-          </button>
-        </div>
-      )}
+      {isActiveBrowser &&
+        browserAudio.autoplayBlocked &&
+        playbackStatus.state === "play" && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 fixed bottom-24 left-1/2 z-[60] -translate-x-1/2">
+            <button
+              onClick={() => browserAudio.play()}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium shadow-lg"
+            >
+              <Play className="h-4 w-4" />
+              {t("player.tapToPlay")}
+            </button>
+          </div>
+        )}
       <div
         className={`bg-card border-border fixed right-0 bottom-0 left-0 z-50 border border-b-0 pb-[env(safe-area-inset-bottom)] transition-all duration-300 ease-in-out`}
       >
@@ -246,15 +260,15 @@ export default function MusicPlayer() {
               mpdOwner={mpdOwner}
               mySid={mySid}
               disabledMpd={isMpdLockedForMe}
+              activeDeviceId={activeDeviceId}
+              myDeviceId={myDeviceId}
             />
             <VolumeControls
               volume={
-                outputMode === "browser"
-                  ? browserAudio.volume
-                  : playbackStatus.volume
+                isActiveBrowser ? browserAudio.volume : playbackStatus.volume
               }
               onVolumeCommit={
-                outputMode === "browser" ? browserAudio.setVolume : undefined
+                isActiveBrowser ? browserAudio.setVolume : undefined
               }
             />
           </div>

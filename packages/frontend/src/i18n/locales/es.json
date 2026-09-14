@@ -73,6 +73,8 @@
     "title": "Reproduciendo ahora",
     "outputMpd": "Salida MPD",
     "outputBrowser": "Salida del Navegador",
+    "outputThisBrowser": "Este navegador",
+    "playingOnOtherBrowser": "Reproduciendo en otro navegador",
     "sessionPlayback": "Reproducción de sesión",
     "outputModeError": "Error al cambiar el modo de salida",
     "tapToPlay": "Toca para reproducir",

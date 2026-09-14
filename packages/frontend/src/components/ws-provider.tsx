@@ -3,16 +3,23 @@ import { getProfileSessionId } from "@/lib/selectedProfile";
 import { useProfile } from "@/features/profiles/profile-context";
 import { usePlaybackContext, type SyncProgress } from "./playback-context";
 import type { PlaybackStatus } from "@repo/types";
+import { getDeviceId } from "@/lib/deviceId";
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
-  const { setPlaybackStatus, setTrackPlayed, setSyncProgress, setWsConnected } =
-    usePlaybackContext();
+  const {
+    setPlaybackStatus,
+    setTrackPlayed,
+    setSyncProgress,
+    setWsConnected,
+    setActiveDeviceId,
+  } = usePlaybackContext();
 
   const settersRef = useRef({
     setPlaybackStatus,
     setTrackPlayed,
     setSyncProgress,
     setWsConnected,
+    setActiveDeviceId,
   });
   useEffect(() => {
     settersRef.current = {
@@ -20,6 +27,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       setTrackPlayed,
       setSyncProgress,
       setWsConnected,
+      setActiveDeviceId,
     };
   });
 
@@ -42,6 +50,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       setTrackPlayed,
       setSyncProgress,
       setWsConnected,
+      setActiveDeviceId,
     } = settersRef.current;
 
     intentionalCloseRef.current = false;
@@ -52,7 +61,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       wsRef.current?.close();
 
       const sid = profileId || getProfileSessionId();
-      const sessionUrl = `${wsUrl}${wsUrl.includes("?") ? "&" : "?"}sessionId=${encodeURIComponent(sid)}`;
+      const did = getDeviceId();
+      const sessionUrl = `${wsUrl}${wsUrl.includes("?") ? "&" : "?"}sessionId=${encodeURIComponent(sid)}&deviceId=${encodeURIComponent(did)}`;
       const ws = new WebSocket(sessionUrl);
       wsRef.current = ws;
 
@@ -86,7 +96,9 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           }
 
           if (type === "player-status" || type === undefined) {
-            const pd = data as unknown as PlaybackStatus;
+            const pd = data as unknown as PlaybackStatus & {
+              activeDeviceId?: string | null;
+            };
 
             setPlaybackStatus({
               track: pd.track,
@@ -99,7 +111,13 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
               single: pd.single,
               consume: pd.consume,
               queueLength: pd.queueLength ?? 0,
+              activeDeviceId: pd.activeDeviceId ?? null,
+              mode: (pd as unknown as { mode?: string })
+                .mode as PlaybackStatus["mode"],
             });
+            if ("activeDeviceId" in pd) {
+              setActiveDeviceId(pd.activeDeviceId ?? null);
+            }
 
             if (pd.track && trackIdRef.current !== pd.track.id) {
               trackIdRef.current = pd.track.id;

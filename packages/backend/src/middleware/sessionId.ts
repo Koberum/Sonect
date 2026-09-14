@@ -1,5 +1,15 @@
 import type { Request, Response, NextFunction } from "express";
 
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Express {
+    interface Request {
+      sessionId?: string;
+      deviceId?: string | null;
+    }
+  }
+}
+
 export function sessionIdMiddleware(
   req: Request,
   res: Response,
@@ -11,5 +21,7 @@ export function sessionIdMiddleware(
     return;
   }
   req.sessionId = id.trim();
+  const did = req.header("X-Device-Id")?.trim() ?? null;
+  req.deviceId = did && did.length > 0 ? did : null;
   next();
 }
