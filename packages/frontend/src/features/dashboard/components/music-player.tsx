@@ -222,16 +222,6 @@ export default function MusicPlayer() {
             {trackPlayed && <PlayedTrack track={trackPlayed} />}
           </div>
           <div className="flex flex-1 flex-col items-center gap-2">
-            <div className="hidden w-full md:flex">
-              <PlaybackWaveform
-                elapsed={displayElapsed}
-                duration={playbackStatus.duration}
-                trackId={playbackStatus.track?.id ?? null}
-                className="w-full pr-6 pl-6"
-                outputMode={outputMode}
-              />
-            </div>
-
             <PlaybackControls
               playbackStatus={playbackStatus}
               playTrack={() => {
@@ -252,6 +242,15 @@ export default function MusicPlayer() {
               setRandom={(enabled) => doToggle(() => setRandom(enabled))}
               setRepeat={(enabled) => doToggle(() => setRepeat(enabled))}
             />
+            <div className="hidden w-full md:flex">
+              <PlaybackWaveform
+                elapsed={displayElapsed}
+                duration={playbackStatus.duration}
+                trackId={playbackStatus.track?.id ?? null}
+                className="w-full pr-6 pl-6"
+                outputMode={outputMode}
+              />
+            </div>
           </div>
           <div className="flex flex-1 items-center justify-end gap-2 pr-4">
             <QueueView currentTrackFile={playbackStatus.track?.file} />

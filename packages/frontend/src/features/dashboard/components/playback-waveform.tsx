@@ -56,7 +56,7 @@ export function PlaybackWaveform({
           aria-label="Playback position"
           style={{ minWidth: 0 }}
         >
-          <SliderPrimitive.Track className="relative h-7 w-full grow overflow-hidden rounded-sm">
+          <SliderPrimitive.Track className="relative h-5 w-full grow overflow-hidden rounded-sm">
             <Waveform
               samples={waveform.samples}
               progress={pct / 100}

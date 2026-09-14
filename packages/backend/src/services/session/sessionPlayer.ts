@@ -7,6 +7,7 @@ import type {
   SessionQueueEntry,
   TrackWithRelations,
 } from "@repo/types";
+import { AutoplayService } from "../mpd/autoplayService.js";
 
 export class SessionPlayer extends EventEmitter {
   private queueInternal: SessionQueueEntry[] = [];
@@ -15,12 +16,16 @@ export class SessionPlayer extends EventEmitter {
   private stateInternal: "play" | "pause" | "stop" = "stop";
   private lastActiveAtInternal = Date.now();
   private tickTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly autoplayService: AutoplayService;
+  private _autofillInProgress = false;
 
   constructor(
     private readonly sessionId: string,
     private readonly logService: LogService,
+    autoplayService?: AutoplayService,
   ) {
     super();
+    this.autoplayService = autoplayService ?? new AutoplayService();
   }
 
   private log(
@@ -74,8 +79,44 @@ export class SessionPlayer extends EventEmitter {
     this.position += 1;
     if (this.position >= current.duration) {
       this.advance();
+    } else {
+      this.maybeRefill();
     }
     this.emit("stateChanged");
+  }
+
+  private maybeRefill(): void {
+    if (this._autofillInProgress) return;
+    const remaining = this.queueInternal.length - this.indexInternal - 1;
+    if (remaining >= 5 || remaining < 0) return;
+    const current = this.queueInternal[this.indexInternal];
+    if (!current) return;
+    const queuedFiles = this.queueInternal.map((e) => e.file);
+    this._autofillInProgress = true;
+    try {
+      const batch = this.autoplayService.getNextBatch(current.file, {
+        queuedFiles,
+      });
+      if (batch.length > 0) {
+        const sid = this.autoplayService.sessionId;
+        for (const f of batch) {
+          const t = tracksDb.getByFile(f);
+          if (t) this.queueInternal.push(this.buildEntry(t));
+        }
+        this.autoplayService.commitBatch(batch, sid);
+        this.log(
+          "debug",
+          `[Session ${this.sessionId.slice(0, 8)}][browser] autoplay refill +${batch.length} queueLen=${this.queueInternal.length}`,
+          { queueLength: this.queueInternal.length },
+        );
+      }
+    } catch (err) {
+      this.log("error", `autoplay refill failed: ${String(err)}`, {
+        error: String(err),
+      });
+    } finally {
+      this._autofillInProgress = false;
+    }
   }
 
   private buildEntry(t: DBTrack): SessionQueueEntry {
@@ -102,6 +143,7 @@ export class SessionPlayer extends EventEmitter {
     }
     this.indexInternal = next;
     this.position = 0;
+    this.maybeRefill();
   }
 
   private currentTrack(): TrackWithRelations | undefined {
@@ -150,13 +192,16 @@ export class SessionPlayer extends EventEmitter {
     }
 
     let entries: SessionQueueEntry[];
+    let initialFiles: string[];
     if (dbTrack.album_id) {
       const albumTracks = tracksDb.getByAlbumOrdered(dbTrack.album_id);
       const clickIdx = albumTracks.findIndex((t) => t.file === file);
       const files = clickIdx >= 0 ? albumTracks.slice(clickIdx) : [dbTrack];
       entries = files.map((t) => this.buildEntry(t));
+      initialFiles = files.map((t) => t.file);
     } else {
       entries = [this.buildEntry(dbTrack)];
+      initialFiles = [dbTrack.file];
     }
 
     this.queueInternal = entries;
@@ -164,13 +209,33 @@ export class SessionPlayer extends EventEmitter {
     this.position = 0;
     this.stateInternal = "play";
     this.startClock();
+
+    const sessionId = this.autoplayService.resetSession(file, initialFiles);
+    try {
+      const batchFiles = this.autoplayService.getNextBatch(file);
+      if (
+        batchFiles.length > 0 &&
+        this.autoplayService.sessionId === sessionId
+      ) {
+        for (const f of batchFiles) {
+          const t = tracksDb.getByFile(f);
+          if (t) this.queueInternal.push(this.buildEntry(t));
+        }
+        this.autoplayService.commitBatch(batchFiles, sessionId);
+      }
+    } catch (err) {
+      this.log("error", `autoplay batch failed: ${String(err)}`, {
+        error: String(err),
+      });
+    }
+
     this.log(
       "debug",
-      `[Session ${this.sessionId.slice(0, 8)}][browser] play file="${file}" queueLen=${entries.length}`,
+      `[Session ${this.sessionId.slice(0, 8)}][browser] play file="${file}" queueLen=${this.queueInternal.length}`,
       {
         sessionId: this.sessionId.slice(0, 8),
         file,
-        queueLength: entries.length,
+        queueLength: this.queueInternal.length,
       },
     );
     this.emit("stateChanged");

@@ -152,6 +152,11 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
             return;
           }
 
+          if (type === "log") {
+            // strictly for debug — not wired to sync badge
+            return;
+          }
+
           if (type === "player-status" || type === undefined) {
             const pd = data as unknown as PlaybackStatus & {
               activeDeviceId?: string | null;
