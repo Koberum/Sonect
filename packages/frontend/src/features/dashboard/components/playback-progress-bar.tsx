@@ -19,21 +19,28 @@ export function PlaybackProgressBar({
   const pct = duration > 0 ? Math.min(100, (elapsed / duration) * 100) : 0;
   const seek = goToPosition;
 
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = x / rect.width;
+    const newPosition = percentage * duration;
+    seek(newPosition);
+  };
+
   return (
-    <div className={`flex w-full items-center gap-2 ${className}`}>
+    <div className={`flex w-full items-center gap-2 ${className ?? ""}`}>
       <span className="hidden font-mono text-xs md:flex">
         {formatTime(elapsed)}
       </span>
 
       <div
         className="bg-border h-1.5 flex-1 cursor-pointer rounded-sm"
-        onClick={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect();
-          const x = e.clientX - rect.left;
-          const percentage = x / rect.width;
-          const newPosition = percentage * duration;
-          seek(newPosition);
-        }}
+        role="slider"
+        aria-label="Playback position"
+        aria-valuemin={0}
+        aria-valuemax={duration || 0}
+        aria-valuenow={elapsed}
+        onClick={handleSeek}
       >
         <div
           className="bg-primary h-full rounded-sm"

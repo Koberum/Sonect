@@ -71,7 +71,7 @@ export function PlaybackControls({
 
         <Button
           variant="default"
-          size="icon-lg"
+          size="icon-sm"
           className="rounded-full transition-opacity hover:opacity-85"
           onClick={handleMain}
         >

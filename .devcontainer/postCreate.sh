@@ -25,6 +25,12 @@ if ! command -v rtk > /dev/null 2>&1; then
 fi
 export PATH="$HOME/.local/bin:$PATH"
 
+if command -v ffmpeg >/dev/null 2>&1; then
+  echo "ffmpeg $(ffmpeg -version | head -n1)"
+else
+  echo "⚠️  ffmpeg not found — waveform generation will use fallback"
+fi
+
 echo "Starting MPD in dev mode..."
 mpd /etc/mpd.conf || true
 

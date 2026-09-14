@@ -77,6 +77,7 @@ After making changes:
 | `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta` | Audio extensions counted as music files in per-source library stats |
 | `PORT`             | `3000`                                                         | Backend HTTP server port                                            |
 | `FRONTEND_DIST`    | `../frontend/dist`                                             | Path to built frontend static files (prod)                          |
+| `WAVEFORMS_DIR`    | `<COVERS_DIR>/../waveforms` or `./data/waveforms`              | Path where waveform JSON caches are saved (SHA1(file).json)         |
 | `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | MPD log file (for per-file sync progress)                           |
 | `DNS_CHECK_HOST`   | `example.com`                                                  | Host resolved to verify DNS connectivity                            |
 
@@ -86,7 +87,7 @@ After making changes:
 
 ```
 Single Node process on port 3000:
-  Express API routes (/player [unified per-session], /catalog, /playlists, /system, /covers)
+  Express API routes (/player [unified per-session], /catalog, /playlists, /system, /covers, /waveforms)
   + WebSocket server (ws)
   + Static file serving for built React frontend
   + SPA fallback (index.html for any unmatched GET)
@@ -300,6 +301,12 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 1. `coverService.ts` (`services/coverService.ts`) handles cover extraction using `music-metadata` for embedded art.
 2. Filesystem covers (`cover.jpg`, `folder.jpg`, etc.) are checked first; embedded art is used as fallback. Covers are resized to **500×500 JPEG** with `sharp`, saved to `COVERS_DIR` as `SHA1(artist+album).jpg`.
 3. Backend serves them under `/covers` with `Cache-Control: immutable` (30 days).
+
+### Waveform pipeline (SoundCloud-style progress bar)
+
+1. `waveformService.ts` (`services/library/waveformService.ts`) generates per-track waveforms on demand. It decodes audio via `ffmpeg` (`-f s16le -ac 1 -ar 8000`) and computes **120** normalized peaks (`0–255`) by `max(|sample|)/32768` per bin, scaling max to 255 for contrast — mirroring Monochrome's `waveform.js:168` `extractPeaks` (4 peaks/sec, capped 1000). If `ffmpeg` is missing or decode fails, a deterministic fallback envelope is used so the UI never shows a flat line.
+2. Waveforms are cached as `SHA1(file).json` under `WAVEFORMS_DIR` (`{samples, duration, version:1}`) with atomic write + in-memory LRU + request coalescing (`pendingGeneration` map). Served via `GET /waveforms/:trackId` (`routes/waveformRoutes.ts`, `controllers/waveformController.ts`) with `Cache-Control: immutable` (86400s). `Vite` proxy forwards `/waveforms` (`frontend/vite.config.ts`).
+3. Frontend `components/waveform.tsx` renders a **canvas** SoundCloud-style bar waveform: `numBars=min(samples, floor(width/3))`, `barWidth=0.65*slot`, `gap=0.35*slot`, rounded `barHeight=max(2, peak*height*0.82)`, centered vertically. Played vs unplayed are two clipped fills (`--primary` vs `--muted-foreground` at 35% opacity) driven by `elapsed/duration` progress. `PlaybackProgressBar` (`features/dashboard/components/playback-progress-bar.tsx`) fetches via `playerQueries.waveform(trackId)` (`lib/queryKeys.ts: qk.player.waveform`, 5m stale/30m gc) and switches from the 6px solid bar to a **28px waveform** (`h-7`) when samples exist, retaining click-to-seek + `role=slider` a11y. `music-player.tsx` + `full-page-player.tsx` pass `trackId={track?.id}` — mobile progress switches from `h-1` to dynamic height accordingly. Responsive at 375/768/1280 via `ResizeObserver` + Tailwind.
 
 ### First-run setup wizard
 

@@ -37,6 +37,7 @@ apt-get update -qq
 apt-get install -y \
   curl \
   jq \
+  ffmpeg \
   mpd \
   alsa-utils \
   dumb-init \

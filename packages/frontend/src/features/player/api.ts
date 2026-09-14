@@ -100,3 +100,16 @@ export function setOutputMode(mode: OutputMode): Promise<{ success: boolean }> {
     body: { mode },
   });
 }
+
+export interface WaveformData {
+  samples: number[];
+  duration: number;
+  version: number;
+}
+
+export function getWaveform(
+  trackId: number,
+  signal?: AbortSignal,
+): Promise<WaveformData> {
+  return apiFetch(`/waveforms/${trackId}`, { signal });
+}

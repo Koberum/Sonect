@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "react-responsive";
 import { PlaybackControls } from "./playback-controls";
 import { PlaybackProgressBar } from "./playback-progress-bar";
+import { PlaybackWaveform } from "./playback-waveform";
 import { PlayedTrack } from "./playback-track";
 import { QueueView } from "./queue-view";
 import { FullPagePlayer } from "./full-page-player";
@@ -179,7 +180,7 @@ export default function MusicPlayer() {
           <PlaybackProgressBar
             elapsed={displayElapsed}
             duration={playbackStatus.duration}
-            className="h-1 w-full"
+            className="w-full"
             outputMode={outputMode}
           />
         </div>
@@ -205,6 +206,16 @@ export default function MusicPlayer() {
             {trackPlayed && <PlayedTrack track={trackPlayed} />}
           </div>
           <div className="flex flex-1 flex-col items-center gap-2">
+            <div className="hidden w-full md:flex">
+              <PlaybackWaveform
+                elapsed={displayElapsed}
+                duration={playbackStatus.duration}
+                trackId={playbackStatus.track?.id ?? null}
+                className="w-full pr-6 pl-6"
+                outputMode={outputMode}
+              />
+            </div>
+
             <PlaybackControls
               playbackStatus={playbackStatus}
               playTrack={() => {
@@ -225,15 +236,6 @@ export default function MusicPlayer() {
               setRandom={(enabled) => doToggle(() => setRandom(enabled))}
               setRepeat={(enabled) => doToggle(() => setRepeat(enabled))}
             />
-
-            <div className="hidden w-full md:flex">
-              <PlaybackProgressBar
-                elapsed={displayElapsed}
-                duration={playbackStatus.duration}
-                className="w-full pr-6 pl-6"
-                outputMode={outputMode}
-              />
-            </div>
           </div>
           <div className="flex flex-1 items-center justify-end gap-2 pr-4">
             <QueueView currentTrackFile={playbackStatus.track?.file} />

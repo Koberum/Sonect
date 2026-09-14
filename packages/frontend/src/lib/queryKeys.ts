@@ -28,6 +28,7 @@ export const qk = {
   },
   player: {
     queue: () => ["player", "queue"] as const,
+    waveform: (trackId: number) => ["player", "waveform", trackId] as const,
   },
   mpd: {
     queue: () => ["player", "queue"] as const,

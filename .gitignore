@@ -83,6 +83,7 @@ packages/backend/data
 data/covers/*
 data/playlists/*
 data/music/*
+data/waveforms/*
 packages/backend/.version
 TODO.md
 

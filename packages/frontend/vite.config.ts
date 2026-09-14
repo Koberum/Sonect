@@ -17,6 +17,7 @@ export default defineConfig({
       "/catalog": "http://localhost:3000",
       "/playlists": "http://localhost:3000",
       "/covers": "http://localhost:3000",
+      "/waveforms": "http://localhost:3000",
       "/stream": "http://localhost:3000",
       "/system": "http://localhost:3000",
       "/dashboard": "http://localhost:3000",

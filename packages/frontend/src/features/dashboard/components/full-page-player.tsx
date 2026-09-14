@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Play, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PlaybackControls } from "./playback-controls";
-import { PlaybackProgressBar } from "./playback-progress-bar";
+import { PlaybackWaveform } from "./playback-waveform";
 import { usePlaybackContext } from "@/components/playback-context";
 import { getCoverPath } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,11 +17,11 @@ import {
   playQueueItem,
   removeFromQueue,
 } from "@/features/player/api";
-import { Badge } from "@/components/ui/badge";
 import VolumeControls from "./volume-controls";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { playerQueries } from "@/features/player/queries";
 import { qk } from "@/lib/queryKeys";
+import PlayStatus from "./play-status";
 
 interface FullPagePlayerProps {
   displayElapsed: number;
@@ -90,9 +90,10 @@ export function FullPagePlayer({
       </div>
 
       <div className="px-6 py-2">
-        <PlaybackProgressBar
+        <PlaybackWaveform
           elapsed={displayElapsed}
           duration={playbackStatus.duration}
+          trackId={trackPlayed.id ?? playbackStatus.track?.id ?? null}
           className="w-full"
           outputMode={outputMode}
         />
@@ -149,17 +150,21 @@ export function FullPagePlayer({
                       }}
                       className="h-full w-full object-cover"
                     />
-                    {!isCurrent && (
+                    {!isCurrent ? (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
                         <Play
                           className="h-4 w-4 text-white"
                           fill="currentColor"
                         />
                       </div>
+                    ) : (
+                      <PlayStatus
+                        variant="white"
+                        className="absolute inset-2 flex items-center justify-center"
+                      />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    {isCurrent && <Badge>{t("queue.nowPlaying")}</Badge>}
                     <p
                       className={`truncate text-sm ${
                         isCurrent ? "text-primary font-medium" : "font-medium"

@@ -37,6 +37,10 @@ no subscriptions, no limits.
   same genre, and finally the most-listened albums across the library.
 - **Album art pipeline** — Artwork is extracted from your audio files, resized
   to 500x500 JPEG, served over HTTP, and cached in the browser for 30 days.
+- **Waveform progress bar** — SoundCloud-style waveform (120 peaks) is decoded
+  via `ffmpeg` on demand, cached as `SHA1(file).json` under `WAVEFORMS_DIR`,
+  and rendered as a 28px canvas bar (played vs unplayed) — fallback to a
+  minimal bar when `ffmpeg` is unavailable.
 - **In-browser MPD config** — Edit audio outputs and MPD settings from the
   Settings page. Save once, MPD restarts automatically — no SSH needed.
 - **Session-based browser playback** — `browser` output mode streams through a
@@ -161,6 +165,7 @@ a complete database file.
 | GET    | `/player/queue`                | Queue for this session (browser: isolated, MPD: shared)                             |
 | PUT    | `/player/output-mode`          | Switch `browser`↔`mpd` (per-session, `mpd` locked to one session → 423 if busy)     |
 | PATCH  | `/player/volume`               | Set volume (MPD only; browser volume is local)                                      |
+| GET    | `/waveforms/:trackId`          | Get waveform peaks for a track (`{samples,duration,version}`)                       |
 | GET    | `/system/network/status`       | Read network/DNS status                                                             |
 | GET    | `/system/setup/progress`       | Read setup progress                                                                 |
 | POST   | `/system/setup/complete`       | Complete or skip setup                                                              |
@@ -178,6 +183,7 @@ Configure via `packages/backend/.env`:
 | `MUSIC_DIR`        | `/music`                                                       | Root of your music library                                          |
 | `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta` | Audio extensions counted as music files in per-source library stats |
 | `COVERS_DIR`       | —                                                              | Where cover JPEGs are cached                                        |
+| `WAVEFORMS_DIR`    | `<COVERS_DIR>/../waveforms` or `./data/waveforms`              | Where waveform JSON caches are saved (`SHA1(file).json`)            |
 | `DB_PATH`          | `/db/music.db` (dev) / `/opt/sonect/data/music.db` (prod)      | SQLite database path                                                |
 | `MPD_CONFIG_PATH`  | `/opt/sonect/data/mpd-audio.conf`                              | MPD config drop-in                                                  |
 | `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | MPD log file for sync progress                                      |

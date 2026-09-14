@@ -6,6 +6,7 @@ FROM node:22-bookworm
 # System dependencies (dev + audio + MPD)
 RUN apt-get update && apt-get install -y \
     mpd \
+    ffmpeg \
     alsa-utils \
     alsa-tools \
     curl \

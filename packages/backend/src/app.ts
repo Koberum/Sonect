@@ -5,6 +5,7 @@ import catalogRoutes from "@routes/catalogRoutes";
 import playlistRoutes from "@routes/playlistRoutes";
 import systemRoutes from "@routes/systemRoutes";
 import streamRoutes from "@routes/streamRoutes";
+import waveformRoutes from "@routes/waveformRoutes";
 import dashboardRouter from "@routes/dashboardRoutes";
 import sessionRoutes from "@routes/sessionRoutes";
 import unifiedPlayerRoutes from "@routes/unifiedPlayerRoutes";
@@ -43,6 +44,7 @@ app.use(
 );
 
 app.use("/stream", streamRoutes);
+app.use("/waveforms", waveformRoutes);
 
 app.use("/player", unifiedPlayerRoutes);
 app.use("/catalog", catalogRoutes);
@@ -63,6 +65,7 @@ if (process.env.NODE_ENV === "production" && fs.existsSync(frontendDist)) {
       req.path.startsWith("/catalog") ||
       req.path.startsWith("/playlists") ||
       req.path.startsWith("/covers") ||
+      req.path.startsWith("/waveforms") ||
       req.path.startsWith("/system") ||
       req.path.startsWith("/stream") ||
       req.path.startsWith("/dashboard") ||
