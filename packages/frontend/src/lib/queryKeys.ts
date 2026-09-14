@@ -45,4 +45,7 @@ export const qk = {
     outputMode: () => ["system", "outputMode"] as const,
     mpdStatus: () => ["system", "mpd", "status"] as const,
   },
+  profiles: {
+    list: () => ["profiles", "list"] as const,
+  },
 };

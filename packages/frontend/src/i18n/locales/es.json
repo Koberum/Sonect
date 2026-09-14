@@ -490,6 +490,28 @@
       "resetSetupError": "No se pudo restablecer el asistente de configuración"
     }
   },
+  "profile": {
+    "title": "¿Quién está escuchando?",
+    "change": "Cambiar perfil",
+    "switch": "Cambiar perfil",
+    "select": "Seleccionar",
+    "create": "Crear perfil",
+    "namePlaceholder": "Nombre del perfil",
+    "rename": "Renombrar",
+    "save": "Guardar",
+    "color": "Color",
+    "delete": "Eliminar",
+    "deleteTitle": "Eliminar perfil",
+    "deleteMessage": "¿Eliminar el perfil \"{{name}}\"? Esta acción no se puede deshacer.",
+    "lastProfile": "El último perfil no se puede eliminar",
+    "retry": "Intentar de nuevo",
+    "errors": {
+      "load": "No se pudieron cargar los perfiles",
+      "create": "No se pudo crear el perfil",
+      "update": "No se pudo actualizar el perfil",
+      "remove": "No se pudo eliminar el perfil"
+    }
+  },
   "setup": {
     "welcome": {
       "description": "Bienvenido a Sonect, tu reproductor de música autoalojado.",

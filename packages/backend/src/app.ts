@@ -9,6 +9,7 @@ import waveformRoutes from "@routes/waveformRoutes";
 import dashboardRouter from "@routes/dashboardRoutes";
 import sessionRoutes from "@routes/sessionRoutes";
 import unifiedPlayerRoutes from "@routes/unifiedPlayerRoutes";
+import profileRoutes from "@routes/profileRoutes";
 import { errorHandler } from "@middleware/errorHandler";
 import { requestLogger } from "@middleware/requestLogger";
 import { getLogService } from "@services/factory";
@@ -52,6 +53,7 @@ app.use("/playlists", playlistRoutes);
 app.use("/system", systemRoutes);
 app.use("/dashboard", dashboardRouter);
 app.use("/session", sessionRoutes);
+app.use("/profiles", profileRoutes);
 
 // In production, serve the built frontend from the same process
 const frontendDist =
@@ -69,7 +71,8 @@ if (process.env.NODE_ENV === "production" && fs.existsSync(frontendDist)) {
       req.path.startsWith("/system") ||
       req.path.startsWith("/stream") ||
       req.path.startsWith("/dashboard") ||
-      req.path.startsWith("/session")
+      req.path.startsWith("/session") ||
+      req.path.startsWith("/profiles")
     ) {
       return next();
     }

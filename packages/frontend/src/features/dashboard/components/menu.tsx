@@ -6,6 +6,7 @@ import { useTheme } from "@/components/theme-provider";
 import { usePlaybackContext } from "@/components/playback-context";
 import { StatusBar } from "./status-bar";
 import { NetworkStatusIndicator } from "@/features/status/NetworkStatusIndicator";
+import { ProfileSwitcher } from "@/features/profiles/profile-switcher";
 
 export interface MenuProps {
   isOpen?: boolean;
@@ -62,6 +63,7 @@ export function Menu({ isOpen, toggleSidebar }: MenuProps) {
         <div className="hidden md:flex">
           <NetworkStatusIndicator />
         </div>
+        <ProfileSwitcher />
       </div>
     </Menubar>
   );

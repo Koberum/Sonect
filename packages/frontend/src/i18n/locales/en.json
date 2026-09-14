@@ -490,6 +490,28 @@
       "resetSetupError": "Failed to reset the setup wizard"
     }
   },
+  "profile": {
+    "title": "Who's listening?",
+    "change": "Change profile",
+    "switch": "Switch profile",
+    "select": "Select",
+    "create": "Create profile",
+    "namePlaceholder": "Profile name",
+    "rename": "Rename",
+    "save": "Save",
+    "color": "Color",
+    "delete": "Delete",
+    "deleteTitle": "Delete profile",
+    "deleteMessage": "Delete the profile \"{{name}}\"? This cannot be undone.",
+    "lastProfile": "The last profile cannot be deleted",
+    "retry": "Try again",
+    "errors": {
+      "load": "Could not load profiles",
+      "create": "Could not create the profile",
+      "update": "Could not update the profile",
+      "remove": "Could not delete the profile"
+    }
+  },
   "setup": {
     "welcome": {
       "description": "Welcome to Sonect — your self-hosted music streamer.",

@@ -79,3 +79,10 @@ export type DBSetupProgress = {
   completed: number;
   completed_at?: string;
 };
+
+export type DBProfile = {
+  id: string;
+  name: string;
+  avatar_color: string;
+  created_at: number;
+};

@@ -124,6 +124,28 @@ export const sessionSchemas = {
   }),
 };
 
+export const profileSchemas = {
+  create: z.object({
+    name: z.string().trim().min(1, "name is required").max(50),
+    avatarColor: z
+      .string()
+      .regex(/^#[0-9a-fA-F]{6}$/, "avatarColor must be a hex color")
+      .optional(),
+  }),
+  update: z
+    .object({
+      name: z.string().trim().min(1, "name is required").max(50).optional(),
+      avatarColor: z
+        .string()
+        .regex(/^#[0-9a-fA-F]{6}$/, "avatarColor must be a hex color")
+        .optional(),
+    })
+    .refine((v) => v.name !== undefined || v.avatarColor !== undefined, {
+      message: "At least one of name or avatarColor is required",
+    }),
+  idParam: z.object({ id: z.string().min(1, "id is required") }),
+};
+
 export const catalogSchemas = {
   idParam: z.object({
     id: z.coerce

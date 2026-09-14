@@ -47,8 +47,24 @@ export async function apiFetch<T>(
   const { params, body, headers, signal, ...rest } = options;
   const url = buildUrl(path, params);
 
+  let sessionHeader: Record<string, string> = {};
+  if (typeof window !== "undefined" && !path.startsWith("/profiles")) {
+    try {
+      const raw = localStorage.getItem("sonect-profile");
+      if (raw) {
+        const parsed = JSON.parse(raw) as { id?: string };
+        if (parsed?.id && typeof parsed.id === "string") {
+          sessionHeader = { "X-Session-Id": parsed.id };
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   const finalHeaders: Record<string, string> = {
     "Content-Type": "application/json",
+    ...sessionHeader,
     ...(headers as Record<string, string> | undefined),
   };
   // Allow caller to delete default header by passing Content-Type: undefined
