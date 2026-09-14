@@ -71,6 +71,39 @@ export async function apiFetch<T>(
         localStorage.setItem("sonect.deviceId", generated);
         sessionHeader = { ...sessionHeader, "X-Device-Id": generated };
       }
+      // Attach device name/type for cross-device display (shared via PlayerRouter activeDeviceName)
+      try {
+        const dName = localStorage.getItem("sonect.deviceName");
+        if (dName && dName.trim().length > 0) {
+          sessionHeader = { ...sessionHeader, "X-Device-Name": dName.trim() };
+        } else {
+          const ua = navigator.userAgent ?? "";
+          let browser = "Browser";
+          if (/Edg\//.test(ua)) browser = "Edge";
+          else if (/OPR\//.test(ua) || /Opera/.test(ua)) browser = "Opera";
+          else if (/Chrome\//.test(ua) && !/Chromium/.test(ua))
+            browser = "Chrome";
+          else if (/Safari\//.test(ua) && !/Chrome\//.test(ua))
+            browser = "Safari";
+          else if (/Firefox\//.test(ua)) browser = "Firefox";
+          let os = "Unknown";
+          if (/Windows/.test(ua)) os = "Windows";
+          else if (/Mac OS X/.test(ua)) os = "macOS";
+          else if (/Android/.test(ua)) os = "Android";
+          else if (/iPhone|iPad|iPod/.test(ua)) os = "iOS";
+          else if (/Linux/.test(ua)) os = "Linux";
+          const generatedName = `${browser} on ${os}`;
+          localStorage.setItem("sonect.deviceName", generatedName);
+          sessionHeader = { ...sessionHeader, "X-Device-Name": generatedName };
+        }
+        const ua2 = navigator.userAgent ?? "";
+        const dType = /Mobi|Android|iPhone|iPad|iPod/.test(ua2)
+          ? "mobile"
+          : "desktop";
+        sessionHeader = { ...sessionHeader, "X-Device-Type": dType };
+      } catch {
+        // ignore
+      }
     } catch {
       // ignore
     }

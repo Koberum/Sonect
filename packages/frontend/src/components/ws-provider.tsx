@@ -3,7 +3,7 @@ import { getProfileSessionId } from "@/lib/selectedProfile";
 import { useProfile } from "@/features/profiles/profile-context";
 import { usePlaybackContext, type SyncProgress } from "./playback-context";
 import type { PlaybackStatus } from "@repo/types";
-import { getDeviceId } from "@/lib/deviceId";
+import { getDeviceId, getDeviceName, getDeviceType } from "@/lib/deviceId";
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const {
@@ -12,6 +12,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     setSyncProgress,
     setWsConnected,
     setActiveDeviceId,
+    setActiveDeviceName,
+    setActiveDeviceType,
   } = usePlaybackContext();
 
   const settersRef = useRef({
@@ -20,6 +22,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     setSyncProgress,
     setWsConnected,
     setActiveDeviceId,
+    setActiveDeviceName,
+    setActiveDeviceType,
   });
   useEffect(() => {
     settersRef.current = {
@@ -28,6 +32,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       setSyncProgress,
       setWsConnected,
       setActiveDeviceId,
+      setActiveDeviceName,
+      setActiveDeviceType,
     };
   });
 
@@ -51,6 +57,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       setSyncProgress,
       setWsConnected,
       setActiveDeviceId,
+      setActiveDeviceName,
+      setActiveDeviceType,
     } = settersRef.current;
 
     intentionalCloseRef.current = false;
@@ -62,7 +70,9 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
       const sid = profileId || getProfileSessionId();
       const did = getDeviceId();
-      const sessionUrl = `${wsUrl}${wsUrl.includes("?") ? "&" : "?"}sessionId=${encodeURIComponent(sid)}&deviceId=${encodeURIComponent(did)}`;
+      const dName = getDeviceName();
+      const dType = getDeviceType();
+      const sessionUrl = `${wsUrl}${wsUrl.includes("?") ? "&" : "?"}sessionId=${encodeURIComponent(sid)}&deviceId=${encodeURIComponent(did)}&deviceName=${encodeURIComponent(dName)}&deviceType=${encodeURIComponent(dType)}`;
       const ws = new WebSocket(sessionUrl);
       wsRef.current = ws;
 
@@ -98,6 +108,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           if (type === "player-status" || type === undefined) {
             const pd = data as unknown as PlaybackStatus & {
               activeDeviceId?: string | null;
+              activeDeviceName?: string | null;
+              activeDeviceType?: string | null;
             };
 
             setPlaybackStatus({
@@ -112,11 +124,19 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
               consume: pd.consume,
               queueLength: pd.queueLength ?? 0,
               activeDeviceId: pd.activeDeviceId ?? null,
+              activeDeviceName: pd.activeDeviceName ?? null,
+              activeDeviceType: pd.activeDeviceType ?? null,
               mode: (pd as unknown as { mode?: string })
                 .mode as PlaybackStatus["mode"],
             });
             if ("activeDeviceId" in pd) {
               setActiveDeviceId(pd.activeDeviceId ?? null);
+            }
+            if ("activeDeviceName" in pd) {
+              setActiveDeviceName(pd.activeDeviceName ?? null);
+            }
+            if ("activeDeviceType" in pd) {
+              setActiveDeviceType(pd.activeDeviceType ?? null);
             }
 
             if (pd.track && trackIdRef.current !== pd.track.id) {

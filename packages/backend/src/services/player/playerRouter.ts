@@ -16,6 +16,8 @@ type SessionRecord = {
   mode: OutputMode;
   engine: PlaybackEngine & EventEmitter;
   activeDeviceId: string | null;
+  activeDeviceName: string | null;
+  activeDeviceType: string | null;
   volume: number;
 };
 
@@ -87,7 +89,14 @@ export class PlayerRouter extends EventEmitter {
     let rec = this.records.get(sessionId);
     if (rec) return rec;
     const engine = this.wrapSessionPlayer(sessionId);
-    rec = { mode: "browser", engine, activeDeviceId: null, volume: 100 };
+    rec = {
+      mode: "browser",
+      engine,
+      activeDeviceId: null,
+      activeDeviceName: null,
+      activeDeviceType: null,
+      volume: 100,
+    };
     this.records.set(sessionId, rec);
     this.attachForwarder(sessionId, engine);
     this.logService?.pushLog?.(
@@ -181,12 +190,27 @@ export class PlayerRouter extends EventEmitter {
     return this.ensureRecord(sessionId).activeDeviceId;
   }
 
-  setActiveDeviceIfUnclaimed(sessionId: string, deviceId: string | null): void {
+  getActiveDeviceName(sessionId: string): string | null {
+    return this.ensureRecord(sessionId).activeDeviceName;
+  }
+
+  getActiveDeviceType(sessionId: string): string | null {
+    return this.ensureRecord(sessionId).activeDeviceType;
+  }
+
+  setActiveDeviceIfUnclaimed(
+    sessionId: string,
+    deviceId: string | null,
+    deviceName: string | null = null,
+    deviceType: string | null = null,
+  ): void {
     if (!deviceId) return;
     const rec = this.ensureRecord(sessionId);
     if (rec.mode !== "browser") return;
     if (rec.activeDeviceId === null) {
       rec.activeDeviceId = deviceId;
+      rec.activeDeviceName = deviceName;
+      rec.activeDeviceType = deviceType;
       this.emit(`session:${sessionId}:stateChanged`);
       this.logService?.pushLog?.(
         "info",
@@ -208,12 +232,17 @@ export class PlayerRouter extends EventEmitter {
     sessionId: string,
     mode: OutputMode,
     deviceId?: string | null,
+    deviceName?: string | null,
+    deviceType?: string | null,
   ): Promise<{ success: boolean; warning?: string }> {
     const rec = this.ensureRecord(sessionId);
     // Browser -> browser device handoff (no engine swap)
     if (rec.mode === "browser" && mode === "browser") {
       const nextDevice = deviceId ?? rec.activeDeviceId;
       if (rec.activeDeviceId === nextDevice) {
+        // update name/type even if same device (e.g. UA changed)
+        if (deviceName) rec.activeDeviceName = deviceName;
+        if (deviceType) rec.activeDeviceType = deviceType;
         this.logService?.pushLog?.(
           "debug",
           `[Session ${fmtSid(sessionId)}][browser] outputMode already browser device=${nextDevice?.slice(0, 8) ?? "null"}`,
@@ -223,6 +252,8 @@ export class PlayerRouter extends EventEmitter {
       }
       const prevDevice = rec.activeDeviceId;
       rec.activeDeviceId = nextDevice ?? null;
+      rec.activeDeviceName = deviceName ?? null;
+      rec.activeDeviceType = deviceType ?? null;
       this.emit(`session:${sessionId}:stateChanged`);
       this.logService?.pushLog?.(
         "info",
@@ -318,6 +349,8 @@ export class PlayerRouter extends EventEmitter {
         mode,
         engine: mpdEngine,
         activeDeviceId: null,
+        activeDeviceName: null,
+        activeDeviceType: null,
         volume: rec.volume ?? 100,
       });
       this.attachForwarder(sessionId, mpdEngine);
@@ -379,6 +412,8 @@ export class PlayerRouter extends EventEmitter {
         mode,
         engine: browserEngine,
         activeDeviceId: deviceId ?? null,
+        activeDeviceName: deviceName ?? null,
+        activeDeviceType: deviceType ?? null,
         volume: rec.volume ?? 100,
       });
       this.attachForwarder(sessionId, browserEngine);
@@ -435,8 +470,10 @@ export class PlayerRouter extends EventEmitter {
       ...base,
       volume,
       activeDeviceId: rec.activeDeviceId,
+      activeDeviceName: rec.activeDeviceName,
+      activeDeviceType: rec.activeDeviceType,
       mode: rec.mode,
-    };
+    } as PlaybackStatus;
   }
 
   async setVolume(sessionId: string, volume: number): Promise<void> {

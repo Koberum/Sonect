@@ -41,6 +41,8 @@ export default function MusicPlayer() {
     outputMode,
     setOutputMode,
     activeDeviceId,
+    activeDeviceName,
+    activeDeviceType,
     myDeviceId,
   } = usePlaybackContext();
 
@@ -261,6 +263,8 @@ export default function MusicPlayer() {
               mySid={mySid}
               disabledMpd={isMpdLockedForMe}
               activeDeviceId={activeDeviceId}
+              activeDeviceName={activeDeviceName}
+              activeDeviceType={activeDeviceType}
               myDeviceId={myDeviceId}
             />
             <VolumeControls

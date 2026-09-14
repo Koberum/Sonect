@@ -25,8 +25,10 @@ export const unifiedPlayHandler = asyncHandler(
     const { file } = playerSchemas.play.parse(req.body);
     const sid = req.sessionId as string;
     const did = (req.deviceId as string | null) ?? null;
+    const dName = (req.deviceName as string | null) ?? null;
+    const dType = (req.deviceType as string | null) ?? null;
     // Auto-claim browser device on first play if unclaimed
-    if (did) router().setActiveDeviceIfUnclaimed(sid, did);
+    if (did) router().setActiveDeviceIfUnclaimed(sid, did, dName, dType);
     const mode = router().getMode(sid);
     getLogService().pushLog(
       "debug",
@@ -329,6 +331,8 @@ export const unifiedGetOutputModeHandler = asyncHandler(
     const r = router();
     const mode = r.getMode(id);
     const activeDeviceId = r.getActiveDevice(id);
+    const activeDeviceName = r.getActiveDeviceName(id);
+    const activeDeviceType = r.getActiveDeviceType(id);
     getLogService().pushLog(
       "debug",
       `[Session ${fmtSid(id)}] getOutputMode → ${mode} active=${activeDeviceId?.slice(0, 8) ?? "null"}`,
@@ -343,6 +347,8 @@ export const unifiedGetOutputModeHandler = asyncHandler(
       deviceName: r.getOutputDeviceName(),
       mpdOwner: r.getMpdOwner(),
       activeDeviceId,
+      activeDeviceName,
+      activeDeviceType,
     });
   },
 );
@@ -357,6 +363,8 @@ export const unifiedSetOutputModeHandler = asyncHandler(
       (bodyDeviceId as string | undefined) ??
       (req.deviceId as string | null) ??
       undefined;
+    const deviceName = (req.deviceName as string | null) ?? null;
+    const deviceType = (req.deviceType as string | null) ?? null;
     getLogService().pushLog(
       "debug",
       `[Session ${fmtSid(id)}] setOutputMode → ${mode} device=${deviceId?.slice(0, 8) ?? "null"}`,
@@ -366,7 +374,13 @@ export const unifiedSetOutputModeHandler = asyncHandler(
         deviceId: deviceId?.slice(0, 8),
       },
     );
-    const result = await router().setMode(id, mode, deviceId ?? null);
+    const result = await router().setMode(
+      id,
+      mode,
+      deviceId ?? null,
+      deviceName,
+      deviceType,
+    );
     if (!result.success) {
       getLogService().pushLog(
         "warn",

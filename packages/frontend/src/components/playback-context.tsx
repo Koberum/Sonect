@@ -3,7 +3,7 @@ import type { PlaybackStatus, OutputMode } from "@repo/types";
 import type { TrackWithRelations } from "@repo/types/catalog";
 import { createContext, useContext, useEffect, useState } from "react";
 import { getOutputMode } from "@/features/player/api";
-import { getDeviceId } from "@/lib/deviceId";
+import { getDeviceId, getDeviceName, getDeviceType } from "@/lib/deviceId";
 
 export type SyncProgress = {
   current: number;
@@ -27,8 +27,14 @@ type PlaybackContextType = {
   outputMode: OutputMode;
   setOutputMode: (mode: OutputMode) => void;
   activeDeviceId: string | null;
+  activeDeviceName: string | null;
+  activeDeviceType: string | null;
   myDeviceId: string;
+  myDeviceName: string;
+  myDeviceType: string;
   setActiveDeviceId: (id: string | null) => void;
+  setActiveDeviceName: (name: string | null) => void;
+  setActiveDeviceType: (type: string | null) => void;
   setWsConnected: (connected: boolean) => void;
 };
 
@@ -65,7 +71,17 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return "";
     return getDeviceId();
   });
+  const [myDeviceName] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    return getDeviceName();
+  });
+  const [myDeviceType] = useState<string>(() => {
+    if (typeof window === "undefined") return "desktop";
+    return getDeviceType();
+  });
   const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
+  const [activeDeviceName, setActiveDeviceName] = useState<string | null>(null);
+  const [activeDeviceType, setActiveDeviceType] = useState<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem("outputMode", outputMode);
@@ -86,6 +102,12 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         }
         if ("activeDeviceId" in res && res.activeDeviceId !== undefined) {
           setActiveDeviceId(res.activeDeviceId ?? null);
+        }
+        if ("activeDeviceName" in res && res.activeDeviceName !== undefined) {
+          setActiveDeviceName(res.activeDeviceName ?? null);
+        }
+        if ("activeDeviceType" in res && res.activeDeviceType !== undefined) {
+          setActiveDeviceType(res.activeDeviceType ?? null);
         }
       })
       .catch(() => {
@@ -110,8 +132,14 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         outputMode,
         setOutputMode,
         activeDeviceId,
+        activeDeviceName,
+        activeDeviceType,
         myDeviceId,
+        myDeviceName,
+        myDeviceType,
         setActiveDeviceId,
+        setActiveDeviceName,
+        setActiveDeviceType,
         setWsConnected,
       }}
     >
