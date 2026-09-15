@@ -1,10 +1,8 @@
-import type { DBProfile } from "@repo/types";
+import type { Profile } from "@repo/types";
 
-export interface SelectedProfile {
-  id: string;
-  name: string;
-  avatarColor: string;
-}
+export type SelectedProfile = Pick<Profile, "id" | "name" | "avatarColor">;
+
+export type { Profile };
 
 export const AVATAR_COLORS = [
   "#f97316",
@@ -24,11 +22,11 @@ export function getInitials(name: string): string {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
-export function toSelectedProfile(profile: DBProfile): SelectedProfile {
+export function toSelectedProfile(profile: Profile): SelectedProfile {
   return {
     id: profile.id,
     name: profile.name,
-    avatarColor: profile.avatar_color,
+    avatarColor: profile.avatarColor,
   };
 }
 

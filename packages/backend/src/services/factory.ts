@@ -49,6 +49,10 @@ import {
   setGlobalSessionRegistry,
 } from "./session/sessionRegistry.js";
 import { PlayerRouter, setGlobalPlayerRouter } from "./player/playerRouter.js";
+import {
+  ProfileServiceImpl,
+  type ProfileService,
+} from "./profile/profileService.js";
 
 let _initialized = false;
 let _logService: LogService;
@@ -69,6 +73,7 @@ let _setupService: SetupService;
 let _networkService: NetworkService;
 let _sessionRegistry: SessionRegistry;
 let _playerRouter: PlayerRouter;
+let _profileService: ProfileService;
 
 function assertInitialized(): void {
   if (!_initialized) {
@@ -124,6 +129,7 @@ export function initializeServices(): void {
   _suggestionService = new SuggestionService();
   _setupService = new SetupServiceImpl();
   _networkService = new NetworkServiceImpl();
+  _profileService = new ProfileServiceImpl();
 
   _sessionRegistry = new SessionRegistry(_logService);
   setGlobalSessionRegistry(_sessionRegistry);
@@ -243,6 +249,11 @@ export function getSessionRegistry(): SessionRegistry {
 export function getPlayerRouter(): PlayerRouter {
   assertInitialized();
   return _playerRouter;
+}
+
+export function getProfileService(): ProfileService {
+  assertInitialized();
+  return _profileService;
 }
 
 export function isServicesInitialized(): boolean {

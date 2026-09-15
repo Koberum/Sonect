@@ -1,14 +1,14 @@
 import { apiFetch } from "@/lib/api";
-import type { DBProfile } from "@repo/types";
+import type { Profile } from "@repo/types";
 
-export const listProfiles = (signal?: AbortSignal): Promise<DBProfile[]> =>
-  apiFetch<DBProfile[]>("/profiles", { signal });
+export const listProfiles = (signal?: AbortSignal): Promise<Profile[]> =>
+  apiFetch<Profile[]>("/profiles", { signal });
 
 export const createProfile = (
   name: string,
   avatarColor?: string,
-): Promise<DBProfile> =>
-  apiFetch<DBProfile>("/profiles", {
+): Promise<Profile> =>
+  apiFetch<Profile>("/profiles", {
     method: "POST",
     body: { name, avatarColor },
   });
@@ -16,8 +16,8 @@ export const createProfile = (
 export const updateProfile = (
   id: string,
   data: { name?: string; avatarColor?: string },
-): Promise<DBProfile> =>
-  apiFetch<DBProfile>(`/profiles/${id}`, { method: "PATCH", body: data });
+): Promise<Profile> =>
+  apiFetch<Profile>(`/profiles/${id}`, { method: "PATCH", body: data });
 
 export const deleteProfile = (id: string): Promise<void> =>
   apiFetch<void>(`/profiles/${id}`, { method: "DELETE" });

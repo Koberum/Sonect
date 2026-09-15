@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useProfile } from "@/features/profiles/profile-context";
 import { profileQueries } from "@/features/profiles/queries";
-import { ProfilePicker } from "@/features/profiles/profile-picker";
+import { ProfilePickerPage } from "@/features/profiles/profile-picker";
 import { toSelectedProfile } from "@/lib/selectedProfile";
 import { Button } from "@/components/ui/button";
 
@@ -63,5 +63,5 @@ export function ProfileGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return <ProfilePicker mode="page" />;
+  return <ProfilePickerPage />;
 }

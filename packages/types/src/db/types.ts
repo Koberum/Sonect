@@ -86,3 +86,19 @@ export type DBProfile = {
   avatar_color: string;
   created_at: number;
 };
+
+export type Profile = {
+  id: string;
+  name: string;
+  avatarColor: string;
+  createdAt: number;
+};
+
+export function toProfile(dbProfile: DBProfile): Profile {
+  return {
+    id: dbProfile.id,
+    name: dbProfile.name,
+    avatarColor: dbProfile.avatar_color,
+    createdAt: dbProfile.created_at,
+  };
+}
