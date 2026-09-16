@@ -12,20 +12,14 @@ import {
   sql,
 } from "drizzle-orm";
 import { getColumns } from "drizzle-orm";
-import type { DBAlbum } from "@repo/types";
+import type { Album } from "@repo/types/catalog";
 import { db } from "../connection.js";
 import { albums, artists, genres, tracks } from "../tables.js";
 import { normalizeRowId, type QueryExecutor } from "./rowId.js";
 import { findOrCreateGenre } from "./genres.js";
 
-// Album rows joined with their artist name, as consumed by the album APIs.
-// The name lives only on artists (no denormalized albums.artist_name
-// column); every album read joins it in so callers never fetch artists
-// one by one.
-export type AlbumWithArtist = DBAlbum & {
-  artist_name: string;
-  genre?: string;
-};
+// Backward compat alias - canonical type is Album from @repo/types/catalog.
+export type AlbumWithArtist = Album;
 
 const albumWithArtist = {
   ...getColumns(albums),
@@ -112,7 +106,7 @@ export const albumsDb = {
     sort?: string;
     limit?: number;
     offset?: number;
-  } = {}): AlbumWithArtist[] {
+  } = {}): Album[] {
     const orderBy =
       sort === "year"
         ? [desc(albums.year), asc(albums.title)]
@@ -132,7 +126,7 @@ export const albumsDb = {
         query = query.offset(offset);
       }
     }
-    return query.all() as AlbumWithArtist[];
+    return query.all() as Album[];
   },
 
   count(): number {
@@ -140,7 +134,7 @@ export const albumsDb = {
     return row?.value ?? 0;
   },
 
-  getRecent(limit: number): AlbumWithArtist[] {
+  getRecent(limit: number): Album[] {
     return db()
       .select(albumWithArtist)
       .from(albums)
@@ -148,20 +142,20 @@ export const albumsDb = {
       .leftJoin(genres, eq(albums.genre_id, genres.id))
       .orderBy(desc(albums.created_at))
       .limit(limit)
-      .all() as AlbumWithArtist[];
+      .all() as Album[];
   },
 
-  getById(id: number): AlbumWithArtist | undefined {
+  getById(id: number): Album | undefined {
     return db()
       .select(albumWithArtist)
       .from(albums)
       .leftJoin(artists, eq(albums.artist_id, artists.id))
       .leftJoin(genres, eq(albums.genre_id, genres.id))
       .where(eq(albums.id, id))
-      .get() as AlbumWithArtist | undefined;
+      .get() as Album | undefined;
   },
 
-  getByGenre(genre: string): AlbumWithArtist[] {
+  getByGenre(genre: string): Album[] {
     return db()
       .select(albumWithArtist)
       .from(albums)
@@ -169,10 +163,10 @@ export const albumsDb = {
       .leftJoin(genres, eq(albums.genre_id, genres.id))
       .where(sql`${genres.name} = ${genre} COLLATE NOCASE`)
       .orderBy(asc(albums.title))
-      .all() as AlbumWithArtist[];
+      .all() as Album[];
   },
 
-  getByArtist(artistId: number): AlbumWithArtist[] {
+  getByArtist(artistId: number): Album[] {
     return db()
       .select(albumWithArtist)
       .from(albums)
@@ -180,7 +174,7 @@ export const albumsDb = {
       .leftJoin(genres, eq(albums.genre_id, genres.id))
       .where(eq(albums.artist_id, artistId))
       .orderBy(asc(albums.year), asc(albums.title))
-      .all() as AlbumWithArtist[];
+      .all() as Album[];
   },
 
   getRankedByPlayCount({
@@ -191,7 +185,7 @@ export const albumsDb = {
     artistId?: number;
     genre?: string;
     genreId?: number;
-  } = {}): AlbumWithArtist[] {
+  } = {}): Album[] {
     const conditions = [
       artistId !== undefined ? eq(albums.artist_id, artistId) : undefined,
       genreId !== undefined
@@ -212,10 +206,10 @@ export const albumsDb = {
       .where(and(...conditions))
       .groupBy(albums.id)
       .orderBy(desc(totalPlays), sql`${albums.title} COLLATE NOCASE`, albums.id)
-      .all() as AlbumWithArtist[];
+      .all() as Album[];
   },
 
-  search(query: string, limit = 20): AlbumWithArtist[] {
+  search(query: string, limit = 20): Album[] {
     const pattern = `%${query}%`;
     return db()
       .selectDistinct(albumWithArtist)
@@ -225,7 +219,7 @@ export const albumsDb = {
       .where(or(like(albums.title, pattern), like(artists.name, pattern)))
       .orderBy(asc(albums.title))
       .limit(limit)
-      .all() as AlbumWithArtist[];
+      .all() as Album[];
   },
 
   getCoverPreviews(artistId: number, limit: number): string[] {
@@ -244,10 +238,7 @@ export const albumsDb = {
       .map((row) => row.cover_path as string);
   },
 
-  getByTitleAndArtist(
-    title: string,
-    artistName: string,
-  ): AlbumWithArtist | undefined {
+  getByTitleAndArtist(title: string, artistName: string): Album | undefined {
     return db()
       .select(albumWithArtist)
       .from(albums)
@@ -260,7 +251,7 @@ export const albumsDb = {
         ),
       )
       .limit(1)
-      .get() as AlbumWithArtist | undefined;
+      .get() as Album | undefined;
   },
 
   updateCoverPath(albumId: number, coverPath: string): void {
@@ -279,7 +270,7 @@ export const albumsDb = {
       .run();
   },
 
-  getRecentAlbums(limit: number, excludeAlbumId?: number): AlbumWithArtist[] {
+  getRecentAlbums(limit: number, excludeAlbumId?: number): Album[] {
     const conditions = [
       excludeAlbumId !== undefined ? ne(albums.id, excludeAlbumId) : undefined,
       isNotNull(albums.last_played),
@@ -292,6 +283,6 @@ export const albumsDb = {
       .where(and(...conditions))
       .orderBy(desc(albums.last_played))
       .limit(limit)
-      .all() as AlbumWithArtist[];
+      .all() as Album[];
   },
 };

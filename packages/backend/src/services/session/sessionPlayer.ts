@@ -1,12 +1,8 @@
 import { EventEmitter } from "events";
 import { tracksDb } from "@repo/db";
 import type { LogService } from "@services/utils/logService";
-import type { DBTrack, DBTrackWithRelations } from "@repo/types";
-import type {
-  PlaybackStatus,
-  SessionQueueEntry,
-  TrackWithRelations,
-} from "@repo/types";
+import type { PlaybackStatus, SessionQueueEntry } from "@repo/types";
+import type { Track, TrackWithRelations } from "@repo/types/catalog";
 import { AutoplayService } from "../mpd/autoplayService.js";
 
 export class SessionPlayer extends EventEmitter {
@@ -119,7 +115,7 @@ export class SessionPlayer extends EventEmitter {
     }
   }
 
-  private buildEntry(t: DBTrack): SessionQueueEntry {
+  private buildEntry(t: Track): SessionQueueEntry {
     const rel = tracksDb.getByIdWithRelations(t.id);
     return {
       id: t.id,
@@ -150,7 +146,7 @@ export class SessionPlayer extends EventEmitter {
     const entry = this.queueInternal[this.indexInternal];
     if (!entry) return undefined;
     const rel = (tracksDb.getByIdWithRelations(entry.id) ??
-      tracksDb.getById(entry.id)) as DBTrackWithRelations | undefined;
+      tracksDb.getById(entry.id)) as TrackWithRelations | undefined;
     if (!rel) return undefined;
     return {
       ...rel,

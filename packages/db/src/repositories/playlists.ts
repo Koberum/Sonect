@@ -1,14 +1,19 @@
 import { asc, eq, getColumns, sql } from "drizzle-orm";
-import type { DBPlaylist, DBTrack } from "@repo/types";
+import type { DBPlaylist } from "@repo/types";
+import type { PlaylistTrack } from "@repo/types/catalog";
 import { db, transaction } from "../connection.js";
-import { playlistTracks, playlists, tracks } from "../tables.js";
+import {
+  albums,
+  artists,
+  genres,
+  playlistTracks,
+  playlists,
+  tracks,
+} from "../tables.js";
 import { normalizeRowId } from "./rowId.js";
 
-// A track row joined with its playlist membership, as consumed by the
-// playlist API: track columns plus the junction row id, position, and the
-// moment the track was added.
-export type PlaylistTrackRow = DBTrack & {
-  pt_id: number;
+// Domain row for playlist tracks - re-exports catalog PlaylistTrack plus junction meta.
+export type PlaylistTrackRow = PlaylistTrack & {
   position: number;
   added_at?: string;
 };
@@ -93,14 +98,21 @@ export const playlistsDb = {
     return db()
       .select({
         ...getColumns(tracks),
+        artist_name: sql<string>`coalesce(${artists.name}, '')`,
+        album_title: albums.title,
+        cover_path: sql<string>`coalesce(${albums.cover_path}, '')`,
+        genre: genres.name,
         pt_id: playlistTracks.id,
         position: playlistTracks.position,
         added_at: playlistTracks.added_at,
       })
       .from(playlistTracks)
       .innerJoin(tracks, eq(playlistTracks.track_id, tracks.id))
+      .leftJoin(artists, eq(tracks.artist_id, artists.id))
+      .leftJoin(albums, eq(tracks.album_id, albums.id))
+      .leftJoin(genres, eq(tracks.genre_id, genres.id))
       .where(eq(playlistTracks.playlist_id, playlistId))
       .orderBy(asc(playlistTracks.position))
-      .all() as PlaylistTrackRow[];
+      .all() as unknown as PlaylistTrackRow[];
   },
 };

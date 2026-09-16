@@ -1,10 +1,5 @@
-import { playlistsDb, tracksDb, artistsDb, albumsDb, genresDb } from "@repo/db";
-import {
-  Playlist,
-  PlaylistTrack,
-  PlaylistWithTracks,
-  Track,
-} from "@repo/types/catalog";
+import { playlistsDb, tracksDb } from "@repo/db";
+import { Playlist, PlaylistWithTracks } from "@repo/types/catalog";
 import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager";
 
 export interface PlaylistService {
@@ -40,30 +35,12 @@ export class PlaylistServiceImpl implements PlaylistService {
     const playlist = playlistsDb.getById(id);
     if (!playlist) return undefined;
 
-    const rawTracks = playlistsDb.getTracks(id);
-    const tracks: PlaylistTrack[] = rawTracks.map((t: any) => {
-      const artist = t.artist_id ? artistsDb.getById(t.artist_id) : undefined;
-      const album = t.album_id ? albumsDb.getById(t.album_id) : undefined;
-      return {
-        id: t.id,
-        file: t.file,
-        title: t.title,
-        artist_name: artist?.name ?? "",
-        cover_path: album?.cover_path ?? "",
-        track_number: t.track_number,
-        disc_number: t.disc_number,
-        duration: t.duration,
-        date: t.date,
-        genre:
-          (t as any).genre ??
-          (t.genre_id ? genresDb.getById(t.genre_id)?.name : undefined) ??
-          album?.genre ??
-          undefined,
-        pt_id: t.pt_id,
-        position: t.position,
-      } as Track & { pt_id: number; position: number };
-    });
-
+    const tracks = playlistsDb.getTracks(id).map((t) => ({
+      ...t,
+      artist_name: t.artist_name ?? "",
+      cover_path: t.cover_path ?? "",
+      genre: t.genre ?? undefined,
+    }));
     return { ...playlist, tracks };
   }
 
@@ -118,8 +95,8 @@ export class PlaylistServiceImpl implements PlaylistService {
       .executeCommand("playlistadd", [playlist.name, track.file])
       .catch(() => {});
 
-    const tracks = playlistsDb.getTracks(playlistId) as any[];
-    const added = tracks.find((t: any) => t.file === track.file);
+    const tracks = playlistsDb.getTracks(playlistId);
+    const added = tracks.find((t) => t.file === track.file);
     return added ? { pt_id: added.pt_id } : null;
   }
 
@@ -127,8 +104,8 @@ export class PlaylistServiceImpl implements PlaylistService {
     playlistTrackId: number,
     playlistId: number,
   ): boolean {
-    const tracks = playlistsDb.getTracks(playlistId) as any[];
-    const track = tracks.find((t: any) => t.pt_id === playlistTrackId);
+    const tracks = playlistsDb.getTracks(playlistId);
+    const track = tracks.find((t) => t.pt_id === playlistTrackId);
     if (!track) return false;
 
     const playlist = playlistsDb.getById(playlistId);
