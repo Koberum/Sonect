@@ -10,7 +10,7 @@ import {
   Library,
   Music,
   Disc3,
-  RefreshCw,
+  LoaderCircle,
   AudioLines,
   Settings,
 } from "lucide-react";
@@ -114,7 +114,7 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
                   onClick={handleRefreshLibrary}
                   disabled={isRefreshing}
                 >
-                  <RefreshCw
+                  <LoaderCircle
                     className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
                   />
                 </Button>

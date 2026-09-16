@@ -3,7 +3,6 @@ import SidebarToggler from "@/components/sidebar-toggler";
 import { useEffect, useState } from "react";
 import { SearchCommand } from "@/features/dashboard/components/search-command";
 import { useTheme } from "@/components/theme-provider";
-import { usePlaybackContext } from "@/components/playback-context";
 import { StatusBar } from "./status-bar";
 import { NetworkStatusIndicator } from "@/features/status/NetworkStatusIndicator";
 import { ProfileSwitcher } from "@/features/profiles/profile-switcher";
@@ -15,7 +14,6 @@ export interface MenuProps {
 
 export function Menu({ isOpen, toggleSidebar }: MenuProps) {
   const { theme } = useTheme();
-  const { syncProgress } = usePlaybackContext();
   const [systemDark, setSystemDark] = useState(
     () => window.matchMedia("(prefers-color-scheme: dark)").matches,
   );
@@ -35,9 +33,7 @@ export function Menu({ isOpen, toggleSidebar }: MenuProps) {
       : "/sonect-logo-light.svg";
 
   return (
-    <Menubar
-      className={`flex items-center justify-between rounded-none px-2 md:px-6 lg:px-4${syncProgress ? "min-h-[72px]" : ""}`}
-    >
+    <Menubar className="flex items-center justify-between rounded-none px-2 md:px-6 lg:px-4">
       <div className="flex flex-1 items-center gap-2">
         <div className="md:hidden">
           <SidebarToggler isOpen={!!isOpen} toggleSidebar={toggleSidebar} />
@@ -57,7 +53,7 @@ export function Menu({ isOpen, toggleSidebar }: MenuProps) {
         </div>
       </div>
       <div className="flex flex-1 items-center justify-end gap-2">
-        <div className="hidden md:block">
+        <div className="hidden shrink-0 md:block md:w-[350px]">
           <StatusBar />
         </div>
         <div className="hidden md:flex">
