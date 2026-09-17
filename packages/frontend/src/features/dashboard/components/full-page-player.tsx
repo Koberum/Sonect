@@ -50,6 +50,7 @@ export function FullPagePlayer({
 
   const handlePlay = async (pos: number) => {
     await playQueueItem(pos);
+    await qc.invalidateQueries({ queryKey: qk.player.queue() });
   };
 
   const handleRemove = async (e: React.MouseEvent, pos: number) => {
@@ -58,6 +59,7 @@ export function FullPagePlayer({
     qc.setQueryData(qk.player.queue(), (old: typeof queue) =>
       old ? old.filter((tr) => tr.pos !== pos) : old,
     );
+    await qc.invalidateQueries({ queryKey: qk.player.queue() });
   };
 
   if (!trackPlayed) return null;
@@ -136,7 +138,7 @@ export function FullPagePlayer({
               const isCurrent = track.file === playbackStatus.track?.file;
               return (
                 <div
-                  key={track.mpdId}
+                  key={`${track.mpdId}-${track.pos}`}
                   className={`group hover:bg-accent/50 flex cursor-pointer items-center gap-2 overflow-hidden rounded-md px-3 py-2 transition-colors`}
                   onClick={() => !isCurrent && handlePlay(track.pos)}
                 >

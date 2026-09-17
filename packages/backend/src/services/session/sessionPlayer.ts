@@ -358,6 +358,26 @@ export class SessionPlayer extends EventEmitter {
     this.emit("stateChanged");
   }
 
+  playPosition(pos: number): void {
+    if (pos < 0 || pos >= this.queueInternal.length) return;
+    const prevIdx = this.indexInternal;
+    this.indexInternal = pos;
+    this.position = 0;
+    this.stateInternal = "play";
+    this.startClock();
+    this.log(
+      "debug",
+      `[Session ${this.sessionId.slice(0, 8)}][browser] playPosition ${prevIdx}→${this.indexInternal} file="${this.queueInternal[this.indexInternal]?.file}"`,
+      {
+        sessionId: this.sessionId.slice(0, 8),
+        from: prevIdx,
+        to: this.indexInternal,
+        file: this.queueInternal[this.indexInternal]?.file,
+      },
+    );
+    this.emit("stateChanged");
+  }
+
   addToQueue(file: string): void {
     const t = tracksDb.getByFile(file);
     if (t) {

@@ -165,14 +165,7 @@ export class PlayerRouter extends EventEmitter {
       async enableRandom(_enabled: boolean): Promise<void> {}
       async enableRepeat(_enabled: boolean): Promise<void> {}
       async playPosition(pos: number): Promise<void> {
-        const q = this.p.getQueue();
-        if (pos < 0 || pos >= q.length) return;
-        const target = q[pos];
-        if (target) this.p.playTrack(target.file);
-        const anyP = this.p as unknown as Record<string, unknown>;
-        if (typeof anyP["indexInternal"] !== "undefined") {
-          // fallback
-        }
+        this.p.playPosition(pos);
       }
     })(s);
     return adapter;
