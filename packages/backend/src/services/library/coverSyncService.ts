@@ -9,6 +9,9 @@ import type { Album, CoverProgress, Track } from "@repo/types/catalog";
 
 const COVERS_DIR = process.env.COVERS_DIR || "./data/covers";
 const MUSIC_DIR = process.env.MUSIC_DIR ?? "/opt/sonect/music";
+const COVER_SIZE = Number.parseInt(process.env.COVER_SIZE ?? "400", 10) || 400;
+const COVER_QUALITY =
+  Number.parseInt(process.env.COVER_QUALITY ?? "80", 10) || 80;
 
 const COVER_FILE_NAMES = [
   "cover.jpg",
@@ -50,10 +53,11 @@ export class CoverSyncServiceImpl implements CoverSyncService {
         ? (artistsDb.getById(album.artist_id)?.name ?? "")
         : "";
 
-      if (!(
-        album.cover_path &&
-        fs.existsSync(path.join(COVERS_DIR, album.cover_path))
-      )) {
+      if (
+        !album.cover_path ||
+        !fs.existsSync(path.join(COVERS_DIR, album.cover_path)) ||
+        path.extname(album.cover_path).toLowerCase() !== ".webp"
+      ) {
         try {
           const result = await this.findAndSaveCover(album);
           if (result) {
@@ -101,8 +105,8 @@ export class CoverSyncServiceImpl implements CoverSyncService {
         },
       );
       const data = await sharp(fsCover)
-        .resize(500, 500, { fit: "inside" })
-        .jpeg({ quality: 85 })
+        .resize(COVER_SIZE, COVER_SIZE, { fit: "inside" })
+        .webp({ quality: COVER_QUALITY })
         .toBuffer();
       return await this.writeCover(data, album);
     }
@@ -117,8 +121,8 @@ export class CoverSyncServiceImpl implements CoverSyncService {
             `Embedded cover found for "${album.title}" in track: ${track.file}`,
           );
           const data = await sharp(embedded)
-            .resize(500, 500, { fit: "inside" })
-            .jpeg({ quality: 85 })
+            .resize(COVER_SIZE, COVER_SIZE, { fit: "inside" })
+            .webp({ quality: COVER_QUALITY })
             .toBuffer();
           return await this.writeCover(data, album);
         }
@@ -235,10 +239,9 @@ export class CoverSyncServiceImpl implements CoverSyncService {
       .createHash("sha1")
       .update(artistName + album.title)
       .digest("hex");
-    const outPath = path.join(COVERS_DIR, `${hash}.jpg`);
-
+    const outPath = path.join(COVERS_DIR, `${hash}.webp`);
     await fs.promises.writeFile(outPath, data);
-    return `${hash}.jpg`;
+    return `${hash}.webp`;
   }
 
   private ensureCoversDir(): void {

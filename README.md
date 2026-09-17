@@ -182,7 +182,9 @@ Configure via `packages/backend/.env`:
 | `MPD_PORT`         | `6600`                                                         | MPD server port                                                     |
 | `MUSIC_DIR`        | `/music`                                                       | Root of your music library                                          |
 | `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta` | Audio extensions counted as music files in per-source library stats |
-| `COVERS_DIR`       | —                                                              | Where cover JPEGs are cached                                        |
+| `COVERS_DIR`       | —                                                              | Where cover WebPs are cached                                        |
+| `COVER_SIZE`       | `400`                                                          | Cover resize dimension (px, square fit inside)                      |
+| `COVER_QUALITY`    | `80`                                                           | WebP quality for covers                                             |
 | `WAVEFORMS_DIR`    | `<COVERS_DIR>/../waveforms` or `./data/waveforms`              | Where waveform JSON caches are saved (`SHA1(file).json`)            |
 | `DB_PATH`          | `/db/music.db` (dev) / `/opt/sonect/data/music.db` (prod)      | SQLite database path                                                |
 | `MPD_CONFIG_PATH`  | `/opt/sonect/data/mpd-audio.conf`                              | MPD config drop-in                                                  |

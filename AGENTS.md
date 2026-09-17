@@ -72,7 +72,9 @@ After making changes:
 | ------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------- |
 | `MPD_HOST`         | `localhost`                                                    | MPD daemon hostname                                                 |
 | `MPD_PORT`         | `6600`                                                         | MPD daemon port                                                     |
-| `COVERS_DIR`       | —                                                              | Path where cover JPEGs are saved                                    |
+| `COVERS_DIR`       | —                                                              | Path where cover WebPs are saved                                    |
+| `COVER_SIZE`       | `400`                                                          | Cover resize dimension (px, square fit inside)                      |
+| `COVER_QUALITY`    | `80`                                                           | WebP quality for covers                                             |
 | `MUSIC_DIR`        | `/music`                                                       | Root directory of the music library                                 |
 | `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta` | Audio extensions counted as music files in per-source library stats |
 | `PORT`             | `3000`                                                         | Backend HTTP server port                                            |
@@ -299,7 +301,7 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 ### Cover art pipeline
 
 1. `coverService.ts` (`services/coverService.ts`) handles cover extraction using `music-metadata` for embedded art.
-2. Filesystem covers (`cover.jpg`, `folder.jpg`, etc.) are checked first; embedded art is used as fallback. Covers are resized to **500×500 JPEG** with `sharp`, saved to `COVERS_DIR` as `SHA1(artist+album).jpg`.
+2. Filesystem covers (`cover.jpg`, `folder.jpg`, etc.) are checked first; embedded art is used as fallback. Covers are resized to **400×400 WebP** (`COVER_SIZE`/`COVER_QUALITY` envs) with `sharp`, saved to `COVERS_DIR` as `SHA1(artist+album).webp` (legacy `.jpg` auto-migrated on next sync).
 3. Backend serves them under `/covers` with `Cache-Control: immutable` (30 days).
 
 ### Waveform pipeline (SoundCloud-style progress bar)
