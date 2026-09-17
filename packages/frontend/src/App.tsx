@@ -84,7 +84,7 @@ export default function App() {
       </ThemeProvider>
       {import.meta.env.DEV && (
         <RqSuspense fallback={null}>
-          <Devtools initialIsOpen={false} buttonPosition="bottom-right" />
+          <Devtools initialIsOpen={false} buttonPosition="top-left" />
         </RqSuspense>
       )}
     </QueryClientProvider>

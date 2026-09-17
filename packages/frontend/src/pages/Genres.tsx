@@ -36,11 +36,11 @@ export default function Genres() {
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {genres.map((g) => (
               <SelectableRow
-                key={g.genre}
+                key={g.id}
                 asChild
                 className="bg-card gap-4 rounded-xl p-4 py-6 shadow-sm"
                 onClick={() =>
-                  navigate(`/genres/${encodeURIComponent(g.genre)}`)
+                  navigate(`/genres/${encodeURIComponent(g.name)}`)
                 }
               >
                 <div>
@@ -49,7 +49,7 @@ export default function Genres() {
                   </SelectableRowIcon>
                   <div className="min-w-0 flex-1">
                     <SelectableRowTitle className="truncate">
-                      {g.genre}
+                      {g.name}
                     </SelectableRowTitle>
                     <SelectableRowDescription className="flex items-center gap-3">
                       <span className="flex items-center gap-1">
