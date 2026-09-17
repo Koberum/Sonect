@@ -1,5 +1,6 @@
-import { tracksDb, albumsDb } from "@repo/db";
+import { tracksDb, albumsDb, genresDb } from "@repo/db";
 import type { Album } from "@repo/types/catalog";
+import { getSimilarGenres } from "./genreSimilarity.js";
 
 const AUTOPLAY_BATCH_TARGET = 25;
 
@@ -57,7 +58,14 @@ export class AutoplayService {
       if (queuedTrack?.album_id) protectedAlbumIds.add(queuedTrack.album_id);
     }
 
-    const fill = () => {
+    const hasGenre = Boolean(
+      seedAlbum?.genre_id ||
+      (seedTrack as any)?.genre_id ||
+      seedAlbum?.genre ||
+      (seedTrack as any)?.genre,
+    );
+
+    const fillGenreAnchored = () => {
       const excludedAlbumIds = new Set([
         ...this.usedAlbumIds,
         ...protectedAlbumIds,
@@ -85,7 +93,7 @@ export class AutoplayService {
         return;
       }
 
-      const genreId = seedAlbum?.genre_id || seedTrack?.genre_id;
+      const genreId = seedAlbum?.genre_id || (seedTrack as any)?.genre_id;
       const genre = seedAlbum?.genre || (seedTrack as any)?.genre;
       if (
         (genreId || genre) &&
@@ -99,14 +107,42 @@ export class AutoplayService {
         return;
       }
 
-      collectAlbums(albumsDb.getRankedByPlayCount());
+      // Similar-genre tier: only if seed has a genre
+      if (hasGenre) {
+        let seedGenreName: string | undefined =
+          (seedAlbum?.genre as string | undefined) ??
+          ((seedTrack as any)?.genre as string | undefined);
+        if (!seedGenreName && genreId) {
+          const g = genresDb.getById(genreId as number);
+          seedGenreName = g?.name;
+        }
+        if (seedGenreName) {
+          const similar = getSimilarGenres(seedGenreName);
+          for (const sim of similar) {
+            if (
+              collectAlbums(
+                albumsDb.getRankedByPlayCount({
+                  genre: sim,
+                }),
+              )
+            ) {
+              return;
+            }
+          }
+        }
+      }
+
+      // Library-wide only for genre-less seeds
+      if (!hasGenre) {
+        collectAlbums(albumsDb.getRankedByPlayCount());
+      }
     };
 
-    fill();
+    fillGenreAnchored();
 
     if (result.length === 0) {
       this.usedAlbumIds = new Set(protectedAlbumIds);
-      fill();
+      fillGenreAnchored();
     }
 
     return result;

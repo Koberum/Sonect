@@ -34,7 +34,9 @@ no subscriptions, no limits.
   open tab. MPD idle events are pushed to all connected clients in real time.
 - **Always-on smart queue** — Playback continues from the selected track to
   the end of its album, then queues complete albums from the same artist, the
-  same genre, and finally the most-listened albums across the library.
+  same genre, and similar genres (curated map + token fallback for arbitrary
+  MPD `Genre` tags); library-wide fallback only for genre-less tracks — ranking
+  stays anchored to the seed track and never drifts to unrelated genres.
 - **Album art pipeline** — Artwork is extracted from your audio files, resized
   to 500x500 JPEG, served over HTTP, and cached in the browser for 30 days.
 - **Waveform progress bar** — SoundCloud-style waveform (120 peaks) is decoded
