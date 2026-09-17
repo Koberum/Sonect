@@ -1,8 +1,10 @@
+import { useState } from "react";
+import * as SliderPrimitive from "@radix-ui/react-slider";
 import { goToPosition } from "@/features/player/api";
 import { formatTime } from "@/lib/utils";
 import type { OutputMode } from "@repo/types";
 
-type PlaybackProgressBar = {
+type PlaybackProgressBarProps = {
   elapsed: number;
   duration: number;
   className?: string;
@@ -14,41 +16,39 @@ export function PlaybackProgressBar({
   duration,
   className,
   outputMode: _outputMode = "mpd",
-}: PlaybackProgressBar): React.ReactElement {
+}: PlaybackProgressBarProps): React.ReactElement {
   void _outputMode;
-  const pct = duration > 0 ? Math.min(100, (elapsed / duration) * 100) : 0;
-  const seek = goToPosition;
-
-  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percentage = x / rect.width;
-    const newPosition = percentage * duration;
-    seek(newPosition);
-  };
+  const [preview, setPreview] = useState<number | null>(null);
+  const disabled = duration <= 0;
+  const display = preview ?? elapsed;
 
   return (
     <div className={`flex w-full items-center gap-2 ${className ?? ""}`}>
-      <span className="hidden font-mono text-xs md:flex">
-        {formatTime(elapsed)}
+      <span className="hidden font-mono text-xs tabular-nums md:flex">
+        {formatTime(display)}
       </span>
 
-      <div
-        className="bg-border h-1.5 flex-1 cursor-pointer rounded-sm"
-        role="slider"
+      <SliderPrimitive.Root
+        min={0}
+        max={duration || 1}
+        step={1}
+        value={[Math.min(display, duration) || 0]}
+        disabled={disabled}
+        onValueChange={([v]) => setPreview(v)}
+        onValueCommit={([v]) => {
+          setPreview(null);
+          void goToPosition(v);
+        }}
+        className="group relative -my-4 flex flex-1 touch-none items-center py-4 select-none"
         aria-label="Playback position"
-        aria-valuemin={0}
-        aria-valuemax={duration || 0}
-        aria-valuenow={elapsed}
-        onClick={handleSeek}
       >
-        <div
-          className="bg-primary h-full rounded-sm"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+        <SliderPrimitive.Track className="bg-border relative h-1.5 w-full grow overflow-hidden rounded-full">
+          <SliderPrimitive.Range className="bg-primary absolute h-full" />
+        </SliderPrimitive.Track>
+        <SliderPrimitive.Thumb className="bg-background border-primary/50 focus-visible:ring-ring block h-3 w-3 rounded-full border opacity-0 shadow transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 group-data-[disabled]:opacity-0 focus-visible:ring-1 focus-visible:outline-none data-[disabled]:hidden data-[disabled]:opacity-0" />
+      </SliderPrimitive.Root>
 
-      <span className="hidden font-mono text-xs md:flex">
+      <span className="hidden font-mono text-xs tabular-nums md:flex">
         {formatTime(duration)}
       </span>
     </div>

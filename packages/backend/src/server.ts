@@ -22,6 +22,10 @@ async function main() {
   // Initialize database
   await initDatabase();
 
+  // Ensure at least one profile exists (Netflix-style picker needs one)
+  const { profilesDb } = await import("@repo/db");
+  profilesDb.ensureDefault();
+
   // Initialize all services in correct dependency order
   initializeServices();
 

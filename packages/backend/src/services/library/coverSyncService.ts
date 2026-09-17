@@ -4,9 +4,8 @@ import crypto from "crypto";
 import sharp from "sharp";
 import * as mm from "music-metadata";
 import { albumsDb, tracksDb, artistsDb } from "@repo/db";
-import { DBAlbum, DBTrack } from "@repo/types";
 import type { LogService } from "@services/utils/logService";
-import { CoverProgress } from "@repo/types/catalog";
+import type { Album, CoverProgress, Track } from "@repo/types/catalog";
 
 const COVERS_DIR = process.env.COVERS_DIR || "./data/covers";
 const MUSIC_DIR = process.env.MUSIC_DIR ?? "/opt/sonect/music";
@@ -30,7 +29,7 @@ const COVER_FILE_NAMES = [
 
 export interface CoverSyncService {
   syncAllCovers(
-    albums: DBAlbum[],
+    albums: Album[],
     onProgress?: (progress: CoverProgress) => void,
   ): Promise<void>;
 }
@@ -39,7 +38,7 @@ export class CoverSyncServiceImpl implements CoverSyncService {
   constructor(private readonly logService: LogService) {}
 
   async syncAllCovers(
-    albums: DBAlbum[],
+    albums: Album[],
     onProgress?: (progress: CoverProgress) => void,
   ): Promise<void> {
     this.ensureCoversDir();
@@ -77,7 +76,7 @@ export class CoverSyncServiceImpl implements CoverSyncService {
     }
   }
 
-  private async findAndSaveCover(album: DBAlbum): Promise<string | null> {
+  private async findAndSaveCover(album: Album): Promise<string | null> {
     const tracks = tracksDb.getByAlbum(album.id);
     if (tracks.length === 0) {
       this.logService.pushLog(
@@ -170,7 +169,7 @@ export class CoverSyncServiceImpl implements CoverSyncService {
     return null;
   }
 
-  private getAlbumDir(tracks: DBTrack[]): string {
+  private getAlbumDir(tracks: Track[]): string {
     if (tracks.length === 0) return MUSIC_DIR;
 
     const dirs = tracks.map((t) => path.dirname(t.file));
@@ -226,7 +225,7 @@ export class CoverSyncServiceImpl implements CoverSyncService {
     return null;
   }
 
-  private async writeCover(data: Buffer, album: DBAlbum): Promise<string> {
+  private async writeCover(data: Buffer, album: Album): Promise<string> {
     this.ensureCoversDir();
 
     const artistName = album.artist_id

@@ -1,5 +1,5 @@
 import { tracksDb, albumsDb } from "@repo/db";
-import type { DBAlbum } from "@repo/types";
+import type { Album } from "@repo/types/catalog";
 
 const AUTOPLAY_BATCH_TARGET = 25;
 
@@ -62,7 +62,7 @@ export class AutoplayService {
         ...this.usedAlbumIds,
         ...protectedAlbumIds,
       ]);
-      const collectAlbums = (albums: DBAlbum[]): boolean => {
+      const collectAlbums = (albums: Album[]): boolean => {
         for (const album of albums) {
           if (excludedAlbumIds.has(album.id)) continue;
           excludedAlbumIds.add(album.id);

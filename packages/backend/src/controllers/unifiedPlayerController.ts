@@ -24,6 +24,11 @@ export const unifiedPlayHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { file } = playerSchemas.play.parse(req.body);
     const sid = req.sessionId as string;
+    const did = (req.deviceId as string | null) ?? null;
+    const dName = (req.deviceName as string | null) ?? null;
+    const dType = (req.deviceType as string | null) ?? null;
+    // Auto-claim browser device on first play if unclaimed
+    if (did) router().setActiveDeviceIfUnclaimed(sid, did, dName, dType);
     const mode = router().getMode(sid);
     getLogService().pushLog(
       "debug",
@@ -32,6 +37,7 @@ export const unifiedPlayHandler = asyncHandler(
         sessionId: fmtSid(sid),
         mode,
         file,
+        deviceId: did?.slice(0, 8),
       },
     );
     if (!file) {
@@ -309,7 +315,12 @@ export const unifiedSetVolumeHandler = asyncHandler(
         volume,
       },
     );
-    await router().forSession(sid).setVolume(volume);
+    // Browser volume is stored per-profile in PlayerRouter; MPD delegates to engine
+    const r = router() as unknown as {
+      setVolume?: (a: string, b: number) => Promise<void>;
+    };
+    if (r.setVolume) await r.setVolume(sid, volume);
+    else await router().forSession(sid).setVolume(volume);
     res.json({ success: true });
   },
 );
@@ -319,35 +330,57 @@ export const unifiedGetOutputModeHandler = asyncHandler(
     const id = req.sessionId as string;
     const r = router();
     const mode = r.getMode(id);
+    const activeDeviceId = r.getActiveDevice(id);
+    const activeDeviceName = r.getActiveDeviceName(id);
+    const activeDeviceType = r.getActiveDeviceType(id);
     getLogService().pushLog(
       "debug",
-      `[Session ${fmtSid(id)}] getOutputMode → ${mode}`,
+      `[Session ${fmtSid(id)}] getOutputMode → ${mode} active=${activeDeviceId?.slice(0, 8) ?? "null"}`,
       {
         sessionId: fmtSid(id),
         mode,
+        activeDeviceId: activeDeviceId?.slice(0, 8),
       },
     );
     res.json({
       mode,
       deviceName: r.getOutputDeviceName(),
       mpdOwner: r.getMpdOwner(),
+      activeDeviceId,
+      activeDeviceName,
+      activeDeviceType,
     });
   },
 );
 
 export const unifiedSetOutputModeHandler = asyncHandler(
   async (req: Request, res: Response) => {
-    const { mode } = systemSchemas.outputMode.parse(req.body);
+    const { mode, deviceId: bodyDeviceId } = systemSchemas.outputMode.parse(
+      req.body,
+    );
     const id = req.sessionId as string;
+    const deviceId =
+      (bodyDeviceId as string | undefined) ??
+      (req.deviceId as string | null) ??
+      undefined;
+    const deviceName = (req.deviceName as string | null) ?? null;
+    const deviceType = (req.deviceType as string | null) ?? null;
     getLogService().pushLog(
       "debug",
-      `[Session ${fmtSid(id)}] setOutputMode → ${mode}`,
+      `[Session ${fmtSid(id)}] setOutputMode → ${mode} device=${deviceId?.slice(0, 8) ?? "null"}`,
       {
         sessionId: fmtSid(id),
         mode,
+        deviceId: deviceId?.slice(0, 8),
       },
     );
-    const result = await router().setMode(id, mode);
+    const result = await router().setMode(
+      id,
+      mode,
+      deviceId ?? null,
+      deviceName,
+      deviceType,
+    );
     if (!result.success) {
       getLogService().pushLog(
         "warn",

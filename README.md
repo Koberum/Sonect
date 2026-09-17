@@ -124,11 +124,11 @@ sonect/
 ```
 
 ```
-Browser ──HTTP──► Express /player (per-session, requires X-Session-Id) ─┬─► Browser engine: isolated SessionPlayer per session
-        ──WS───► WebSocket ?sessionId= ─────────────────────────────────┘
-                                                                      └─► MPD engine: shared MPD daemon (locked to one session)
+Browser ──HTTP──► Express /player (per-profile, requires X-Session-Id + X-Device-Id) ─┬─► Browser engine: shared SessionPlayer per profile (one queue), activeDeviceId routes audio to one browser
+        ──WS───► WebSocket ?sessionId=&deviceId= ────────────────────────────────────┘
+                                                                                    └─► MPD engine: shared MPD daemon (locked to one profile)
 
-Browser queues are isolated per X-Session-Id; MPD queue is shared but MPD output is single-owner (PUT /player/output-mode {mpd} → 423 if busy).
+Browser queue is shared per profile (profile = X-Session-Id); MPD queue is shared but MPD output is single-owner (PUT /player/output-mode {mpd} → 423 if busy). Browser output is per-device via X-Device-Id (stored in localStorage['sonect.deviceId']); only activeDeviceId renders audio, other browsers with same profile remote-control. PUT /player/output-mode {browser} with X-Device-Id hands off same track/position to new device.
 Frontend uses only /player/* — there is no frontend fork between browser/MPD.
 ```
 
@@ -148,29 +148,29 @@ a complete database file.
 
 ## API Overview
 
-| Method | Path                           | Description                                                                         |
-| ------ | ------------------------------ | ----------------------------------------------------------------------------------- |
-| GET    | `/library/albums`              | List all albums                                                                     |
-| GET    | `/library/albums/:id`          | Get album by ID                                                                     |
-| GET    | `/library/albums/:id/tracks`   | Tracks for an album                                                                 |
-| GET    | `/library/artists`             | List all artists                                                                    |
-| GET    | `/library/artists/:id/albums`  | Albums for an artist                                                                |
-| POST   | `/library/scan`                | Trigger library re-scan                                                             |
-| POST   | `/player/play`                 | Play track (per-session, requires `X-Session-Id`) — queues through end of album     |
-| POST   | `/player/pause`                | Pause (per-session)                                                                 |
-| POST   | `/player/resume`               | Resume (per-session) — fixes `pause`/`play` toggle; uses explicit `pause 0` for MPD |
-| POST   | `/player/next`                 | Next track (per-session)                                                            |
-| POST   | `/player/previous`             | Previous track (per-session)                                                        |
-| POST   | `/player/seek`                 | Seek to position (per-session)                                                      |
-| GET    | `/player/queue`                | Queue for this session (browser: isolated, MPD: shared)                             |
-| PUT    | `/player/output-mode`          | Switch `browser`↔`mpd` (per-session, `mpd` locked to one session → 423 if busy)     |
-| PATCH  | `/player/volume`               | Set volume (MPD only; browser volume is local)                                      |
-| GET    | `/waveforms/:trackId`          | Get waveform peaks for a track (`{samples,duration,version}`)                       |
-| GET    | `/system/network/status`       | Read network/DNS status                                                             |
-| GET    | `/system/setup/progress`       | Read setup progress                                                                 |
-| POST   | `/system/setup/complete`       | Complete or skip setup                                                              |
-| POST   | `/system/setup/reset`          | Reset the setup wizard                                                              |
-| GET    | `ws://host:3000/ws?sessionId=` | WebSocket playback state (per-session, requires `sessionId` param)                  |
+| Method | Path                                     | Description                                                                                                                                     |
+| ------ | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/library/albums`                        | List all albums                                                                                                                                 |
+| GET    | `/library/albums/:id`                    | Get album by ID                                                                                                                                 |
+| GET    | `/library/albums/:id/tracks`             | Tracks for an album                                                                                                                             |
+| GET    | `/library/artists`                       | List all artists                                                                                                                                |
+| GET    | `/library/artists/:id/albums`            | Albums for an artist                                                                                                                            |
+| POST   | `/library/scan`                          | Trigger library re-scan                                                                                                                         |
+| POST   | `/player/play`                           | Play track (per-profile, requires `X-Session-Id`+`X-Device-Id`) — queues through end of album; first play claims browser output for that device |
+| POST   | `/player/pause`                          | Pause (per-profile, remote control if not active browser device)                                                                                |
+| POST   | `/player/resume`                         | Resume (per-profile) — fixes `pause`/`play` toggle; uses explicit `pause 0` for MPD                                                             |
+| POST   | `/player/next`                           | Next track (per-profile)                                                                                                                        |
+| POST   | `/player/previous`                       | Previous track (per-profile)                                                                                                                    |
+| POST   | `/player/seek`                           | Seek to position (per-profile)                                                                                                                  |
+| GET    | `/player/queue`                          | Queue for this profile (browser: shared per profile, MPD: shared global)                                                                        |
+| PUT    | `/player/output-mode`                    | Switch `browser`↔`mpd` (per-profile, `mpd` locked → 423 if busy; `browser` with `X-Device-Id` hands off to that browser)                        |
+| PATCH  | `/player/volume`                         | Set volume (per-profile; browser stored in-memory and broadcast to active device)                                                               |
+| GET    | `/waveforms/:trackId`                    | Get waveform peaks for a track (`{samples,duration,version}`)                                                                                   |
+| GET    | `/system/network/status`                 | Read network/DNS status                                                                                                                         |
+| GET    | `/system/setup/progress`                 | Read setup progress                                                                                                                             |
+| POST   | `/system/setup/complete`                 | Complete or skip setup                                                                                                                          |
+| POST   | `/system/setup/reset`                    | Reset the setup wizard                                                                                                                          |
+| GET    | `ws://host:3000/ws?sessionId=&deviceId=` | WebSocket playback state (per-profile, requires `sessionId`+`deviceId` params) — `player-status` includes `activeDeviceId`+`mode`               |
 
 ### Environment variables
 

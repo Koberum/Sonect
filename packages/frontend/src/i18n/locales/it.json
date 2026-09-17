@@ -528,5 +528,32 @@
       "skipError": "Impossibile saltare la configurazione",
       "completeToast": "Configurazione completata!"
     }
+  },
+  "profile": {
+    "title": "Chi sta ascoltando?",
+    "change": "Cambia profilo",
+    "switch": "Cambia profilo",
+    "select": "Seleziona",
+    "create": "Crea profilo",
+    "addProfile": "Aggiungi profilo",
+    "createTitle": "Crea profilo",
+    "createDescription": "Scegli un nome e un colore per il nuovo profilo",
+    "namePlaceholder": "Nome del profilo",
+    "rename": "Rinomina",
+    "editTitle": "Modifica profilo",
+    "editDescription": "Aggiorna nome e colore per questo profilo",
+    "save": "Salva",
+    "color": "Colore",
+    "delete": "Elimina",
+    "deleteTitle": "Elimina profilo",
+    "deleteMessage": "Eliminare il profilo \"{{name}}\"? Questa azione è irreversibile.",
+    "lastProfile": "L'ultimo profilo non può essere eliminato",
+    "retry": "Riprova",
+    "errors": {
+      "load": "Impossibile caricare i profili",
+      "create": "Impossibile creare il profilo",
+      "update": "Impossibile aggiornare il profilo",
+      "remove": "Impossibile eliminare il profilo"
+    }
   }
 }

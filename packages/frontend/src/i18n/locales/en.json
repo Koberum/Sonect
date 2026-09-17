@@ -73,6 +73,11 @@
     "title": "Now Playing",
     "outputMpd": "MPD Output",
     "outputBrowser": "Browser Output",
+    "outputThisBrowser": "This browser",
+    "playingOnOtherBrowser": "Playing on another browser",
+    "outputDevices": "Output",
+    "thisDevice": "This browser",
+    "remoteDevice": "Other browser",
     "sessionPlayback": "Session playback",
     "outputModeError": "Failed to switch output mode",
     "tapToPlay": "Tap to play",
@@ -488,6 +493,33 @@
       "resetSetupConfirm": "This will mark every setup step as incomplete and the wizard will appear again on the next page load.",
       "setupResetted": "Setup wizard reset",
       "resetSetupError": "Failed to reset the setup wizard"
+    }
+  },
+  "profile": {
+    "title": "Who's listening?",
+    "change": "Change profile",
+    "switch": "Switch profile",
+    "select": "Select",
+    "create": "Create profile",
+    "addProfile": "Add profile",
+    "createTitle": "Create profile",
+    "createDescription": "Choose a name and color for your new profile",
+    "namePlaceholder": "Profile name",
+    "rename": "Rename",
+    "editTitle": "Edit profile",
+    "editDescription": "Update the name and color for this profile",
+    "save": "Save",
+    "color": "Color",
+    "delete": "Delete",
+    "deleteTitle": "Delete profile",
+    "deleteMessage": "Delete the profile \"{{name}}\"? This cannot be undone.",
+    "lastProfile": "The last profile cannot be deleted",
+    "retry": "Try again",
+    "errors": {
+      "load": "Could not load profiles",
+      "create": "Could not create the profile",
+      "update": "Could not update the profile",
+      "remove": "Could not delete the profile"
     }
   },
   "setup": {

@@ -15,6 +15,10 @@ import type { OutputMode, PlaybackStatus, QueuedTrack } from "@repo/types";
 type SessionRecord = {
   mode: OutputMode;
   engine: PlaybackEngine & EventEmitter;
+  activeDeviceId: string | null;
+  activeDeviceName: string | null;
+  activeDeviceType: string | null;
+  volume: number;
 };
 
 function fmtSid(id: string): string {
@@ -85,7 +89,14 @@ export class PlayerRouter extends EventEmitter {
     let rec = this.records.get(sessionId);
     if (rec) return rec;
     const engine = this.wrapSessionPlayer(sessionId);
-    rec = { mode: "browser", engine };
+    rec = {
+      mode: "browser",
+      engine,
+      activeDeviceId: null,
+      activeDeviceName: null,
+      activeDeviceType: null,
+      volume: 100,
+    };
     this.records.set(sessionId, rec);
     this.attachForwarder(sessionId, engine);
     this.logService?.pushLog?.(
@@ -175,6 +186,40 @@ export class PlayerRouter extends EventEmitter {
     return this.ensureRecord(sessionId).mode;
   }
 
+  getActiveDevice(sessionId: string): string | null {
+    return this.ensureRecord(sessionId).activeDeviceId;
+  }
+
+  getActiveDeviceName(sessionId: string): string | null {
+    return this.ensureRecord(sessionId).activeDeviceName;
+  }
+
+  getActiveDeviceType(sessionId: string): string | null {
+    return this.ensureRecord(sessionId).activeDeviceType;
+  }
+
+  setActiveDeviceIfUnclaimed(
+    sessionId: string,
+    deviceId: string | null,
+    deviceName: string | null = null,
+    deviceType: string | null = null,
+  ): void {
+    if (!deviceId) return;
+    const rec = this.ensureRecord(sessionId);
+    if (rec.mode !== "browser") return;
+    if (rec.activeDeviceId === null) {
+      rec.activeDeviceId = deviceId;
+      rec.activeDeviceName = deviceName;
+      rec.activeDeviceType = deviceType;
+      this.emit(`session:${sessionId}:stateChanged`);
+      this.logService?.pushLog?.(
+        "info",
+        `[Session ${fmtSid(sessionId)}][browser] claimed by device ${deviceId.slice(0, 8)}`,
+        { sessionId: fmtSid(sessionId), deviceId: deviceId.slice(0, 8) },
+      );
+    }
+  }
+
   getMpdOwner(): string | null {
     return this.mpdConfigService.getMpdOwner();
   }
@@ -186,8 +231,41 @@ export class PlayerRouter extends EventEmitter {
   async setMode(
     sessionId: string,
     mode: OutputMode,
+    deviceId?: string | null,
+    deviceName?: string | null,
+    deviceType?: string | null,
   ): Promise<{ success: boolean; warning?: string }> {
     const rec = this.ensureRecord(sessionId);
+    // Browser -> browser device handoff (no engine swap)
+    if (rec.mode === "browser" && mode === "browser") {
+      const nextDevice = deviceId ?? rec.activeDeviceId;
+      if (rec.activeDeviceId === nextDevice) {
+        // update name/type even if same device (e.g. UA changed)
+        if (deviceName) rec.activeDeviceName = deviceName;
+        if (deviceType) rec.activeDeviceType = deviceType;
+        this.logService?.pushLog?.(
+          "debug",
+          `[Session ${fmtSid(sessionId)}][browser] outputMode already browser device=${nextDevice?.slice(0, 8) ?? "null"}`,
+          { sessionId: fmtSid(sessionId), deviceId: nextDevice?.slice(0, 8) },
+        );
+        return { success: true };
+      }
+      const prevDevice = rec.activeDeviceId;
+      rec.activeDeviceId = nextDevice ?? null;
+      rec.activeDeviceName = deviceName ?? null;
+      rec.activeDeviceType = deviceType ?? null;
+      this.emit(`session:${sessionId}:stateChanged`);
+      this.logService?.pushLog?.(
+        "info",
+        `[Session ${fmtSid(sessionId)}][browser] handoff ${prevDevice?.slice(0, 8) ?? "null"} → ${nextDevice?.slice(0, 8) ?? "null"}`,
+        {
+          sessionId: fmtSid(sessionId),
+          from: prevDevice?.slice(0, 8),
+          to: nextDevice?.slice(0, 8),
+        },
+      );
+      return { success: true };
+    }
     if (rec.mode === mode) {
       this.logService?.pushLog?.(
         "debug",
@@ -267,7 +345,14 @@ export class PlayerRouter extends EventEmitter {
       this.detachForwarder(sessionId);
       rec.engine.removeAllListeners("stateChanged");
       const mpdEngine = this.createMpdEngine(sessionId);
-      this.records.set(sessionId, { mode, engine: mpdEngine });
+      this.records.set(sessionId, {
+        mode,
+        engine: mpdEngine,
+        activeDeviceId: null,
+        activeDeviceName: null,
+        activeDeviceType: null,
+        volume: rec.volume ?? 100,
+      });
       this.attachForwarder(sessionId, mpdEngine);
       // Re-play with clear semantics at same seek
       if (prevFile) {
@@ -323,7 +408,14 @@ export class PlayerRouter extends EventEmitter {
         (rec.engine as unknown as { dispose: () => void }).dispose!();
       }
       const browserEngine = this.wrapSessionPlayer(sessionId);
-      this.records.set(sessionId, { mode, engine: browserEngine });
+      this.records.set(sessionId, {
+        mode,
+        engine: browserEngine,
+        activeDeviceId: deviceId ?? null,
+        activeDeviceName: deviceName ?? null,
+        activeDeviceType: deviceType ?? null,
+        volume: rec.volume ?? 100,
+      });
       this.attachForwarder(sessionId, browserEngine);
       if (prevFile) {
         try {
@@ -371,7 +463,27 @@ export class PlayerRouter extends EventEmitter {
   }
 
   getStatus(sessionId: string): PlaybackStatus {
-    return this.forSession(sessionId).getStatus();
+    const rec = this.ensureRecord(sessionId);
+    const base = rec.engine.getStatus();
+    const volume = rec.mode === "browser" ? rec.volume : base.volume;
+    return {
+      ...base,
+      volume,
+      activeDeviceId: rec.activeDeviceId,
+      activeDeviceName: rec.activeDeviceName,
+      activeDeviceType: rec.activeDeviceType,
+      mode: rec.mode,
+    } as PlaybackStatus;
+  }
+
+  async setVolume(sessionId: string, volume: number): Promise<void> {
+    const rec = this.ensureRecord(sessionId);
+    if (rec.mode === "browser") {
+      rec.volume = Math.max(0, Math.min(100, volume));
+      this.emit(`session:${sessionId}:stateChanged`);
+      return;
+    }
+    await rec.engine.setVolume(volume);
   }
 
   onStateChanged(sessionId: string, cb: () => void): () => void {

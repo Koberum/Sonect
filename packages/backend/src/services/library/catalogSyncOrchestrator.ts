@@ -67,6 +67,11 @@ export class CatalogSyncOrchestratorImpl implements CatalogSyncOrchestrator {
             phase: "covers",
             current: progress.current,
             total: progress.total,
+            track: {
+              title: progress.album.title,
+              artist: progress.album.artist,
+              album: progress.album.title,
+            },
           };
           broadcast({
             type: "sync-progress",

@@ -73,6 +73,11 @@
     "title": "Reproduciendo ahora",
     "outputMpd": "Salida MPD",
     "outputBrowser": "Salida del Navegador",
+    "outputThisBrowser": "Este navegador",
+    "playingOnOtherBrowser": "Reproduciendo en otro navegador",
+    "outputDevices": "Salida",
+    "thisDevice": "Este navegador",
+    "remoteDevice": "Otro navegador",
     "sessionPlayback": "Reproducción de sesión",
     "outputModeError": "Error al cambiar el modo de salida",
     "tapToPlay": "Toca para reproducir",
@@ -488,6 +493,33 @@
       "resetSetupConfirm": "Esto marcará cada paso de configuración como incompleto y el asistente volverá a aparecer en la próxima carga de página.",
       "setupResetted": "Asistente de configuración restablecido",
       "resetSetupError": "No se pudo restablecer el asistente de configuración"
+    }
+  },
+  "profile": {
+    "title": "¿Quién está escuchando?",
+    "change": "Cambiar perfil",
+    "switch": "Cambiar perfil",
+    "select": "Seleccionar",
+    "create": "Crear perfil",
+    "addProfile": "Agregar perfil",
+    "createTitle": "Crear perfil",
+    "createDescription": "Elige un nombre y un color para tu nuevo perfil",
+    "namePlaceholder": "Nombre del perfil",
+    "rename": "Renombrar",
+    "editTitle": "Editar perfil",
+    "editDescription": "Actualiza el nombre y el color de este perfil",
+    "save": "Guardar",
+    "color": "Color",
+    "delete": "Eliminar",
+    "deleteTitle": "Eliminar perfil",
+    "deleteMessage": "¿Eliminar el perfil \"{{name}}\"? Esta acción no se puede deshacer.",
+    "lastProfile": "El último perfil no se puede eliminar",
+    "retry": "Intentar de nuevo",
+    "errors": {
+      "load": "No se pudieron cargar los perfiles",
+      "create": "No se pudo crear el perfil",
+      "update": "No se pudo actualizar el perfil",
+      "remove": "No se pudo eliminar el perfil"
     }
   },
   "setup": {

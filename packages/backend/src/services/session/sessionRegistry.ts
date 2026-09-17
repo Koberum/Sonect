@@ -1,5 +1,6 @@
 import { SessionPlayer } from "./sessionPlayer.js";
 import type { LogService } from "@services/utils/logService";
+import { AutoplayService } from "../mpd/autoplayService.js";
 
 const IDLE_MS = 30 * 60 * 1000;
 
@@ -41,7 +42,7 @@ export class SessionRegistry {
   getOrCreateSession(sessionId: string): SessionPlayer {
     let s = this.sessions.get(sessionId);
     if (!s) {
-      s = new SessionPlayer(sessionId, this.logService);
+      s = new SessionPlayer(sessionId, this.logService, new AutoplayService());
       this.sessions.set(sessionId, s);
     }
     return s;

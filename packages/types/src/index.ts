@@ -36,6 +36,10 @@ export type PlaybackStatus = {
   consume: boolean;
   track?: TrackWithRelations;
   queueLength: number;
+  activeDeviceId?: string | null;
+  activeDeviceName?: string | null;
+  activeDeviceType?: string | null;
+  mode?: OutputMode;
 };
 
 export type QueuedTrack = {

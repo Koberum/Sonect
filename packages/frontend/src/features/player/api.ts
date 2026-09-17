@@ -90,10 +90,18 @@ export function getOutputMode(signal?: AbortSignal): Promise<{
   mode: OutputMode;
   deviceName: string | null;
   mpdOwner: string | null;
+  activeDeviceId: string | null;
+  activeDeviceName: string | null;
+  activeDeviceType: string | null;
 }> {
   return apiFetch("/player/output-mode", { headers: h(), signal });
 }
-export function setOutputMode(mode: OutputMode): Promise<{ success: boolean }> {
+export function setOutputMode(mode: OutputMode): Promise<{
+  success: boolean;
+  activeDeviceId?: string | null;
+  activeDeviceName?: string | null;
+  activeDeviceType?: string | null;
+}> {
   return apiFetch("/player/output-mode", {
     method: "PUT",
     headers: h(),

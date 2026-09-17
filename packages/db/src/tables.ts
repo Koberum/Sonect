@@ -139,6 +139,13 @@ export const storageSources = sqliteTable(
   ],
 );
 
+export const profiles = sqliteTable("profiles", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  avatar_color: text("avatar_color").notNull(),
+  created_at: integer("created_at").notNull(),
+});
+
 export const setupProgress = sqliteTable("setup_progress", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   step: text("step").notNull().unique(),

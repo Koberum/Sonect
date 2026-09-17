@@ -1,17 +1,12 @@
-const KEY = "sonect.sessionId";
+import { getProfileSessionId } from "./selectedProfile";
 
+/** @deprecated Use getProfileSessionId from selectedProfile instead */
 export function getClientSessionId(): string {
-  if (typeof window === "undefined") return "";
-  let id = localStorage.getItem(KEY);
-  if (!id) {
-    id =
-      Math.random().toString(36).substring(2, 15) +
-      Math.random().toString(36).substring(2, 15);
-    localStorage.setItem(KEY, id);
-  }
-  return id;
+  return getProfileSessionId();
 }
 
+/** @deprecated Use profileSessionHeaders from selectedProfile instead */
 export function sessionHeaders(): Record<string, string> {
-  return { "X-Session-Id": getClientSessionId() };
+  const id = getClientSessionId();
+  return id ? { "X-Session-Id": id } : {};
 }

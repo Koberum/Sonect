@@ -30,10 +30,11 @@ function safeLog(
 
 export function setupPlayerWebSocket(wss: WebSocketServer) {
   wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
-    const sid = new URLSearchParams((req.url ?? "").split("?")[1] ?? "").get(
-      "sessionId",
-    );
+    const params = new URLSearchParams((req.url ?? "").split("?")[1] ?? "");
+    const sid = params.get("sessionId");
+    const did = params.get("deviceId") ?? params.get("device-id");
     const fmtSid = sid ? sid.slice(0, 8) : "none";
+    const fmtDid = did ? did.slice(0, 8) : "none";
     const ip = (req.socket.remoteAddress ?? "unknown").replace("::ffff:", "");
     if (sid) {
       // Unified path: per-session isolated, backend decides engine via PlayerRouter
@@ -42,9 +43,10 @@ export function setupPlayerWebSocket(wss: WebSocketServer) {
         const mode = router.getMode(sid);
         safeLog(
           "debug",
-          `[WS][Session ${fmtSid}][${mode}] connected from ${ip}`,
+          `[WS][Session ${fmtSid}][${mode}] device=${fmtDid} connected from ${ip}`,
           {
             sessionId: fmtSid,
+            deviceId: fmtDid,
             mode,
             ip,
           },
