@@ -1,5 +1,6 @@
 {
   "name": "backend",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",

@@ -14,7 +14,7 @@
   <a href="https://sonect.dev"><img alt="Website" src="https://img.shields.io/badge/sonect.dev-Website-orange?style=flat-square"></a>
   <a href="https://github.com/Koberum/Sonect/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Koberum/Sonect/actions/workflows/ci.yml/badge.svg?style=flat-square"></a>
   <a href="https://github.com/Koberum/Sonect/actions/workflows/release.yml"><img alt="Release" src="https://github.com/Koberum/Sonect/actions/workflows/release.yml/badge.svg?style=flat-square"></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache%202.0-lightgrey"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-yellow"></a>
 </p>
 
 ---
@@ -275,4 +275,4 @@ release with a single `sonect.tar.gz` asset.
 
 ## License
 
-[Apache2.0](LICENSE)
+[MIT](LICENSE)

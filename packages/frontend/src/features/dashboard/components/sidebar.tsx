@@ -34,7 +34,6 @@ import {
   playlistQueries,
   playlistMutations,
 } from "@/features/playlists/queries";
-import { catalogQueries } from "@/features/catalog/queries";
 import { scanLibrary } from "@/features/catalog/api";
 
 export interface SidebarProps {
@@ -47,7 +46,6 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
   const navigate = useNavigate();
   const { data: playlists = [] } = useQuery(playlistQueries.list());
   const createMut = useMutation(playlistMutations.create());
-  const { data: libraryStats } = useQuery(catalogQueries.stats());
   const [newName, setNewName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -257,17 +255,6 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
           </ScrollArea>
         </div>
       </div>
-      {libraryStats && !isMenuActive("/catalog/stats") && (
-        <div className="border-t px-3 py-3">
-          <p className="text-muted-foreground text-xs">
-            {t("sidebar.libraryInfo", {
-              tracks: libraryStats.totalTracks,
-              albums: libraryStats.totalAlbums,
-              artists: libraryStats.totalArtists,
-            })}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
