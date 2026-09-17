@@ -1,5 +1,5 @@
 import { asc, count, eq, like, sql } from "drizzle-orm";
-import type { DBGenre } from "@repo/types";
+import type { DBGenre, DBGenreWithCounts } from "@repo/types";
 import { db } from "../connection.js";
 import { genres } from "../tables.js";
 import { normalizeRowId, type QueryExecutor } from "./rowId.js";
@@ -37,6 +37,21 @@ export const genresDb = {
       }
     }
     return query.all() as DBGenre[];
+  },
+
+  getAllWithCounts(): DBGenreWithCounts[] {
+    return db()
+      .select({
+        id: genres.id,
+        name: genres.name,
+        created_at: genres.created_at,
+        updated_at: genres.updated_at,
+        track_count: sql<number>`(select count(*) from tracks where tracks.genre_id = genres.id)`,
+        album_count: sql<number>`(select count(*) from albums where albums.genre_id = genres.id)`,
+      })
+      .from(genres)
+      .orderBy(asc(genres.name))
+      .all() as DBGenreWithCounts[];
   },
 
   count(): number {

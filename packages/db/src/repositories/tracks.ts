@@ -1,9 +1,11 @@
 import {
   and,
   asc,
+  count,
   desc,
   eq,
   getColumns,
+  inArray,
   isNull,
   isNotNull,
   like,
@@ -11,9 +13,6 @@ import {
   notInArray,
   or,
   sql,
-  count,
-  countDistinct,
-  inArray,
 } from "drizzle-orm";
 import type { DBTrack, MPDTrack, DBTrackWithRelations } from "@repo/types";
 import { db, transaction } from "../connection.js";
@@ -230,20 +229,6 @@ export const tracksDb = {
       .orderBy(desc(tracks.created_at))
       .limit(limit)
       .all() as DBTrackWithRelations[];
-  },
-
-  getGenres(): { genre: string; track_count: number; album_count: number }[] {
-    return db()
-      .select({
-        genre: genres.name,
-        track_count: count(tracks.id),
-        album_count: countDistinct(tracks.album_id),
-      })
-      .from(tracks)
-      .innerJoin(genres, eq(tracks.genre_id, genres.id))
-      .groupBy(genres.id, genres.name)
-      .orderBy(asc(genres.name))
-      .all() as { genre: string; track_count: number; album_count: number }[];
   },
 
   getByGenre(genre: string): DBTrack[] {

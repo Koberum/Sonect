@@ -3,6 +3,7 @@ import {
   DBAlbum,
   DBArtist,
   DBGenre,
+  DBGenreWithCounts,
   DBPlaylist,
   DBTrackWithRelations,
 } from "../db/types";
@@ -29,6 +30,7 @@ export type Album = DBAlbum & {
 };
 
 export type Genre = DBGenre;
+export type GenreWithCounts = DBGenreWithCounts;
 export type Playlist = DBPlaylist;
 export type PlaylistTrack = TrackWithRelations & { pt_id: number };
 export type PlaylistWithTracks = Playlist & {

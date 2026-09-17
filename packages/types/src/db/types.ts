@@ -5,6 +5,11 @@ export type DBGenre = {
   updated_at?: string;
 };
 
+export type DBGenreWithCounts = DBGenre & {
+  album_count: number;
+  track_count: number;
+};
+
 export type DBTrack = {
   id: number;
   file: string;

@@ -444,13 +444,10 @@ describe("tracksDb (trophy integration)", () => {
       expect(tracksDb.getRecentWithRelations(2)).to.have.length(2);
       expect(tracksDb.getRecentWithRelations(10)).to.have.length(5);
     });
-    it("getGenres aggregates", () => {
-      expect(tracksDb.getGenres()).to.deep.equal([]);
-      tracksDb.upsert(mpdTrack({ file: "a/g1.mp3", genre: "Rock" }));
-      tracksDb.upsert(mpdTrack({ file: "a/g2.mp3", genre: "Rock" }));
-      const genres = tracksDb.getGenres();
-      expect(genres[0].genre).to.equal("Rock");
-      expect(genres[0].track_count).to.equal(2);
+    it("getGenres removed — use genresDb.getAllWithCounts", () => {
+      expect(
+        typeof (tracksDb as unknown as Record<string, unknown>).getGenres,
+      ).to.equal("undefined");
     });
     it("getByGenre case-insensitive", () => {
       tracksDb.upsert(mpdTrack({ file: "a/gg1.mp3", genre: "Shoegaze" }));

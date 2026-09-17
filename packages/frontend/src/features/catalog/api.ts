@@ -2,10 +2,10 @@ import { apiFetch } from "@/lib/api";
 import type {
   Album,
   Artist,
+  GenreWithCounts,
   LibraryStats,
-  TrackWithRelations,
   SearchResults,
-  Genre,
+  TrackWithRelations,
 } from "@repo/types/catalog";
 
 export function getTracksByAlbum(
@@ -70,7 +70,7 @@ export function getAlbumsByArtist(
   return apiFetch(`/catalog/artists/${artistId}/albums`, { signal });
 }
 
-export function getGenres(signal?: AbortSignal): Promise<Genre[]> {
+export function getGenres(signal?: AbortSignal): Promise<GenreWithCounts[]> {
   return apiFetch("/catalog/genres", { signal });
 }
 

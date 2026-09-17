@@ -3,6 +3,7 @@ import type {
   Album,
   Artist,
   Genre,
+  GenreWithCounts,
   LibraryStats,
   SearchResults,
   TrackWithRelations,
@@ -24,7 +25,7 @@ export interface CatalogService {
   getAlbumsByGenre(genre: string): Album[];
 
   // Genre
-  getGenres(): Genre[];
+  getGenres(): GenreWithCounts[];
   getGenreById(id: number): Genre | undefined;
   /** @deprecated use getGenreById — kept for GenreService compat */
   getById(id: number): Genre | undefined;
@@ -102,8 +103,8 @@ export class CatalogServiceImpl implements CatalogService {
   }
 
   // Genre
-  public getGenres(): Genre[] {
-    return genresDb.getAll();
+  public getGenres(): GenreWithCounts[] {
+    return genresDb.getAllWithCounts();
   }
 
   public getGenreById(id: number): Genre | undefined {
