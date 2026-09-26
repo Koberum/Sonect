@@ -30,10 +30,10 @@ export function StatusBar() {
 
   if (view === "success") {
     return (
-      <div className="bg-background flex items-center justify-center px-4">
-        <div className="flex items-center gap-2 py-1">
+      <div className="bg-background flex h-[44px] w-[270px] shrink-0 items-center justify-start overflow-hidden px-4">
+        <div className="flex w-full min-w-0 items-center gap-2 py-1">
           <Check className="h-4 w-4 shrink-0 text-green-500" />
-          <span className="text-xs font-medium md:text-sm">
+          <span className="min-w-0 truncate text-xs font-medium md:text-sm">
             {t("sync.complete")}
           </span>
         </div>
@@ -56,24 +56,23 @@ export function StatusBar() {
         : t("sync.syncingTracks");
 
   return (
-    <div className="bg-background flex items-center justify-center px-4">
-      <div className="flex items-center gap-2 py-1">
+    <div className="bg-background flex h-[44px] w-[350px] shrink-0 items-center justify-start overflow-hidden px-4">
+      <div className="flex w-full min-w-0 items-center gap-2 py-1">
         <RefreshCw className="h-4 w-4 shrink-0 animate-spin" />
-        <div className="flex flex-1 flex-col gap-0.5">
-          <div className="flex items-center gap-2 text-xs font-medium md:text-sm">
-            <span>{phaseLabel}</span>
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5 overflow-hidden">
+          <div className="flex min-w-0 items-center gap-2 overflow-hidden text-xs font-medium md:text-sm">
+            <span className="min-w-0 truncate">{phaseLabel}</span>
             {total > 0 && (
-              <span className="text-muted-foreground text-xs md:text-sm">
+              <span className="text-muted-foreground shrink-0 text-xs md:text-sm">
                 {percent}%
               </span>
             )}
           </div>
-          {syncProgress.track && (
-            <div className="text-muted-foreground hidden max-w-xs truncate text-xs md:block">
-              {syncProgress.track.title} — {syncProgress.track.artist} ·{" "}
-              {syncProgress.track.album}
-            </div>
-          )}
+          <div className="text-muted-foreground h-4 w-full min-w-0 truncate text-xs leading-4">
+            {syncProgress.track
+              ? `${syncProgress.track.title} \u2014 ${syncProgress.track.artist} \u00B7 ${syncProgress.track.album}`
+              : "\u00A0"}
+          </div>
         </div>
       </div>
     </div>

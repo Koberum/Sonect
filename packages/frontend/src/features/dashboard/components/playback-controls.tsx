@@ -13,6 +13,7 @@ type PlaybackControls = {
   playbackStatus: PlaybackStatus;
   playTrack(): void;
   pauseTrack(): void;
+  resumeTrack(): void;
   nextTrack(): void;
   previousTrack(): void;
   setRandom(status: boolean): void;
@@ -25,6 +26,7 @@ export function PlaybackControls({
   playbackStatus,
   playTrack,
   pauseTrack,
+  resumeTrack,
   nextTrack,
   previousTrack,
   setRandom,
@@ -37,6 +39,12 @@ export function PlaybackControls({
   const btnActive =
     "text-primary hover:text-primary hover:bg-transparent dark:hover:bg-transparent";
   const showAlways = showAllControls ? "" : "hidden md:block";
+
+  const handleMain = () => {
+    if (playbackStatus.state === "play") return pauseTrack();
+    if (playbackStatus.state === "pause") return resumeTrack();
+    return playTrack();
+  };
 
   return (
     <div className={className}>
@@ -63,9 +71,9 @@ export function PlaybackControls({
 
         <Button
           variant="default"
-          size="icon-lg"
+          size="icon-sm"
           className="rounded-full transition-opacity hover:opacity-85"
-          onClick={playbackStatus.state === "stop" ? playTrack : pauseTrack}
+          onClick={handleMain}
         >
           {playbackStatus.state === "play" ? (
             <PauseIcon size={20} fill="currentColor" />

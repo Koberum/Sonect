@@ -1,12 +1,31 @@
-export { db, initDb } from "./connection.js";
+export { initDb, db, closeDb, transaction } from "./connection.js";
 export { initDatabase } from "./schema.js";
 export {
-  artistsDb,
-  albumsDb,
-  tracksDb,
-  playlistsDb,
-  syncMetadataDb,
-  statsDb,
-  storageDb,
-  setupDb,
-} from "./models.js";
+  artists,
+  albums,
+  tracks,
+  genres,
+  playlists,
+  playlistTracks,
+  syncMetadata,
+  storageSources,
+  setupProgress,
+  profiles,
+} from "./tables.js";
+export { artistsDb } from "./repositories/artists.js";
+export { albumsDb, type AlbumWithArtist } from "./repositories/albums.js";
+export { tracksDb } from "./repositories/tracks.js";
+export { catalogSyncDb } from "./repositories/catalogSync.js";
+export { playlistsDb } from "./repositories/playlists.js";
+export { syncMetadataDb } from "./repositories/syncMetadata.js";
+export { statsDb } from "./repositories/stats.js";
+export { storageDb } from "./repositories/storage.js";
+export { setupDb } from "./repositories/setup.js";
+export { genresDb, findOrCreateGenre } from "./repositories/genres.js";
+export {
+  profilesDb,
+  AVATAR_COLORS,
+  pickAvatarColor,
+  getInitials,
+  LastProfileError,
+} from "./repositories/profiles.js";

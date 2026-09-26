@@ -6,10 +6,11 @@ description: Write, fix, or extend backend tests for the Sonect project. Use thi
 # Sonect Backend Testing
 
 The test suite lives in `packages/backend/src/__tests__/` and mirrors `src/`:
-- `controllers/` — unit tests for controllers
-- `services/` — unit tests for services
-- `routes/` — integration tests (Express app + Supertest)
-- `ws/` — WebSocket handler tests
+
+- `unit/controllers/`, `unit/services/` — pure/unit tests (esmock for ESM where needed, otherwise DI)
+- `integration/services/`, `integration/repositories/` (`db.*` + tracks), `integration/routes/`, `integration/ws/` — service/repo/route/ws integration (real `:memory:` DB via `helpers/db.ts`)
+- `e2e/` — full-stack `app` + `supertest`
+  (`NetworkService` uses constructor DI → no `esmock` relative path)
 
 Run tests with `pnpm backend:test`. Watch mode: `pnpm backend:test:watch`.
 
@@ -39,8 +40,9 @@ The `asyncHandler` wrapper in `middleware/asyncHandler.ts` must **return** the p
 
 ```ts
 // middleware/asyncHandler.ts — existing, don't change, just know this:
-export const asyncHandler = (fn: RequestHandler) => (req: Request, res: Response, next: NextFunction) =>
-  Promise.resolve(fn(req, res, next)).catch(next); // returns the promise
+export const asyncHandler =
+  (fn: RequestHandler) => (req: Request, res: Response, next: NextFunction) =>
+    Promise.resolve(fn(req, res, next)).catch(next); // returns the promise
 ```
 
 ---
@@ -84,6 +86,7 @@ describe("PlayerService", () => {
 ```
 
 Key points:
+
 - Paths in esmock are **relative to the test file**, ending in `.js` (compiled output convention).
 - Mock the entire exported object, not just one function.
 - `sinon.reset()` in `afterEach` resets call counts; `sinon.restore()` in `after` removes stubs.
@@ -137,6 +140,7 @@ describe("GET /player/status", () => {
 ```
 
 Key points:
+
 - Always add `errorHandler` as the last middleware — without it, thrown `NotFoundError`/`ValidationError` crash the test instead of returning the right HTTP status.
 - Build the app in `before()`, not `beforeEach()` — dynamic `import()` is cached after first load.
 
@@ -207,17 +211,13 @@ Zod schemas live in `@repo/types/src/schemas.ts` and are called via `schema.pars
 
 ```ts
 it("returns 400 for missing required field", async () => {
-  const res = await request(app)
-    .post("/player/volume")
-    .send({}); // missing `volume` field
+  const res = await request(app).post("/player/volume").send({}); // missing `volume` field
   expect(res.status).to.equal(400);
   expect(res.body).to.have.property("fieldErrors");
 });
 
 it("returns 400 for out-of-range value", async () => {
-  const res = await request(app)
-    .post("/player/volume")
-    .send({ volume: 150 }); // max is 100
+  const res = await request(app).post("/player/volume").send({ volume: 150 }); // max is 100
   expect(res.status).to.equal(400);
 });
 ```

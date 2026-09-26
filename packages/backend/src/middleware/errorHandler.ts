@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
-import { pushLog } from "../services/logService";
+import { getLogService } from "@services/factory";
 
 export interface AppError extends Error {
   statusCode?: number;
@@ -15,7 +15,7 @@ export function errorHandler(
 ) {
   const statusCode = err instanceof ZodError ? 400 : (err.statusCode ?? 500);
 
-  pushLog(
+  getLogService().pushLog(
     statusCode >= 500 ? "error" : "warn",
     `Error ${statusCode}: ${err.message}`,
     {
@@ -57,5 +57,23 @@ export class NotFoundError extends Error {
   constructor(resource: string) {
     super(`${resource} not found`);
     this.name = "NotFoundError";
+  }
+}
+
+export class LockedError extends Error {
+  statusCode = 423;
+
+  constructor(message = "MPD output locked by another session") {
+    super(message);
+    this.name = "LockedError";
+  }
+}
+
+export class ConflictError extends Error {
+  statusCode = 409;
+
+  constructor(message: string) {
+    super(message);
+    this.name = "ConflictError";
   }
 }

@@ -18,64 +18,45 @@ import {
   SelectGroup,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import {
-  getAudioDevices,
-  configureAudio,
-  getAudioStatus,
-  type AudioDevice,
-} from "@/features/apis/systemApis";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { systemQueries, systemMutations } from "@/features/system/queries";
 
 export function AudioTab() {
   const { t } = useTranslation();
-  const [devices, setDevices] = useState<AudioDevice[]>([]);
+  const { data: devices = [], isPending: fetching } = useQuery(
+    systemQueries.audioDevices(),
+  );
+  const { data: audioStatus } = useQuery(systemQueries.audioStatus());
   const [selected, setSelected] = useState<string>("");
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
+  const configureMut = useMutation(systemMutations.configureAudio());
 
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        const [devicesData, audioStatus] = await Promise.all([
-          getAudioDevices(),
-          getAudioStatus(),
-        ]);
-        setDevices(devicesData);
-        if (audioStatus) {
-          const matched = devicesData.find((d) => d.card === audioStatus.card);
-          if (matched) setSelected(matched.card);
-        }
-      } catch {
-        toast.error(t("settings.audio.loadError"));
-      } finally {
-        setFetching(false);
-      }
-    };
-    fetch();
-  }, [t]);
+    if (audioStatus) {
+      const matched = devices.find((d) => d.card === audioStatus.card);
+      if (matched) setSelected(matched.card);
+    }
+  }, [audioStatus, devices]);
 
   const handleApply = async () => {
     if (!selected) return;
-    setLoading(true);
     try {
       const device = devices.find((d) => d.card === selected);
-      const result = await configureAudio({
+      const result = await configureMut.mutateAsync({
         card: selected,
         name: device?.name ?? "Audio Output",
       });
       if (result.success) {
         toast.success(t("settings.audio.configured"));
-        if (result.warning) {
-          toast.warning(result.warning);
-        }
+        if (result.warning) toast.warning(result.warning);
       } else {
         toast.error(result.warning ?? t("settings.audio.configureError"));
       }
     } catch {
       toast.error(t("settings.audio.configureError"));
-    } finally {
-      setLoading(false);
     }
   };
+
+  const loading = configureMut.isPending;
 
   return (
     <Card>
@@ -105,16 +86,6 @@ export function AudioTab() {
                 </SelectItem>
               ))}
             </SelectGroup>
-            {/* {currentCard === device.card && (
-              <Badge className="border-transparent bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                {t("settings.audio.currentlyActive")}
-              </Badge>
-            )}
-            {device.usb && (
-              <Badge className="border-transparent bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                {t("settings.audio.usbDac")}
-              </Badge>
-            )} */}
           </SelectContent>
         </Select>
 

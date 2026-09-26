@@ -1,12 +1,11 @@
-import { getAlbumsByArtist, getArtistById } from "@/features/apis/libraryApis";
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
-import { usePlaybackContext } from "@/components/playback-context";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
 import { SortTabs } from "@/features/dashboard/components/sort-tabs";
-import type { Album, Artist } from "@repo/types";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { catalogQueries } from "@/features/catalog/queries";
 
 type SortOption = "title" | "year" | "recent";
 
@@ -14,28 +13,18 @@ export function ArtistAlbums() {
   const { t } = useTranslation();
   const { artistId } = useParams();
   const navigate = useNavigate();
-  usePlaybackContext();
-  const [albums, setAlbums] = useState<Album[]>();
-  const [artist, setArtist] = useState<Artist>();
   const [sort, setSort] = useState<SortOption>("year");
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchAlbums = async () => {
-      if (!artistId) return;
-      setLoading(true);
-      try {
-        const fetchedAlbums = await getAlbumsByArtist(artistId);
-        const fetchedArtist = await getArtistById(artistId);
-        setAlbums(fetchedAlbums);
-        setArtist(fetchedArtist);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const { data: albums = [], isPending: albumsPending } = useQuery({
+    ...catalogQueries.albumsByArtist(artistId ?? ""),
+    enabled: !!artistId,
+  });
+  const { data: artist, isPending: artistPending } = useQuery({
+    ...catalogQueries.artist(artistId ?? ""),
+    enabled: !!artistId,
+  });
 
-    fetchAlbums();
-  }, [artistId]);
+  const isPending = albumsPending || artistPending;
 
   const sortedAlbums = [...(albums ?? [])].sort((a, b) => {
     if (sort === "title") return (a.title ?? "").localeCompare(b.title ?? "");
@@ -55,7 +44,7 @@ export function ArtistAlbums() {
         title={artist ? artist.name : t("artist.loading")}
         description={t("artist.description")}
       />
-      {loading ? (
+      {isPending ? (
         <div className="flex justify-center py-16">
           <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
         </div>

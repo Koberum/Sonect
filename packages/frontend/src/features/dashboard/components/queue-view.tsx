@@ -1,11 +1,6 @@
-import { useEffect, useState } from "react";
-import {
-  getQueue,
-  playQueueItem,
-  removeFromQueue,
-} from "@/features/apis/mpdApis";
+import { useState } from "react";
+import { playQueueItem, removeFromQueue } from "@/features/player/api";
 import { getCoverPath } from "@/lib/utils";
-import type { QueuedTrack } from "@repo/types";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -15,6 +10,10 @@ import {
 import { ListMusic, X, Play } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTranslation } from "react-i18next";
+import PlayStatus from "@/features/dashboard/components/play-status";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { playerQueries } from "@/features/player/queries";
+import { qk } from "@/lib/queryKeys";
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -28,32 +27,26 @@ interface QueueViewProps {
 
 export function QueueView({ currentTrackFile }: QueueViewProps) {
   const { t } = useTranslation();
-  const [queue, setQueue] = useState<QueuedTrack[]>([]);
   const [open, setOpen] = useState(false);
+  const qc = useQueryClient();
 
-  useEffect(() => {
-    if (!open) return;
-    const fetchQueue = async () => {
-      try {
-        const data = await getQueue();
-        setQueue(data);
-      } catch {
-        setQueue([]);
-      }
-    };
-    fetchQueue();
-    const id = setInterval(fetchQueue, 5000);
-    return () => clearInterval(id);
-  }, [open]);
+  const { data: queue = [] } = useQuery({
+    ...playerQueries.queue(open),
+    enabled: open,
+  });
 
   const handlePlay = async (pos: number) => {
     await playQueueItem(pos);
+    await qc.invalidateQueries({ queryKey: qk.player.queue() });
   };
 
   const handleRemove = async (e: React.MouseEvent, pos: number) => {
     e.stopPropagation();
     await removeFromQueue(pos);
-    setQueue((prev) => prev.filter((t) => t.pos !== pos));
+    qc.setQueryData(qk.player.queue(), (old: typeof queue) =>
+      old ? old.filter((trk) => trk.pos !== pos) : old,
+    );
+    await qc.invalidateQueries({ queryKey: qk.player.queue() });
   };
 
   return (
@@ -85,13 +78,17 @@ export function QueueView({ currentTrackFile }: QueueViewProps) {
               const isCurrent = track.file === currentTrackFile;
               return (
                 <div
-                  key={track.mpdId}
-                  className={`group hover:bg-accent/50 flex cursor-pointer items-center gap-2 px-3 py-2 transition-colors ${
-                    isCurrent ? "bg-accent" : ""
-                  }`}
+                  key={`${track.mpdId}-${track.pos}`}
+                  className={`group hover:bg-accent/50 flex cursor-pointer items-center gap-2 px-3 py-2 transition-colors`}
                   onClick={() => !isCurrent && handlePlay(track.pos)}
                 >
                   <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded">
+                    {isCurrent && (
+                      <PlayStatus
+                        variant="white"
+                        className="absolute inset-2 flex items-center justify-center"
+                      />
+                    )}
                     <img
                       src={getCoverPath(track.cover_path)}
                       alt=""
@@ -111,11 +108,6 @@ export function QueueView({ currentTrackFile }: QueueViewProps) {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    {isCurrent && (
-                      <p className="text-primary text-[10px] leading-tight font-medium">
-                        {t("queue.nowPlaying")}
-                      </p>
-                    )}
                     <p
                       className={`truncate text-sm ${
                         isCurrent ? "text-primary font-medium" : "font-medium"

@@ -73,8 +73,16 @@
     "title": "Now Playing",
     "outputMpd": "MPD Output",
     "outputBrowser": "Browser Output",
+    "outputThisBrowser": "This browser",
+    "playingOnOtherBrowser": "Playing on another browser",
+    "outputDevices": "Output",
+    "thisDevice": "This browser",
+    "remoteDevice": "Other browser",
+    "sessionPlayback": "Session playback",
     "outputModeError": "Failed to switch output mode",
-    "tapToPlay": "Tap to play"
+    "tapToPlay": "Tap to play",
+    "mpdLocked": "MPD locked",
+    "outputModeLocked": "MPD output locked by another session"
   },
   "theme": {
     "toggle": "Toggle theme",
@@ -142,10 +150,6 @@
     "settingsMenu": {
       "theme": "Theme",
       "language": "Language"
-    },
-    "network": {
-      "connected": "Connected to {{ssid}}",
-      "disconnected": "Disconnected"
     },
     "mpd": {
       "connected": "MPD Connected",
@@ -289,14 +293,17 @@
   },
   "status": {
     "backendUnreachable": "Cannot reach server — reconnecting...",
-    "backendOnline": "Connection restored"
+    "backendOnline": "Connection restored",
+    "networkUnknown": "Network status unavailable",
+    "networkDisconnected": "Network disconnected",
+    "networkNoDns": "Connected to network, DNS unavailable",
+    "networkConnected": "Connected to network"
   },
   "settings": {
     "title": "Settings",
     "description": "Configure your system",
     "tabs": {
       "audio": "Audio",
-      "network": "Network",
       "storage": "Storage",
       "libraries": "Libraries",
       "library": "Library",
@@ -315,34 +322,6 @@
       "configured": "Audio output configured",
       "configureError": "Failed to configure audio",
       "loadError": "Failed to load audio devices"
-    },
-    "network": {
-      "title": "Network",
-      "description": "Manage WiFi connections.",
-      "statusConnected": "Connected to {{ssid}}",
-      "statusDisconnected": "Disconnected",
-      "disconnect": "Disconnect",
-      "scan": "Scan WiFi",
-      "scanning": "Scanning...",
-      "password": "Password",
-      "passwordPlaceholder": "Enter WiFi password",
-      "connect": "Connect",
-      "connecting": "Connecting...",
-      "connected": "Connected to {{ssid}}",
-      "disconnected": "Disconnected",
-      "scanError": "Failed to scan WiFi networks",
-      "connectError": "Failed to connect",
-      "disconnectError": "Failed to disconnect",
-      "disconnectTitle": "Disconnect WiFi?",
-      "disconnectConfirm": "Are you sure you want to disconnect from \"{{ssid}}\"?",
-      "signal": "Signal",
-      "secured": "Secured",
-      "interface": "Interface",
-      "ipAddress": "IP Address",
-      "netmask": "Subnet mask",
-      "gateway": "Gateway",
-      "dns": "DNS",
-      "networks": "Networks"
     },
     "storage": {
       "title": "Storage",
@@ -363,7 +342,7 @@
       "uriHint": "Use //server/share format without credentials (e.g. //192.168.1.10/music)",
       "mountPath": "Mount Path",
       "mountPathPlaceholder": "NAS",
-      "mountPathHint": "Subpath under /opt/sonect/music (e.g. nas/download)",
+      "mountPathHint": "Subpath under the music directory (e.g. nas/download)",
       "username": "Username",
       "usernamePlaceholder": "Optional",
       "password": "Password",
@@ -416,7 +395,7 @@
       "localPathHint": "Absolute path to the folder on this device",
       "folderName": "Folder Name",
       "folderNamePlaceholder": "my-music",
-      "folderNameHint": "Subfolder under /opt/sonect/music",
+      "folderNameHint": "Subfolder under the music directory",
       "username": "Username",
       "usernamePlaceholder": "Optional",
       "password": "Password",
@@ -516,6 +495,33 @@
       "resetSetupError": "Failed to reset the setup wizard"
     }
   },
+  "profile": {
+    "title": "Who's listening?",
+    "change": "Change profile",
+    "switch": "Switch profile",
+    "select": "Select",
+    "create": "Create profile",
+    "addProfile": "Add profile",
+    "createTitle": "Create profile",
+    "createDescription": "Choose a name and color for your new profile",
+    "namePlaceholder": "Profile name",
+    "rename": "Rename",
+    "editTitle": "Edit profile",
+    "editDescription": "Update the name and color for this profile",
+    "save": "Save",
+    "color": "Color",
+    "delete": "Delete",
+    "deleteTitle": "Delete profile",
+    "deleteMessage": "Delete the profile \"{{name}}\"? This cannot be undone.",
+    "lastProfile": "The last profile cannot be deleted",
+    "retry": "Try again",
+    "errors": {
+      "load": "Could not load profiles",
+      "create": "Could not create the profile",
+      "update": "Could not update the profile",
+      "remove": "Could not delete the profile"
+    }
+  },
   "setup": {
     "welcome": {
       "description": "Welcome to Sonect — your self-hosted music streamer.",
@@ -552,6 +558,7 @@
       "stepLabel": "Step {{current}} of {{total}} — {{step}}",
       "back": "Back",
       "skippedToast": "Setup skipped!",
+      "skipError": "Failed to skip setup",
       "completeToast": "Setup complete!"
     }
   }

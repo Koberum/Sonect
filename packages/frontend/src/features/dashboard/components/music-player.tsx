@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "react-responsive";
 import { PlaybackControls } from "./playback-controls";
 import { PlaybackProgressBar } from "./playback-progress-bar";
+import { PlaybackWaveform } from "./playback-waveform";
 import { PlayedTrack } from "./playback-track";
 import { QueueView } from "./queue-view";
 import { FullPagePlayer } from "./full-page-player";
@@ -12,19 +13,25 @@ import {
   pauseSong,
   playSong,
   previousTrack,
+  resumeSong,
+  setOutputMode as apiSetOutputMode,
   setRandom,
   setRepeat,
-} from "@/features/apis/mpdApis";
+} from "@/features/player/api";
 import { usePlaybackContext } from "@/components/playback-context";
 import VolumeControls from "./volume-controls";
 import { useBrowserAudio } from "@/lib/useBrowserAudio";
 import { OutputSelector } from "./output-selector";
-import {
-  getOutputMode,
-  setOutputMode as setOutputModeApi,
-} from "@/features/apis/systemApis";
+import { useQuery } from "@tanstack/react-query";
+import { systemQueries } from "@/features/system/queries";
+import { getClientSessionId } from "@/lib/session";
+import type { TrackWithRelations } from "@repo/types/catalog";
 import { useTranslation } from "react-i18next";
 import { Play } from "lucide-react";
+import { toast } from "sonner";
+import { ApiError } from "@/lib/api";
+import { queryClient } from "@/lib/queryClient";
+import { qk } from "@/lib/queryKeys";
 
 export default function MusicPlayer() {
   const {
@@ -33,6 +40,10 @@ export default function MusicPlayer() {
     playbackStatus,
     outputMode,
     setOutputMode,
+    activeDeviceId,
+    activeDeviceName,
+    activeDeviceType,
+    myDeviceId,
   } = usePlaybackContext();
 
   const lastAnchorRef = useRef({ time: 0, elapsed: 0 });
@@ -42,14 +53,26 @@ export default function MusicPlayer() {
   const browserAudio = useBrowserAudio();
   const prevTrackFileRef = useRef<string | null>(null);
   const { t } = useTranslation();
+  const { data: outputModeData } = useQuery(systemQueries.outputMode());
+  const mpdOwner = outputModeData?.mpdOwner ?? null;
+  const mySid = getClientSessionId();
+  const isMpdLockedForMe =
+    !!mpdOwner && mpdOwner !== mySid && outputMode !== "mpd";
 
   useEffect(() => {
     prevTrackFileRef.current = null;
   }, []);
 
-  // Browser audio sync
+  // Browser audio sync - only active browser device renders audio
+  const isActiveBrowser =
+    outputMode === "browser" &&
+    (!activeDeviceId || activeDeviceId === myDeviceId);
+
   useEffect(() => {
-    if (outputMode !== "browser") return;
+    if (!isActiveBrowser) {
+      browserAudio.pause();
+      return;
+    }
 
     const track = playbackStatus.track;
     if (track?.file) {
@@ -73,7 +96,21 @@ export default function MusicPlayer() {
     } else {
       browserAudio.pause();
     }
-  }, [playbackStatus, outputMode, browserAudio]);
+  }, [playbackStatus, outputMode, browserAudio, isActiveBrowser]);
+
+  // Ensure browser audio stops immediately when switching away from active browser output
+  useEffect(() => {
+    if (!isActiveBrowser) {
+      browserAudio.pause();
+      // Reset prev file so returning to browser reloads at new seek
+      if (
+        outputMode !== "browser" ||
+        (activeDeviceId && activeDeviceId !== myDeviceId)
+      ) {
+        prevTrackFileRef.current = null;
+      }
+    }
+  }, [outputMode, browserAudio, isActiveBrowser, activeDeviceId, myDeviceId]);
 
   // Track change detection
   useEffect(() => {
@@ -83,28 +120,39 @@ export default function MusicPlayer() {
   }, [playbackStatus.track, trackPlayed, setTrackPlayed]);
 
   const handleOutputModeChange = async (mode: OutputMode) => {
+    const prev = outputMode;
+    setOutputMode(mode);
     try {
-      await setOutputModeApi(mode);
-      setOutputMode(mode);
-    } catch {
-      console.error(t("player.outputModeError"));
+      await apiSetOutputMode(mode);
+      // optimistic active device for browser handoff
+      queryClient.invalidateQueries({ queryKey: qk.player.queue() });
+      queryClient.invalidateQueries({ queryKey: qk.system.outputMode() });
+    } catch (err) {
+      setOutputMode(prev);
+      if (err instanceof ApiError && err.status === 423) {
+        toast.error(
+          t("player.outputModeLocked", {
+            defaultValue: "MPD output locked by another session",
+          }),
+        );
+      } else {
+        toast.error(t("player.outputModeError"));
+      }
     }
   };
 
-  const [deviceName, setDeviceName] = useState<string | null>(null);
+  // Unified backend: single /player interface, backend decides per-session engine.
+  // Browser queues are isolated per X-Session-Id; MPD queue is shared but locked to one session.
+  const doPlay = (t: TrackWithRelations | null) => t && playSong(t);
+  const doPause = () => pauseSong();
+  const doResume = () => resumeSong();
+  const doNext = () => nextTrack();
+  const doPrev = () => previousTrack();
 
-  useEffect(() => {
-    getOutputMode()
-      .then((res) => {
-        setOutputMode(res.mode);
-        setDeviceName(res.deviceName);
-      })
-      .catch(() => {});
-  }, [setOutputMode]);
+  const doToggle = (fn: () => Promise<void>) => fn();
 
   useEffect(() => {
     if (playbackStatus.state !== "play") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplayElapsed(playbackStatus.elapsed);
       return;
     }
@@ -128,17 +176,19 @@ export default function MusicPlayer() {
 
   return (
     <>
-      {browserAudio.autoplayBlocked && playbackStatus.state === "play" && (
-        <div className="animate-in fade-in slide-in-from-bottom-4 fixed bottom-24 left-1/2 z-[60] -translate-x-1/2">
-          <button
-            onClick={() => browserAudio.play()}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium shadow-lg"
-          >
-            <Play className="h-4 w-4" />
-            {t("player.tapToPlay")}
-          </button>
-        </div>
-      )}
+      {isActiveBrowser &&
+        browserAudio.autoplayBlocked &&
+        playbackStatus.state === "play" && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 fixed bottom-24 left-1/2 z-[60] -translate-x-1/2">
+            <button
+              onClick={() => browserAudio.play()}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium shadow-lg"
+            >
+              <Play className="h-4 w-4" />
+              {t("player.tapToPlay")}
+            </button>
+          </div>
+        )}
       <div
         className={`bg-card border-border fixed right-0 bottom-0 left-0 z-50 border border-b-0 pb-[env(safe-area-inset-bottom)] transition-all duration-300 ease-in-out`}
       >
@@ -146,7 +196,8 @@ export default function MusicPlayer() {
           <PlaybackProgressBar
             elapsed={displayElapsed}
             duration={playbackStatus.duration}
-            className="h-1 w-full"
+            className="w-full"
+            outputMode={outputMode}
           />
         </div>
         <div className="relative flex h-20 items-center">
@@ -168,38 +219,36 @@ export default function MusicPlayer() {
               }
             }}
           >
-            {trackPlayed && (
-              <PlayedTrack
-                title={trackPlayed?.title}
-                artist={trackPlayed?.artist_name}
-                cover_path={trackPlayed?.cover_path}
-              />
-            )}
+            {trackPlayed && <PlayedTrack track={trackPlayed} />}
           </div>
           <div className="flex flex-1 flex-col items-center gap-2">
             <PlaybackControls
               playbackStatus={playbackStatus}
               playTrack={() => {
-                if (trackPlayed) playSong(trackPlayed);
+                if (trackPlayed) doPlay(trackPlayed);
               }}
               pauseTrack={() => {
-                pauseSong();
+                doPause();
+              }}
+              resumeTrack={() => {
+                doResume();
               }}
               nextTrack={() => {
-                nextTrack();
+                doNext();
               }}
               previousTrack={() => {
-                previousTrack();
+                doPrev();
               }}
-              setRandom={(enabled) => setRandom(enabled)}
-              setRepeat={(enabled) => setRepeat(enabled)}
+              setRandom={(enabled) => doToggle(() => setRandom(enabled))}
+              setRepeat={(enabled) => doToggle(() => setRepeat(enabled))}
             />
-
             <div className="hidden w-full md:flex">
-              <PlaybackProgressBar
+              <PlaybackWaveform
                 elapsed={displayElapsed}
                 duration={playbackStatus.duration}
+                trackId={playbackStatus.track?.id ?? null}
                 className="w-full pr-6 pl-6"
+                outputMode={outputMode}
               />
             </div>
           </div>
@@ -208,16 +257,21 @@ export default function MusicPlayer() {
             <OutputSelector
               currentMode={outputMode}
               onModeChange={handleOutputModeChange}
-              deviceName={deviceName}
+              deviceName={null}
+              mpdOwner={mpdOwner}
+              mySid={mySid}
+              disabledMpd={isMpdLockedForMe}
+              activeDeviceId={activeDeviceId}
+              activeDeviceName={activeDeviceName}
+              activeDeviceType={activeDeviceType}
+              myDeviceId={myDeviceId}
             />
             <VolumeControls
               volume={
-                outputMode === "browser"
-                  ? browserAudio.volume
-                  : playbackStatus.volume
+                isActiveBrowser ? browserAudio.volume : playbackStatus.volume
               }
               onVolumeCommit={
-                outputMode === "browser" ? browserAudio.setVolume : undefined
+                isActiveBrowser ? browserAudio.setVolume : undefined
               }
             />
           </div>
@@ -230,6 +284,7 @@ export default function MusicPlayer() {
             displayElapsed={displayElapsed}
             browserVolume={browserAudio.volume}
             browserSetVolume={browserAudio.setVolume}
+            open={playerSheetOpen}
           />
         </SheetContent>
       </Sheet>

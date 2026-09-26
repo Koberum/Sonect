@@ -1,31 +1,33 @@
-import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Play, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PlaybackControls } from "./playback-controls";
-import { PlaybackProgressBar } from "./playback-progress-bar";
+import { PlaybackWaveform } from "./playback-waveform";
 import { usePlaybackContext } from "@/components/playback-context";
 import { getCoverPath } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   playSong,
   pauseSong,
+  resumeSong,
   nextTrack,
   previousTrack,
   setRandom,
   setRepeat,
-  getQueue,
   playQueueItem,
   removeFromQueue,
-} from "@/features/apis/mpdApis";
-import type { QueuedTrack } from "@repo/types";
-import { Badge } from "@/components/ui/badge";
+} from "@/features/player/api";
 import VolumeControls from "./volume-controls";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { playerQueries } from "@/features/player/queries";
+import { qk } from "@/lib/queryKeys";
+import PlayStatus from "./play-status";
 
 interface FullPagePlayerProps {
   displayElapsed: number;
   browserVolume: number;
   browserSetVolume: (vol: number) => void;
+  open?: boolean;
 }
 
 function formatDuration(seconds: number): string {
@@ -38,37 +40,26 @@ export function FullPagePlayer({
   displayElapsed,
   browserVolume,
   browserSetVolume,
+  open = true,
 }: FullPagePlayerProps) {
   const { t } = useTranslation();
   const { trackPlayed, playbackStatus, outputMode } = usePlaybackContext();
-  const [queue, setQueue] = useState<QueuedTrack[]>([]);
-  const fetchedRef = useRef(false);
-
-  useEffect(() => {
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
-
-    const fetchQueue = async () => {
-      try {
-        const data = await getQueue();
-        setQueue(data);
-      } catch {
-        setQueue([]);
-      }
-    };
-    fetchQueue();
-    const id = setInterval(fetchQueue, 5000);
-    return () => clearInterval(id);
-  }, []);
+  const qc = useQueryClient();
+  const { data: queue = [] } = useQuery(playerQueries.queue(open));
+  const doToggle = (fn: () => Promise<void>) => fn();
 
   const handlePlay = async (pos: number) => {
     await playQueueItem(pos);
+    await qc.invalidateQueries({ queryKey: qk.player.queue() });
   };
 
   const handleRemove = async (e: React.MouseEvent, pos: number) => {
     e.stopPropagation();
     await removeFromQueue(pos);
-    setQueue((prev) => prev.filter((t) => t.pos !== pos));
+    qc.setQueryData(qk.player.queue(), (old: typeof queue) =>
+      old ? old.filter((tr) => tr.pos !== pos) : old,
+    );
+    await qc.invalidateQueries({ queryKey: qk.player.queue() });
   };
 
   if (!trackPlayed) return null;
@@ -96,15 +87,17 @@ export function FullPagePlayer({
         <h3 className="truncate text-lg font-semibold">{trackPlayed.title}</h3>
         <p className="text-muted-foreground truncate text-sm">
           {trackPlayed.artist_name}
-          {trackPlayed.album_name ? ` \u00b7 ${trackPlayed.album_name}` : ""}
+          {trackPlayed.album_title ? ` \u00b7 ${trackPlayed.album_title}` : ""}
         </p>
       </div>
 
       <div className="px-6 py-2">
-        <PlaybackProgressBar
+        <PlaybackWaveform
           elapsed={displayElapsed}
           duration={playbackStatus.duration}
+          trackId={trackPlayed.id ?? playbackStatus.track?.id ?? null}
           className="w-full"
+          outputMode={outputMode}
         />
       </div>
 
@@ -112,19 +105,14 @@ export function FullPagePlayer({
         <PlaybackControls
           playbackStatus={playbackStatus}
           playTrack={() => {
-            if (trackPlayed) playSong(trackPlayed);
+            if (trackPlayed) return playSong(trackPlayed);
           }}
-          pauseTrack={() => {
-            pauseSong();
-          }}
-          nextTrack={() => {
-            nextTrack();
-          }}
-          previousTrack={() => {
-            previousTrack();
-          }}
-          setRandom={(enabled) => setRandom(enabled)}
-          setRepeat={(enabled) => setRepeat(enabled)}
+          pauseTrack={() => pauseSong()}
+          resumeTrack={() => resumeSong()}
+          nextTrack={() => nextTrack()}
+          previousTrack={() => previousTrack()}
+          setRandom={(enabled) => doToggle(() => setRandom(enabled))}
+          setRepeat={(enabled) => doToggle(() => setRepeat(enabled))}
           showAllControls
         />
       </div>
@@ -150,7 +138,7 @@ export function FullPagePlayer({
               const isCurrent = track.file === playbackStatus.track?.file;
               return (
                 <div
-                  key={track.mpdId}
+                  key={`${track.mpdId}-${track.pos}`}
                   className={`group hover:bg-accent/50 flex cursor-pointer items-center gap-2 overflow-hidden rounded-md px-3 py-2 transition-colors`}
                   onClick={() => !isCurrent && handlePlay(track.pos)}
                 >
@@ -164,17 +152,21 @@ export function FullPagePlayer({
                       }}
                       className="h-full w-full object-cover"
                     />
-                    {!isCurrent && (
+                    {!isCurrent ? (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
                         <Play
                           className="h-4 w-4 text-white"
                           fill="currentColor"
                         />
                       </div>
+                    ) : (
+                      <PlayStatus
+                        variant="white"
+                        className="absolute inset-2 flex items-center justify-center"
+                      />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    {isCurrent && <Badge>{t("queue.nowPlaying")}</Badge>}
                     <p
                       className={`truncate text-sm ${
                         isCurrent ? "text-primary font-medium" : "font-medium"

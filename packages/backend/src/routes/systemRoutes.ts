@@ -1,14 +1,12 @@
 import { Router } from "express";
 import {
   getStatusHandler,
+  getHealthHandler,
   getAudioDevicesHandler,
   configureAudioHandler,
   getAudioStatusHandler,
   getOutputModeHandler,
   setOutputModeHandler,
-  scanWifiHandler,
-  connectWifiHandler,
-  disconnectWifiHandler,
   getNetworkStatusHandler,
   getStorageSourcesHandler,
   getStorageSourceHandler,
@@ -20,6 +18,7 @@ import {
   listMountsHandler,
   getSetupProgressHandler,
   updateSetupProgressHandler,
+  completeSetupHandler,
   resetSetupHandler,
   restartMpdHandler,
   stopMpdHandler,
@@ -30,17 +29,15 @@ import {
 const router = Router();
 
 router.get("/status", getStatusHandler);
+router.get("/health", getHealthHandler);
 
 router.get("/audio/devices", getAudioDevicesHandler);
 router.post("/audio/configure", configureAudioHandler);
 router.get("/audio/status", getAudioStatusHandler);
 
 router.get("/output-mode", getOutputModeHandler);
-router.put("/output-mode", setOutputModeHandler);
+router.patch("/output-mode", setOutputModeHandler);
 
-router.get("/network/wifi/scan", scanWifiHandler);
-router.post("/network/wifi/connect", connectWifiHandler);
-router.post("/network/wifi/disconnect", disconnectWifiHandler);
 router.get("/network/status", getNetworkStatusHandler);
 
 router.get("/storage/sources", getStorageSourcesHandler);
@@ -54,6 +51,7 @@ router.get("/storage/mounts", listMountsHandler);
 
 router.get("/setup/progress", getSetupProgressHandler);
 router.post("/setup/progress", updateSetupProgressHandler);
+router.post("/setup/complete", completeSetupHandler);
 router.post("/setup/reset", resetSetupHandler);
 
 router.post("/mpd/restart", restartMpdHandler);

@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import { playlistSchemas } from "@repo/types";
-import * as playlistService from "../services/playlistService";
-import { asyncHandler } from "../middleware/asyncHandler";
-import { NotFoundError } from "../middleware/errorHandler";
+import { getPlaylistService } from "@services/factory";
+import { asyncHandler } from "@middleware/asyncHandler";
+import { NotFoundError } from "@middleware/errorHandler";
 
 export const getAllPlaylistsHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const playlists = playlistService.getAllPlaylists();
+    const playlists = getPlaylistService().getAllPlaylists();
     res.json(playlists);
   },
 );
@@ -14,7 +14,7 @@ export const getAllPlaylistsHandler = asyncHandler(
 export const getPlaylistHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = playlistSchemas.idParam.parse(req.params);
-    const playlist = playlistService.getPlaylistWithTracks(id);
+    const playlist = getPlaylistService().getPlaylistWithTracks(id);
     if (!playlist) throw new NotFoundError("Playlist");
     res.json(playlist);
   },
@@ -23,7 +23,7 @@ export const getPlaylistHandler = asyncHandler(
 export const createPlaylistHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { name, description } = playlistSchemas.create.parse(req.body);
-    const playlist = playlistService.createPlaylist(name, description);
+    const playlist = getPlaylistService().createPlaylist(name, description);
     if (!playlist) throw new Error("Failed to create playlist");
     res.status(201).json(playlist);
   },
@@ -33,7 +33,10 @@ export const updatePlaylistHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = playlistSchemas.idParam.parse(req.params);
     const { name, description } = playlistSchemas.update.parse(req.body);
-    const playlist = playlistService.updatePlaylist(id, { name, description });
+    const playlist = getPlaylistService().updatePlaylist(id, {
+      name,
+      description,
+    });
     if (!playlist) throw new NotFoundError("Playlist");
     res.json(playlist);
   },
@@ -42,7 +45,7 @@ export const updatePlaylistHandler = asyncHandler(
 export const deletePlaylistHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = playlistSchemas.idParam.parse(req.params);
-    const deleted = playlistService.deletePlaylist(id);
+    const deleted = getPlaylistService().deletePlaylist(id);
     if (!deleted) throw new NotFoundError("Playlist");
     res.json({ message: "Playlist deleted" });
   },
@@ -52,7 +55,7 @@ export const addTrackToPlaylistHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { id: playlistId } = playlistSchemas.idParam.parse(req.params);
     const { trackId } = playlistSchemas.addTrack.parse(req.body);
-    const result = playlistService.addTrackToPlaylist(playlistId, trackId);
+    const result = getPlaylistService().addTrackToPlaylist(playlistId, trackId);
     if (!result) throw new Error("Failed to add track");
     res.status(201).json(result);
   },
@@ -64,7 +67,7 @@ export const removeTrackFromPlaylistHandler = asyncHandler(
     const { trackId: playlistTrackId } = playlistSchemas.trackIdParam.parse(
       req.params,
     );
-    const removed = playlistService.removeTrackFromPlaylist(
+    const removed = getPlaylistService().removeTrackFromPlaylist(
       playlistTrackId,
       playlistId,
     );
@@ -76,7 +79,7 @@ export const removeTrackFromPlaylistHandler = asyncHandler(
 export const loadPlaylistHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = playlistSchemas.idParam.parse(req.params);
-    await playlistService.loadPlaylist(id);
+    await getPlaylistService().loadPlaylist(id);
     res.json({ message: "Playlist loaded into queue" });
   },
 );

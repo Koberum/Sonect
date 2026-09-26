@@ -903,7 +903,7 @@
         <div class="container">
           <div class="hero__grid">
             <div>
-              <p class="hero__eyebrow">Open source · Apache 2.0 License</p>
+              <p class="hero__eyebrow">Open source · MIT License</p>
               <h1 class="hero__title">
                 Your music,<br /><span>your server.</span>
               </h1>
@@ -1161,8 +1161,8 @@
                 "
               >
                 Sonect is a <code>pnpm</code> monorepo. You need
-                <strong style="color: var(--text)">Node.js 20+</strong> and a
-                running MPD instance on port <code>6600</code>.
+                <strong style="color: var(--text)">Node.js 22.14.0+</strong> and
+                a running MPD instance on port <code>6600</code>.
               </p>
               <p
                 style="
@@ -1324,7 +1324,7 @@
               >
                 <h2 id="doc-installation-h">Installation</h2>
                 <p>
-                  Sonect requires <strong>Node.js 20 or later</strong> and
+                  Sonect requires <strong>Node.js 22.14.0 or later</strong> and
                   <strong>pnpm 9+</strong>. A running MPD instance is also
                   required — Sonect does not manage MPD itself, it connects to
                   one you provide.
@@ -1401,7 +1401,9 @@
                     </tr>
                     <tr>
                       <td>DB_PATH</td>
-                      <td>./data/music.db</td>
+                      <td>
+                        /db/music.db (dev) / /opt/sonect/data/music.db (prod)
+                      </td>
                       <td>SQLite database path</td>
                     </tr>
                     <tr>
@@ -1676,7 +1678,7 @@
               >github.com/Koberum/Sonect</a
             >
           </span>
-          <span class="footer__badge"><span>Apache 2.0</span> License</span>
+          <span class="footer__badge"><span>MIT</span> License</span>
         </div>
         <div class="footer__right">Built with ❤️ by the community</div>
       </div>

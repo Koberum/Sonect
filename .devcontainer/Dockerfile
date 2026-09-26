@@ -6,6 +6,7 @@ FROM node:22-bookworm
 # System dependencies (dev + audio + MPD)
 RUN apt-get update && apt-get install -y \
     mpd \
+    ffmpeg \
     alsa-utils \
     alsa-tools \
     curl \
@@ -14,6 +15,8 @@ RUN apt-get update && apt-get install -y \
     bash \
     sudo \
     vim \
+    cifs-utils \
+    nfs-common \
     && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm
@@ -27,6 +30,9 @@ RUN mkdir -p /home/node/.local/share && \
 
 # Install Opencode
 RUN curl -fsSL https://opencode.ai/install | bash
+
+# Install node-gyp (required for drizzle-kit, to build better-sqllite)
+RUN apt-get update && apt-get install -y python3 make g++ build-essential && npm install -g node-gyp
 
 # Add node user pnpm to PATH
 ENV PATH="/home/node/.local/share/pnpm:$PATH"

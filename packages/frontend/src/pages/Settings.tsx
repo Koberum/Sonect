@@ -1,9 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AudioTab } from "@/features/settings/audio-tab";
-import { NetworkTab } from "@/features/settings/network-tab";
 import { LibrariesTab } from "@/features/settings/libraries-tab";
-import { MpdConfigTab } from "@/features/settings/mpd-config-tab";
 import { AppearanceTab } from "@/features/settings/appearance-tab";
 import { DebugTab } from "@/features/settings/debug-tab";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
@@ -21,9 +19,6 @@ export function Settings() {
       <Tabs defaultValue="audio">
         <TabsList className="mb-4">
           <TabsTrigger value="audio">{t("settings.tabs.audio")}</TabsTrigger>
-          <TabsTrigger value="network">
-            {t("settings.tabs.network")}
-          </TabsTrigger>
           <TabsTrigger value="libraries">
             {t("settings.tabs.libraries")}
           </TabsTrigger>
@@ -37,18 +32,13 @@ export function Settings() {
         <TabsContent value="audio">
           <AudioTab />
         </TabsContent>
-        <TabsContent value="network">
-          <NetworkTab />
-        </TabsContent>
         <TabsContent value="libraries">
           <LibrariesTab />
         </TabsContent>
         <TabsContent value="appearance">
           <AppearanceTab />
         </TabsContent>
-        <TabsContent value="config">
-          <MpdConfigTab />
-        </TabsContent>
+        <TabsContent value="config"></TabsContent>
         <TabsContent value="debug">
           <DebugTab />
         </TabsContent>

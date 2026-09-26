@@ -1,8 +1,5 @@
-import { getLibraryStats } from "@/features/apis/libraryApis";
-import { usePlaybackContext } from "@/components/playback-context";
+import { useQuery } from "@tanstack/react-query";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
-import type { LibraryStats } from "@repo/types";
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   AlbumIcon,
@@ -13,11 +10,11 @@ import {
   ListMusic,
   MicVocal,
   Music,
-  RefreshCw,
+  LoaderCircle,
   Tags,
 } from "lucide-react";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { catalogQueries } from "@/features/catalog/queries";
 
 function formatDuration(seconds: number): string {
   if (seconds === 0) return "0m";
@@ -69,18 +66,9 @@ function StatCard({ title, value, icon, description }: StatCardProps) {
 
 export function Statistics() {
   const { t } = useTranslation();
-  usePlaybackContext();
-  const [stats, setStats] = useState<LibraryStats | null>(null);
+  const { data: stats, isPending } = useQuery(catalogQueries.stats());
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      const data = await getLibraryStats();
-      setStats(data);
-    };
-    fetchStats();
-  }, []);
-
-  if (!stats) {
+  if (isPending || !stats) {
     return (
       <div>
         <PageTitle
@@ -88,7 +76,7 @@ export function Statistics() {
           description={t("statistics.description")}
         />
         <div className="flex items-center justify-center py-20">
-          <RefreshCw className="text-muted-foreground h-8 w-8 animate-spin" />
+          <LoaderCircle className="text-muted-foreground h-8 w-8 animate-spin" />
         </div>
       </div>
     );
@@ -168,7 +156,7 @@ export function Statistics() {
         <StatCard
           title={t("statistics.lastSync")}
           value={formatDate(stats.lastSync, t)}
-          icon={<RefreshCw className="h-4 w-4" />}
+          icon={<LoaderCircle className="h-4 w-4" />}
         />
       </div>
     </div>

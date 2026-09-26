@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { StorageSource } from "@/features/apis/systemApis";
+import type { StorageSource } from "@/features/system/api";
 import type { SourceType } from "./library-source-picker";
 
 export interface LibrarySourceFormValues {

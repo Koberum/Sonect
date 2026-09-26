@@ -14,7 +14,7 @@
   <a href="https://sonect.dev"><img alt="Website" src="https://img.shields.io/badge/sonect.dev-Website-orange?style=flat-square"></a>
   <a href="https://github.com/Koberum/Sonect/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Koberum/Sonect/actions/workflows/ci.yml/badge.svg?style=flat-square"></a>
   <a href="https://github.com/Koberum/Sonect/actions/workflows/release.yml"><img alt="Release" src="https://github.com/Koberum/Sonect/actions/workflows/release.yml/badge.svg?style=flat-square"></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache%202.0-lightgrey"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-yellow"></a>
 </p>
 
 ---
@@ -32,12 +32,23 @@ no subscriptions, no limits.
   audio format. Repeat, random, consume, and single modes are all first-class.
 - **Live WebSocket state** — Playback changes reflect instantly across every
   open tab. MPD idle events are pushed to all connected clients in real time.
-- **Smart queue strategy** — Album, artist, then genre fallback fills your
-  queue intelligently. No more dead air between tracks.
+- **Always-on smart queue** — Playback continues from the selected track to
+  the end of its album, then queues complete albums from the same artist, the
+  same genre, and similar genres (curated map + token fallback for arbitrary
+  MPD `Genre` tags); library-wide fallback only for genre-less tracks — ranking
+  stays anchored to the seed track and never drifts to unrelated genres.
 - **Album art pipeline** — Artwork is extracted from your audio files, resized
   to 500x500 JPEG, served over HTTP, and cached in the browser for 30 days.
+- **Waveform progress bar** — SoundCloud-style waveform (120 peaks) is decoded
+  via `ffmpeg` on demand, cached as `SHA1(file).json` under `WAVEFORMS_DIR`,
+  and rendered as a 28px canvas bar (played vs unplayed) — fallback to a
+  minimal bar when `ffmpeg` is unavailable.
 - **In-browser MPD config** — Edit audio outputs and MPD settings from the
   Settings page. Save once, MPD restarts automatically — no SSH needed.
+- **Session-based browser playback** — `browser` output mode streams through a
+  backend session engine independent of MPD, so playback state follows the
+  browser session rather than the shared MPD daemon — the foundation for
+  per-user sessions.
 - **One-line Raspberry Pi install** — A single `curl | bash` command turns a
   Pi 2B into a dedicated music appliance. See below.
 
@@ -82,6 +93,11 @@ pnpm dev
 
 Open `http://localhost:5173` and trigger a library scan from the Settings page.
 
+On first launch, the setup wizard guides you through storage, audio, and library
+sync. Finishing or skipping the wizard is persisted by the backend, so the
+choice applies across browsers and private windows until the wizard is reset
+from Settings → Debug.
+
 ### Raspberry Pi (production)
 
 ```bash
@@ -101,7 +117,7 @@ sonect/
 ├── packages/
 │   ├── backend/       Express 5 API + WebSocket server (port 3000)
 │   ├── frontend/      React 19 + Vite SPA (port 5173 in dev)
-│   ├── @repo/db/      SQLite schema, migrations, query helpers
+│   ├── @repo/db/      Native SQLite (node:sqlite) + Drizzle repositories
 │   └── @repo/types/   Shared TypeScript types (no runtime deps)
 ├── assets/            Screenshots and 3D print files
 ├── conf/              MPD configuration
@@ -110,33 +126,53 @@ sonect/
 ```
 
 ```
-Browser ──HTTP──► Express API ──► MPD (port 6600)
-        ──WS───► WebSocket server ──► MPD idle listener
+Browser ──HTTP──► Express /player (per-profile, requires X-Session-Id + X-Device-Id) ─┬─► Browser engine: shared SessionPlayer per profile (one queue), activeDeviceId routes audio to one browser
+        ──WS───► WebSocket ?sessionId=&deviceId= ────────────────────────────────────┘
+                                                                                    └─► MPD engine: shared MPD daemon (locked to one profile)
+
+Browser queue is shared per profile (profile = X-Session-Id); MPD queue is shared but MPD output is single-owner (PUT /player/output-mode {mpd} → 423 if busy). Browser output is per-device via X-Device-Id (stored in localStorage['sonect.deviceId']); only activeDeviceId renders audio, other browsers with same profile remote-control. PUT /player/output-mode {browser} with X-Device-Id hands off same track/position to new device.
+Frontend uses only /player/* — there is no frontend fork between browser/MPD.
 ```
 
 The backend maintains two TCP connections to MPD: a command client for
 playback control and a polling client for status updates. The in-memory cache
 is refreshed every 2 seconds during play (10 s during pause/stop) and
-immediately after user-initiated commands.
+immediately after user-initiated commands. Browser sessions run entirely in-memory (SessionPlayer) without MPD.
+
+The database is native SQLite through Node's built-in `node:sqlite` module,
+accessed via a synchronous Drizzle repository layer in `@repo/db` — no WASM
+SQLite build ships in the release artifact. Node.js **22.14.0** is the minimum
+runtime. The database runs in WAL mode and is checkpointed during graceful
+shutdown, so the backup the installer takes before an upgrade always contains
+a complete database file.
 
 ---
 
 ## API Overview
 
-| Method | Path                          | Description              |
-| ------ | ----------------------------- | ------------------------ |
-| GET    | `/library/albums`             | List all albums          |
-| GET    | `/library/albums/:id`         | Get album by ID          |
-| GET    | `/library/albums/:id/tracks`  | Tracks for an album      |
-| GET    | `/library/artists`            | List all artists         |
-| GET    | `/library/artists/:id/albums` | Albums for an artist     |
-| POST   | `/library/scan`               | Trigger library re-scan  |
-| POST   | `/mpd/play`                   | Play a track or resume   |
-| POST   | `/mpd/pause`                  | Toggle pause             |
-| POST   | `/mpd/next`                   | Next track               |
-| POST   | `/mpd/previous`               | Previous track           |
-| PATCH  | `/mpd/volume`                 | Set volume (0–100)       |
-| GET    | `ws://host:3000`              | WebSocket playback state |
+| Method | Path                                     | Description                                                                                                                                     |
+| ------ | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/library/albums`                        | List all albums                                                                                                                                 |
+| GET    | `/library/albums/:id`                    | Get album by ID                                                                                                                                 |
+| GET    | `/library/albums/:id/tracks`             | Tracks for an album                                                                                                                             |
+| GET    | `/library/artists`                       | List all artists                                                                                                                                |
+| GET    | `/library/artists/:id/albums`            | Albums for an artist                                                                                                                            |
+| POST   | `/library/scan`                          | Trigger library re-scan                                                                                                                         |
+| POST   | `/player/play`                           | Play track (per-profile, requires `X-Session-Id`+`X-Device-Id`) — queues through end of album; first play claims browser output for that device |
+| POST   | `/player/pause`                          | Pause (per-profile, remote control if not active browser device)                                                                                |
+| POST   | `/player/resume`                         | Resume (per-profile) — fixes `pause`/`play` toggle; uses explicit `pause 0` for MPD                                                             |
+| POST   | `/player/next`                           | Next track (per-profile)                                                                                                                        |
+| POST   | `/player/previous`                       | Previous track (per-profile)                                                                                                                    |
+| POST   | `/player/seek`                           | Seek to position (per-profile)                                                                                                                  |
+| GET    | `/player/queue`                          | Queue for this profile (browser: shared per profile, MPD: shared global)                                                                        |
+| PUT    | `/player/output-mode`                    | Switch `browser`↔`mpd` (per-profile, `mpd` locked → 423 if busy; `browser` with `X-Device-Id` hands off to that browser)                        |
+| PATCH  | `/player/volume`                         | Set volume (per-profile; browser stored in-memory and broadcast to active device)                                                               |
+| GET    | `/waveforms/:trackId`                    | Get waveform peaks for a track (`{samples,duration,version}`)                                                                                   |
+| GET    | `/system/network/status`                 | Read network/DNS status                                                                                                                         |
+| GET    | `/system/setup/progress`                 | Read setup progress                                                                                                                             |
+| POST   | `/system/setup/complete`                 | Complete or skip setup                                                                                                                          |
+| POST   | `/system/setup/reset`                    | Reset the setup wizard                                                                                                                          |
+| GET    | `ws://host:3000/ws?sessionId=&deviceId=` | WebSocket playback state (per-profile, requires `sessionId`+`deviceId` params) — `player-status` includes `activeDeviceId`+`mode`               |
 
 ### Environment variables
 
@@ -148,10 +184,14 @@ Configure via `packages/backend/.env`:
 | `MPD_PORT`         | `6600`                                                         | MPD server port                                                     |
 | `MUSIC_DIR`        | `/music`                                                       | Root of your music library                                          |
 | `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta` | Audio extensions counted as music files in per-source library stats |
-| `COVERS_DIR`       | —                                                              | Where cover JPEGs are cached                                        |
-| `DB_PATH`          | `./data/music.db`                                              | SQLite database path                                                |
+| `COVERS_DIR`       | —                                                              | Where cover WebPs are cached                                        |
+| `COVER_SIZE`       | `400`                                                          | Cover resize dimension (px, square fit inside)                      |
+| `COVER_QUALITY`    | `80`                                                           | WebP quality for covers                                             |
+| `WAVEFORMS_DIR`    | `<COVERS_DIR>/../waveforms` or `./data/waveforms`              | Where waveform JSON caches are saved (`SHA1(file).json`)            |
+| `DB_PATH`          | `/db/music.db` (dev) / `/opt/sonect/data/music.db` (prod)      | SQLite database path                                                |
 | `MPD_CONFIG_PATH`  | `/opt/sonect/data/mpd-audio.conf`                              | MPD config drop-in                                                  |
 | `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | MPD log file for sync progress                                      |
+| `DNS_CHECK_HOST`   | `example.com`                                                  | Host resolved to verify DNS connectivity                            |
 | `PORT`             | `3000`                                                         | Backend HTTP port                                                   |
 | `FRONTEND_DIST`    | `../frontend/dist`                                             | Built frontend static files                                         |
 
@@ -167,17 +207,63 @@ total music-file size** in Settings → Libraries, refreshed at the end of every
 library scan. `MUSIC_EXTENSIONS` controls which audio extensions are counted as
 music files.
 
+Sonect does not manage host Wi-Fi connections. `GET /system/network/status`
+returns whether the server has a non-loopback network address and whether the
+configured `DNS_CHECK_HOST` resolves through the system resolver. The frontend
+shows this read-only status in the desktop top bar.
+
 ---
 
 ## Build & Deploy
 
+The monorepo uses [Turborepo](https://turbo.build) for task orchestration:
+`build`, `lint`, and `test` are cached — re-running them without changes
+finishes in milliseconds (`>>> FULL TURBO`), and only the affected packages
+rebuild after an edit. Frontend build caching is keyed on the
+`VITE_BACKEND_URL`, `VITE_WEBSOCKET_URL`, `VITE_COVER_PATH`, and `VITE_DEBUG`
+environment variables, so changing any of them invalidates the cache.
+
 ```bash
-pnpm build          # Compile all packages
-pnpm lint           # Lint all packages
-pnpm backend:test   # Run backend tests
+pnpm build          # Compile all packages (turbo-cached)
+pnpm lint           # Lint all packages (turbo-cached)
+pnpm dev            # Run all packages' dev servers in parallel (not cached)
+pnpm backend:test   # Run backend tests (fresh run, not cached)
 pnpm backend:bundle # Bundle backend for production
 pnpm frontend:build # Build frontend for production
+pnpm db:generate    # Generate a new SQL migration from the schema (drizzle-kit)
+pnpm db:migrate     # Apply pending migrations to the database
+pnpm db:migrate-reset [--force] # Wipe the database and re-apply all migrations
+pnpm db:studio      # Browse/edit the database in a browser GUI (drizzle-kit)
 ```
+
+### Database migrations
+
+The SQLite schema is defined in `packages/db/src/tables.ts`. To change it,
+edit that file and run `pnpm db:generate`, which commits a versioned SQL
+migration under `packages/db/drizzle/`. Migrations are applied automatically
+at backend startup and tracked in the `__drizzle_migrations` table.
+
+For manual control, `pnpm db:migrate` applies pending migrations to the
+database at `DB_PATH` — useful to preview what startup would do.
+`pnpm db:migrate-reset` wipes the database (file, WAL and SHM) and re-applies
+every migration from scratch; it prompts for confirmation unless `--force`
+is passed. `pnpm db:studio` opens drizzle-kit studio, a browser GUI for
+inspecting and editing data. Studio browses the same live dev database as the
+backend.
+
+**Database location:** every environment sets `DB_PATH` explicitly — there is
+no shared relative default. In the dev container it is `/db/music.db` (a
+persistent Docker volume, also injected via `remoteEnv` and pinned in
+`packages/backend/.env`, which is gitignored); in production the installer
+sets `/opt/sonect/data/music.db` via the systemd unit. The `./data/music.db`
+relative fallback is only a last resort for throwaway runs outside these
+environments — it resolves against each process's cwd, so different processes
+can silently open different files. Never rely on it; always set `DB_PATH`.
+
+**One-time reset on upgrade:** databases created before the migration system
+(any database with our tables but no `__drizzle_migrations` table) are wiped
+and rebuilt on first startup. Play counts, playlists, storage sources, and
+setup flags are lost — this is a deliberate one-time reset.
 
 ### Releases
 
@@ -191,4 +277,4 @@ release with a single `sonect.tar.gz` asset.
 
 ## License
 
-[Apache2.0](LICENSE)
+[MIT](LICENSE)

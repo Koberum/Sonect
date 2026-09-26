@@ -1,0 +1,160 @@
+export class ApiError extends Error {
+  status: number;
+  body: unknown;
+  constructor(status: number, body: unknown, message?: string) {
+    super(message ?? `API error ${status}`);
+    this.name = "ApiError";
+    this.status = status;
+    this.body = body;
+  }
+}
+
+export class NetworkError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = "NetworkError";
+  }
+}
+
+function getBaseUrl(): string {
+  return import.meta.env.VITE_BACKEND_URL ?? "";
+}
+
+function buildUrl(
+  path: string,
+  params?: Record<string, string | number | boolean | undefined | null>,
+): string {
+  const base = getBaseUrl();
+  const url = `${base}${path}`;
+  if (!params) return url;
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== null && v !== "") sp.append(k, String(v));
+  }
+  const qs = sp.toString();
+  return qs ? `${url}?${qs}` : url;
+}
+
+export interface ApiFetchOptions extends Omit<RequestInit, "body"> {
+  params?: Record<string, string | number | boolean | undefined | null>;
+  body?: unknown;
+}
+
+export async function apiFetch<T>(
+  path: string,
+  options: ApiFetchOptions = {},
+): Promise<T> {
+  const { params, body, headers, signal, ...rest } = options;
+  const url = buildUrl(path, params);
+
+  let sessionHeader: Record<string, string> = {};
+  if (typeof window !== "undefined" && !path.startsWith("/profiles")) {
+    try {
+      const raw = localStorage.getItem("sonect-profile");
+      if (raw) {
+        const parsed = JSON.parse(raw) as { id?: string };
+        if (parsed?.id && typeof parsed.id === "string") {
+          sessionHeader = { "X-Session-Id": parsed.id };
+        }
+      }
+    } catch {
+      // ignore
+    }
+    try {
+      const did = localStorage.getItem("sonect.deviceId");
+      if (did) sessionHeader = { ...sessionHeader, "X-Device-Id": did };
+      else {
+        // generate via crypto if not exists (lazy)
+        const generated =
+          Math.random().toString(36).substring(2, 15) +
+          Math.random().toString(36).substring(2, 15);
+        localStorage.setItem("sonect.deviceId", generated);
+        sessionHeader = { ...sessionHeader, "X-Device-Id": generated };
+      }
+      // Attach device name/type for cross-device display (shared via PlayerRouter activeDeviceName)
+      try {
+        const dName = localStorage.getItem("sonect.deviceName");
+        if (dName && dName.trim().length > 0) {
+          sessionHeader = { ...sessionHeader, "X-Device-Name": dName.trim() };
+        } else {
+          const ua = navigator.userAgent ?? "";
+          let browser = "Browser";
+          if (/Edg\//.test(ua)) browser = "Edge";
+          else if (/OPR\//.test(ua) || /Opera/.test(ua)) browser = "Opera";
+          else if (/Chrome\//.test(ua) && !/Chromium/.test(ua))
+            browser = "Chrome";
+          else if (/Safari\//.test(ua) && !/Chrome\//.test(ua))
+            browser = "Safari";
+          else if (/Firefox\//.test(ua)) browser = "Firefox";
+          let os = "Unknown";
+          if (/Windows/.test(ua)) os = "Windows";
+          else if (/Mac OS X/.test(ua)) os = "macOS";
+          else if (/Android/.test(ua)) os = "Android";
+          else if (/iPhone|iPad|iPod/.test(ua)) os = "iOS";
+          else if (/Linux/.test(ua)) os = "Linux";
+          const generatedName = `${browser} on ${os}`;
+          localStorage.setItem("sonect.deviceName", generatedName);
+          sessionHeader = { ...sessionHeader, "X-Device-Name": generatedName };
+        }
+        const ua2 = navigator.userAgent ?? "";
+        const dType = /Mobi|Android|iPhone|iPad|iPod/.test(ua2)
+          ? "mobile"
+          : "desktop";
+        sessionHeader = { ...sessionHeader, "X-Device-Type": dType };
+      } catch {
+        // ignore
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const finalHeaders: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...sessionHeader,
+    ...(headers as Record<string, string> | undefined),
+  };
+  // Allow caller to delete default header by passing Content-Type: undefined
+  if (headers && "Content-Type" in (headers as Record<string, unknown>)) {
+    const ct = (headers as Record<string, string | undefined>)["Content-Type"];
+    if (ct === undefined) delete finalHeaders["Content-Type"];
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...rest,
+      signal,
+      headers: finalHeaders,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") throw err;
+    throw new NetworkError(
+      `Network request failed: ${err instanceof Error ? err.message : String(err)}`,
+      { cause: err },
+    );
+  }
+
+  const text = await res.text();
+  let data: unknown = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error(`Failed to parse JSON response from ${path}`);
+    }
+  }
+
+  if (!res.ok) {
+    const msg =
+      data &&
+      typeof data === "object" &&
+      "error" in (data as Record<string, unknown>)
+        ? String((data as Record<string, unknown>).error)
+        : `${res.status} ${res.statusText}`;
+    throw new ApiError(res.status, data, `API ${res.status} ${path}: ${msg}`);
+  }
+
+  return data as T;
+}

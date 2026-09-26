@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { getGenres } from "@/features/apis/libraryApis";
-import { usePlaybackContext } from "@/components/playback-context";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { catalogQueries } from "@/features/catalog/queries";
 import { useNavigate } from "react-router-dom";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
 import {
@@ -15,17 +14,7 @@ import { Music, Disc3 } from "lucide-react";
 export default function Genres() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  usePlaybackContext();
-  const [genres, setGenres] = useState<
-    { genre: string; track_count: number; album_count: number }[]
-  >([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    getGenres()
-      .then(setGenres)
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: genres = [], isPending } = useQuery(catalogQueries.genres());
 
   return (
     <div>
@@ -33,7 +22,7 @@ export default function Genres() {
         title={t("genres.title")}
         description={t("genres.description")}
       />
-      {loading && genres.length === 0 ? (
+      {isPending ? (
         <div className="flex justify-center py-16">
           <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
         </div>
@@ -47,11 +36,11 @@ export default function Genres() {
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {genres.map((g) => (
               <SelectableRow
-                key={g.genre}
+                key={g.id}
                 asChild
                 className="bg-card gap-4 rounded-xl p-4 py-6 shadow-sm"
                 onClick={() =>
-                  navigate(`/genres/${encodeURIComponent(g.genre)}`)
+                  navigate(`/genres/${encodeURIComponent(g.name)}`)
                 }
               >
                 <div>
@@ -60,7 +49,7 @@ export default function Genres() {
                   </SelectableRowIcon>
                   <div className="min-w-0 flex-1">
                     <SelectableRowTitle className="truncate">
-                      {g.genre}
+                      {g.name}
                     </SelectableRowTitle>
                     <SelectableRowDescription className="flex items-center gap-3">
                       <span className="flex items-center gap-1">

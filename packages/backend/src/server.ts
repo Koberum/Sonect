@@ -3,30 +3,31 @@ import app from "./app";
 import { WebSocketServer } from "ws";
 import { setupPlayerWebSocket } from "./ws/player.ws";
 import { setWss, broadcast } from "./ws/broadcast";
-import { setBroadcaster } from "./services/logService";
-import { initDatabase } from "@repo/db";
-import { mpdConnectionManager } from "./services/mpdConnectionManager";
-import { autoplayService } from "./services/autoplayService";
-import { queueFiles } from "./services/playerService";
-import { PlayTrackingService } from "./services/playTrackingService";
-import { mountAllEnabled } from "./services/storageService";
-
-// Wire up autoplay callback
-mpdConnectionManager.setAutoplayCallback(async (currentFile: string) => {
-  const tracks = await autoplayService.getNextBatch(currentFile);
-  if (tracks.length > 0) {
-    await queueFiles(tracks);
-  }
-});
+import { closeDb, initDatabase } from "@repo/db";
+import {
+  initializeServices,
+  getMpdConnectionManager,
+  getPlayTrackingService,
+  getStorageService,
+  getLogService,
+} from "@services/factory";
 
 const PORT = parseInt(process.env.PORT ?? "3000", 10);
 
 let wss: WebSocketServer;
 let server: ReturnType<typeof app.listen>;
+let shuttingDown = false;
 
 async function main() {
   // Initialize database
   await initDatabase();
+
+  // Ensure at least one profile exists (Netflix-style picker needs one)
+  const { profilesDb } = await import("@repo/db");
+  profilesDb.ensureDefault();
+
+  // Initialize all services in correct dependency order
+  initializeServices();
 
   // HTTP server
   server = app.listen(PORT, () => {
@@ -36,24 +37,37 @@ async function main() {
   // WebSocket server
   wss = new WebSocketServer({ server });
   setWss(wss);
-  setBroadcaster(broadcast);
+  getLogService().setBroadcaster(broadcast);
   setupPlayerWebSocket(wss);
 
   // MPD connection manager (idle loop, state cache, command queue)
-  mpdConnectionManager.start();
+  getMpdConnectionManager().start();
 
   // Track play tracking
-  const playTracking = new PlayTrackingService(mpdConnectionManager);
+  const playTracking = getPlayTrackingService();
   playTracking.start();
 
   // Re-mount enabled storage sources
-  mountAllEnabled().catch((err) => {
-    console.error("[Server] Failed to restore storage mounts:", err);
-  });
+  getStorageService()
+    .mountAllEnabled()
+    .catch((err) => {
+      getLogService().pushLog(
+        "error",
+        `[Server] Failed to restore storage mounts: ${String(err)}`,
+      );
+    });
 }
 
-// Graceful shutdown
+// Graceful shutdown — server.ts is the sole owner of process termination.
+function finish() {
+  // Checkpoint WAL and close SQLite; no-op when the DB was never opened.
+  closeDb();
+  process.exit(0);
+}
+
 function shutdown() {
+  if (shuttingDown) return;
+  shuttingDown = true;
   console.log("\nShutting down...");
 
   setTimeout(() => {
@@ -62,7 +76,7 @@ function shutdown() {
   }, 5000);
 
   try {
-    mpdConnectionManager.stop();
+    getMpdConnectionManager().stop();
   } catch {
     // MPD disconnect may fail if unreachable — continue shutdown
   }
@@ -73,11 +87,9 @@ function shutdown() {
   }
 
   if (server) {
-    server.close(() => {
-      process.exit(0);
-    });
+    server.close(finish);
   } else {
-    process.exit(0);
+    finish();
   }
 }
 
@@ -86,5 +98,8 @@ process.on("SIGINT", shutdown);
 
 main().catch((err) => {
   console.error("Failed to start:", err);
+  // Initialization may have partially opened the database; closeDb is a
+  // no-op when nothing was opened.
+  closeDb();
   process.exit(1);
 });

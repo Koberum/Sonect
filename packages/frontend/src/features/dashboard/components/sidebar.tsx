@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -10,13 +10,11 @@ import {
   Library,
   Music,
   Disc3,
-  RefreshCw,
+  LoaderCircle,
   AudioLines,
   Settings,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { usePlaylistContext } from "@/components/playlist-context";
-import { usePlaybackContext } from "@/components/playback-context";
 import {
   Dialog,
   DialogContent,
@@ -25,15 +23,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { createPlaylist } from "@/features/apis/playlistApis";
-import { getLibraryStats, scanLibrary } from "@/features/apis/libraryApis";
-import type { LibraryStats } from "@repo/types";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import {
+  playlistQueries,
+  playlistMutations,
+} from "@/features/playlists/queries";
+import { scanLibrary } from "@/features/catalog/api";
+
 export interface SidebarProps {
   className?: string;
   toggleSidebar(open: boolean): void;
@@ -42,22 +44,11 @@ export interface SidebarProps {
 export function Sidebar({ className, toggleSidebar }: SidebarProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { playlists, refresh } = usePlaylistContext();
-  usePlaybackContext();
+  const { data: playlists = [] } = useQuery(playlistQueries.list());
+  const createMut = useMutation(playlistMutations.create());
   const [newName, setNewName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [libraryStats, setLibraryStats] = useState<LibraryStats | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  useEffect(() => {
-    getLibraryStats()
-      .then(setLibraryStats)
-      .catch(() => {});
-  }, []);
 
   const handleNavigation = (path: string) => {
     navigate(path);
@@ -81,11 +72,9 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
   const handleCreatePlaylist = async () => {
     if (!newName.trim()) return;
     try {
-      await createPlaylist(newName.trim());
+      await createMut.mutateAsync({ name: newName.trim() });
       setNewName("");
       setDialogOpen(false);
-      await refresh();
-      console.log(t("playlist.created"));
     } catch {
       console.error(t("playlist.createError"));
     }
@@ -123,7 +112,7 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
                   onClick={handleRefreshLibrary}
                   disabled={isRefreshing}
                 >
-                  <RefreshCw
+                  <LoaderCircle
                     className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
                   />
                 </Button>
@@ -169,8 +158,8 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
               {t("sidebar.artists")}
             </Button>
             <Button
-              onClick={() => handleNavigation("/library/stats")}
-              variant={isMenuActive("/library/stats") ? "secondary" : "ghost"}
+              onClick={() => handleNavigation("/catalog/stats")}
+              variant={isMenuActive("/catalog/stats") ? "secondary" : "ghost"}
               className="w-full justify-start"
             >
               <BarChart3 className="mr-2 h-4 w-4" />
@@ -266,17 +255,6 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
           </ScrollArea>
         </div>
       </div>
-      {libraryStats && !isMenuActive("/library/stats") && (
-        <div className="border-t px-3 py-3">
-          <p className="text-muted-foreground text-xs">
-            {t("sidebar.libraryInfo", {
-              tracks: libraryStats.totalTracks,
-              albums: libraryStats.totalAlbums,
-              artists: libraryStats.totalArtists,
-            })}
-          </p>
-        </div>
-      )}
     </div>
   );
 }

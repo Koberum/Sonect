@@ -74,7 +74,9 @@
     "outputMpd": "Uscita MPD",
     "outputBrowser": "Uscita del Browser",
     "outputModeError": "Errore nel cambio della modalità di uscita",
-    "tapToPlay": "Tocca per riprodurre"
+    "tapToPlay": "Tocca per riprodurre",
+    "mpdLocked": "MPD bloccato",
+    "outputModeLocked": "Uscita MPD bloccata da un'altra sessione"
   },
   "theme": {
     "toggle": "Cambia tema",
@@ -142,10 +144,6 @@
     "settingsMenu": {
       "theme": "Tema",
       "language": "Lingua"
-    },
-    "network": {
-      "connected": "Connesso a {{ssid}}",
-      "disconnected": "Disconnesso"
     },
     "mpd": {
       "connected": "MPD Connesso",
@@ -289,14 +287,17 @@
   },
   "status": {
     "backendUnreachable": "Impossibile raggiungere il server — riconnessione...",
-    "backendOnline": "Connessione ripristinata"
+    "backendOnline": "Connessione ripristinata",
+    "networkUnknown": "Stato della rete non disponibile",
+    "networkDisconnected": "Rete disconnessa",
+    "networkNoDns": "Connesso alla rete, DNS non disponibile",
+    "networkConnected": "Connesso alla rete"
   },
   "settings": {
     "title": "Impostazioni",
     "description": "Configura il tuo sistema",
     "tabs": {
       "audio": "Audio",
-      "network": "Rete",
       "storage": "Archiviazione",
       "libraries": "Librerie",
       "library": "Libreria",
@@ -315,34 +316,6 @@
       "configured": "Uscita audio configurata",
       "configureError": "Impossibile configurare l'audio",
       "loadError": "Impossibile caricare i dispositivi audio"
-    },
-    "network": {
-      "title": "Rete",
-      "description": "Gestisci le connessioni WiFi.",
-      "statusConnected": "Connesso a {{ssid}}",
-      "statusDisconnected": "Disconnesso",
-      "disconnect": "Disconnetti",
-      "scan": "Scansiona WiFi",
-      "scanning": "Scansione...",
-      "password": "Password",
-      "passwordPlaceholder": "Inserisci password WiFi",
-      "connect": "Connetti",
-      "connecting": "Connessione...",
-      "connected": "Connesso a {{ssid}}",
-      "disconnected": "Disconnesso",
-      "scanError": "Impossibile scansionare le reti WiFi",
-      "connectError": "Impossibile connettersi",
-      "disconnectError": "Impossibile disconnettersi",
-      "disconnectTitle": "Disconnettere WiFi?",
-      "disconnectConfirm": "Sei sicuro di volerti disconnettere da \"{{ssid}}\"?",
-      "signal": "Segnale",
-      "secured": "Protetta",
-      "interface": "Interfaccia",
-      "ipAddress": "Indirizzo IP",
-      "netmask": "Subnet mask",
-      "gateway": "Gateway",
-      "dns": "DNS",
-      "networks": "Reti"
     },
     "storage": {
       "title": "Archiviazione",
@@ -363,7 +336,7 @@
       "uriHint": "Usa il formato //server/share senza credenziali (es. //192.168.1.10/music)",
       "mountPath": "Percorso Montaggio",
       "mountPathPlaceholder": "NAS",
-      "mountPathHint": "Sottopercorso sotto /opt/sonect/music (es. nas/download)",
+      "mountPathHint": "Sottopercorso sotto la directory musicale (es. nas/download)",
       "username": "Nome Utente",
       "usernamePlaceholder": "Opzionale",
       "password": "Password",
@@ -416,7 +389,7 @@
       "localPathHint": "Percorso assoluto della cartella su questo dispositivo",
       "folderName": "Nome Cartella",
       "folderNamePlaceholder": "la-mia-musica",
-      "folderNameHint": "Sottocartella sotto /opt/sonect/music",
+      "folderNameHint": "Sottocartella sotto la directory musicale",
       "username": "Nome utente",
       "usernamePlaceholder": "Opzionale",
       "password": "Password",
@@ -552,7 +525,35 @@
       "stepLabel": "Passo {{current}} di {{total}} — {{step}}",
       "back": "Indietro",
       "skippedToast": "Configurazione saltata!",
+      "skipError": "Impossibile saltare la configurazione",
       "completeToast": "Configurazione completata!"
+    }
+  },
+  "profile": {
+    "title": "Chi sta ascoltando?",
+    "change": "Cambia profilo",
+    "switch": "Cambia profilo",
+    "select": "Seleziona",
+    "create": "Crea profilo",
+    "addProfile": "Aggiungi profilo",
+    "createTitle": "Crea profilo",
+    "createDescription": "Scegli un nome e un colore per il nuovo profilo",
+    "namePlaceholder": "Nome del profilo",
+    "rename": "Rinomina",
+    "editTitle": "Modifica profilo",
+    "editDescription": "Aggiorna nome e colore per questo profilo",
+    "save": "Salva",
+    "color": "Colore",
+    "delete": "Elimina",
+    "deleteTitle": "Elimina profilo",
+    "deleteMessage": "Eliminare il profilo \"{{name}}\"? Questa azione è irreversibile.",
+    "lastProfile": "L'ultimo profilo non può essere eliminato",
+    "retry": "Riprova",
+    "errors": {
+      "load": "Impossibile caricare i profili",
+      "create": "Impossibile creare il profilo",
+      "update": "Impossibile aggiornare il profilo",
+      "remove": "Impossibile eliminare il profilo"
     }
   }
 }

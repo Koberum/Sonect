@@ -1,60 +1,36 @@
 import { useTranslation } from "react-i18next";
 import { usePlaybackContext } from "@/components/playback-context";
-import { useEffect, useState, useRef } from "react";
-import type { DashboardData } from "@repo/types";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
 import { ScrollBar, ScrollArea } from "@/components/ui/scroll-area";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
-import { playSong } from "@/features/apis/mpdApis";
-import { ApiClient } from "@/lib/apiClient";
-
-const apiClient = new ApiClient({
-  baseUrl: `${import.meta.env.VITE_BACKEND_URL ?? ""}`,
-});
-
-const fetchDashboard = async (): Promise<DashboardData> => {
-  return apiClient.get("/dashboard");
-};
+import { usePlayTrack } from "@/features/player/usePlayTrack";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { systemQueries } from "@/features/system/queries";
+import { qk } from "@/lib/queryKeys";
 
 export default function Dashboard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { playbackStatus } = usePlaybackContext();
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { play } = usePlayTrack();
+  const qc = useQueryClient();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const loadDashboard = () => {
-    fetchDashboard()
-      .then((d) => setData(d))
-      .catch(() => {
-        // Dashboard fetch failed silently — keep previous data if any
-      })
-      .finally(() => setLoading(false));
-  };
+  const { data, isPending } = useQuery(systemQueries.dashboard());
 
   useEffect(() => {
-    loadDashboard();
-  }, []);
-
-  // Debounced re-fetch when track changes (2s debounce)
-  useEffect(() => {
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      loadDashboard();
+      qc.invalidateQueries({ queryKey: qk.dashboard() });
     }, 2000);
-
     return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
+      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [playbackStatus.track?.id]);
+  }, [playbackStatus.track?.id, qc]);
 
-  if (loading && !data) {
+  if (isPending && !data) {
     return (
       <div className="flex justify-center py-16">
         <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
@@ -69,7 +45,6 @@ export default function Dashboard() {
         description={t("dashboard.loading")}
       />
 
-      {/* Section 1 — Continue Listening */}
       {data?.continueListening && data.continueListening.length > 0 && (
         <div className="mb-8">
           <h2 className="text-muted-foreground mb-2 text-sm font-medium tracking-wider uppercase">
@@ -94,7 +69,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Section 2 — Recently Played */}
       {data?.recentlyPlayed && data.recentlyPlayed.length > 0 && (
         <div className="mb-8">
           <h2 className="text-muted-foreground mb-2 text-sm font-medium tracking-wider uppercase">
@@ -106,7 +80,7 @@ export default function Dashboard() {
                 <div
                   key={track.id}
                   className="bg-card flex w-44 shrink-0 cursor-pointer flex-col gap-2 rounded-md p-3"
-                  onClick={() => track.file && playSong(track)}
+                  onClick={() => track.file && play(track)}
                 >
                   <div className="bg-muted aspect-square w-full overflow-hidden rounded-md">
                     {track.cover_path && (
@@ -136,7 +110,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Section 3 — Top Tracks */}
       {data?.topTracks && data.topTracks.length > 0 && (
         <div className="mb-8">
           <h2 className="text-muted-foreground mb-2 text-sm font-medium tracking-wider uppercase">
@@ -148,7 +121,7 @@ export default function Dashboard() {
                 <div
                   key={track.id}
                   className="bg-card flex w-44 flex-shrink-0 cursor-pointer flex-col gap-2 rounded-md p-3"
-                  onClick={() => track.file && playSong(track)}
+                  onClick={() => track.file && play(track)}
                 >
                   <div className="bg-muted aspect-square w-full overflow-hidden rounded-md">
                     {track.cover_path && (
@@ -178,7 +151,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Section 4 — Suggested for You */}
       {data?.suggestedTracks && data.suggestedTracks.length > 0 && (
         <div className="mb-8">
           <h2 className="text-muted-foreground mb-2 text-sm font-medium tracking-wider uppercase">
@@ -190,7 +162,7 @@ export default function Dashboard() {
                 <div
                   key={track.id}
                   className="bg-card flex w-44 flex-shrink-0 cursor-pointer flex-col gap-2 rounded-md p-3"
-                  onClick={() => track.file && playSong(track)}
+                  onClick={() => track.file && play(track)}
                 >
                   <div className="bg-muted aspect-square w-full overflow-hidden rounded-md">
                     {track.cover_path && (
@@ -220,7 +192,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Section 5 — Genre Quick Mix */}
       {data?.genreQuickMix && data.genreQuickMix.tracks.length > 0 && (
         <div className="mb-8">
           <h2 className="text-muted-foreground mb-2 text-sm font-medium tracking-wider uppercase">
@@ -232,7 +203,7 @@ export default function Dashboard() {
             className="flex cursor-pointer items-center justify-between rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-600/20 p-6"
             onClick={() =>
               data.genreQuickMix!.tracks[0]?.file &&
-              playSong(data.genreQuickMix!.tracks[0])
+              play(data.genreQuickMix!.tracks[0])
             }
           >
             <div>
@@ -250,7 +221,7 @@ export default function Dashboard() {
               onClick={(e) => {
                 e.stopPropagation();
                 if (data.genreQuickMix!.tracks[0]?.file)
-                  playSong(data.genreQuickMix!.tracks[0]);
+                  play(data.genreQuickMix!.tracks[0]);
               }}
             >
               {t("dashboard.playMix")}

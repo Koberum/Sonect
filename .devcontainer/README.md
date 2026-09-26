@@ -5,7 +5,7 @@ This dev container provides a complete development environment for the Sonect pr
 ## Features
 
 - **OS**: Debian Bookworm (same as Raspberry Pi OS)
-- **Node.js**: Version 20
+- **Node.js**: Version 22.14.0
 - **Package Manager**: pnpm
 - **Audio Support**: MPD (Music Player Daemon), ALSA utilities
 - **Full Workspace**: Access to all packages in the monorepo

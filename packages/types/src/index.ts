@@ -1,47 +1,29 @@
 export * from "./schemas";
 export { PlayTrackError } from "./errors";
-export type {
-  MPDTrack,
-  MPDQueuedTrack,
-  MPDEntity,
-  MPDEntityType,
-} from "./mpdTypes";
+export type { MPDTrack, MPDQueuedTrack, MPDEntity, MPDEntityType } from "./mpd";
 export type {
   DBTrack,
   DBAlbum,
   DBArtist,
+  DBGenre,
   DBPlaylist,
   DBStorageSource,
   DBSetupProgress,
-} from "./dbTypes";
-import type {
-  DBAlbum,
-  DBArtist,
-  DBTrack,
-  DBPlaylist,
-  DBStorageSource,
-  DBSetupProgress,
-} from "./dbTypes";
+  DBTrackWithRelations,
+} from "./db";
+import type { DBStorageSource, DBSetupProgress } from "./db";
+import { TrackWithRelations } from "./catalog";
 
-export type Track = DBTrack & {
-  cover_path: string;
-  artist_name: string;
-  album_name?: string;
-};
-export type Artist = DBArtist & {
-  coverPreviews?: string[];
-};
-export type Album = DBAlbum;
-export type Playlist = DBPlaylist;
-export type PlaylistTrack = Track & { pt_id: number };
-export type PlaylistWithTracks = Playlist & {
-  tracks: PlaylistTrack[];
-};
 export type StorageSource = DBStorageSource;
 export type SetupProgress = DBSetupProgress;
 
 export type PlaybackState = "play" | "pause" | "stop";
 export type OutputMode = "mpd" | "browser";
+
+export type NetworkStatus = {
+  connected: boolean;
+  dnsReachable: boolean;
+};
 
 export type PlaybackStatus = {
   state: PlaybackState;
@@ -52,8 +34,12 @@ export type PlaybackStatus = {
   random: boolean;
   single: boolean;
   consume: boolean;
-  track?: Track;
+  track?: TrackWithRelations;
   queueLength: number;
+  activeDeviceId?: string | null;
+  activeDeviceName?: string | null;
+  activeDeviceType?: string | null;
+  mode?: OutputMode;
 };
 
 export type QueuedTrack = {
@@ -68,35 +54,22 @@ export type QueuedTrack = {
   cover_path: string;
 };
 
-export type SearchResults = {
-  artists: Artist[];
-  albums: Album[];
-  tracks: Track[];
-};
-
 export type PlayTrackResponse = { success: boolean };
 
-export interface DashboardData {
-  continueListening: Album[];
-  recentlyPlayed: Track[];
-  topTracks: Track[];
-  suggestedTracks: Track[];
-  genreQuickMix: {
-    genre: string;
-    tracks: Track[];
-  } | null;
-}
+export type SessionQueueEntry = {
+  id: number;
+  file: string;
+  title: string;
+  artist_name: string;
+  album: string;
+  duration: number;
+  cover_path: string;
+};
 
-export interface LibraryStats {
-  totalTracks: number;
-  totalArtists: number;
-  totalAlbums: number;
-  totalPlaylists: number;
-  totalGenres: number;
-  totalDuration: number;
-  averageDuration: number;
-  earliestYear: number | null;
-  latestYear: number | null;
-  tracksWithoutAlbum: number;
-  lastSync: string | null;
-}
+// Sub-package re-exports for modular imports
+export * from "./catalog";
+export * from "./mpd";
+export * from "./system";
+export * from "./db";
+export * from "./schemas";
+export * from "./errors";

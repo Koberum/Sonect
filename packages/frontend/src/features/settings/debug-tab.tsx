@@ -26,7 +26,7 @@ import {
   restartMpd,
   resetSetup,
   stopMpd,
-} from "@/features/apis/systemApis";
+} from "@/features/system/api";
 import { HardwareMonitor } from "@/components/hardware-monitor";
 
 export function DebugTab() {
@@ -254,7 +254,6 @@ export function DebugTab() {
                 try {
                   await resetSetup();
                   setResetSetupDialogOpen(false);
-                  sessionStorage.removeItem("setup-skipped");
                   toast.success(t("settings.debug.setupResetted"));
                   window.location.reload();
                 } catch {

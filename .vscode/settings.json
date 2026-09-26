@@ -19,6 +19,7 @@
     "editor.suggest.insertMode": "replace",
     "editor.tabSize": 2
   },
+  "typescript.tsdk": "node_modules/typescript/lib",
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.tabSize": 2,
@@ -28,9 +29,6 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.tabSize": 2,
     "editor.insertSpaces": true
-  },
-  "[prisma]": {
-    "editor.defaultFormatter": "Prisma.prisma"
   },
   "[yaml]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
@@ -44,11 +42,7 @@
     "**/node_modules/*/**": true,
     "**/dist/**": true,
     "**/.turbo/**": true,
-    "**/.next/**": true,
     "**/build/**": true,
-    "**/out/**": true,
-    "**/.expo/**": true,
-    "**/.expo-shared/**": true,
     "**/coverage/**": true,
     "**/.idea/**": true,
     "**/.vscode/**": true,

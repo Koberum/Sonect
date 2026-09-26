@@ -24,7 +24,7 @@ RUN npm install -g pnpm@9
 
 WORKDIR /app
 
-COPY --from=builder /build/packages/backend/dist/bundle.js ./bundle.js
+COPY --from=builder /build/packages/backend/dist/bundle.cjs ./bundle.cjs
 COPY --from=builder /build/packages/frontend/dist ./frontend/dist/
 
 RUN cat > package.json <<- 'PKGJSON'
@@ -33,7 +33,8 @@ RUN cat > package.json <<- 'PKGJSON'
   "private": true,
   "type": "module",
   "dependencies": {
-    "sharp": "^0.34.5"
+    "sharp": "^0.34.5",
+    "dotenv": "^17.2.4"
   }
 }
 PKGJSON
@@ -49,4 +50,4 @@ VOLUME /app/data
 
 EXPOSE 3000
 
-CMD ["dumb-init", "node", "bundle.js"]
+CMD ["dumb-init", "node", "bundle.cjs"]

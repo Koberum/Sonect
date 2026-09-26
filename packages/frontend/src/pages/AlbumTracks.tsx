@@ -1,11 +1,8 @@
-import { Button } from "@/components/ui/button";
+import PlayStatus from "@/features/dashboard/components/play-status";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useTranslation } from "react-i18next";
 import { useParams, Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { getAlbumById, getTracksByAlbum } from "@/features/apis/libraryApis";
-import type { Album, Track } from "@repo/types";
 import { formatTime, getCoverPath } from "@/lib/utils";
 import {
   Table,
@@ -16,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PlayIcon, ListPlus } from "lucide-react";
-import { playSong, addToQueue } from "@/features/apis/mpdApis";
+import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { PageTitle } from "@/features/dashboard/components/pageTitle";
 import { usePlaybackContext } from "@/components/playback-context";
 import {
@@ -27,31 +24,26 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { AddToPlaylistMenu } from "@/features/dashboard/components/add-to-playlist-menu";
+import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { catalogQueries } from "@/features/catalog/queries";
+import type { TrackWithRelations } from "@repo/types/catalog";
 
 export default function AlbumPage() {
   const { t } = useTranslation();
   const { id } = useParams();
-  const [album, setAlbum] = useState<Album>();
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const album = await getAlbumById(id!);
-        setAlbum(album);
-        const tracks = await getTracksByAlbum(id!);
-        setTracks(tracks);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [id]);
+  const { data: album, isPending: albumPending } = useQuery({
+    ...catalogQueries.album(id ?? ""),
+    enabled: !!id,
+  });
+  const { data: tracks = [], isPending: tracksPending } = useQuery({
+    ...catalogQueries.tracksByAlbum(id ?? ""),
+    enabled: !!id,
+  });
+  const isPending = albumPending || tracksPending;
 
   const { trackPlayed } = usePlaybackContext();
+  const { play, addToQueue } = usePlayTrack();
   return (
     <>
       <PageTitle
@@ -71,7 +63,7 @@ export default function AlbumPage() {
       />
       <Separator className="my-4" />
       <div className="relative">
-        {loading ? (
+        {isPending ? (
           <div className="flex justify-center py-16">
             <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
           </div>
@@ -91,29 +83,16 @@ export default function AlbumPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tracks.map((track: Track) => (
+                {tracks.map((track: TrackWithRelations) => (
                   <ContextMenu key={track.id}>
                     <ContextMenuTrigger asChild>
                       <TableRow
                         className="group h-15 cursor-pointer"
-                        onClick={() => playSong(track)}
+                        onClick={() => play(track)}
                       >
                         <TableCell className="hidden lg:table-cell">
                           {trackPlayed?.id === track.id ? (
-                            <div className="flex items-end gap-1">
-                              <div
-                                className="bg-primary eq h-1 w-1 rounded"
-                                style={{ animationDelay: "0ms" }}
-                              />
-                              <div
-                                className="bg-primary eq h-2 w-1 rounded"
-                                style={{ animationDelay: "150ms" }}
-                              />
-                              <div
-                                className="bg-primary eq h-3 w-1 rounded"
-                                style={{ animationDelay: "300ms" }}
-                              />
-                            </div>
+                            <PlayStatus />
                           ) : (
                             <>
                               <span className="group-hover:hidden">
@@ -166,7 +145,7 @@ export default function AlbumPage() {
                       </TableRow>
                     </ContextMenuTrigger>
                     <ContextMenuContent className="w-48">
-                      <ContextMenuItem onClick={() => playSong(track)}>
+                      <ContextMenuItem onClick={() => play(track)}>
                         {t("contextMenu.playNext")}
                       </ContextMenuItem>
                       <ContextMenuItem
