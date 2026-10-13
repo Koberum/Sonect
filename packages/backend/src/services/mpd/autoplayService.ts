@@ -59,10 +59,7 @@ export class AutoplayService {
     }
 
     const hasGenre = Boolean(
-      seedAlbum?.genre_id ||
-      (seedTrack as any)?.genre_id ||
-      seedAlbum?.genre ||
-      (seedTrack as any)?.genre,
+      seedAlbum?.genre_id || seedTrack?.genre_id || seedAlbum?.genre,
     );
 
     const fillGenreAnchored = () => {
@@ -93,8 +90,8 @@ export class AutoplayService {
         return;
       }
 
-      const genreId = seedAlbum?.genre_id || (seedTrack as any)?.genre_id;
-      const genre = seedAlbum?.genre || (seedTrack as any)?.genre;
+      const genreId = seedAlbum?.genre_id || seedTrack?.genre_id;
+      const genre = seedAlbum?.genre;
       if (
         (genreId || genre) &&
         collectAlbums(
@@ -109,9 +106,7 @@ export class AutoplayService {
 
       // Similar-genre tier: only if seed has a genre
       if (hasGenre) {
-        let seedGenreName: string | undefined =
-          (seedAlbum?.genre as string | undefined) ??
-          ((seedTrack as any)?.genre as string | undefined);
+        let seedGenreName: string | undefined = seedAlbum?.genre;
         if (!seedGenreName && genreId) {
           const g = genresDb.getById(genreId as number);
           seedGenreName = g?.name;

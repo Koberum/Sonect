@@ -8,6 +8,7 @@ import { albumsDb } from "@repo/db";
 import { db } from "@repo/db";
 import { tracks, albums } from "@repo/db";
 import { eq } from "drizzle-orm";
+import type { DBTrack } from "@repo/types";
 
 describe("AutoplayService genre-anchored", () => {
   let close: () => void;
@@ -107,12 +108,9 @@ describe("AutoplayService genre-anchored", () => {
     const batch = svc.getNextBatch(seed.file);
     expect(batch.length).to.be.greaterThan(0);
     const batchGenres = batch.map((f) => {
-      const t = db()
-        .select()
-        .from(tracks)
-        .where(eq(tracks.file, f))
-        .get() as any;
-      const al = t.album_id ? albumsDb.getById(t.album_id) : undefined;
+      const t = db().select().from(tracks).where(eq(tracks.file, f)).get() as
+        DBTrack | undefined;
+      const al = t?.album_id ? albumsDb.getById(t.album_id) : undefined;
       return al?.genre ?? "";
     });
     expect(
@@ -237,21 +235,15 @@ describe("AutoplayService genre-anchored", () => {
     expect(batch.length).to.be.greaterThan(0);
     const batchFiles = batch;
     const hasHouse = batchFiles.some((f) => {
-      const t = db()
-        .select()
-        .from(tracks)
-        .where(eq(tracks.file, f))
-        .get() as any;
-      const al = t.album_id ? albumsDb.getById(t.album_id) : undefined;
+      const t = db().select().from(tracks).where(eq(tracks.file, f)).get() as
+        DBTrack | undefined;
+      const al = t?.album_id ? albumsDb.getById(t.album_id) : undefined;
       return al?.genre?.toLowerCase() === "tech house";
     });
     const hasRock = batchFiles.some((f) => {
-      const t = db()
-        .select()
-        .from(tracks)
-        .where(eq(tracks.file, f))
-        .get() as any;
-      const al = t.album_id ? albumsDb.getById(t.album_id) : undefined;
+      const t = db().select().from(tracks).where(eq(tracks.file, f)).get() as
+        DBTrack | undefined;
+      const al = t?.album_id ? albumsDb.getById(t.album_id) : undefined;
       return al?.genre?.toLowerCase() === "rock";
     });
     expect(hasHouse, "should contain Tech House via similarity").to.be.true;
@@ -366,12 +358,9 @@ describe("AutoplayService genre-anchored", () => {
     const batch = svc2.getNextBatch(otherSeed.file);
     // Map file -> album title
     const titles = batch.map((f) => {
-      const t = db()
-        .select()
-        .from(tracks)
-        .where(eq(tracks.file, f))
-        .get() as any;
-      const al = t.album_id ? albumsDb.getById(t.album_id) : undefined;
+      const t = db().select().from(tracks).where(eq(tracks.file, f)).get() as
+        DBTrack | undefined;
+      const al = t?.album_id ? albumsDb.getById(t.album_id) : undefined;
       return al?.title ?? "";
     });
     // HighTech should appear before MidTech before LowTech
@@ -439,12 +428,9 @@ describe("AutoplayService genre-anchored", () => {
     // Re-fill should also stay empty, not inject rock
     const batch2 = svc.getNextBatch(seed.file);
     const hasRock = [...batch, ...batch2].some((f) => {
-      const t = db()
-        .select()
-        .from(tracks)
-        .where(eq(tracks.file, f))
-        .get() as any;
-      const al = t.album_id ? albumsDb.getById(t.album_id) : undefined;
+      const t = db().select().from(tracks).where(eq(tracks.file, f)).get() as
+        DBTrack | undefined;
+      const al = t?.album_id ? albumsDb.getById(t.album_id) : undefined;
       return al?.genre?.toLowerCase() === "rock";
     });
     expect(hasRock).to.be.false;
@@ -485,11 +471,9 @@ describe("AutoplayService genre-anchored", () => {
     const batch1 = svc.getNextBatch(seed.file);
     expect(batch1).to.include(other.file);
     svc.commitBatch(batch1, sid);
-    // Next batch should be empty or still techno (but protected/used exclude previous), then after reset it should wrap and return same other again (since protected set keeps current)
-    const batch2 = svc.getNextBatch(other.file, { queuedFiles: batch1 });
-    // batch2 may be empty because only 2 techno albums both protected/used
-    // Force wrap by simulating refill after consuming: clear protected? Use new current file same genre
-    // After committing, used contains al2; next call with no queuedFiles should recycle within genre
+    // Next batch should be empty or still techno (but protected/used exclude previous).
+    svc.getNextBatch(other.file, { queuedFiles: batch1 });
+    // After used exhausted, it resets to protected (seed album) and should return other again
     const batch3 = svc.getNextBatch(seed.file);
     // After used exhausted, it resets to protected (seed album) and should return other again
     expect(
@@ -500,8 +484,8 @@ describe("AutoplayService genre-anchored", () => {
             .select()
             .from(tracks)
             .where(eq(tracks.file, f))
-            .get() as any;
-          const al = t.album_id ? albumsDb.getById(t.album_id) : undefined;
+            .get() as DBTrack | undefined;
+          const al = t?.album_id ? albumsDb.getById(t.album_id) : undefined;
           return al?.genre?.toLowerCase() === "techno";
         }),
     ).to.be.true;
@@ -563,21 +547,15 @@ describe("AutoplayService genre-anchored", () => {
     svc.resetSession(seed.file, [seed.file]);
     const batch = svc.getNextBatch(seed.file);
     const hasVaporHouse = batch.some((f) => {
-      const t = db()
-        .select()
-        .from(tracks)
-        .where(eq(tracks.file, f))
-        .get() as any;
-      const al = t.album_id ? albumsDb.getById(t.album_id) : undefined;
+      const t = db().select().from(tracks).where(eq(tracks.file, f)).get() as
+        DBTrack | undefined;
+      const al = t?.album_id ? albumsDb.getById(t.album_id) : undefined;
       return al?.genre?.toLowerCase() === "vapor house";
     });
     const hasRock = batch.some((f) => {
-      const t = db()
-        .select()
-        .from(tracks)
-        .where(eq(tracks.file, f))
-        .get() as any;
-      const al = t.album_id ? albumsDb.getById(t.album_id) : undefined;
+      const t = db().select().from(tracks).where(eq(tracks.file, f)).get() as
+        DBTrack | undefined;
+      const al = t?.album_id ? albumsDb.getById(t.album_id) : undefined;
       return al?.genre?.toLowerCase() === "rock";
     });
     expect(

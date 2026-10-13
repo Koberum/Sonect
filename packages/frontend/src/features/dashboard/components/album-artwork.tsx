@@ -43,7 +43,7 @@ export function AlbumArtwork({
 
   const handlePlayNext = async () => {
     const ts = await getTracks();
-    if (ts.length > 0) play(ts[0] as any);
+    if (ts.length > 0) play(ts[0]);
   };
 
   const handlePlayLater = async () => {

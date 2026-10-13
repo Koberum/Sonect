@@ -1,9 +1,9 @@
 # ---- Build stage ----
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /build
 
 RUN apk add --no-cache python3 make g++ libc6-compat
-RUN npm install -g pnpm@9
+RUN npm install -g pnpm@10.34.7
 
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY packages/types ./packages/types
@@ -18,9 +18,9 @@ RUN pnpm --filter @repo/types build && \
     pnpm --filter frontend build
 
 # ---- Production stage ----
-FROM node:22-alpine
-RUN apk add --no-cache dumb-init
-RUN npm install -g pnpm@9
+FROM node:24-alpine
+RUN apk add --no-cache dumb-init ffmpeg alsa-utils usbutils
+RUN npm install -g pnpm@10.34.7
 
 WORKDIR /app
 
@@ -33,7 +33,7 @@ RUN cat > package.json <<- 'PKGJSON'
   "private": true,
   "type": "module",
   "dependencies": {
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.5",
     "dotenv": "^17.2.4"
   }
 }

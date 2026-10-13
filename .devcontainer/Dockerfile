@@ -1,7 +1,7 @@
 # Dev Container Dockerfile based on backend Dockerfile
-# Uses same OS as Raspberry Pi (Debian Bookworm)
+# Debian Bookworm with the minimum supported Node.js (24 LTS)
 
-FROM node:22-bookworm
+FROM node:24-bookworm
 
 # System dependencies (dev + audio + MPD)
 RUN apt-get update && apt-get install -y \
@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm
-RUN curl -fsSL https://get.pnpm.io/install.sh | bash -
+RUN curl -fsSL https://get.pnpm.io/install.sh | env PNPM_VERSION=10.34.7 bash -
 ENV PATH="/root/.local/share/pnpm:$PATH"
 
 # Also make pnpm available for node user

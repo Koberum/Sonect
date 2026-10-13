@@ -13,15 +13,11 @@ import {
   createStorageSourceHandler,
   updateStorageSourceHandler,
   deleteStorageSourceHandler,
-  mountStorageHandler,
-  unmountStorageHandler,
   listMountsHandler,
   getSetupProgressHandler,
   updateSetupProgressHandler,
   completeSetupHandler,
   resetSetupHandler,
-  restartMpdHandler,
-  stopMpdHandler,
   getMpdStatusHandler,
   getHardwareUsageHandler,
 } from "../controllers/systemController";
@@ -45,8 +41,6 @@ router.get("/storage/sources/:id", getStorageSourceHandler);
 router.post("/storage/sources", createStorageSourceHandler);
 router.patch("/storage/sources/:id", updateStorageSourceHandler);
 router.delete("/storage/sources/:id", deleteStorageSourceHandler);
-router.post("/storage/sources/:id/mount", mountStorageHandler);
-router.post("/storage/sources/:id/unmount", unmountStorageHandler);
 router.get("/storage/mounts", listMountsHandler);
 
 router.get("/setup/progress", getSetupProgressHandler);
@@ -54,8 +48,6 @@ router.post("/setup/progress", updateSetupProgressHandler);
 router.post("/setup/complete", completeSetupHandler);
 router.post("/setup/reset", resetSetupHandler);
 
-router.post("/mpd/restart", restartMpdHandler);
-router.post("/mpd/stop", stopMpdHandler);
 router.get("/mpd/status", getMpdStatusHandler);
 
 router.get("/hardware/usage", getHardwareUsageHandler);

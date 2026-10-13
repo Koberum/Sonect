@@ -3,7 +3,10 @@
   "private": true,
   "version": "0.1.1",
   "license": "MIT",
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@10.34.7",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
     "dev": "turbo run build --filter @repo/db --filter @repo/types && concurrently -n types,db,frontend,backend -c auto \"pnpm --filter @repo/types dev\" \"pnpm --filter @repo/db dev\" \"pnpm --filter frontend dev\" \"pnpm --filter backend dev\"",
     "start": "pnpm --filter backend start",
@@ -24,9 +27,9 @@
     "db:studio": "pnpm --filter @repo/db db:studio"
   },
   "devDependencies": {
-    "concurrently": "^10.0.5",
-    "prettier": "^3.9.6",
-    "prettier-plugin-tailwindcss": "^0.7.4",
-    "turbo": "^2.10.12"
+    "concurrently": "^10.0.6",
+    "prettier": "^3.9.10",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "turbo": "^2.11.7"
   }
 }

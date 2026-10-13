@@ -28,9 +28,7 @@ describe("SetupService (trophy integration)", () => {
     it("storage step derived from storageDb existence", () => {
       storageDb.create({
         name: "Lib",
-        type: "local",
-        uri: "/tmp/music",
-        mount_path: "/music/lib",
+        path: "/music/lib",
         enabled: true,
       });
       const progress = setup.getSetupProgress();
@@ -52,9 +50,7 @@ describe("SetupService (trophy integration)", () => {
       setup.markSetupCompleted();
       storageDb.create({
         name: "Lib2",
-        type: "local",
-        uri: "/tmp/music2",
-        mount_path: "/music/lib2",
+        path: "/music/lib2",
         enabled: true,
       });
       expect(setup.isSetupComplete()).to.be.true;
@@ -66,9 +62,7 @@ describe("SetupService (trophy integration)", () => {
       expect(setup.getNextIncompleteStep()).to.equal("storage");
       storageDb.create({
         name: "Lib",
-        type: "local",
-        uri: "/tmp/a",
-        mount_path: "/music/a",
+        path: "/music/a",
         enabled: true,
       });
       expect(setup.getNextIncompleteStep()).to.equal("audio");
@@ -99,9 +93,7 @@ describe("SetupService (trophy integration)", () => {
     it("clears all steps including complete", () => {
       storageDb.create({
         name: "Lib",
-        type: "local",
-        uri: "/tmp/r",
-        mount_path: "/music/r",
+        path: "/music/r",
         enabled: true,
       });
       setup.markStepComplete("audio");

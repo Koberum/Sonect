@@ -21,12 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import {
-  getMpdStatus,
-  restartMpd,
-  resetSetup,
-  stopMpd,
-} from "@/features/system/api";
+import { getMpdStatus, resetSetup } from "@/features/system/api";
 import { HardwareMonitor } from "@/components/hardware-monitor";
 
 export function DebugTab() {
@@ -36,8 +31,6 @@ export function DebugTab() {
     error?: string;
   } | null>(null);
   const [mpdChecking, setMpdChecking] = useState(false);
-  const [restartDialogOpen, setRestartDialogOpen] = useState(false);
-  const [stopDialogOpen, setStopDialogOpen] = useState(false);
   const [resetSetupDialogOpen, setResetSetupDialogOpen] = useState(false);
   const [resettingSetup, setResettingSetup] = useState(false);
 
@@ -86,22 +79,6 @@ export function DebugTab() {
                 {mpdStatus.error ? ` (${mpdStatus.error})` : ""}
               </Badge>
             )}
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setRestartDialogOpen(true)}
-            >
-              {t("settings.debug.restartMpd")}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setStopDialogOpen(true)}
-            >
-              {t("settings.debug.stopMpd")}
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -167,69 +144,6 @@ export function DebugTab() {
           <HardwareMonitor />
         </CardContent>
       </Card>
-
-      <AlertDialog open={restartDialogOpen} onOpenChange={setRestartDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("settings.debug.restartConfirmTitle", "Restart MPD?")}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t(
-                "settings.debug.restartConfirm",
-                "This will restart MPD and interrupt playback. Continue?",
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>
-              {t("common.cancel", "Cancel")}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                const result = await restartMpd();
-                toast[result.success ? "success" : "warning"](
-                  result.success
-                    ? t("settings.debug.mpdRestarted")
-                    : (result.warning ?? ""),
-                );
-              }}
-            >
-              {t("settings.debug.restartMpd")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={stopDialogOpen} onOpenChange={setStopDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("settings.debug.stopConfirmTitle", "Stop MPD?")}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("settings.debug.stopConfirm", "This will stop MPD. Continue?")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>
-              {t("common.cancel", "Cancel")}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                const result = await stopMpd();
-                toast[result.success ? "success" : "warning"](
-                  result.success
-                    ? t("settings.debug.mpdStoppedAction")
-                    : (result.warning ?? ""),
-                );
-              }}
-            >
-              {t("settings.debug.stopMpd")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <AlertDialog
         open={resetSetupDialogOpen}

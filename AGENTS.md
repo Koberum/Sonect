@@ -83,36 +83,64 @@ After making changes:
 | `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | MPD log file (for per-file sync progress)                           |
 | `DNS_CHECK_HOST`   | `example.com`                                                  | Host resolved to verify DNS connectivity                            |
 
-## Production deployment (Raspberry Pi)
+## Production deployment (Docker)
 
-### Architecture
+Sonect ships as **two container images**: `sonect-app` (the Node backend serving
+the API, WebSocket and built SPA on port 3000) and `sonect-mpd` (Music Player
+Daemon). There is no systemd/native installer — Docker is the only production
+path. `docker/docker-compose.yml` wires the two together; `docker/audio.yml` is
+an optional overlay that grants access to host audio hardware.
 
 ```
-Single Node process on port 3000:
-  Express API routes (/player [unified per-session], /catalog, /playlists, /system, /covers, /waveforms)
-  + WebSocket server (ws)
-  + Static file serving for built React frontend
-  + SPA fallback (index.html for any unmatched GET)
+sonect-app                                  sonect-mpd
+  node bundle.cjs (API + WS + SPA)            mpd + alsa-utils + inotify-tools
+  env: MPD_HOST=sonect-mpd, MUSIC_DIR=/libraries   music_directory /libraries
+  devices(/dev/snd,/dev/bus/usb), audio group      bind 0.0.0.0:6600
+  volumes: libraries(ro), data(rw),                watcher: restart on
+           mpd-config(rw), mpd-logs(ro)            mpd-audio.conf change
+                                                   volumes: libraries(ro),
+                                                   mpd-config(ro), mpd-state(rw),
+                                                   mpd-logs(rw)
 ```
 
-` /player` is the single playback API (requires `X-Session-Id`). Legacy `/mpd` routes were removed; `/session` remains only for legacy backend tests.
+- ` /player` is the single playback API (requires `X-Session-Id`). Legacy `/mpd`
+  routes were removed; `/session` remains only for legacy backend tests.
+- **Storage is host-provided.** Music folders are bind-mounted into both
+  containers under `/libraries/<name>`. The backend never mounts anything and
+  never runs privileged commands; a library source is just a registered path
+  under `MUSIC_DIR`. SMB/NFS are mounted by the host (fstab) and bind-mounted in.
+- **MPD restarts itself.** The backend writes the drop-in; an `inotify` watcher
+  in the `sonect-mpd` entrypoint restarts MPD (`docker/mpd/entrypoint.sh`).
 
 ### Build pipeline
 
-- **Backend**: `pnpm backend:bundle` uses esbuild to bundle all JS code (Express, Zod, ws, music-metadata, workspace deps) into `dist/bundle.cjs`. Only `sharp` and `dotenv` remain external as runtime dependencies. The bundle defines `SONECT_BUNDLE_URL` via `--banner:js` and rewrites **all** `import.meta.url` occurrences via `--define:import.meta.url=SONECT_BUNDLE_URL` (currently only the `@repo/db` migrator uses it, to locate `dist/drizzle/`), then copies `../db/drizzle` to `dist/drizzle`. **Hazard:** if a future bundled dependency relies on `import.meta.url` for its own file's URL, it will silently receive the migrations-anchor URL instead.
-- **Frontend**: `pnpm frontend:build` runs Vite, outputs static files to `frontend/dist/`.
-- **Deployment artifact (via Release CI):** release-please
-  (`release-please-config.json` + `.release-please-manifest.json`)
-  owns the version/CHANGELOG/release on `main`. When a release is created, the
-  `build-and-upload` job in `release.yml` bundles the backend and frontend and
-  uploads a single `sonect.tar.gz` to the GitHub Release.
-- **Artifact layout inside `sonect.tar.gz`:** `backend/` (`bundle.cjs`,
-  `start-backend.sh`, minimal `package.json` with only `sharp`/`dotenv`,
-  `pnpm-lock.yaml`, `.version`) and `frontend/` (static dist).
-- **Installer:** downloads `releases/latest/download/sonect.tar.gz` with a
-  plain `curl` — no PAT, no API. The running version comes from the bundled
-  `backend/.version` file and is exposed via `GET /system/status` →
-  `version` (fallback `"dev"` when absent).
+- **Backend**: `pnpm backend:bundle` uses esbuild to bundle all JS code (Express,
+  Zod, ws, music-metadata, workspace deps) into `dist/bundle.cjs`. Only `sharp`
+  and `dotenv` remain external as runtime dependencies. The bundle defines
+  `SONECT_BUNDLE_URL` via `--banner:js` and rewrites **all** `import.meta.url`
+  occurrences via `--define:import.meta.url=SONECT_BUNDLE_URL` (currently only the
+  `@repo/db` migrator uses it, to locate `dist/drizzle/`), then copies
+  `../db/drizzle` to `dist/drizzle`. **Hazard:** if a future bundled dependency
+  relies on `import.meta.url` for its own file's URL, it will silently receive the
+  migrations-anchor URL instead.
+- **Frontend**: `pnpm frontend:build` runs Vite, outputs static files to
+  `frontend/dist/`.
+- **App image** (`packages/backend/Dockerfile`, build context = repo root) bundles
+  the backend + built frontend, adds `ffmpeg` (waveforms), `alsa-utils`/`usbutils`
+  (audio enumeration), keeps only `sharp`/`dotenv` as runtime deps and runs
+  `dumb-init node bundle.cjs`.
+- **MPD image** (`docker/mpd/Dockerfile`) is Debian + `mpd`, `alsa-utils`,
+  `inotify-tools`, `tini`, with a baked base `mpd.conf`.
+- **Release CI**: release-please
+  (`release-please-config.json` + `.release-please-manifest.json`) owns the
+  version/CHANGELOG/release on `main`. When a release is published,
+  `.github/workflows/docker.yml` builds **multi-arch** (`linux/amd64`,
+  `linux/arm64`) images and pushes them to GHCR as
+  `ghcr.io/<owner>/sonect-app` and `ghcr.io/<owner>/sonect-mpd` (tags `latest`
+  - version). On PRs the images are built but not pushed.
+- **Version**: the running version comes from `backend/.version` written by the
+  release image build and is exposed via `GET /system/status` → `version`
+  (fallback `"dev"` when absent).
 - **Startup**: `node bundle.cjs` — no tsx, no vite, no compilation at runtime.
 
 ## Key conventions
@@ -323,73 +351,72 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 Sonect uses a **two-file architecture** for MPD configuration:
 
 ```
-/etc/mpd.conf              (root-owned, written once by installer)
-  └─ include ─► /opt/sonect/data/mpd-audio.conf  (service-user-owned, editable)
+mpd.conf                    (baked into the MPD image, immutable)
+  └─ include ─► mpd-audio.conf   (drop-in, owned by the backend)
 ```
 
-- **`/etc/mpd.conf`** — Minimal boilerplate (`music_directory`, `bind_to_address`,
-  `port`, plus the `include` directive). Written by `installer.sh` as root.
-  **Never modified at runtime.**
-- **`/opt/sonect/data/mpd-audio.conf`** (or `process.env.MPD_CONFIG_PATH`) —
-  Service-user-owned drop-in containing all user-editable settings: `audio_output`
-  blocks and any advanced config from the Settings UI. Written by the backend
-  Node.js process running as the service user — **no sudo required.**
+- **`mpd.conf`** — baked into `docker/mpd/Dockerfile` (`music_directory
+/libraries`, `bind_to_address 0.0.0.0`, `port 6600`, `log_file`, plus the
+  `include` directive). **Never modified at runtime.**
+- **`mpd-audio.conf`** (`process.env.MPD_CONFIG_PATH`, default
+  `/opt/sonect/data/mpd-audio.conf`; set to `/mpd-config/mpd-audio.conf` in
+  docker) — drop-in containing all user-editable settings: `audio_output`
+  blocks and advanced config from the Settings UI. Written by the backend with
+  `fs.writeFileSync`.
 
 **How it's read/edited:**
 
-| Frontend tab   | Service            | What it does                                            |
-| -------------- | ------------------ | ------------------------------------------------------- |
-| Audio tab      | `audioService.ts`  | Reads drop-in via regex to extract `audio_output` block |
-|                |                    | Writes `audio_output` block, then `restartMPD()`        |
-| MPD Config tab | `configService.ts` | Reads full drop-in content via `fs.readFileSync`        |
-|                |                    | Writes full drop-in via `fs.writeFileSync`,             |
-|                |                    | then `sudo systemctl restart mpd`                       |
+| Frontend tab   | Service (`mpdConfigService.ts`)                  | What it does                          |
+| -------------- | ------------------------------------------------ | ------------------------------------- |
+| Audio tab      | `getCurrentAudioOutput` / `configureAudioOutput` | Reads/writes the `audio_output` block |
+| MPD Config tab | `getConfig` / `updateConfig`                     | Reads/writes the full drop-in content |
 
-After every write, MPD is restarted so changes take effect. Both services use
-`process.env.MPD_CONFIG_PATH`, defaulting to `/opt/sonect/data/mpd-audio.conf`.
+After every write the backend returns `{ success: true }` — it does **not**
+restart MPD. The `sonect-mpd` entrypoint watches the drop-in with `inotifywait`
+and restarts the MPD process on change (`docker/mpd/entrypoint.sh`). There is no
+`systemctl`, no `sudo`, no privileged command anywhere.
 
-**Writing new MPD config code:** always read/write the drop-in (not `/etc/mpd.conf`).
-Use `fs.readFileSync`/`fs.writeFileSync` directly — no sudo needed.
+**Writing new MPD config code:** always read/write the drop-in (not `mpd.conf`),
+using `fs.readFileSync`/`fs.writeFileSync`. Never shell out.
 
-**Dev container:** the `.devcontainer` reproduces this exact wiring — `conf/mpd.conf`
-is bind-mounted to `/etc/mpd.conf` and includes the drop-in at `/opt/sonect/data/mpd-audio.conf`,
-which `postCreate.sh` creates before starting MPD. Do not remove the `include` directive
-from `conf/mpd.conf`; keep the drop-in at the code default path (`MPD_CONFIG_PATH`) so
-dev behavior matches production.
-The Compose mount is the main configuration and `postCreate.sh` must never
-overwrite `/etc/mpd.conf`; overwriting it would make the mounted file include
-itself recursively and can crash MPD with `SIGSEGV`.
+**Dev container:** the `.devcontainer` reproduces this wiring — `conf/mpd.conf`
+is bind-mounted to `/etc/mpd.conf` and includes the drop-in at
+`/opt/sonect/data/mpd-audio.conf`, which `postCreate.sh` creates before starting
+MPD. Do not remove the `include` directive from `conf/mpd.conf`; keep the drop-in
+at the code default path (`MPD_CONFIG_PATH`) so dev behavior matches docker. The
+Compose mount is the main configuration and `postCreate.sh` must never overwrite
+`/etc/mpd.conf`; overwriting it would make the mounted file include itself
+recursively and can crash MPD with `SIGSEGV`.
 
-### Local library sources & per-source stats
+### Library sources & per-source stats
 
-- **Local sources** are exposed to MPD via a **service-user-owned symlink** under
-  `MUSIC_DIR` (default `/opt/sonect/music`, symlink at `/opt/sonect/music/<folder-name>`)
-  pointing to a local folder outside the music directory — **no `sudo mount --bind`**.
-  `storageService.ts` creates/replaces/removes the symlink on source
-  create/update/delete and mount/unmount.
-- **`mount_path` is derived, never user-supplied.** For every source type the
-  frontend omits `mount_path`; `createStorageSource` generates a safe, unique
-  subfolder name under `MUSIC_DIR` from the library name via
-  `slugifyName()` + `generateUniqueMountSegment()` (for `local` it is the symlink
-  target, for `smb`/`nfs` the mount point). `updateStorageSource` keeps an existing
-  `mount_path` stable — editing a name never moves the symlink/mount point.
-- **`follow_outside_symlinks "yes"`** is ensured in the MPD drop-in
-  (`process.env.MPD_CONFIG_PATH`) by `configService.ensureFollowOutsideSymlinks()`
-  so MPD can follow the symlink. Local folders must live outside `MUSIC_DIR`
-  (validated in `storageService.ts`).
+- **Storage is host-provided.** A library source is just a **registered path
+  under `MUSIC_DIR`** (name + path, no type, no credentials). The host bind-mounts
+  each music folder into the containers (`/libraries/<name>`); the backend only
+  validates that the path exists, stores it, and triggers a rescan. It never runs
+  `mount`/`umount` and needs no elevated privileges.
+- **`storageService.ts`** exposes `createStorageSource({name, path})`,
+  `updateStorageSource(id, {name?, path?})`, `deleteStorageSource(id)` and a
+  read-only `listMounts()` (parses `/proc/mounts`). Creating/updating/deleting a
+  source fires an MPD `update` + `scanLibrary()`. The `storage_sources` table has
+  no `type`/`uri`/`mount_path`/`username`/`password` columns.
+- **Frontend (Immich-style):** Settings → Libraries lists the registered
+  libraries (with stats) and the mounts detected under the music directory, plus
+  a copy-paste compose snippet. The setup wizard uses the same name + path form.
 - Per-source stats (`file_count` / `dir_count` / `total_size`) are computed by
   `storageStats.scanStorageStats()` at the end of every `scanLibrary()` and saved
-  via `storageDb.updateStats()`; they are shown in Settings → Libraries.
+  via `storageDb.updateStats()`.
   `MUSIC_EXTENSIONS` (comma-separated; default `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta`)
   selects which audio extensions are counted as music files.
 
 ### MPD log file for sync progress
 
-Per-file progress during library sync is read from MPD's log file at `/var/lib/mpd/mpd.log`
-(overridable via `MPD_LOG_PATH` env var). The installer writes `log_file "/var/lib/mpd/mpd.log"`
-into `/etc/mpd.conf`. The `mpdLogReader.ts` service reads new lines from this file during
-`updateLibrary()` and broadcasts each `update: added <path>` line as a `sync-progress` WS
-message.
+Per-file progress during library sync is read from MPD's log file at
+`/var/lib/mpd/mpd.log` (overridable via `MPD_LOG_PATH`; set to
+`/mpd-logs/mpd.log` in docker, shared between the two containers). The
+`mpdLogReader.ts` service reads new lines from this file during
+`updateLibrary()` and broadcasts each `update: added <path>` line as a
+`sync-progress` WS message.
 
 **If log file is missing or unreadable**, the MPD update phase proceeds without per-file
 progress (graceful degradation — the subsequent `tracks` phase still shows per-track
@@ -398,6 +425,7 @@ progress).
 ## What NOT to do
 
 - All MPD communication must go through `MpdConnectionManager` (`executeCommand` / `getCachedStatus`). Do not create additional MPD connections.
+- Do not introduce privileged operations in the backend — no `mount`/`umount`, no `systemctl`, no `sudo`. Storage is host-provided (bind mounts) and MPD restarts itself when its drop-in changes.
 - Do not add new environment variables without documenting them here and in `README.md`.
 - Do not commit `node_modules`, `dist/`, or `.env` files.
 - Do not modify `pnpm-lock.yaml` manually.
@@ -453,3 +481,14 @@ rtk pip list            rtk pnpm install        rtk npm run <script>
 - `rtk proxy <cmd>` runs command without filtering but tracks usage
 
 <!-- /headroom:rtk-instructions -->
+
+<!-- BEGIN:turborepo-agent-rules -->
+
+# This is NOT the Turborepo you know
+
+Turborepo configuration, task behavior, and CLI commands can vary between installed versions and may differ from your training data. Resolve the `turbo` package from this file's directory or relevant workspace; in monorepos, it may not be visible from the repository root. For example, run `node -p "require.resolve('turbo/package.json')"` from a workspace that depends on `turbo`.
+
+Read `docs/README.md` inside that installed package first, then read the relevant pages from its `docs/` directory before changing Turborepo configuration or commands. Heed deprecation notices. These bundled docs match the installed package version and are available without network access.
+
+This block is written and re-added by `turbo` before repository-scoped commands when an AI agent is detected. In the Turborepo source repository, its template is defined in `crates/turborepo-cli/src/cli/agent_guidance.rs`. Removing the managed block while updates are enabled means a later qualifying invocation will add it again. Set `"agentGuidance": false` in the root `turbo.json` or `turbo.jsonc` to opt out; this does not remove an existing block. Keep the block committed with your work to avoid an uncommitted change on the next agent invocation.
+<!-- END:turborepo-agent-rules -->

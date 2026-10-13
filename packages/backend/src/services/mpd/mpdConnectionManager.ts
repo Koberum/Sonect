@@ -92,7 +92,7 @@ export class MpdConnectionManager extends EventEmitter {
     return new Promise((resolve, reject) => {
       this.cmdClient!.sendCommand(
         cmd(command, args),
-        (err: any, msg: string) => {
+        (err: unknown, msg: string) => {
           if (err) reject(err instanceof Error ? err : new Error(String(err)));
           else resolve(msg);
         },
@@ -114,7 +114,7 @@ export class MpdConnectionManager extends EventEmitter {
     ].join("\n");
 
     return new Promise((resolve, reject) => {
-      this.cmdClient!.sendCommand(lines, (err: any, msg: string) => {
+      this.cmdClient!.sendCommand(lines, (err: unknown, msg: string) => {
         if (err) reject(err instanceof Error ? err : new Error(String(err)));
         else resolve(msg);
       });
@@ -239,7 +239,14 @@ export class MpdConnectionManager extends EventEmitter {
 
               this.processPollBuffer();
 
-              this.refreshFullCache().then(() => this.startPolling());
+              this.refreshFullCache()
+                .then(() => this.startPolling())
+                .catch((err) =>
+                  this.logService.pushLog(
+                    "error",
+                    `[MPD] Initial cache refresh failed: ${String(err)}`,
+                  ),
+                );
             } else {
               console.error(`[MPD] Invalid greeting: ${greeting}`);
               this.logService.pushLog(

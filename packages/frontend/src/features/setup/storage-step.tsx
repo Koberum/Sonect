@@ -2,15 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import {
-  createStorageSource,
-  mountStorageSource,
-  type StorageSource,
-} from "@/features/system/api";
-import {
-  LibrarySourcePicker,
-  type SourceType,
-} from "@/features/settings/library-source-picker";
+import { createStorageSource, type StorageSource } from "@/features/system/api";
 import {
   LibrarySourceForm,
   type LibrarySourceFormValues,
@@ -40,60 +32,8 @@ interface StorageStepProps {
   onBack?: () => void;
 }
 
-interface StorageSourceFormPanelProps {
-  sourceType: SourceType;
-  onSave: (data: LibrarySourceFormValues) => Promise<void>;
-  onBack: () => void;
-}
-
-function StorageSourceFormPanel({
-  sourceType,
-  onSave,
-  onBack,
-}: StorageSourceFormPanelProps) {
-  const { t } = useTranslation();
-  const form = useLibrarySourceForm({ sourceType, onSave });
-
-  return (
-    <>
-      <WizardStepHeader>
-        <WizardStepTitle>
-          {t("settings.libraries.addSource", "Add Library")}
-        </WizardStepTitle>
-        <WizardStepDescription>
-          {t(
-            "settings.libraries.formDescription",
-            "Fill in the details for your library source.",
-          )}
-        </WizardStepDescription>
-      </WizardStepHeader>
-      <WizardStepContent>
-        <LibrarySourceForm
-          sourceType={sourceType}
-          form={form.form}
-          setForm={form.setForm}
-          errors={form.errors}
-          handleFieldBlur={form.handleFieldBlur}
-          fieldClass={form.fieldClass}
-        />
-      </WizardStepContent>
-      <WizardStepActions>
-        <Button variant="outline" type="button" onClick={onBack}>
-          {t("setup.wizard.back", "Back")}
-        </Button>
-        <Button type="button" onClick={form.submit} disabled={form.saving}>
-          {form.saving
-            ? t("setup.storage.creating", "Creating...")
-            : t("setup.storage.addSourceSubmit", "Create & Continue")}
-        </Button>
-      </WizardStepActions>
-    </>
-  );
-}
-
 export function StorageStep({ onNext, onBack }: StorageStepProps) {
   const { t } = useTranslation();
-  const [selectedType, setSelectedType] = useState<SourceType | null>(null);
   const [createdSource, setCreatedSource] = useState<StorageSource | null>(
     null,
   );
@@ -115,23 +55,9 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
     }`;
   }
 
-  const handleSave = async (data: {
-    name: string;
-    type: SourceType;
-    uri: string;
-    username?: string;
-    password?: string;
-  }) => {
+  const handleSave = async (data: LibrarySourceFormValues) => {
     try {
       const source = await createStorageSource(data);
-      const result = await mountStorageSource(source.id);
-      if (result.success) {
-        toast.success(t("settings.storage.mounted", "Mounted"));
-      } else {
-        toast.error(
-          result.error ?? t("settings.storage.mountError", "Mount failed"),
-        );
-      }
       setCreatedSource(source);
       setConfirmOpen(true);
     } catch (err) {
@@ -142,38 +68,42 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
     }
   };
 
+  const form = useLibrarySourceForm({ onSave: handleSave });
+
   return (
     <WizardStep>
-      {selectedType === null ? (
-        <>
-          <WizardStepHeader>
-            <WizardStepTitle>
-              {t("settings.storage.title", "Storage")}
-            </WizardStepTitle>
-            <WizardStepDescription>
-              {t(
-                "setup.storage.description",
-                "Add a network or local source for your music library.",
-              )}
-            </WizardStepDescription>
-          </WizardStepHeader>
-          <WizardStepContent>
-            <LibrarySourcePicker onSelect={setSelectedType} />
-          </WizardStepContent>
-          <WizardStepActions>
-            <Button variant="outline" type="button" onClick={onBack}>
-              {t("setup.wizard.back", "Back")}
-            </Button>
-          </WizardStepActions>
-        </>
-      ) : (
-        <StorageSourceFormPanel
-          key={selectedType}
-          sourceType={selectedType}
-          onSave={handleSave}
-          onBack={() => setSelectedType(null)}
+      <WizardStepHeader>
+        <WizardStepTitle>
+          {t("settings.storage.title", "Storage")}
+        </WizardStepTitle>
+        <WizardStepDescription>
+          {t(
+            "setup.storage.description",
+            "Register a folder that is bind-mounted into the container.",
+          )}
+        </WizardStepDescription>
+      </WizardStepHeader>
+      <WizardStepContent>
+        <LibrarySourceForm
+          form={form.form}
+          setForm={form.setForm}
+          errors={form.errors}
+          handleFieldBlur={form.handleFieldBlur}
+          fieldClass={form.fieldClass}
         />
-      )}
+      </WizardStepContent>
+      <WizardStepActions>
+        {onBack && (
+          <Button variant="outline" type="button" onClick={onBack}>
+            {t("setup.wizard.back", "Back")}
+          </Button>
+        )}
+        <Button type="button" onClick={form.submit} disabled={form.saving}>
+          {form.saving
+            ? t("setup.storage.creating", "Creating...")
+            : t("setup.storage.addSourceSubmit", "Create & Continue")}
+        </Button>
+      </WizardStepActions>
 
       <AlertDialog
         open={confirmOpen}
@@ -199,8 +129,8 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
           {createdSource && (
             <div className="space-y-2 text-sm">
               <div className="font-medium">{createdSource.name}</div>
-              <div className="text-muted-foreground text-xs break-all">
-                {createdSource.uri}
+              <div className="text-muted-foreground font-mono text-xs break-all">
+                {createdSource.path}
               </div>
               <div className="text-muted-foreground text-xs">
                 {t("settings.libraries.stats", {

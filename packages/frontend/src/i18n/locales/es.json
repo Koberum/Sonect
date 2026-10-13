@@ -370,10 +370,10 @@
     },
     "libraries": {
       "title": "Bibliotecas",
-      "description": "Gestiona las fuentes de tu biblioteca de música.",
+      "description": "Carpetas montadas en el contenedor y escaneadas por MPD.",
       "addSource": "Agregar Biblioteca",
       "noSources": "No hay bibliotecas configuradas",
-      "noSourcesDescription": "Agrega una fuente SMB, NFS o local para tu biblioteca de música.",
+      "noSourcesDescription": "Monta una carpeta en el contenedor y luego regístrala aquí.",
       "selectType": "Seleccionar Tipo de Fuente",
       "selectTypeDesc": "Elige el tipo de fuente que deseas agregar.",
       "typeSmb": "SMB / CIFS",
@@ -393,6 +393,14 @@
       "localPath": "Ruta de Carpeta",
       "localPathPlaceholder": "/mnt/usb/musica",
       "localPathHint": "Ruta absoluta a la carpeta en este dispositivo",
+      "path": "Ruta de Carpeta",
+      "pathPlaceholder": "/libraries/musica",
+      "pathHint": "Carpeta dentro del contenedor, bajo el directorio de música. Añádela como bind mount en el host.",
+      "detectedMounts": "Montajes detectados",
+      "noMounts": "No se detectaron montajes bajo el directorio de música.",
+      "copySnippet": "Copiar fragmento de compose",
+      "snippetCopied": "Fragmento copiado",
+      "snippetCopyError": "Error al copiar",
       "folderName": "Nombre de carpeta",
       "folderNamePlaceholder": "mi-musica",
       "folderNameHint": "Subcarpeta bajo el directorio de música",
@@ -423,7 +431,7 @@
       "deleteTitle": "¿Eliminar biblioteca?",
       "deleteConfirm": "¿Estás seguro de que deseas eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
       "deleteButton": "Eliminar",
-      "formDescription": "Completa los detalles de tu fuente de biblioteca."
+      "formDescription": "Registra una carpeta que esté montada en el contenedor."
     },
     "library": {
       "title": "Biblioteca",

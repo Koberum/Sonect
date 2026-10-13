@@ -95,8 +95,7 @@ export const getHealthHandler = asyncHandler(
 export const getStorageSourcesHandler = asyncHandler(
   async (_req: Request, res: Response) => {
     const sources = await getStorageService().getStorageSourcesHandler();
-    const sanitized = sources.map((s) => getStorageService().sanitizeSource(s));
-    res.json(sanitized);
+    res.json(sources);
   },
 );
 
@@ -105,9 +104,7 @@ export const getStorageSourceHandler = asyncHandler(
     const { id } = systemSchemas.idParam.parse(req.params);
     const source = getStorageService().getStorageSource(id);
     if (!source) throw new NotFoundError(`Storage source ${id}`);
-    res.json(
-      getStorageService().sanitizeSource(source as Record<string, unknown>),
-    );
+    res.json(source);
   },
 );
 
@@ -118,11 +115,7 @@ export const createStorageSourceHandler = asyncHandler(
       ...data,
       enabled: data.enabled ?? true,
     });
-    res
-      .status(201)
-      .json(
-        getStorageService().sanitizeSource(source as Record<string, unknown>),
-      );
+    res.status(201).json(source);
   },
 );
 
@@ -132,9 +125,7 @@ export const updateStorageSourceHandler = asyncHandler(
     const data = systemSchemas.storageSourceUpdate.parse(req.body);
     const source = getStorageService().updateStorageSource(id, data);
     if (!source) throw new NotFoundError(`Storage source ${id}`);
-    res.json(
-      getStorageService().sanitizeSource(source as Record<string, unknown>),
-    );
+    res.json(source);
   },
 );
 
@@ -144,22 +135,6 @@ export const deleteStorageSourceHandler = asyncHandler(
     const deleted = getStorageService().deleteStorageSource(id);
     if (!deleted) throw new NotFoundError(`Storage source ${id}`);
     res.json({ success: true });
-  },
-);
-
-export const mountStorageHandler = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { id } = systemSchemas.idParam.parse(req.params);
-    const result = await getStorageService().mountSource(id);
-    res.json(result);
-  },
-);
-
-export const unmountStorageHandler = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { id } = systemSchemas.idParam.parse(req.params);
-    const result = await getStorageService().unmountSource(id);
-    res.json(result);
   },
 );
 
@@ -209,20 +184,6 @@ export const resetSetupHandler = asyncHandler(
   async (_req: Request, res: Response) => {
     getSetupService().resetSetup();
     res.json({ success: true });
-  },
-);
-
-export const restartMpdHandler = asyncHandler(
-  async (_req: Request, res: Response) => {
-    const result = getMpdConfigService().restartMPD();
-    res.json(result);
-  },
-);
-
-export const stopMpdHandler = asyncHandler(
-  async (_req: Request, res: Response) => {
-    const result = getMpdConfigService().stopMPD();
-    res.json(result);
   },
 );
 

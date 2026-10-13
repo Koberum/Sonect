@@ -21,24 +21,12 @@ export const storageDb = {
       .get() as DBStorageSource | undefined;
   },
 
-  create(data: {
-    name: string;
-    type: "smb" | "nfs" | "local";
-    uri: string;
-    mount_path: string;
-    username?: string;
-    password?: string;
-    enabled?: boolean;
-  }): number {
+  create(data: { name: string; path: string; enabled?: boolean }): number {
     const result = db()
       .insert(storageSources)
       .values({
         name: data.name,
-        type: data.type,
-        uri: data.uri,
-        mount_path: data.mount_path,
-        username: data.username ?? null,
-        password: data.password ?? null,
+        path: data.path,
         // `enabled` stays NUMERIC (0/1) at the repository boundary, matching
         // the column type and every read path.
         enabled: data.enabled ? 1 : 0,
@@ -51,41 +39,21 @@ export const storageDb = {
     id: number,
     data: {
       name?: string;
-      type?: "smb" | "nfs" | "local";
-      uri?: string;
-      mount_path?: string;
-      username?: string;
-      password?: string;
+      path?: string;
       enabled?: boolean;
     },
   ): void {
     const set: {
       name?: string;
-      type?: "smb" | "nfs" | "local";
-      uri?: string;
-      mount_path?: string;
-      username?: string;
-      password?: string;
+      path?: string;
       enabled?: number;
       updated_at?: SQL;
     } = {};
     if (data.name !== undefined) {
       set.name = data.name;
     }
-    if (data.type !== undefined) {
-      set.type = data.type;
-    }
-    if (data.uri !== undefined) {
-      set.uri = data.uri;
-    }
-    if (data.mount_path !== undefined) {
-      set.mount_path = data.mount_path;
-    }
-    if (data.username !== undefined) {
-      set.username = data.username;
-    }
-    if (data.password !== undefined) {
-      set.password = data.password;
+    if (data.path !== undefined) {
+      set.path = data.path;
     }
     if (data.enabled !== undefined) {
       set.enabled = data.enabled ? 1 : 0;

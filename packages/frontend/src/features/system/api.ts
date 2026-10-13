@@ -15,11 +15,7 @@ export interface AudioDevice {
 export interface StorageSource {
   id: number;
   name: string;
-  type: "smb" | "nfs" | "local";
-  uri: string;
-  mount_path: string;
-  username?: string;
-  password?: string;
+  path: string;
   enabled: number;
   file_count?: number;
   dir_count?: number;
@@ -61,11 +57,7 @@ export function getStorageSources(
 
 export function createStorageSource(data: {
   name: string;
-  type: "smb" | "nfs" | "local";
-  uri: string;
-  mount_path?: string;
-  username?: string;
-  password?: string;
+  path: string;
   enabled?: boolean;
 }): Promise<StorageSource> {
   return apiFetch("/system/storage/sources", { method: "POST", body: data });
@@ -75,11 +67,7 @@ export function updateStorageSource(
   id: number,
   data: Partial<{
     name: string;
-    type: "smb" | "nfs" | "local";
-    uri: string;
-    mount_path: string;
-    username: string;
-    password: string;
+    path: string;
     enabled: boolean;
   }>,
 ): Promise<StorageSource> {
@@ -91,18 +79,6 @@ export function updateStorageSource(
 
 export function deleteStorageSource(id: number): Promise<void> {
   return apiFetch(`/system/storage/sources/${id}`, { method: "DELETE" });
-}
-
-export function mountStorageSource(
-  id: number,
-): Promise<{ success: boolean; error?: string }> {
-  return apiFetch(`/system/storage/sources/${id}/mount`, { method: "POST" });
-}
-
-export function unmountStorageSource(
-  id: number,
-): Promise<{ success: boolean; error?: string }> {
-  return apiFetch(`/system/storage/sources/${id}/unmount`, { method: "POST" });
 }
 
 export function getActiveMounts(signal?: AbortSignal): Promise<MountInfo[]> {
@@ -178,14 +154,6 @@ export function getHealth(signal?: AbortSignal): Promise<HealthResponse> {
   return apiFetch("/system/health", { signal });
 }
 
-export function restartMpd(): Promise<{ success: boolean; warning?: string }> {
-  return apiFetch("/system/mpd/restart", { method: "POST" });
-}
-
-export function stopMpd(): Promise<{ success: boolean; warning?: string }> {
-  return apiFetch("/system/mpd/stop", { method: "POST" });
-}
-
 export function getMpdStatus(signal?: AbortSignal): Promise<{
   running: boolean;
   pid?: string;
@@ -214,9 +182,7 @@ export function getOutputMode(signal?: AbortSignal): Promise<{
   return apiFetch("/player/output-mode", { headers: sessionHeaders(), signal });
 }
 
-export function setOutputMode(
-  mode: OutputMode,
-): Promise<{
+export function setOutputMode(mode: OutputMode): Promise<{
   success: boolean;
   warning?: string;
   activeDeviceId?: string | null;

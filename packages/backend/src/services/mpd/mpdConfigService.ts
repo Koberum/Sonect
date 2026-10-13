@@ -1,14 +1,12 @@
-import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import type { OutputMode } from "@repo/types";
-import { checkTool } from "../utils/utils.js";
+import type { MpdConnectionManager } from "./mpdConnectionManager.js";
 
 export interface MpdConfigService {
   // ConfigService
   getConfig(): { content: string; path: string };
   updateConfig(content: string): { success: boolean; warning?: string };
-  ensureFollowOutsideSymlinks(): { success: boolean; warning?: string };
   getConfigPath(): string;
   restartMpdInternal(): { success: boolean; warning?: string };
   // AudioService
@@ -19,7 +17,6 @@ export interface MpdConfigService {
     mixerType?: "hardware" | "software" | "none";
   }): { success: boolean; warning?: string };
   restartMPD(): { success: boolean; warning?: string };
-  stopMPD(): { success: boolean; warning?: string };
   getMpdStatus(): {
     running: boolean;
     pid?: string;
@@ -37,11 +34,12 @@ export interface MpdConfigService {
 export class MpdConfigServiceImpl implements MpdConfigService {
   private readonly MPD_CONFIG_PATH =
     process.env.MPD_CONFIG_PATH ?? "/opt/sonect/data/mpd-audio.conf";
-  private readonly FOLLOW_OUTSIDE_SYMLINKS = 'follow_outside_symlinks "yes"';
 
   private _currentOutputMode: OutputMode = "mpd";
   private _lastDeviceName: string | null = null;
   private _mpdOwnerSessionId: string | null = null;
+
+  constructor(private readonly mpdConnectionManager: MpdConnectionManager) {}
 
   // ConfigService
   public getConfig(): { content: string; path: string } {
@@ -72,28 +70,6 @@ export class MpdConfigServiceImpl implements MpdConfigService {
     try {
       fs.mkdirSync(path.dirname(this.MPD_CONFIG_PATH), { recursive: true });
       fs.writeFileSync(this.MPD_CONFIG_PATH, content, "utf-8");
-    } catch {
-      return {
-        success: false,
-        warning: `Cannot write to ${this.MPD_CONFIG_PATH}. Check file permissions.`,
-      };
-    }
-    return this.restartMpdInternal();
-  }
-
-  public ensureFollowOutsideSymlinks(): {
-    success: boolean;
-    warning?: string;
-  } {
-    const { content } = this.getConfig();
-    if (content.includes("follow_outside_symlinks")) {
-      return { success: true };
-    }
-    const trimmed = content ? content.replace(/\s+$/, "") + "\n" : "";
-    const updated = `${trimmed}# Allow MPD to follow symlinks to local storage folders (managed by Sonect)\n${this.FOLLOW_OUTSIDE_SYMLINKS}\n`;
-    try {
-      fs.mkdirSync(path.dirname(this.MPD_CONFIG_PATH), { recursive: true });
-      fs.writeFileSync(this.MPD_CONFIG_PATH, updated, "utf-8");
     } catch {
       return {
         success: false,
@@ -191,68 +167,13 @@ export class MpdConfigServiceImpl implements MpdConfigService {
     return { success: true, warning: restartResult.warning };
   }
 
+  /**
+   * The MPD container restarts itself whenever the drop-in changes (an inotify
+   * watcher in the MPD image). The backend only writes the file — no
+   * `systemctl`, no `sudo`, no privileged commands.
+   */
   public restartMPD(): { success: boolean; warning?: string } {
-    if (checkTool("systemctl")) {
-      try {
-        execSync("sudo systemctl restart mpd", {
-          stdio: "ignore",
-          timeout: 10000,
-        });
-        return { success: true };
-      } catch {
-        return {
-          success: true,
-          warning: "Config saved but MPD restart failed. Restart MPD manually.",
-        };
-      }
-    }
-    if (checkTool("service")) {
-      try {
-        execSync("service mpd restart", { stdio: "ignore", timeout: 10000 });
-        return { success: true };
-      } catch {
-        return {
-          success: true,
-          warning: "Config saved but MPD restart failed. Restart MPD manually.",
-        };
-      }
-    }
-    return {
-      success: true,
-      warning: "Config saved. Restart MPD manually for changes to take effect.",
-    };
-  }
-
-  public stopMPD(): { success: boolean; warning?: string } {
-    if (checkTool("systemctl")) {
-      try {
-        execSync("sudo systemctl stop mpd", {
-          stdio: "ignore",
-          timeout: 10000,
-        });
-        return { success: true };
-      } catch {
-        return {
-          success: true,
-          warning: "Failed to stop MPD. Try stopping MPD manually.",
-        };
-      }
-    }
-    if (checkTool("service")) {
-      try {
-        execSync("service mpd stop", { stdio: "ignore", timeout: 10000 });
-        return { success: true };
-      } catch {
-        return {
-          success: true,
-          warning: "Failed to stop MPD. Try stopping MPD manually.",
-        };
-      }
-    }
-    return {
-      success: false,
-      warning: "Neither systemctl nor service is available on this system.",
-    };
+    return { success: true };
   }
 
   public getMpdStatus(): {
@@ -260,26 +181,7 @@ export class MpdConfigServiceImpl implements MpdConfigService {
     pid?: string;
     error?: string;
   } {
-    if (checkTool("systemctl")) {
-      try {
-        execSync("systemctl is-active --quiet mpd", {
-          stdio: "ignore",
-          timeout: 5000,
-        });
-        return { running: true };
-      } catch {
-        return { running: false };
-      }
-    }
-    try {
-      const pid = execSync("pgrep -x mpd", {
-        encoding: "utf-8",
-        timeout: 5000,
-      }).trim();
-      return { running: true, pid: pid || undefined };
-    } catch {
-      return { running: false };
-    }
+    return { running: this.mpdConnectionManager.connected };
   }
 
   /**

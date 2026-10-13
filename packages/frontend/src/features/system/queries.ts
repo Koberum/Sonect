@@ -14,8 +14,6 @@ import {
   createStorageSource,
   updateStorageSource,
   deleteStorageSource,
-  mountStorageSource,
-  unmountStorageSource,
   configureAudio,
   getDashboard,
 } from "./api";
@@ -130,24 +128,6 @@ export const systemMutations = {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: qk.system.storageSources() });
         queryClient.invalidateQueries({ queryKey: qk.system.activeMounts() });
-      },
-    }),
-
-  mount: () =>
-    mutationOptions({
-      mutationFn: (id: number) => mountStorageSource(id),
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: qk.system.activeMounts() });
-        queryClient.invalidateQueries({ queryKey: qk.system.storageSources() });
-      },
-    }),
-
-  unmount: () =>
-    mutationOptions({
-      mutationFn: (id: number) => unmountStorageSource(id),
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: qk.system.activeMounts() });
-        queryClient.invalidateQueries({ queryKey: qk.system.storageSources() });
       },
     }),
 

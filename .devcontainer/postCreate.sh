@@ -2,7 +2,7 @@
 set -e
 
 # Create the user-editable MPD drop-in (included by /etc/mpd.conf) so MPD has a
-# default audio output in dev. Mirrors what installer.sh does in production.
+# default audio output in dev. Mirrors what the sonect-mpd image does in docker.
 
 mkdir -p /opt/sonect/data
 if [ ! -f /opt/sonect/data/mpd-audio.conf ]; then

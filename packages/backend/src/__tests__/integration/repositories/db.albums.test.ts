@@ -188,7 +188,7 @@ describe("albumsDb (trophy integration)", () => {
     it("getCoverPreviews filters NULL and empty", () => {
       const aid = artistsDb.findOrCreate("CoverArtist");
       const id1 = albumsDb.findOrCreate("WithCover", aid);
-      const id2 = albumsDb.findOrCreate("NoCover", aid);
+      albumsDb.findOrCreate("NoCover", aid);
       const id3 = albumsDb.findOrCreate("EmptyCover", aid);
       albumsDb.updateCoverPath(id1, "covers/a.jpg");
       albumsDb.updateCoverPath(id3, "");
@@ -251,8 +251,8 @@ describe("albumsDb (trophy integration)", () => {
     });
     it("getRankedByPlayCount orders by sum play_count desc", () => {
       const aid = artistsDb.findOrCreate("RankArtist");
-      const al1 = albumsDb.findOrCreate("LowAl", aid);
-      const al2 = albumsDb.findOrCreate("HighAl", aid);
+      albumsDb.findOrCreate("LowAl", aid);
+      albumsDb.findOrCreate("HighAl", aid);
       // Insert tracks with play counts
       const id1 = tracksDb.upsert({
         file: "a/low.mp3",
