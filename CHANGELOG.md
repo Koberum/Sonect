@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.2](https://github.com/Koberum/Sonect/compare/sonect-v0.1.1...sonect-v0.1.2) (2026-10-13)
+
+
+### Features
+
+* non privilege commands, docker build ([68de5cd](https://github.com/Koberum/Sonect/commit/68de5cd79f8465f5e3e827d5bedb241ad7211c22))
+
+
+### Bug Fixes
+
+* **docker:** mount mpd-config read-write for the MPD watcher ([e42c07c](https://github.com/Koberum/Sonect/commit/e42c07cb35fe816dccc1eb85c955e889fc85eab6))
+* **docker:** remove space after heredoc modifier to fix parse error ([f88361c](https://github.com/Koberum/Sonect/commit/f88361ce975c618ffa843e2f5bb99579236b4f06))
+* **docker:** remove space after heredoc modifier to fix parse error ([51f7043](https://github.com/Koberum/Sonect/commit/51f70431434449059f13643410c2553daf019036))
+* **lint:** declare @eslint/js in backend, db and types ([315b0ee](https://github.com/Koberum/Sonect/commit/315b0eeb015e813407d1cbf7f030a212e89aad25))
+
 ## [0.1.1](https://github.com/Koberum/Sonect/compare/sonect-v0.1.0...sonect-v0.1.1) (2026-09-26)
 
 
