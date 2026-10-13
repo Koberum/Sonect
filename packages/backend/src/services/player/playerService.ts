@@ -93,9 +93,11 @@ export class PlayerServiceImpl implements PlayerService {
       });
 
       return { success: true };
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof PlayTrackError) throw err;
-      throw new PlayTrackError(err.message);
+      throw new PlayTrackError(
+        err instanceof Error ? err.message : String(err),
+      );
     }
   }
 

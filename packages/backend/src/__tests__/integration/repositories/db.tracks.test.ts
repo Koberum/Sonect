@@ -3,7 +3,7 @@ import { createTestDb } from "@tests/helpers/db.js";
 import { tracksDb, artistsDb, albumsDb, genresDb } from "@repo/db";
 import { db } from "@repo/db";
 import { tracks } from "@repo/db";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 describe("tracksDb (trophy integration)", () => {
   let close: () => void;

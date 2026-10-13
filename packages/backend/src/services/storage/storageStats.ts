@@ -71,10 +71,10 @@ export function scanStorageStats(): void {
     try {
       const stats = computeSourceStats(source.path);
       storageDb.updateStats(source.id, stats);
-    } catch (err: any) {
+    } catch (err) {
       console.error(
         `[Storage] Failed to scan stats for ${source.name}:`,
-        err?.message ?? err,
+        err instanceof Error ? err.message : err,
       );
     }
   }

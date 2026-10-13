@@ -73,13 +73,13 @@ export class StorageServiceImpl implements StorageService {
     if (created) {
       try {
         const stats = computeSourceStats(fullPath);
-        created = { ...(created as any), ...stats };
-      } catch (err: any) {
+        created = { ...created, ...stats };
+      } catch (err) {
         console.error(
           "[Storage] Failed to scan stats for",
           data.name,
           ":",
-          err?.message ?? err,
+          err instanceof Error ? err.message : err,
         );
       }
     }

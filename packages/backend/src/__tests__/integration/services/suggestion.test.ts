@@ -46,7 +46,7 @@ describe("SuggestionService (trophy integration)", () => {
 
     it("recentlyPlayed returns tracks ordered by last_played", () => {
       const t1 = track.create({ title: "Recent1", play_count: 1 }, 10);
-      const t2 = track.create({ title: "Recent2", play_count: 1 }, 11);
+      track.create({ title: "Recent2", play_count: 1 }, 11);
       tracksDb.incrementPlayCount(t1.id);
       // t1 now has later last_played than t2? increment sets datetime('now') for t1, t2 still null -> t1 first
       const data = suggestion.getDashboard();
