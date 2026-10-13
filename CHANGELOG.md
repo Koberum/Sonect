@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.2](https://github.com/Koberum/Sonect/compare/sonect-v0.1.1...sonect-v0.1.2) (2026-10-13)
+
+
+### Features
+
+* non privilege commands, docker build ([68de5cd](https://github.com/Koberum/Sonect/commit/68de5cd79f8465f5e3e827d5bedb241ad7211c22))
+
+
+### Bug Fixes
+
+* **docker:** mount mpd-config read-write for the MPD watcher ([e42c07c](https://github.com/Koberum/Sonect/commit/e42c07cb35fe816dccc1eb85c955e889fc85eab6))
+* **lint:** declare @eslint/js in backend, db and types ([315b0ee](https://github.com/Koberum/Sonect/commit/315b0eeb015e813407d1cbf7f030a212e89aad25))
+
 ## [0.1.1](https://github.com/Koberum/Sonect/compare/sonect-v0.1.0...sonect-v0.1.1) (2026-09-26)
 
 
