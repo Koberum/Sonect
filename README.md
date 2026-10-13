@@ -155,8 +155,8 @@ immediately after user-initiated commands. Browser sessions run entirely in-memo
 
 The database is native SQLite through Node's built-in `node:sqlite` module,
 accessed via a synchronous Drizzle repository layer in `@repo/db` — no WASM
-SQLite build ships in the image. Node.js **22.14.0** is the minimum
-runtime. The database runs in WAL mode and is checkpointed during graceful
+SQLite build ships in the image. Node.js **24** is required (the driver itself
+needs 22.14.0). The database runs in WAL mode and is checkpointed during graceful
 shutdown, so a copy taken from the `sonect-data` volume always contains a
 complete database file.
 

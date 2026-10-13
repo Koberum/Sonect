@@ -24,6 +24,9 @@ RUN npm install -g pnpm@10.34.7
 
 WORKDIR /app
 
+# Build-time version stamped into /app/.version, read by readAppVersion().
+ARG SONECT_VERSION=dev
+
 COPY --from=builder /build/packages/backend/dist/bundle.cjs ./bundle.cjs
 COPY --from=builder /build/packages/frontend/dist ./frontend/dist/
 
@@ -34,7 +37,7 @@ RUN cat > package.json <<-'PKGJSON'
   "type": "module",
   "dependencies": {
     "sharp": "^0.35.5",
-    "dotenv": "^17.2.4"
+    "dotenv": "^18.0.7"
   }
 }
 PKGJSON
@@ -44,6 +47,9 @@ RUN pnpm install --prod
 ENV NODE_ENV=production
 ENV FRONTEND_DIST=/app/frontend/dist
 ENV DB_PATH=/app/data/music.db
+
+# Strip a leading "v" so both `v1.2.3` and `1.2.3` tags report the same string.
+RUN printf '%s' "${SONECT_VERSION#v}" > /app/.version
 
 RUN mkdir -p /app/data
 VOLUME /app/data
