@@ -38,7 +38,7 @@ export function ArtistArtwork({
 
   const handlePlayNext = async () => {
     const tracks = await getTracksByArtist(String(artist.id));
-    if (tracks.length > 0) play(tracks[0] as any);
+    if (tracks.length > 0) play(tracks[0]);
   };
 
   const handlePlayLater = async () => {

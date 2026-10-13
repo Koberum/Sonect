@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { createTestDb } from "@tests/helpers/db.js";
 import { tracksDb, artistsDb, albumsDb, genresDb } from "@repo/db";
 import { db } from "@repo/db";
-import { tracks, albums } from "@repo/db";
+import { tracks } from "@repo/db";
 import { eq, sql } from "drizzle-orm";
 
 describe("tracksDb (trophy integration)", () => {

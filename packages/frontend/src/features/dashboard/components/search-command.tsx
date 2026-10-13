@@ -47,11 +47,14 @@ export function SearchCommand() {
     }
   };
 
-  const handlePlayTrack = useCallback(async (track: TrackWithRelations) => {
-    await play(track as any);
-    setOverlayOpen(false);
-    setShowDropdown(false);
-  }, []);
+  const handlePlayTrack = useCallback(
+    async (track: TrackWithRelations) => {
+      await play(track);
+      setOverlayOpen(false);
+      setShowDropdown(false);
+    },
+    [play],
+  );
 
   const closeSearch = useCallback(() => {
     setOverlayOpen(false);

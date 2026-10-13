@@ -90,9 +90,12 @@ export default function PlaylistDetail() {
     }
   }, [playlist]);
 
-  const handlePlay = useCallback(async (track: PlaylistTrack) => {
-    await play(track as any);
-  }, []);
+  const handlePlay = useCallback(
+    async (track: PlaylistTrack) => {
+      await play(track);
+    },
+    [play],
+  );
 
   const handlePlayAll = useCallback(async () => {
     if (!playlist || playlist.tracks.length === 0) return;
