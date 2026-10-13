@@ -27,7 +27,7 @@ WORKDIR /app
 COPY --from=builder /build/packages/backend/dist/bundle.cjs ./bundle.cjs
 COPY --from=builder /build/packages/frontend/dist ./frontend/dist/
 
-RUN cat > package.json <<- 'PKGJSON'
+RUN cat > package.json <<-'PKGJSON'
 {
   "name": "sonect-backend",
   "private": true,
