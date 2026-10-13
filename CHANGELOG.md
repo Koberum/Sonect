@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.3](https://github.com/Koberum/Sonect/compare/sonect-v0.1.2...sonect-v0.1.3) (2026-10-13)
+
+
+### Bug Fixes
+
+* **ci:** publish docker images from the release run ([efa2534](https://github.com/Koberum/Sonect/commit/efa2534b987e0ac1fcda56bc7d503115f7e6024c))
+* **ci:** stamp app version, align dotenv, dedupe frontend build ([3ff99ee](https://github.com/Koberum/Sonect/commit/3ff99ee093e5345f722e2f933edfc59ab2ae521f))
+
 ## [0.1.2](https://github.com/Koberum/Sonect/compare/sonect-v0.1.1...sonect-v0.1.2) (2026-10-13)
 
 
