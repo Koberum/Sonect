@@ -138,8 +138,9 @@ sonect-app                                  sonect-mpd
   `linux/arm64`) images and pushes them to GHCR as
   `ghcr.io/<owner>/sonect-app` and `ghcr.io/<owner>/sonect-mpd` (tags `latest`
   - version). On PRs the images are built but not pushed.
-- **Version**: the running version comes from `backend/.version` written by the
-  release image build and is exposed via `GET /system/status` → `version`
+- **Version**: the running version comes from `/app/.version` written into the
+  app image by the release build (Docker `SONECT_VERSION` build-arg, leading
+  `v` stripped) and is exposed via `GET /system/status` → `version`
   (fallback `"dev"` when absent).
 - **Startup**: `node bundle.cjs` — no tsx, no vite, no compilation at runtime.
 
@@ -181,8 +182,9 @@ sonect-app                                  sonect-mpd
 - **autoplayService** (`services/mpd/autoplayService.ts`) is always active for both MPD and browser sessions. A manual track selection queues that track through the end of its album, without wrapping to earlier tracks. Smart batches then add complete albums in this order: same artist → same genre → similar genres → (genre-less only) library-wide, ranking each tier by the sum of its tracks' `play_count` (title order breaks ties). Similar genres are resolved via `services/mpd/genreSimilarity.ts`: a curated map for common tags (e.g. `techno → tech house, minimal, house…`) with token/substring fallback for arbitrary MPD `Genre` tags (`Vaporwave → Vapor House` via `genresDb.getAll()` substring match). Ranking stays anchored to the manually selected track as playback advances. A batch stops only after reaching at least 25 tracks, so albums are never split; if the genre pool is sparse the batch may be short and will stay genre-coherent rather than drifting to unrelated genres. For MPD, the connection manager refills below five remaining tracks and prevents overlapping fills; used albums are committed only after MPD accepts them and are not repeated until the cycle is exhausted, and the next cycle preserves albums still in the MPD queue. For browser, each `SessionPlayer` owns its own `AutoplayService` instance (via `SessionRegistry`) — `playTrack` appends an initial batch beyond the album slice, and `advance`/`tick` refills when <5 tracks remain with the same ranking and commit semantics. There is no autoplay toggle API.
 - **CatalogSyncService** (`services/catalogSyncService.ts`) handles library sync from MPD → SQLite, invoked via `scripts/sync.ts`. Tracks are fetched from MPD and deduplicated **before** any destructive database work — a failed fetch leaves the existing library untouched. The rebuild itself is a single transaction in `catalogSyncDb.rebuild()` (`@repo/db` `repositories/catalogSync.ts`): `play_count`/`last_played` are snapshotted first and restored for surviving files (they feed smart autoplay ranking), each track persists inside a savepoint, per-track constraint failures are reported and skipped, and any other error rolls the whole rebuild back to the previous library state.
 - The backend exposes its build version through `getSystemStatus()` →
-  `/system/status[].version`. It reads `backend/.version` (written only by the
-  release CI), defaulting to `"dev"`. Sources: `services/appVersion.ts`.
+  `/system/status[].version`. It reads `/app/.version` (written only by the
+  release image via the `SONECT_VERSION` build-arg), defaulting to `"dev"`.
+  Sources: `services/utils/appVersion.ts`.
 - Host network management is intentionally not part of Sonect. Network status is
   exposed via `GET /system/health` (aggregated) and legacy `GET /system/network/status`,
   both returning `{ connected, dnsReachable }`. `connected` checks for a non-loopback
@@ -216,8 +218,9 @@ sonect-app                                  sonect-mpd
 
 - `@repo/db` uses Node's built-in **`node:sqlite`** (`DatabaseSync`) wrapped by
   **Drizzle ORM** (`drizzle-orm/node-sqlite`, pinned to `1.0.0-rc.4`) — a
-  synchronous driver. Node `22.14.0` is the minimum runtime; CI runs a
-  `db-node-22-14-floor` job against that version.
+  synchronous driver. Node `22.14.0` is the minimum runtime for the driver;
+  the repo itself pins `engines.node >=24.0.0` (`.nvmrc` = 24) and CI runs on
+  Node 24. There is no separate Node 22 compatibility-floor job.
 - Connection setup and teardown live in `packages/db/src/connection.ts`.
   `initDb()` applies the pragmas: `foreign_keys = ON`, `journal_mode = WAL`,
   `synchronous = NORMAL`, `busy_timeout = 5000`.
@@ -255,10 +258,9 @@ sonect-app                                  sonect-mpd
   table. Legacy databases created before this system (any DB with our tables
   but no `__drizzle_migrations`) are **wiped and rebuilt** — play counts,
   playlists, storage sources, and setup flags are lost on upgrade. This is a
-  deliberate one-time reset. The migrations folder ships in the release
-  artifact at `backend/drizzle/` (see `release.yml`) and at
-  `packages/backend/dist/drizzle` via the bundle script — **it must not be
-  removed** from either.
+  deliberate one-time reset. The migrations folder ships inside the app image
+  at `packages/backend/dist/drizzle` via the bundle script — **it must not be
+  removed**.
 - **Queries** live in the focused repository modules under
   `packages/db/src/repositories/` (`artists`, `albums`, `tracks`,
   `librarySync`, `playlists`, `syncMetadata`, `stats`, `storage`, `setup`).
