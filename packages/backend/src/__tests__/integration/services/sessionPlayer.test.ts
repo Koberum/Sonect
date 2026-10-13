@@ -23,11 +23,17 @@ describe("SessionPlayer", () => {
     const a = artist.create({ name: "SoloArtist" }, 1);
     const al = album.create({ title: "OneAlbum", artistName: a.name }, 1);
     const t1 = track.create(
-      { artist: a.name, album: al.title, title: "A", track: 1 },
+      { artist: a.name, album: al.title, title: "A", track: 1, disc: "1" },
       2,
     );
-    track.create({ artist: a.name, album: al.title, title: "B", track: 2 }, 3);
-    track.create({ artist: a.name, album: al.title, title: "C", track: 3 }, 4);
+    track.create(
+      { artist: a.name, album: al.title, title: "B", track: 2, disc: "1" },
+      3,
+    );
+    track.create(
+      { artist: a.name, album: al.title, title: "C", track: 3, disc: "1" },
+      4,
+    );
 
     p = new SessionPlayer("sid-1", {} as LogService);
     p.playTrack(t1.file);
@@ -43,15 +49,36 @@ describe("SessionPlayer", () => {
     const a = artist.create({ name: "TickArtist" }, 10);
     const al = album.create({ title: "TickAlbum", artistName: a.name }, 10);
     const t1 = track.create(
-      { artist: a.name, album: al.title, title: "X", duration: 4 },
+      {
+        artist: a.name,
+        album: al.title,
+        title: "X",
+        duration: 4,
+        track: 1,
+        disc: "1",
+      },
       211,
     );
     track.create(
-      { artist: a.name, album: al.title, title: "Y", duration: 4 },
+      {
+        artist: a.name,
+        album: al.title,
+        title: "Y",
+        duration: 4,
+        track: 2,
+        disc: "1",
+      },
       212,
     );
     track.create(
-      { artist: a.name, album: al.title, title: "Z", duration: 4 },
+      {
+        artist: a.name,
+        album: al.title,
+        title: "Z",
+        duration: 4,
+        track: 3,
+        disc: "1",
+      },
       213,
     );
 
@@ -70,11 +97,25 @@ describe("SessionPlayer", () => {
     const a = artist.create({ name: "CtlArtist" }, 20);
     const al = album.create({ title: "CtlAlbum", artistName: a.name }, 20);
     const t1 = track.create(
-      { artist: a.name, album: al.title, title: "U", duration: 10 },
+      {
+        artist: a.name,
+        album: al.title,
+        title: "U",
+        duration: 10,
+        track: 1,
+        disc: "1",
+      },
       221,
     );
     track.create(
-      { artist: a.name, album: al.title, title: "V", duration: 11 },
+      {
+        artist: a.name,
+        album: al.title,
+        title: "V",
+        duration: 11,
+        track: 2,
+        disc: "1",
+      },
       222,
     );
 
