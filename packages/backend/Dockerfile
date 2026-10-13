@@ -28,6 +28,10 @@ WORKDIR /app
 ARG SONECT_VERSION=dev
 
 COPY --from=builder /build/packages/backend/dist/bundle.cjs ./bundle.cjs
+# The bundled SONECT_BUNDLE_URL anchor resolves MIGRATIONS_FOLDER to
+# /app/drizzle/ (bundle.cjs sits in /app). Without this the migrator fails at
+# startup with ENOENT scandir '/app/drizzle/'. Do not remove.
+COPY --from=builder /build/packages/backend/dist/drizzle ./drizzle
 COPY --from=builder /build/packages/frontend/dist ./frontend/dist/
 
 RUN cat > package.json <<-'PKGJSON'
