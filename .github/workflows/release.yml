@@ -37,11 +37,11 @@ jobs:
 
       - uses: pnpm/action-setup@v6
         with:
-          version: 9.0.0
+          version: 10.34.7
 
       - uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version: "24"
           cache: pnpm
 
       - name: Cache Turbo
@@ -90,7 +90,7 @@ jobs:
             "private": true,
             "version": "${VERSION}",
             "dependencies": {
-              "sharp": "^0.34.5",
+              "sharp": "^0.35.5",
               "dotenv": "^17.2.4"
             }
           }

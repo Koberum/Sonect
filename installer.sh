@@ -2,7 +2,7 @@
 set -e
 
 # ─────────────────────────────────────────────
-#  Sonect — Raspberry Pi Installer
+#  Sonect — Linux Installer
 #  Downloads prebuilt artifacts from GitHub CI
 # ─────────────────────────────────────────────
 
@@ -11,7 +11,7 @@ APPNAME="sonect"
 INSTALL_DIR="/opt/$APPNAME"
 BACKEND_DIR="$INSTALL_DIR/backend"
 FRONTEND_DIR="$INSTALL_DIR/frontend"
-SERVICE_USER="${SUDO_USER:-pi}"
+SERVICE_USER="${SUDO_USER:-$(id -un)}"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'
 YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
@@ -51,30 +51,22 @@ log "System packages installed"
 systemctl stop ${APPNAME} 2>/dev/null || true
 log "Stopped ${APPNAME} service (if running)"
 
-# ── 2. Node.js 22 + pnpm ─────────────────────
-header "2/5 — Node.js 22 + pnpm"
+# ── 2. Node.js 24 + pnpm ─────────────────────
+header "2/5 — Node.js 24 + pnpm"
 ARCH=$(dpkg --print-architecture)
 log "Architecture: $ARCH"
 
 if [[ "$ARCH" == "amd64" || "$ARCH" == "arm64" ]]; then
-  curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+  curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
   apt-get install -y nodejs
-elif [[ "$ARCH" == "armhf" || "$ARCH" == "armel" ]]; then
-  warn "armhf detected — using official Node.js 22 binaries"
-  NODE_VERSION="22.14.0"
-  curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-armv7l.tar.xz" \
-    -o /tmp/node.tar.xz
-  tar -xJf /tmp/node.tar.xz -C /tmp
-  cp -r "/tmp/node-v${NODE_VERSION}-linux-armv7l"/* /usr/local/
-  rm -rf /tmp/node*
 else
-  error "Unsupported architecture: $ARCH"
+  error "Unsupported architecture: $ARCH (supported: amd64, arm64)"
 fi
 
 log "Node.js: $(node --version)"
 
 if ! command -v pnpm &>/dev/null; then
-  npm install -g pnpm
+  npm install -g pnpm@10.34.7
 fi
 log "pnpm: $(pnpm --version)"
 
