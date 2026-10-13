@@ -69,7 +69,7 @@ export function computeSourceStats(root: string): SourceStats {
 export function scanStorageStats(): void {
   for (const source of storageDb.getAll()) {
     try {
-      const stats = computeSourceStats(source.mount_path);
+      const stats = computeSourceStats(source.path);
       storageDb.updateStats(source.id, stats);
     } catch (err: any) {
       console.error(

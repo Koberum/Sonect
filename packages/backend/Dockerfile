@@ -19,7 +19,7 @@ RUN pnpm --filter @repo/types build && \
 
 # ---- Production stage ----
 FROM node:24-alpine
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init ffmpeg alsa-utils usbutils
 RUN npm install -g pnpm@10.34.7
 
 WORKDIR /app

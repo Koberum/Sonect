@@ -364,10 +364,10 @@
     },
     "libraries": {
       "title": "Librerie",
-      "description": "Gestisci le sorgenti della tua libreria musicale.",
+      "description": "Cartelle montate nel container e scansionate da MPD.",
       "addSource": "Aggiungi Libreria",
       "noSources": "Nessuna libreria configurata",
-      "noSourcesDescription": "Aggiungi una sorgente SMB, NFS o locale per la tua libreria musicale.",
+      "noSourcesDescription": "Monta una cartella nel container, poi registrala qui.",
       "selectType": "Seleziona Tipo di Sorgente",
       "selectTypeDesc": "Scegli il tipo di sorgente che vuoi aggiungere.",
       "typeSmb": "SMB / CIFS",
@@ -387,6 +387,14 @@
       "localPath": "Percorso Cartella",
       "localPathPlaceholder": "/mnt/usb/musica",
       "localPathHint": "Percorso assoluto della cartella su questo dispositivo",
+      "path": "Percorso Cartella",
+      "pathPlaceholder": "/libraries/musica",
+      "pathHint": "Cartella dentro il container, sotto la directory musicale. Aggiungila come bind mount sull'host.",
+      "detectedMounts": "Mount rilevati",
+      "noMounts": "Nessun mount rilevato sotto la directory musicale.",
+      "copySnippet": "Copia frammento compose",
+      "snippetCopied": "Frammento copiato",
+      "snippetCopyError": "Copia non riuscita",
       "folderName": "Nome Cartella",
       "folderNamePlaceholder": "la-mia-musica",
       "folderNameHint": "Sottocartella sotto la directory musicale",
@@ -417,7 +425,7 @@
       "deleteTitle": "Eliminare la libreria?",
       "deleteConfirm": "Sei sicuro di voler eliminare \"{{name}}\"? Questa azione non può essere annullata.",
       "deleteButton": "Elimina",
-      "formDescription": "Compila i dettagli della tua sorgente libreria."
+      "formDescription": "Registra una cartella montata nel container."
     },
     "library": {
       "title": "Libreria",

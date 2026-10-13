@@ -8,7 +8,6 @@ import {
   initializeServices,
   getMpdConnectionManager,
   getPlayTrackingService,
-  getStorageService,
   getLogService,
 } from "@services/factory";
 
@@ -46,16 +45,6 @@ async function main() {
   // Track play tracking
   const playTracking = getPlayTrackingService();
   playTracking.start();
-
-  // Re-mount enabled storage sources
-  getStorageService()
-    .mountAllEnabled()
-    .catch((err) => {
-      getLogService().pushLog(
-        "error",
-        `[Server] Failed to restore storage mounts: ${String(err)}`,
-      );
-    });
 }
 
 // Graceful shutdown — server.ts is the sole owner of process termination.

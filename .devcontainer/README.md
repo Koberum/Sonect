@@ -66,10 +66,11 @@ mpc status
 
 `/etc/mpd.conf` is a minimal boilerplate config that `include`s the
 user-editable drop-in at `/opt/sonect/data/mpd-audio.conf` — the same
-two-file architecture that `installer.sh` sets up on a Raspberry Pi. The
+two-file architecture the `sonect-mpd` image uses. The
 backend writes the drop-in (via `MPD_CONFIG_PATH`, default
-`/opt/sonect/data/mpd-audio.conf`) as the service user, so frontend audio
-and MPD-config edits behave exactly as they do in production.
+`/opt/sonect/data/mpd-audio.conf`) as the service user, and the MPD container
+watchdog restarts MPD on change, so frontend audio and MPD-config edits behave
+exactly as they do in production.
 
 The Compose mount at `/etc/mpd.conf` is the main configuration and must not be
 overwritten by `postCreate.sh`. The post-create hook only creates the separate

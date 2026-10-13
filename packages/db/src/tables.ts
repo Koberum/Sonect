@@ -1,6 +1,5 @@
 import { sql } from "drizzle-orm";
 import {
-  check,
   index,
   integer,
   real,
@@ -114,30 +113,17 @@ export const syncMetadata = sqliteTable("sync_metadata", {
   updated_at: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
-export const storageSources = sqliteTable(
-  "storage_sources",
-  {
-    id: integer("id").primaryKey({ autoIncrement: true }),
-    name: text("name").notNull(),
-    type: text("type").notNull(),
-    uri: text("uri").notNull(),
-    mount_path: text("mount_path").notNull(),
-    username: text("username"),
-    password: text("password"),
-    enabled: integer("enabled").default(1),
-    file_count: integer("file_count").default(0),
-    dir_count: integer("dir_count").default(0),
-    total_size: integer("total_size").default(0),
-    created_at: text("created_at").default(sql`CURRENT_TIMESTAMP`),
-    updated_at: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
-  },
-  (table) => [
-    check(
-      "storage_sources_type_check",
-      sql`${table.type} in ('smb', 'nfs', 'local')`,
-    ),
-  ],
-);
+export const storageSources = sqliteTable("storage_sources", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  path: text("path").notNull(),
+  enabled: integer("enabled").default(1),
+  file_count: integer("file_count").default(0),
+  dir_count: integer("dir_count").default(0),
+  total_size: integer("total_size").default(0),
+  created_at: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updated_at: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
 
 export const profiles = sqliteTable("profiles", {
   id: text("id").primaryKey(),

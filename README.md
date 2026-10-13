@@ -49,8 +49,9 @@ no subscriptions, no limits.
   backend session engine independent of MPD, so playback state follows the
   browser session rather than the shared MPD daemon — the foundation for
   per-user sessions.
-- **One-line Raspberry Pi install** — A single `curl | bash` command turns a
-  Pi 2B into a dedicated music appliance. See below.
+- **Two-container deploy** — `sonect-app` + `sonect-mpd` Docker images
+  (amd64/arm64) with a compose file. Audio output and library folders are
+  bind-mounted from the host — no privileged commands, no systemd.
 
 ---
 
@@ -98,15 +99,27 @@ sync. Finishing or skipping the wizard is persisted by the backend, so the
 choice applies across browsers and private windows until the wizard is reset
 from Settings → Debug.
 
-### Raspberry Pi (production)
+### Docker (production)
+
+Sonect runs as two containers — `sonect-app` (API + WebSocket + web UI) and
+`sonect-mpd` (Music Player Daemon). Music is provided by the host as bind
+mounts; Sonect never mounts anything itself or runs privileged commands.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Koberum/Sonect/main/installer.sh | sudo bash
+mkdir -p sonect && cd sonect
+curl -fsSL https://raw.githubusercontent.com/Koberum/Sonect/main/docker/docker-compose.yml -o docker-compose.yml
+curl -fsSL https://raw.githubusercontent.com/Koberum/Sonect/main/docker/audio.yml -o audio.yml
+curl -fsSL https://raw.githubusercontent.com/Koberum/Sonect/main/docker/.env.example -o .env
+
+# Point LIBRARIES_DIR at a host folder holding your music
+# (e.g. LIBRARIES_DIR=/mnt/music) and edit .env.
+
+docker compose -f docker-compose.yml -f audio.yml up -d
 ```
 
-This installs Node.js, MPD, and all dependencies, downloads the latest
-prebuilt release, creates a systemd service, and starts Sonect on port 3000.
-Your music goes in `/opt/sonect/music/`.
+The UI is served on port `3000`. Then register the music folders from
+Settings → Libraries. The `-f audio.yml` overlay is only needed on hosts with
+a sound card / USB DAC.
 
 ---
 
@@ -119,10 +132,11 @@ sonect/
 │   ├── frontend/      React 19 + Vite SPA (port 5173 in dev)
 │   ├── @repo/db/      Native SQLite (node:sqlite) + Drizzle repositories
 │   └── @repo/types/   Shared TypeScript types (no runtime deps)
+├── docker/            Docker images (docker/mpd) + docker-compose.yml
 ├── assets/            Screenshots and 3D print files
-├── conf/              MPD configuration
-├── data/              MPD state, sticker DB, tag cache, playlists
-└── music/             Mount point for your music library
+├── conf/              MPD configuration (dev container)
+├── data/              MPD state, sticker DB, tag cache, playlists (dev)
+└── music/             Mount point for your music library (dev)
 ```
 
 ```
@@ -141,10 +155,10 @@ immediately after user-initiated commands. Browser sessions run entirely in-memo
 
 The database is native SQLite through Node's built-in `node:sqlite` module,
 accessed via a synchronous Drizzle repository layer in `@repo/db` — no WASM
-SQLite build ships in the release artifact. Node.js **22.14.0** is the minimum
+SQLite build ships in the image. Node.js **22.14.0** is the minimum
 runtime. The database runs in WAL mode and is checkpointed during graceful
-shutdown, so the backup the installer takes before an upgrade always contains
-a complete database file.
+shutdown, so a copy taken from the `sonect-data` volume always contains a
+complete database file.
 
 ---
 
@@ -188,24 +202,38 @@ Configure via `packages/backend/.env`:
 | `COVER_SIZE`       | `400`                                                          | Cover resize dimension (px, square fit inside)                      |
 | `COVER_QUALITY`    | `80`                                                           | WebP quality for covers                                             |
 | `WAVEFORMS_DIR`    | `<COVERS_DIR>/../waveforms` or `./data/waveforms`              | Where waveform JSON caches are saved (`SHA1(file).json`)            |
-| `DB_PATH`          | `/db/music.db` (dev) / `/opt/sonect/data/music.db` (prod)      | SQLite database path                                                |
-| `MPD_CONFIG_PATH`  | `/opt/sonect/data/mpd-audio.conf`                              | MPD config drop-in                                                  |
-| `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | MPD log file for sync progress                                      |
+| `DB_PATH`          | `/db/music.db` (dev) / `/data/music.db` (docker)               | SQLite database path                                                |
+| `MPD_CONFIG_PATH`  | `/opt/sonect/data/mpd-audio.conf`                              | MPD config drop-in (`/mpd-config/mpd-audio.conf` in docker)         |
+| `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | MPD log file for sync progress (`/mpd-logs/mpd.log` in docker)      |
 | `DNS_CHECK_HOST`   | `example.com`                                                  | Host resolved to verify DNS connectivity                            |
 | `PORT`             | `3000`                                                         | Backend HTTP port                                                   |
 | `FRONTEND_DIST`    | `../frontend/dist`                                             | Built frontend static files                                         |
 
 ### Library sources
 
-**Local library sources** are exposed to MPD via a symlink under the music
-directory (`/opt/sonect/music/<folder-name>`), created automatically when the
-source is created. The MPD drop-in config gets `follow_outside_symlinks "yes"`
-so MPD follows the symlink — no OS mount is involved.
+Storage is provided by the **host**: mount each music folder into the
+containers under `/libraries/<name>` (read-only) and register the container
+path in the Sonect UI (Settings → Libraries). In the Docker compose file that
+means adding a bind mount to both services:
 
-Each library source (SMB, NFS, local) shows **file count, folder count, and
-total music-file size** in Settings → Libraries, refreshed at the end of every
-library scan. `MUSIC_EXTENSIONS` controls which audio extensions are counted as
-music files.
+```yaml
+services:
+  sonect-app:
+    volumes:
+      - /host/path/to/music:/libraries/music:ro
+  sonect-mpd:
+    volumes:
+      - /host/path/to/music:/libraries/music:ro
+```
+
+SMB/NFS shares should be mounted by the host (e.g. via `/etc/fstab`) and then
+exposed the same way. Sonect never runs `mount`/`umount` and requires no
+elevated privileges. Settings → Libraries shows the registered libraries and
+the mounts detected under the music directory.
+
+Each library source shows **file count, folder count, and total music-file
+size**, refreshed at the end of every library scan. `MUSIC_EXTENSIONS`
+controls which audio extensions are counted as music files.
 
 Sonect does not manage host Wi-Fi connections. `GET /system/network/status`
 returns whether the server has a non-loopback network address and whether the
@@ -254,8 +282,8 @@ backend.
 **Database location:** every environment sets `DB_PATH` explicitly — there is
 no shared relative default. In the dev container it is `/db/music.db` (a
 persistent Docker volume, also injected via `remoteEnv` and pinned in
-`packages/backend/.env`, which is gitignored); in production the installer
-sets `/opt/sonect/data/music.db` via the systemd unit. The `./data/music.db`
+`packages/backend/.env`, which is gitignored); in docker it is
+`/data/music.db` inside the `sonect-data` volume. The `./data/music.db`
 relative fallback is only a last resort for throwaway runs outside these
 environments — it resolves against each process's cwd, so different processes
 can silently open different files. Never rely on it; always set `DB_PATH`.
@@ -271,7 +299,13 @@ Versions follow [SemVer](https://semver.org) and are managed by
 [release-please](https://github.com/googleapis/release-please). Merge
 Conventional Commit messages (`feat:`, `fix:`, `chore:`, …) to `main` and a
 Release PR bumps the version, updates `CHANGELOG.md`, and publishes a tagged
-release with a single `sonect.tar.gz` asset.
+release. Publishing the release builds multi-arch (`amd64`/`arm64`) Docker
+images and pushes them to GitHub Container Registry:
+
+- `ghcr.io/koberum/sonect-app`
+- `ghcr.io/koberum/sonect-mpd`
+
+Tags: `latest` and the release version.
 
 ---
 

@@ -89,12 +89,13 @@ export function initializeServices(): void {
   _logService = new LogServiceImpl();
   _catalogService = new CatalogServiceImpl();
   _autoplayService = new AutoplayService();
-  _mpdConfigService = new MpdConfigServiceImpl();
 
   _mpdConnectionManager = new MpdConnectionManager(
     _catalogService,
     _logService,
   );
+
+  _mpdConfigService = new MpdConfigServiceImpl(_mpdConnectionManager);
 
   _playerService = new PlayerServiceImpl(
     _logService,
@@ -116,8 +117,6 @@ export function initializeServices(): void {
   _storageService = new StorageServiceImpl(
     _mpdConnectionManager,
     _catalogSyncOrchestrator,
-    _mpdConfigService,
-    _logService,
   );
 
   _systemService = new SystemServiceImpl(_mpdConnectionManager);

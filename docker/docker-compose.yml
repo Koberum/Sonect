@@ -1,0 +1,61 @@
+# Sonect — two-container deployment (app + MPD).
+#
+# Storage is provided by the host as bind mounts: mount each music folder under
+# /libraries/<name> (read-only) and register the container path in the Sonect
+# UI. Sonect never mounts anything or runs privileged commands.
+#
+# Audio output is NOT enabled by default. On a host with a sound card (e.g. a
+# Raspberry Pi with a DAC) also use the overlay:
+#
+#   docker compose -f docker-compose.yml -f audio.yml up -d
+#
+# Copy `.env.example` to `.env` and adjust it first.
+
+services:
+  sonect-mpd:
+    image: ghcr.io/koberum/sonect-mpd:${SONECT_VERSION:-latest}
+    container_name: sonect-mpd
+    restart: unless-stopped
+    volumes:
+      - ${LIBRARIES_DIR:-./libraries}:/libraries:ro
+      - ./mpd-config:/mpd-config:ro
+      - sonect-mpd-state:/mpd-state
+      - sonect-mpd-logs:/mpd-logs
+    networks:
+      - sonect
+
+  sonect-app:
+    image: ghcr.io/koberum/sonect-app:${SONECT_VERSION:-latest}
+    container_name: sonect-app
+    restart: unless-stopped
+    depends_on:
+      - sonect-mpd
+    environment:
+      MPD_HOST: sonect-mpd
+      MPD_PORT: "6600"
+      MUSIC_DIR: /libraries
+      COVERS_DIR: /data/covers
+      WAVEFORMS_DIR: /data/waveforms
+      DB_PATH: /data/music.db
+      MPD_CONFIG_PATH: /mpd-config/mpd-audio.conf
+      MPD_LOG_PATH: /mpd-logs/mpd.log
+      FRONTEND_DIST: /app/frontend/dist
+      PORT: "3000"
+      NODE_ENV: production
+    volumes:
+      - ${LIBRARIES_DIR:-./libraries}:/libraries:ro
+      - ./mpd-config:/mpd-config
+      - sonect-mpd-logs:/mpd-logs:ro
+      - sonect-data:/data
+    ports:
+      - "${SONECT_PORT:-3000}:3000"
+    networks:
+      - sonect
+
+volumes:
+  sonect-data:
+  sonect-mpd-state:
+  sonect-mpd-logs:
+
+networks:
+  sonect:

@@ -65,11 +65,7 @@ export type DBPlaylist = {
 export type DBStorageSource = {
   id: number;
   name: string;
-  type: "smb" | "nfs" | "local";
-  uri: string;
-  mount_path: string;
-  username?: string;
-  password?: string;
+  path: string;
   enabled: number;
   file_count?: number;
   dir_count?: number;

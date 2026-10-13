@@ -2,6 +2,7 @@ import { expect } from "chai";
 import fs from "fs";
 import path from "path";
 import { MpdConfigServiceImpl } from "@services/mpd/mpdConfigService.js";
+import type { MpdConnectionManager } from "@services/mpd/mpdConnectionManager.js";
 
 describe("setOutputMode backcompat no-op (browser sessions use a separate engine)", () => {
   let tmpDir: string;
@@ -27,7 +28,9 @@ describe("setOutputMode backcompat no-op (browser sessions use a separate engine
     // The service reads MPD_CONFIG_PATH at construction time, so it must be
     // set before the instance is created.
     process.env.MPD_CONFIG_PATH = configPath;
-    svc = new MpdConfigServiceImpl();
+    svc = new MpdConfigServiceImpl({
+      connected: false,
+    } as unknown as MpdConnectionManager);
   });
 
   afterEach(() => {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Folder, HardDrive, Loader2, Plus, Server, Trash2 } from "lucide-react";
+import { Copy, Folder, HardDrive, Loader2, Plus, Trash2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -9,7 +9,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,20 +23,16 @@ import { toast } from "sonner";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { systemQueries, systemMutations } from "@/features/system/queries";
 import type { StorageSource } from "@/features/system/api";
-import { LibrariesTypeSelect, type SourceType } from "./libraries-type-select";
 import { LibrariesForm } from "./libraries-form";
+import type { LibrarySourceFormValues } from "./library-source-form";
 
-const typeIcons: Record<SourceType, typeof Server> = {
-  smb: Server,
-  nfs: HardDrive,
-  local: Folder,
-};
-
-const typeBadgeLabels: Record<SourceType, string> = {
-  smb: "settings.libraries.typeSmb",
-  nfs: "settings.libraries.typeNfs",
-  local: "settings.libraries.typeLocal",
-};
+const COMPOSE_SNIPPET = `services:
+  sonect-app:
+    volumes:
+      - /host/path/to/music:/libraries/music:ro
+  sonect-mpd:
+    volumes:
+      - /host/path/to/music:/libraries/music:ro`;
 
 const formatCount = (n: number): string => n.toLocaleString();
 
@@ -52,8 +47,6 @@ function formatBytes(bytes: number): string {
   return `${value >= 10 || i === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[i]}`;
 }
 
-type DialogStep = "closed" | "select-type" | "form";
-
 export function LibrariesTab() {
   const { t } = useTranslation();
   const { data: sources = [], isPending: loading } = useQuery(
@@ -63,11 +56,8 @@ export function LibrariesTab() {
   const createMut = useMutation(systemMutations.createStorageSource());
   const updateMut = useMutation(systemMutations.updateStorageSource());
   const deleteMut = useMutation(systemMutations.deleteStorageSource());
-  const mountMut = useMutation(systemMutations.mount());
-  const unmountMut = useMutation(systemMutations.unmount());
 
-  const [dialogStep, setDialogStep] = useState<DialogStep>("closed");
-  const [selectedType, setSelectedType] = useState<SourceType>("smb");
+  const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingSource, setEditingSource] = useState<StorageSource | undefined>(
     undefined,
@@ -75,38 +65,19 @@ export function LibrariesTab() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deletingName, setDeletingName] = useState("");
 
-  const supportsMount = (src: StorageSource) => src.type !== "local";
-
   const openAddDialog = () => {
     setEditingId(null);
     setEditingSource(undefined);
-    setSelectedType("smb");
-    setDialogStep("select-type");
+    setFormOpen(true);
   };
 
   const startEdit = (src: StorageSource) => {
     setEditingId(src.id);
     setEditingSource(src);
-    setSelectedType(src.type as SourceType);
-    setDialogStep("form");
+    setFormOpen(true);
   };
 
-  const handleTypeSelect = (type: SourceType) => {
-    setSelectedType(type);
-    setDialogStep("form");
-  };
-
-  const handleFormBack = () => {
-    setDialogStep("select-type");
-  };
-
-  const handleSave = async (data: {
-    name: string;
-    type: SourceType;
-    uri: string;
-    username?: string;
-    password?: string;
-  }) => {
+  const handleSave = async (data: LibrarySourceFormValues) => {
     try {
       if (editingId) {
         await updateMut.mutateAsync({ id: editingId, data });
@@ -115,7 +86,7 @@ export function LibrariesTab() {
         await createMut.mutateAsync(data);
         toast.success(t("settings.libraries.created", "Library created"));
       }
-      setDialogStep("closed");
+      setFormOpen(false);
     } catch (err) {
       toast.error(
         (err instanceof Error && err.message) ||
@@ -139,38 +110,13 @@ export function LibrariesTab() {
     }
   };
 
-  const handleMount = async (id: number) => {
+  const copySnippet = async () => {
     try {
-      const result = await mountMut.mutateAsync(id);
-      if (result.success) {
-        toast.success(t("settings.libraries.mounted", "Mounted"));
-      } else {
-        toast.error(
-          result.error ?? t("settings.libraries.mountError", "Mount failed"),
-        );
-      }
+      await navigator.clipboard.writeText(COMPOSE_SNIPPET);
+      toast.success(t("settings.libraries.snippetCopied", "Snippet copied"));
     } catch {
-      toast.error(t("settings.libraries.mountError", "Failed to mount"));
+      toast.error(t("settings.libraries.snippetCopyError", "Copy failed"));
     }
-  };
-
-  const handleUnmount = async (id: number) => {
-    try {
-      await unmountMut.mutateAsync(id);
-      toast.success(t("settings.libraries.unmounted", "Unmounted"));
-    } catch (err) {
-      toast.error(
-        (err instanceof Error && err.message) ||
-          t("settings.libraries.unmountError", "Failed to unmount"),
-      );
-    }
-  };
-
-  const isMounted = (mountPath: string) =>
-    mounts.some((m) => m.path === mountPath);
-
-  const getSourceDescription = (src: StorageSource) => {
-    return `${src.uri} → ${src.mount_path}`;
   };
 
   return (
@@ -180,7 +126,7 @@ export function LibrariesTab() {
         <CardDescription>
           {t(
             "settings.libraries.description",
-            "Manage your music library sources.",
+            "Folders bind-mounted into the container and scanned by MPD.",
           )}
         </CardDescription>
       </CardHeader>
@@ -197,7 +143,7 @@ export function LibrariesTab() {
             <p className="text-muted-foreground text-xs">
               {t(
                 "settings.libraries.noSourcesDescription",
-                "Add an SMB, NFS, or local source for your music library.",
+                "Bind-mount a folder into the container, then register it here.",
               )}
             </p>
             <Button variant="outline" onClick={openAddDialog} className="mt-2">
@@ -207,108 +153,97 @@ export function LibrariesTab() {
           </div>
         ) : (
           <>
-            {sources.map((src) => {
-              const TypeIcon = typeIcons[src.type as SourceType] ?? Folder;
-              const mounted = isMounted(src.mount_path);
-              return (
-                <div
-                  key={src.id}
-                  className="flex items-center gap-3 rounded-lg border p-3"
-                >
-                  <TypeIcon className="text-muted-foreground h-5 w-5 shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="truncate font-medium">{src.name}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {t(typeBadgeLabels[src.type as SourceType] ?? src.type)}
-                      </Badge>
-
-                      {supportsMount(src) && (
-                        <Badge variant={mounted ? "default" : "secondary"}>
-                          {mounted
-                            ? t("settings.libraries.mounted", "Mounted")
-                            : t("settings.libraries.unmounted", "Unmounted")}
-                        </Badge>
-                      )}
-                    </div>
+            {sources.map((src) => (
+              <div
+                key={src.id}
+                className="flex items-center gap-3 rounded-lg border p-3"
+              >
+                <Folder className="text-muted-foreground h-5 w-5 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="truncate font-medium">{src.name}</span>
+                  </div>
+                  <div className="text-muted-foreground truncate font-mono text-xs">
+                    {src.path}
+                  </div>
+                  {typeof src.file_count === "number" && (
                     <div className="text-muted-foreground truncate text-xs">
-                      {getSourceDescription(src)}
+                      {t("settings.libraries.stats", {
+                        files: formatCount(src.file_count),
+                        folders: formatCount(src.dir_count ?? 0),
+                        size: formatBytes(src.total_size ?? 0),
+                      })}
                     </div>
-                    {typeof src.file_count === "number" && (
-                      <div className="text-muted-foreground truncate text-xs">
-                        {t("settings.libraries.stats", {
-                          files: formatCount(src.file_count),
-                          folders: formatCount(src.dir_count ?? 0),
-                          size: formatBytes(src.total_size ?? 0),
-                        })}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 gap-1">
-                    {supportsMount(src) &&
-                      (mounted ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleUnmount(src.id)}
-                        >
-                          {t("settings.libraries.unmount", "Unmount")}
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleMount(src.id)}
-                        >
-                          {t("settings.libraries.mount", "Mount")}
-                        </Button>
-                      ))}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => startEdit(src)}
-                    >
-                      {t("settings.libraries.edit", "Edit")}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setDeletingId(src.id);
-                        setDeletingName(src.name);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  )}
                 </div>
-              );
-            })}
+                <div className="flex shrink-0 gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => startEdit(src)}
+                  >
+                    {t("settings.libraries.edit", "Edit")}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setDeletingId(src.id);
+                      setDeletingName(src.name);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
             <Button variant="outline" onClick={openAddDialog}>
               <Plus className="mr-2 h-4 w-4" />
               {t("settings.libraries.addSource", "Add Library")}
             </Button>
           </>
         )}
+
+        <div className="space-y-2 rounded-lg border p-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <HardDrive className="text-muted-foreground h-4 w-4 shrink-0" />
+              <span className="text-sm font-medium">
+                {t("settings.libraries.detectedMounts", "Detected mounts")}
+              </span>
+            </div>
+            <Button variant="ghost" size="sm" onClick={copySnippet}>
+              <Copy className="mr-2 h-3.5 w-3.5" />
+              {t("settings.libraries.copySnippet", "Copy compose snippet")}
+            </Button>
+          </div>
+          {mounts.length === 0 ? (
+            <p className="text-muted-foreground text-xs">
+              {t(
+                "settings.libraries.noMounts",
+                "No bind mounts detected under the music directory.",
+              )}
+            </p>
+          ) : (
+            <ul className="space-y-1">
+              {mounts.map((m) => (
+                <li
+                  key={m.path}
+                  className="text-muted-foreground truncate font-mono text-xs"
+                >
+                  {m.uri} → {m.path}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </CardContent>
 
-      <LibrariesTypeSelect
-        open={dialogStep === "select-type"}
-        onOpenChange={(open) => {
-          if (!open) setDialogStep("closed");
-        }}
-        onSelect={handleTypeSelect}
-      />
-
       <LibrariesForm
-        key={editingId ?? `new-${selectedType}`}
-        open={dialogStep === "form"}
-        onOpenChange={(open) => {
-          if (!open) setDialogStep("closed");
-        }}
+        key={editingId ?? "new"}
+        open={formOpen}
+        onOpenChange={setFormOpen}
         onSave={handleSave}
-        onBack={handleFormBack}
-        sourceType={selectedType}
         initialValues={editingSource}
         editingId={editingId}
       />

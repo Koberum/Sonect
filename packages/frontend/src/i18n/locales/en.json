@@ -370,10 +370,10 @@
     },
     "libraries": {
       "title": "Libraries",
-      "description": "Manage your music library sources.",
+      "description": "Folders bind-mounted into the container and scanned by MPD.",
       "addSource": "Add Library",
       "noSources": "No libraries configured",
-      "noSourcesDescription": "Add an SMB, NFS, or local source for your music library.",
+      "noSourcesDescription": "Bind-mount a folder into the container, then register it here.",
       "selectType": "Select Source Type",
       "selectTypeDesc": "Choose the type of source you want to add.",
       "typeSmb": "SMB / CIFS",
@@ -393,6 +393,14 @@
       "localPath": "Folder Path",
       "localPathPlaceholder": "/mnt/usb/music",
       "localPathHint": "Absolute path to the folder on this device",
+      "path": "Folder Path",
+      "pathPlaceholder": "/libraries/music",
+      "pathHint": "Folder inside the container, under the music directory. Add it as a bind mount on the host.",
+      "detectedMounts": "Detected mounts",
+      "noMounts": "No bind mounts detected under the music directory.",
+      "copySnippet": "Copy compose snippet",
+      "snippetCopied": "Snippet copied",
+      "snippetCopyError": "Copy failed",
       "folderName": "Folder Name",
       "folderNamePlaceholder": "my-music",
       "folderNameHint": "Subfolder under the music directory",
@@ -423,7 +431,7 @@
       "deleteTitle": "Delete Library?",
       "deleteConfirm": "Are you sure you want to delete \"{{name}}\"? This cannot be undone.",
       "deleteButton": "Delete",
-      "formDescription": "Fill in the details for your library source."
+      "formDescription": "Register a folder that is bind-mounted into the container."
     },
     "library": {
       "title": "Library",

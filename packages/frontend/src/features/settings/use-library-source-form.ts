@@ -1,39 +1,31 @@
 import { useState } from "react";
 import type { StorageSource } from "@/features/system/api";
-import type { SourceType } from "./library-source-picker";
 
 export interface LibrarySourceFormValues {
   name: string;
-  type: SourceType;
-  uri: string;
-  username?: string;
-  password?: string;
+  path: string;
 }
 
 interface UseLibrarySourceFormOptions {
-  sourceType: SourceType;
   initialValues?: StorageSource;
   onSave: (data: LibrarySourceFormValues) => Promise<void>;
 }
 
 export function useLibrarySourceForm({
-  sourceType,
   initialValues,
   onSave,
 }: UseLibrarySourceFormOptions) {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: initialValues?.name ?? "",
-    uri: initialValues?.uri ?? "",
-    username: initialValues?.username ?? "",
-    password: "",
+    path: initialValues?.path ?? "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!form.name.trim()) errs.name = "Required";
-    if (!form.uri.trim()) errs.uri = "Required";
+    if (!form.path.trim()) errs.path = "Required";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -56,12 +48,8 @@ export function useLibrarySourceForm({
   const submit = () => {
     if (!validate()) return;
     setSaving(true);
-    const payload: LibrarySourceFormValues = {
-      ...form,
-      type: sourceType,
-    };
 
-    onSave(payload)
+    onSave(form)
       .catch(() => undefined)
       .finally(() => setSaving(false));
   };

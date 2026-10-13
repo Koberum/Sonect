@@ -1,0 +1,21 @@
+# Keep the app image build context small.
+**/node_modules
+**/dist
+**/build
+**/.turbo
+.turbo
+.git
+.github
+.opencode
+.superpowers
+.playwright-mcp
+.pnpm-store
+.devcontainer
+.vscode
+data
+music
+assets
+docs
+**/*.log
+.env
+**/.env

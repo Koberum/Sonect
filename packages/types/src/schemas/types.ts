@@ -73,23 +73,15 @@ export const systemSchemas = {
   }),
   storageSource: z.object({
     name: z.string().min(1, "name is required").max(255),
-    type: z.enum(["smb", "nfs", "local"]),
-    uri: z.string().min(1, "URI is required"),
-    // mount_path is an internal detail (mount point for network sources,
-    // symlink target for local) under MUSIC_DIR. It is omitted for every type
-    // so the server generates it from the library name.
-    mount_path: z.string().optional(),
-    username: z.string().optional(),
-    password: z.string().optional(),
+    // path is a folder that must already exist inside the container, under
+    // MUSIC_DIR. It is provided by the host as a bind mount; Sonect never
+    // mounts anything itself.
+    path: z.string().min(1, "path is required"),
     enabled: z.boolean().optional(),
   }),
   storageSourceUpdate: z.object({
     name: z.string().min(1).max(255).optional(),
-    type: z.enum(["smb", "nfs", "local"]).optional(),
-    uri: z.string().min(1).optional(),
-    mount_path: z.string().min(1).optional(),
-    username: z.string().optional(),
-    password: z.string().optional(),
+    path: z.string().min(1).optional(),
     enabled: z.boolean().optional(),
   }),
   configUpdate: z.object({
