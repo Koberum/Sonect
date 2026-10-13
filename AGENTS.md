@@ -285,15 +285,13 @@ sonect-app                                  sonect-mpd
 
 ### Testing
 
-- Backend test suite in `packages/backend/src/__tests__/` using **Mocha**, **Chai**, **Sinon**, **esmock**, and **Supertest**.
+- Backend test suite in `packages/backend/src/__tests__/` using **Mocha**, **Chai**, **Sinon**, and **Supertest**.
 - Tests mirror `src/`:
-  - `unit/controllers/`, `unit/services/` — pure/unit tests (esmock for ESM where needed, otherwise DI)
+  - `unit/controllers/`, `unit/services/` — pure/unit tests (constructor/factory DI)
   - `integration/services/`, `integration/repositories/` (`db.*` + tracks), `integration/routes/`, `integration/ws/` — service/repo/route/ws integration (real `:memory:` DB via `helpers/db.ts`)
   - `e2e/` — full-stack `app` + `supertest`
-    (`NetworkService` uses constructor DI → no `esmock` relative path)
-- Mock external dependencies (MPD, DB, filesystem) with **esmock** (for ESM imports) and **Sinon** (for stubs/spies).
-- **esmock** only exports default (`import esmock from "esmock"`), not `{ esmock }`.
-- esmock cannot resolve relative imports in route/service/WS tests with our tsx setup; sinon + dynamic `import()` is used instead for route tests.
+- Mock external dependencies (MPD, DB, filesystem) with **Sinon** stubs/spies and constructor/factory DI. ESM module mocking is not used: `esmock` was removed because it cannot patch through the `tsx` loader for route/service/WS tests.
+- Use **Sinon stubs + dynamic `import()`** when a module must be imported after stubs are set up (see route tests).
 - **Route tests** create a minimal Express app in `before()` and manually add `errorHandler` middleware.
 - Before adding new test files, check existing patterns in `__tests__/` for consistency.
 
