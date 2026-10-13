@@ -133,11 +133,17 @@ sonect-app                                  sonect-mpd
   `inotify-tools`, `tini`, with a baked base `mpd.conf`.
 - **Release CI**: release-please
   (`release-please-config.json` + `.release-please-manifest.json`) owns the
-  version/CHANGELOG/release on `main`. When a release is published,
-  `.github/workflows/docker.yml` builds **multi-arch** (`linux/amd64`,
-  `linux/arm64`) images and pushes them to GHCR as
-  `ghcr.io/<owner>/sonect-app` and `ghcr.io/<owner>/sonect-mpd` (tags `latest`
-  - version). On PRs the images are built but not pushed.
+  version/CHANGELOG/release on `main`. `.github/workflows/docker.yml` builds
+  **multi-arch** (`linux/amd64`, `linux/arm64`) images and pushes them to GHCR
+  as `ghcr.io/<owner>/sonect-app` and `ghcr.io/<owner>/sonect-mpd` (tags
+  `latest` + version). It is invoked two ways: on PRs it builds but does **not**
+  push; on a release, `release.yml` calls it as a **reusable workflow**
+  (`workflow_call`, passing the `version`) right after release-please. The
+  release event is not used because a release created with the default
+  `GITHUB_TOKEN` does not trigger other workflows (`release: published` would
+  never fire) — the build runs in the same run that creates the release. The
+  workflow is also `workflow_dispatch`-able with a `version` input to
+  (re)publish images for an existing release.
 - **Version**: the running version comes from `/app/.version` written into the
   app image by the release build (Docker `SONECT_VERSION` build-arg, leading
   `v` stripped) and is exposed via `GET /system/status` → `version`

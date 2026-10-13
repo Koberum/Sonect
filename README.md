@@ -307,6 +307,12 @@ images and pushes them to GitHub Container Registry:
 
 Tags: `latest` and the release version.
 
+The images are published by the release workflow itself (it calls the Docker
+build as a reusable workflow), so no manual step is needed. To (re)publish
+images for an existing version — for example to backfill a release that
+predates a fix — open Actions → **Docker** → _Run workflow_ and enter the
+version (without the leading `v`, e.g. `0.1.2`).
+
 ---
 
 ## License
