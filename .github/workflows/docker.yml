@@ -2,8 +2,23 @@ name: Docker
 
 on:
   pull_request:
-  release:
-    types: [published]
+  # Invoked by release.yml after release-please creates a release. A release
+  # created with the default GITHUB_TOKEN does not emit a `release: published`
+  # event that other workflows can trigger, so the build runs in the same run
+  # as release-please instead of on `release.published`.
+  workflow_call:
+    inputs:
+      version:
+        description: "Release version without the leading v (e.g. 0.1.2)"
+        required: true
+        type: string
+  # Manual re-trigger to (re)publish images for an existing version.
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build and publish, without the leading v (e.g. 0.1.2)"
+        required: true
+        type: string
 
 concurrency:
   group: docker-${{ github.ref }}
@@ -36,7 +51,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
-        if: github.event_name == 'release'
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -49,8 +64,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/sonect-${{ matrix.name }}
           tags: |
-            type=semver,pattern={{version}}
-            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
+            type=raw,value=${{ inputs.version }},enable=${{ inputs.version != '' }}
+            type=raw,value=latest,enable=${{ github.event_name != 'pull_request' }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -58,10 +73,10 @@ jobs:
           context: ${{ matrix.context }}
           file: ${{ matrix.file }}
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name == 'release' }}
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            SONECT_VERSION=${{ github.event_name == 'release' && github.ref_name || 'dev' }}
+            SONECT_VERSION=${{ inputs.version != '' && inputs.version || 'dev' }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,scope=${{ matrix.name }},mode=max
