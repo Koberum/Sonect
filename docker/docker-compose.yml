@@ -18,7 +18,7 @@ services:
     restart: unless-stopped
     volumes:
       - ${LIBRARIES_DIR:-./libraries}:/libraries:ro
-      - ./mpd-config:/mpd-config:ro
+      - ./mpd-config:/mpd-config
       - sonect-mpd-state:/mpd-state
       - sonect-mpd-logs:/mpd-logs
     networks:
