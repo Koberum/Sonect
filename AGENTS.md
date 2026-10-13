@@ -123,6 +123,11 @@ sonect-app                                  sonect-mpd
   `../db/drizzle` to `dist/drizzle`. **Hazard:** if a future bundled dependency
   relies on `import.meta.url` for its own file's URL, it will silently receive the
   migrations-anchor URL instead.
+  At runtime `bundle.cjs` lives in `/app`, so the anchor resolves
+  `MIGRATIONS_FOLDER` to **`/app/drizzle/`** — the Dockerfile **must** copy
+  `dist/drizzle` there (`COPY --from=builder .../dist/drizzle ./drizzle`).
+  Removing that line makes the app crash at startup with
+  `ENOENT: ... scandir '/app/drizzle/'`.
 - **Frontend**: `pnpm frontend:build` runs Vite, outputs static files to
   `frontend/dist/`.
 - **App image** (`packages/backend/Dockerfile`, build context = repo root) bundles
@@ -264,9 +269,11 @@ sonect-app                                  sonect-mpd
   table. Legacy databases created before this system (any DB with our tables
   but no `__drizzle_migrations`) are **wiped and rebuilt** — play counts,
   playlists, storage sources, and setup flags are lost on upgrade. This is a
-  deliberate one-time reset. The migrations folder ships inside the app image
-  at `packages/backend/dist/drizzle` via the bundle script — **it must not be
-  removed**.
+  deliberate one-time reset. The migrations folder is produced by the bundle
+  script at `packages/backend/dist/drizzle` and copied into the app image's
+  `/app/drizzle/` by the Dockerfile — **neither the bundle copy nor the
+  Dockerfile `COPY` may be removed** (the migrator resolves `/app/drizzle/`
+  from the bundle anchor and crashes with `ENOENT` otherwise).
 - **Queries** live in the focused repository modules under
   `packages/db/src/repositories/` (`artists`, `albums`, `tracks`,
   `librarySync`, `playlists`, `syncMetadata`, `stats`, `storage`, `setup`).

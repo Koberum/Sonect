@@ -80,3 +80,66 @@ jobs:
             SONECT_VERSION=${{ inputs.version != '' && inputs.version || 'dev' }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,scope=${{ matrix.name }},mode=max
+
+  # PR builds only *build* the image; a runtime regression (e.g. a missing
+  # COPY of a bundled asset) would otherwise slip through unnoticed. Build the
+  # app image for the runner's platform, actually start it, and fail if it
+  # crashes before the HTTP server is ready.
+  smoke:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build app image (local, amd64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/backend/Dockerfile
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: sonect-app:smoke
+          build-args: |
+            SONECT_VERSION=dev
+          cache-from: type=gha,scope=app
+
+      - name: Smoke test container startup
+        run: |
+          set -euo pipefail
+          docker run -d --name sonect-smoke -e MPD_HOST=127.0.0.1 sonect-app:smoke
+
+          ready=0
+          for _ in $(seq 1 30); do
+            if ! docker inspect -f '{{.State.Running}}' sonect-smoke 2>/dev/null | grep -q true; then
+              echo "::error::container exited before becoming ready"
+              docker logs sonect-smoke || true
+              exit 1
+            fi
+            if docker logs sonect-smoke 2>&1 | grep -q "Backend Express"; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$ready" -ne 1 ]; then
+            echo "::error::backend did not become ready in time"
+            docker logs sonect-smoke || true
+            exit 1
+          fi
+
+          if docker logs sonect-smoke 2>&1 | grep -q "Failed to start"; then
+            echo "::error::backend failed to start"
+            docker logs sonect-smoke || true
+            exit 1
+          fi
+
+          docker exec sonect-smoke ls /app/drizzle
+          echo "smoke test passed"
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f sonect-smoke || true
