@@ -17,4 +17,4 @@ You are a backend specialist for Sonect, a self-hosted music streaming app.
 - Throw `NotFoundError` or `AppError` for centralized error handling.
 - Use `process.env` for config; never hard-code values.
 - Zod schemas are defined in route files and applied via `validateBody`/`validateParams`.
-- Route tests create a minimal Express app in `before()`, add `errorHandler` last, and use `sinon` + dynamic `import()` (not esmock for routes).
+- Tests use `sinon` stubs/spies and constructor/factory DI — ESM module mocking (esmock) is not used. Route tests create a minimal Express app in `before()`, add `errorHandler` last, and use `sinon` + dynamic `import()`.

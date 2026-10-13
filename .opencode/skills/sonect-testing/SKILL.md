@@ -1,16 +1,15 @@
 ---
 name: sonect-testing
-description: Write, fix, or extend backend tests for the Sonect project. Use this skill whenever the user asks to add tests, fix failing tests, improve test coverage, write a test for a new route/service/controller/WS handler, or asks why a test is broken. The Sonect test setup has specific non-obvious constraints (ESM + esmock + Sinon + Supertest + Mocha) that this skill encodes. Trigger whenever you see files under packages/backend/src/__tests__/ or mentions of Mocha, Sinon, esmock, or Supertest in the context of this project.
+description: Write, fix, or extend backend tests for the Sonect project. Use this skill whenever the user asks to add tests, fix failing tests, improve test coverage, write a test for a new route/service/controller/WS handler, or asks why a test is broken. The Sonect test setup has specific non-obvious constraints (ESM + Sinon + Supertest + Mocha) that this skill encodes. Trigger whenever you see files under packages/backend/src/__tests__/ or mentions of Mocha, Sinon, or Supertest in the context of this project.
 ---
 
 # Sonect Backend Testing
 
 The test suite lives in `packages/backend/src/__tests__/` and mirrors `src/`:
 
-- `unit/controllers/`, `unit/services/` — pure/unit tests (esmock for ESM where needed, otherwise DI)
+- `unit/controllers/`, `unit/services/` — pure/unit tests using constructor/factory **DI** or Sinon stubs on real instances
 - `integration/services/`, `integration/repositories/` (`db.*` + tracks), `integration/routes/`, `integration/ws/` — service/repo/route/ws integration (real `:memory:` DB via `helpers/db.ts`)
 - `e2e/` — full-stack `app` + `supertest`
-  (`NetworkService` uses constructor DI → no `esmock` relative path)
 
 Run tests with `pnpm backend:test`. Watch mode: `pnpm backend:test:watch`.
 
@@ -20,19 +19,15 @@ Run tests with `pnpm backend:test`. Watch mode: `pnpm backend:test:watch`.
 
 These are the non-obvious things that will break your tests if ignored.
 
-### esmock import — default only
+### ESM module mocking is not used
 
-```ts
-// CORRECT
-import esmock from "esmock";
+`esmock` was removed from this project. ESM module mocking cannot patch through the `tsx` loader for route/service/WS modules, so the suite relies on:
 
-// WRONG — will throw at runtime
-import { esmock } from "esmock";
-```
+- **Constructor/factory DI** — inject collaborators as constructor arguments (see `NetworkServiceImpl`).
+- **Sinon stubs on real instances** — initialize the real services via `@services/factory.js` and stub object methods with a sandbox.
+- **Sinon stubs + dynamic `import()`** — set up stubs first, then import the module under test (see Route tests).
 
-### esmock cannot resolve relative imports in route/service/WS tests
-
-esmock works for controller and service unit tests. But for route tests and WS handler tests (which do dynamic `import()` of the full module chain), esmock's patching doesn't propagate through the tsx loader. Use **Sinon stubs + dynamic `import()`** for those instead (see Route tests section below).
+Never introduce `esmock` (the dependency is gone).
 
 ### asyncHandler must return the promise
 
@@ -45,82 +40,116 @@ export const asyncHandler =
     Promise.resolve(fn(req, res, next)).catch(next); // returns the promise
 ```
 
----
+### Import aliases
 
-## Service / controller unit tests (esmock)
+Tests import through the tsconfig path aliases (with the `.js` extension convention), not deep relative paths:
 
-Use esmock to mock dependencies imported by the module under test.
+- `@services/*`, `@controllers/*`, `@routes/*`, `@middleware/*`, `@tests/*`
 
 ```ts
-import esmock from "esmock";
-import sinon from "sinon";
+import { NetworkServiceImpl } from "@services/network/networkService.js";
+import { createTestDb } from "@tests/helpers/db.js";
+```
+
+---
+
+## Service / controller unit tests (DI or Sinon on real instances)
+
+**Constructor DI** — inject collaborators directly (preferred for services with a clear dependency boundary):
+
+```ts
 import { expect } from "chai";
+import sinon from "sinon";
+import { NetworkServiceImpl } from "@services/network/networkService.js";
 
-describe("PlayerService", () => {
-  let playerService: typeof import("../../services/playerService.js");
-  let getCachedStatusStub: sinon.SinonStub;
+describe("NetworkService (unit, DI)", () => {
+  it("returns dnsReachable true when lookup resolves", async () => {
+    const osStub = {
+      networkInterfaces: () => ({
+        eth0: [{ family: "IPv4", internal: false, address: "192.168.1.10" }],
+      }),
+    } as unknown as typeof import("node:os");
+    const lookup = (() =>
+      Promise.resolve({ address: "93.184.216.34", family: 4 })) as never;
 
-  before(async () => {
-    getCachedStatusStub = sinon.stub().returns({ state: "stop", volume: 80 });
-
-    playerService = await esmock("../../services/playerService.js", {
-      "../../services/mpdConnectionManager.js": {
-        mpdConnectionManager: {
-          getCachedStatus: getCachedStatusStub,
-          executeCommand: sinon.stub().resolves(),
-          refreshNow: sinon.stub().resolves(),
-        },
-      },
+    const service = new NetworkServiceImpl(osStub, lookup);
+    expect(await service.getNetworkStatus()).to.deep.equal({
+      connected: true,
+      dnsReachable: true,
     });
   });
+});
+```
 
-  afterEach(() => sinon.reset());
-  after(() => sinon.restore());
+**Sinon sandbox on a real instance** — for controllers that call a factory-provided singleton service, initialize the real in-memory DB + factory, then `sandbox.stub(instance, "method")`:
 
-  it("returns cached status synchronously", () => {
-    const status = playerService.getStatus();
-    expect(getCachedStatusStub.calledOnce).to.be.true;
-    expect(status.state).to.equal("stop");
+```ts
+import { expect } from "chai";
+import sinon from "sinon";
+import { createTestDb } from "@tests/helpers/db.js";
+import { initializeServices, getCatalogService } from "@services/factory.js";
+import { getArtistById } from "@controllers/catalogController.js";
+
+describe("catalogController (stubbed service)", () => {
+  let close: () => void;
+  let sandbox: sinon.SinonSandbox;
+
+  before(() => {
+    ({ close } = createTestDb());
+    initializeServices();
+  });
+  after(() => close());
+
+  beforeEach(() => {
+    sandbox = sinon.createSandbox();
+  });
+  afterEach(() => sandbox.restore());
+
+  it("forwards NotFoundError when service returns null", async () => {
+    sandbox.stub(getCatalogService(), "getArtistById").returns(null as never);
+    let caught: unknown;
+    await getArtistById(
+      { params: { id: "999" } } as never,
+      {} as never,
+      (err) => {
+        caught = err;
+      },
+    );
+    expect(String(caught)).to.match(/Artist|NotFound/);
   });
 });
 ```
 
 Key points:
 
-- Paths in esmock are **relative to the test file**, ending in `.js` (compiled output convention).
-- Mock the entire exported object, not just one function.
-- `sinon.reset()` in `afterEach` resets call counts; `sinon.restore()` in `after` removes stubs.
+- `sinon.createSandbox()` + `sandbox.restore()` in `afterEach` keeps stubs isolated per test.
+- Stub the whole returned object / the method you exercise, not just a nested function.
 
 ---
 
 ## Route tests (Sinon + dynamic import + Supertest)
 
-Because esmock can't patch through the tsx loader for route tests, create stubs before import and verify them after.
+Set up stubs before importing the router, then verify them after.
 
 ```ts
 import sinon from "sinon";
 import request from "supertest";
 import express from "express";
 import { expect } from "chai";
-import { errorHandler } from "../../middleware/errorHandler.js";
+import { errorHandler } from "@middleware/errorHandler.js";
 
 describe("GET /player/status", () => {
   let app: express.Express;
-  let getStatusStub: sinon.SinonStub;
 
   before(async () => {
-    // 1. Create stubs
-    getStatusStub = sinon.stub().returns({ state: "play", volume: 75 });
-
-    // 2. Build a minimal express app
     app = express();
     app.use(express.json());
 
-    // 3. Dynamic import AFTER stubs exist
-    const { playerRouter } = await import("../../routes/player.js");
+    // Dynamic import AFTER stubs exist
+    const { playerRouter } = await import("@routes/player.js");
     app.use("/player", playerRouter);
 
-    // 4. ALWAYS add errorHandler last — controllers throw NotFoundError/ValidationError
+    // ALWAYS add errorHandler last — controllers throw NotFoundError/ValidationError
     app.use(errorHandler);
   });
 
@@ -153,9 +182,13 @@ import sinon from "sinon";
 import { expect } from "chai";
 
 describe("player.ws.ts", () => {
-  let onConnection: (ws: any) => void;
-  let mpdManagerStub: any;
-  let fakeWs: any;
+  let onConnection: (ws: unknown) => void;
+  let mpdManagerStub: Record<string, unknown>;
+  let fakeWs: {
+    send: sinon.SinonStub;
+    on: sinon.SinonStub;
+    readyState: number;
+  };
 
   before(async () => {
     mpdManagerStub = {
@@ -169,11 +202,7 @@ describe("player.ws.ts", () => {
   });
 
   beforeEach(() => {
-    fakeWs = {
-      send: sinon.stub(),
-      on: sinon.stub(),
-      readyState: 1, // OPEN
-    };
+    fakeWs = { send: sinon.stub(), on: sinon.stub(), readyState: 1 };
   });
 
   afterEach(() => sinon.reset());
@@ -188,6 +217,8 @@ describe("player.ws.ts", () => {
 });
 ```
 
+There is no `@ws/*` alias — import WS modules with a relative path (e.g. `../../ws/player.ws.js`) from tests under `src/__tests__/`.
+
 ---
 
 ## Error type testing
@@ -196,7 +227,6 @@ Controllers throw `NotFoundError` and `ValidationError` from `middleware/errorHa
 
 ```ts
 it("returns 404 when track not found", async () => {
-  getTrackStub.rejects(new NotFoundError("Track not found"));
   const res = await request(app).get("/library/tracks/99999");
   expect(res.status).to.equal(404);
   expect(res.body.error).to.include("not found");
@@ -207,11 +237,11 @@ it("returns 404 when track not found", async () => {
 
 ## Zod validation testing
 
-Zod schemas live in `@repo/types/src/schemas.ts` and are called via `schema.parse(req.body)` directly in controllers. A `ZodError` propagates to `errorHandler` which returns 400 with `flatten().fieldErrors`. Test by sending bad payloads:
+Zod schemas live in `@repo/types` and are called via `schema.parse(req.body)` / `schema.parse(req.params)` directly in controllers. A `ZodError` propagates to `errorHandler` which returns 400 with `flatten().fieldErrors`. Test by sending bad payloads:
 
 ```ts
 it("returns 400 for missing required field", async () => {
-  const res = await request(app).post("/player/volume").send({}); // missing `volume` field
+  const res = await request(app).post("/player/volume").send({}); // missing `volume`
   expect(res.status).to.equal(400);
   expect(res.body).to.have.property("fieldErrors");
 });
@@ -226,9 +256,9 @@ it("returns 400 for out-of-range value", async () => {
 
 ## Checklist before submitting tests
 
-- [ ] `esmock` imported as default (not named)
+- [ ] No `esmock` usage — use DI or Sinon stubs instead
 - [ ] `errorHandler` added as last middleware in route test apps
-- [ ] `.js` extensions on all relative import paths in esmock calls
-- [ ] `sinon.restore()` in every `after()` block
+- [ ] Imports use the `@services`/`@controllers`/`@tests` aliases (`.js` extension)
+- [ ] `sandbox.restore()` / `sinon.restore()` in every cleanup block
 - [ ] `pnpm backend:test` passes with zero failures
 - [ ] `pnpm lint` passes (no unused imports, no `any` without comments)
