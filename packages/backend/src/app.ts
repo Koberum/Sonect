@@ -59,7 +59,6 @@ app.use("/profiles", profileRoutes);
 const frontendDist =
   process.env.FRONTEND_DIST || path.resolve(process.cwd(), "@frontend/dist");
 if (process.env.NODE_ENV === "production" && fs.existsSync(frontendDist)) {
-  getLogService().pushLog("info", `Serving frontend from ${frontendDist}`);
   app.use(express.static(frontendDist, { maxAge: "30d", immutable: true }));
   app.get("/{*path}", (req, res, next) => {
     if (
@@ -79,8 +78,6 @@ if (process.env.NODE_ENV === "production" && fs.existsSync(frontendDist)) {
     getLogService().pushLog("debug", `SPA fallback: ${req.path}`);
     res.sendFile(path.join(frontendDist, "index.html"));
   });
-} else if (process.env.NODE_ENV === "production") {
-  getLogService().pushLog("warn", `Frontend dist not found at ${frontendDist}`);
 }
 
 app.use(errorHandler);
