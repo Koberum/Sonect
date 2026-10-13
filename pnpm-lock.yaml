@@ -99,9 +99,6 @@ importers:
       eslint:
         specifier: ^10.12.0
         version: 10.12.0(jiti@2.7.0)
-      esmock:
-        specifier: ^2.7.9
-        version: 2.7.9
       mocha:
         specifier: ^12.0.3
         version: 12.0.3
@@ -187,21 +184,6 @@ importers:
       '@radix-ui/react-slider':
         specifier: ^1.6.1
         version: 1.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@radix-ui/react-slot':
-        specifier: ^1.5.0
-        version: 1.5.0(@types/react@19.3.0)(react@19.3.0)
-      '@radix-ui/react-toggle':
-        specifier: ^1.2.1
-        version: 1.2.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@radix-ui/react-toggle-group':
-        specifier: ^1.2.1
-        version: 1.2.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@repo/types':
-        specifier: workspace:*
-        version: link:../types
-      '@tailwindcss/vite':
-        specifier: ^4.1.18
-        version: 4.3.3(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
       '@tanstack/react-query':
         specifier: ^5.104.2
         version: 5.104.2(react@19.3.0)
@@ -247,13 +229,16 @@ importers:
       tailwind-merge:
         specifier: ^3.7.0
         version: 3.7.0
-      tailwindcss:
-        specifier: ^4.1.18
-        version: 4.3.3
     devDependencies:
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.12.0(jiti@2.7.0))
+      '@repo/types':
+        specifier: workspace:*
+        version: link:../types
+      '@tailwindcss/vite':
+        specifier: ^4.1.18
+        version: 4.3.3(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
       '@tanstack/eslint-plugin-query':
         specifier: ^5.104.2
         version: 5.104.2(@typescript/typescript6@6.0.2)(eslint@10.12.0(jiti@2.7.0))
@@ -287,6 +272,9 @@ importers:
       globals:
         specifier: ^17.13.0
         version: 17.13.0
+      tailwindcss:
+        specifier: ^4.1.18
+        version: 4.3.3
       typescript:
         specifier: npm:@typescript/typescript6@6.0.2
         version: '@typescript/typescript6@6.0.2'
@@ -2791,10 +2779,6 @@ packages:
     peerDependenciesMeta:
       jiti:
         optional: true
-
-  esmock@2.7.9:
-    resolution: {integrity: sha512-hDJn94mP50HjTzQRw1AW+fPnV3Clv/d4vhfjmHqU9JPckeRilidUwn0LE6SLz07KU7ZxXXRepErsMLui7iRcbQ==}
-    engines: {node: '>=14.16.0'}
 
   espree@11.2.0:
     resolution: {integrity: sha512-7p3DrVEIopW1B1avAGLuCSh1jubc01H2JHc8B4qqGblmg5gI9yumBgACjWo4JlIc04ufug4xJ3SQI8HkS/Rgzw==}
@@ -6234,8 +6218,6 @@ snapshots:
       jiti: 2.7.0
     transitivePeerDependencies:
       - supports-color
-
-  esmock@2.7.9: {}
 
   espree@11.2.0:
     dependencies:
