@@ -201,4 +201,36 @@ describe("catalogSyncDb (trophy integration)", () => {
     expect(catalogSyncDb.getScannerVersion()).to.equal("1");
     expect(syncMetadataDb.get("last_sync")).to.be.a("string");
   });
+
+  it("applyIncremental rolls back orphan lookup rows for a rejected track (savepoint)", () => {
+    const stub = sinon.stub(console, "error");
+    const valid = mkTrack("a/valid-inc.mp3", {
+      artist: "KeepArtist",
+      album: "KeepAlbum",
+      genre: "KeepGenre",
+    });
+    // Invalid: file is null violates NOT NULL. It carries distinct lookup names
+    // so any artist/album/genre it creates would be a detectable orphan.
+    const invalid = {
+      ...(mkTrack("a/invalid-inc.mp3", {
+        artist: "OrphanArtist",
+        album: "OrphanAlbum",
+        genre: "OrphanGenre",
+      }) as unknown as Record<string, unknown>),
+      file: null,
+    } as unknown as import("@repo/types").MPDTrack;
+    const res = catalogSyncDb.applyIncremental({
+      upserts: [valid, invalid],
+      deletions: [],
+    });
+    expect(res.synced).to.equal(1);
+    expect(res.errors).to.equal(1);
+    expect(tracksDb.getByFile("a/valid-inc.mp3")).to.exist;
+    expect(artistsDb.getAll().some((a) => a.name === "OrphanArtist")).to.be
+      .false;
+    expect(albumsDb.getAll().some((a) => a.title === "OrphanAlbum")).to.be
+      .false;
+    expect(genresDb.getAll().some((g) => g.name === "OrphanGenre")).to.be.false;
+    expect(stub.calledOnce).to.be.true;
+  });
 });

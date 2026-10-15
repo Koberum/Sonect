@@ -155,7 +155,12 @@ export const catalogSyncDb = {
 
       for (const track of input.upserts) {
         try {
-          upsertTrack(tx, track);
+          // Per-track savepoint: a rejected track must also roll back the
+          // artist/album/genre lookup rows created for it, or repeated syncs
+          // would leak orphan entities (matches rebuild semantics).
+          tx.transaction((savepoint) => {
+            upsertTrack(savepoint, track);
+          });
         } catch (error) {
           if (!isTrackConstraintError(error)) throw error;
           console.error(`❌ Error syncing track ${track.file}:`, error);
