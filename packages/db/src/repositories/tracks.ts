@@ -293,6 +293,14 @@ export const tracksDb = {
       DBTrack | undefined;
   },
 
+  getFiles(): string[] {
+    return db()
+      .select({ file: tracks.file })
+      .from(tracks)
+      .all()
+      .map((row) => row.file);
+  },
+
   getRandomTracks(limit: number, excludeFiles?: string[]): DBTrack[] {
     let query = db().select().from(tracks).$dynamic();
     if (excludeFiles && excludeFiles.length > 0) {

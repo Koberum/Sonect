@@ -17,7 +17,7 @@ export interface SourceFile {
   size: number;
 }
 
-function getAudioExtensions(): Set<string> {
+export function getAudioExtensions(): Set<string> {
   const raw = process.env.MUSIC_EXTENSIONS ?? DEFAULT_EXTENSIONS;
   return new Set(
     raw
@@ -27,7 +27,7 @@ function getAudioExtensions(): Set<string> {
   );
 }
 
-function walk(
+export function walk(
   root: string,
   exts: ReadonlySet<string>,
 ): { files: SourceFile[]; dirCount: number } {
