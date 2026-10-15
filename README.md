@@ -49,9 +49,9 @@ no subscriptions, no limits.
   backend session engine independent of MPD, so playback state follows the
   browser session rather than the shared MPD daemon — the foundation for
   per-user sessions.
-- **Two-container deploy** — `sonect-app` + `sonect-mpd` Docker images
-  (amd64/arm64) with a compose file. Audio output and library folders are
-  bind-mounted from the host — no privileged commands, no systemd.
+- **Single-container deploy** — one `sonect` Docker image (amd64/arm64) bundling
+  MPD and the app under s6-overlay, with a compose file. Audio output and library
+  folders are bind-mounted from the host — no privileged commands, no systemd.
 
 ---
 
@@ -101,9 +101,9 @@ from Settings → Debug.
 
 ### Docker (production)
 
-Sonect runs as two containers — `sonect-app` (API + WebSocket + web UI) and
-`sonect-mpd` (Music Player Daemon). Music is provided by the host as bind
-mounts; Sonect never mounts anything itself or runs privileged commands.
+Sonect runs as a **single container** (`sonect`) that bundles MPD and the app
+(API + WebSocket + web UI) under s6-overlay. Music is provided by the host as
+bind mounts; Sonect never mounts anything itself or runs privileged commands.
 
 ```bash
 mkdir -p sonect && cd sonect
@@ -111,15 +111,21 @@ curl -fsSL https://raw.githubusercontent.com/Koberum/Sonect/main/docker/docker-c
 curl -fsSL https://raw.githubusercontent.com/Koberum/Sonect/main/docker/audio.yml -o audio.yml
 curl -fsSL https://raw.githubusercontent.com/Koberum/Sonect/main/docker/.env.example -o .env
 
-# Point LIBRARIES_DIR at a host folder holding your music
-# (e.g. LIBRARIES_DIR=/mnt/music) and edit .env.
+# Add one bind mount per music folder under /libraries/<name> (read-only)
+# in docker-compose.yml, e.g.:
+#   volumes:
+#     - /mnt/music:/libraries/music:ro
+#     - sonect-data:/app/data
 
+# On a host with a sound card / USB DAC, also apply the audio overlay:
 docker compose -f docker-compose.yml -f audio.yml up -d
 ```
 
 The UI is served on port `3000`. Then register the music folders from
-Settings → Libraries. The `-f audio.yml` overlay is only needed on hosts with
-a sound card / USB DAC.
+Settings → Libraries (folders detected under `/libraries` are suggested
+automatically). The `-f audio.yml` overlay is only needed on hosts with a sound
+card / USB DAC — it grants `/dev/snd`, the `audio` group and a read-only
+`/proc/asound` so Sonect can enumerate and play through the devices.
 
 ---
 
@@ -132,7 +138,7 @@ sonect/
 │   ├── frontend/      React 19 + Vite SPA (port 5173 in dev)
 │   ├── @repo/db/      Native SQLite (node:sqlite) + Drizzle repositories
 │   └── @repo/types/   Shared TypeScript types (no runtime deps)
-├── docker/            Docker images (docker/mpd) + docker-compose.yml
+├── docker/            Dockerfile config, s6-overlay tree, docker-compose.yml
 ├── assets/            Screenshots and 3D print files
 ├── conf/              MPD configuration (dev container)
 ├── data/              MPD state, sticker DB, tag cache, playlists (dev)
@@ -194,37 +200,42 @@ Configure via `packages/backend/.env`:
 
 | Variable           | Default                                                        | Description                                                         |
 | ------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `MPD_HOST`         | `localhost`                                                    | MPD server hostname or IP                                           |
+| `MPD_HOST`         | `127.0.0.1` (docker) / `localhost` (dev)                       | MPD server host — the daemon runs in the same container in docker   |
 | `MPD_PORT`         | `6600`                                                         | MPD server port                                                     |
-| `MUSIC_DIR`        | `/music`                                                       | Root of your music library                                          |
+| `MUSIC_DIR`        | `/libraries` (docker) / `/music` (dev)                         | Root of your music library — MPD's single `music_directory`         |
 | `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta` | Audio extensions counted as music files in per-source library stats |
-| `COVERS_DIR`       | —                                                              | Where cover WebPs are cached                                        |
+| `COVERS_DIR`       | `/app/data/covers` (docker) / `./data/covers` (dev)            | Where cover WebPs are cached                                        |
 | `COVER_SIZE`       | `400`                                                          | Cover resize dimension (px, square fit inside)                      |
 | `COVER_QUALITY`    | `80`                                                           | WebP quality for covers                                             |
-| `WAVEFORMS_DIR`    | `<COVERS_DIR>/../waveforms` or `./data/waveforms`              | Where waveform JSON caches are saved (`SHA1(file).json`)            |
-| `DB_PATH`          | `/db/music.db` (dev) / `/data/music.db` (docker)               | SQLite database path                                                |
-| `MPD_CONFIG_PATH`  | `/opt/sonect/data/mpd-audio.conf`                              | MPD config drop-in (`/mpd-config/mpd-audio.conf` in docker)         |
-| `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | MPD log file (legacy; sync progress now comes from the scanner)     |
+| `WAVEFORMS_DIR`    | `/app/data/waveforms` (docker) / `<COVERS_DIR>/../waveforms`   | Where waveform JSON caches are saved (`SHA1(file).json`)            |
+| `DB_PATH`          | `/app/data/music.db` (docker) / `/db/music.db` (dev)           | SQLite database path (docker: under the `sonect-data` volume)       |
+| `MPD_CONFIG_PATH`  | `/app/data/mpd-audio.conf` (docker) / `/opt/sonect/data/...`   | MPD config drop-in (`audio_output` + advanced settings)             |
+| `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | Legacy; **no longer read** — sync progress comes from the scanner   |
 | `DNS_CHECK_HOST`   | `example.com`                                                  | Host resolved to verify DNS connectivity                            |
 | `PORT`             | `3000`                                                         | Backend HTTP port                                                   |
 | `FRONTEND_DIST`    | `../frontend/dist`                                             | Built frontend static files                                         |
 
 ### Library sources
 
-Storage is provided by the **host**: mount each music folder into the
-containers under `/libraries/<name>` (read-only) and register the container
-path in the Sonect UI (Settings → Libraries). In the Docker compose file that
-means adding a bind mount to both services:
+Storage is provided by the **host**: mount each music folder into the single
+`sonect` container under `/libraries/<name>` (read-only) and register the
+container path in the Sonect UI (Settings → Libraries). In the Docker compose
+file that means adding one bind mount per library folder:
 
 ```yaml
 services:
-  sonect-app:
+  sonect:
     volumes:
       - /host/path/to/music:/libraries/music:ro
-  sonect-mpd:
-    volumes:
-      - /host/path/to/music:/libraries/music:ro
+      - sonect-data:/app/data
 ```
+
+`MUSIC_DIR` is MPD's single `music_directory` (`/libraries` in docker), which is
+why every library must live under it — MPD can only index one tree. A library
+source is just a registered path under `MUSIC_DIR`; the first-level folders and
+mounts detected there are surfaced as suggestions in the Add-Library form
+(Plex/Immich style), annotated with whether the host mounted them and whether
+they are already registered.
 
 SMB/NFS shares should be mounted by the host (e.g. via `/etc/fstab`) and then
 exposed the same way. Sonect never runs `mount`/`umount` and requires no
@@ -286,7 +297,7 @@ backend.
 no shared relative default. In the dev container it is `/db/music.db` (a
 persistent Docker volume, also injected via `remoteEnv` and pinned in
 `packages/backend/.env`, which is gitignored); in docker it is
-`/data/music.db` inside the `sonect-data` volume. The `./data/music.db`
+`/app/data/music.db` inside the `sonect-data` volume. The `./data/music.db`
 relative fallback is only a last resort for throwaway runs outside these
 environments — it resolves against each process's cwd, so different processes
 can silently open different files. Never rely on it; always set `DB_PATH`.
@@ -303,16 +314,15 @@ Versions follow [SemVer](https://semver.org) and are managed by
 Conventional Commit messages (`feat:`, `fix:`, `chore:`, …) to `main` and a
 Release PR bumps the version, updates `CHANGELOG.md`, and publishes a tagged
 release. Publishing the release builds multi-arch (`amd64`/`arm64`) Docker
-images and pushes them to GitHub Container Registry:
+image and pushes it to GitHub Container Registry:
 
-- `ghcr.io/koberum/sonect-app`
-- `ghcr.io/koberum/sonect-mpd`
+- `ghcr.io/koberum/sonect`
 
 Tags: `latest` and the release version.
 
-The images are published by the release workflow itself (it calls the Docker
+The image is published by the release workflow itself (it calls the Docker
 build as a reusable workflow), so no manual step is needed. To (re)publish
-images for an existing version — for example to backfill a release that
+the image for an existing version — for example to backfill a release that
 predates a fix — open Actions → **Docker** → _Run workflow_ and enter the
 version (without the leading `v`, e.g. `0.1.2`).
 

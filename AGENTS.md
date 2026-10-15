@@ -85,32 +85,45 @@ After making changes:
 
 ## Production deployment (Docker)
 
-Sonect ships as **two container images**: `sonect-app` (the Node backend serving
-the API, WebSocket and built SPA on port 3000) and `sonect-mpd` (Music Player
-Daemon). There is no systemd/native installer — Docker is the only production
-path. `docker/docker-compose.yml` wires the two together; `docker/audio.yml` is
-an optional overlay that grants access to host audio hardware.
+Sonect ships as a **single container image**, `ghcr.io/koberum/sonect`, bundling
+MPD (Music Player Daemon) and the Node backend (API + WebSocket + built SPA on
+port 3000) under **s6-overlay**, which supervises both as longruns
+(`mpd` and `node`). There is no systemd/native installer — Docker is the only
+production path. `docker/docker-compose.yml` defines the one `sonect` service;
+`docker/audio.yml` is an optional overlay that grants access to host audio
+hardware.
 
 ```
-sonect-app                                  sonect-mpd
-  node bundle.cjs (API + WS + SPA)            mpd + alsa-utils + inotify-tools
-  env: MPD_HOST=sonect-mpd, MUSIC_DIR=/libraries   music_directory /libraries
-  devices(/dev/snd,/dev/bus/usb), audio group      bind 0.0.0.0:6600
-  volumes: libraries(ro), data(rw),                watcher: restart on
-           mpd-config(rw), mpd-logs(ro)            mpd-audio.conf change
-                                                   volumes: libraries(ro),
-                                                   mpd-config(ro), mpd-state(rw),
-                                                   mpd-logs(rw)
+sonect (single image, ENTRYPOINT /init)
+  s6-overlay supervises:
+    mpd  longrun → mpd --no-daemon /etc/mpd/mpd.conf (music_directory /libraries)
+    node longrun → node /app/bundle.cjs (API + WS + SPA)
+  env: MPD_HOST=127.0.0.1, MPD_PORT=6600, MUSIC_DIR=/libraries, PORT=3000
+  volumes: libraries(ro), sonect-data(rw, mounted at /app/data)
+  audio overlay (audio.yml): devices(/dev/snd), group_add(audio),
+                             /proc/asound:ro  (NO privileged: true)
 ```
 
 - ` /player` is the single playback API (requires `X-Session-Id`). Legacy `/mpd`
   routes were removed; `/session` remains only for legacy backend tests.
-- **Storage is host-provided.** Music folders are bind-mounted into both
-  containers under `/libraries/<name>`. The backend never mounts anything and
+- **Storage is host-provided.** Music folders are bind-mounted into the single
+  container under `/libraries/<name>`. The backend never mounts anything and
   never runs privileged commands; a library source is just a registered path
-  under `MUSIC_DIR`. SMB/NFS are mounted by the host (fstab) and bind-mounted in.
-- **MPD restarts itself.** The backend writes the drop-in; an `inotify` watcher
-  in the `sonect-mpd` entrypoint restarts MPD (`docker/mpd/entrypoint.sh`).
+  under `MUSIC_DIR` (which is MPD's one `music_directory`). SMB/NFS are mounted
+  by the host (fstab) and bind-mounted in. There is **no shared compose network,
+  no separate MPD config/log/state volumes** — MPD lives
+  in the same container, reaching the backend over `127.0.0.1:6600`, and all
+  persistent state (DB, covers, waveforms, MPD drop-in, MPD tag cache) lives
+  under `/app/data`.
+- **MPD is reloaded by the backend, not a watcher.** After the backend writes
+  the drop-in it invokes its injectable reload hook: under s6 it runs
+  `s6-svc -r /run/service/mpd`; in dev (no s6) it falls back to `SIGHUP`
+  (`pkill -HUP mpd`). There is no `inotifywait` watcher and no separate MPD
+  entrypoint.
+- **Audio devices** are enumerated by reading `/proc/asound/cards` and
+  `/proc/asound/pcm` (`systemService.detectAudioDevices`) — no `aplay`/`lsusb`
+  required. Containers therefore need the `audio.yml` overlay to expose
+  `/dev/snd` and a read-only `/proc/asound`.
 
 ### Build pipeline
 
@@ -131,18 +144,20 @@ sonect-app                                  sonect-mpd
 - **Frontend**: `pnpm frontend:build` runs Vite, outputs static files to
   `frontend/dist/`.
 - **App image** (`packages/backend/Dockerfile`, build context = repo root) bundles
-  the backend + built frontend, adds `ffmpeg` (waveforms), `alsa-utils`/`usbutils`
-  (audio enumeration), keeps only `sharp`/`dotenv` as runtime deps and runs
-  `dumb-init node bundle.cjs`.
-- **MPD image** (`docker/mpd/Dockerfile`) is Debian + `mpd`, `alsa-utils`,
-  `inotify-tools`, `tini`, with a baked base `mpd.conf`.
+  the backend + built frontend, installs `mpd` (the daemon it now supervises),
+  `ffmpeg` (waveforms), `alsa-utils`, plus **s6-overlay** (v3, arch-selected from
+  `TARGETARCH`), keeps only `sharp`/`dotenv` as runtime deps, copies the baked
+  base `docker/mpd.conf` to `/etc/mpd/mpd.conf` and the `docker/s6/s6-rc.d`
+  service tree, stamps `/app/.version`, and runs `ENTRYPOINT ["/init"]` with an
+  empty `CMD` so s6 — not a stray CMD — owns the container. The `/app/drizzle`
+  COPY **must remain** (see the migrator anchor note above).
 - **Release CI**: release-please
   (`release-please-config.json` + `.release-please-manifest.json`) owns the
-  version/CHANGELOG/release on `main`. `.github/workflows/docker.yml` builds
-  **multi-arch** (`linux/amd64`, `linux/arm64`) images and pushes them to GHCR
-  as `ghcr.io/<owner>/sonect-app` and `ghcr.io/<owner>/sonect-mpd` (tags
-  `latest` + version). It is invoked two ways: on PRs it builds but does **not**
-  push; on a release, `release.yml` calls it as a **reusable workflow**
+  version/CHANGELOG/release on `main`. `.github/workflows/docker.yml` builds the
+  **multi-arch** (`linux/amd64`, `linux/arm64`) `sonect` image and pushes it to
+  GHCR as `ghcr.io/<owner>/sonect` (tags `latest` + version). It is invoked two
+  ways: on PRs it builds but does **not** push; on a release, `release.yml` calls
+  it as a **reusable workflow**
   (`workflow_call`, passing the `version`) right after release-please. The
   release event is not used because a release created with the default
   `GITHUB_TOKEN` does not trigger other workflows (`release: published` would
@@ -361,21 +376,23 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 
 ### MPD config handling
 
-Sonect uses a **two-file architecture** for MPD configuration:
+Sonect uses a **two-file architecture** for MPD configuration, both living in
+the single container:
 
 ```
-mpd.conf                    (baked into the MPD image, immutable)
-  └─ include ─► mpd-audio.conf   (drop-in, owned by the backend)
+/etc/mpd/mpd.conf          (baked into the app image, immutable)
+  └─ include ─► /app/data/mpd-audio.conf   (drop-in, owned by the backend)
 ```
 
-- **`mpd.conf`** — baked into `docker/mpd/Dockerfile` (`music_directory
-/libraries`, `bind_to_address 0.0.0.0`, `port 6600`, `log_file`, plus the
-  `include` directive). **Never modified at runtime.**
+- **`mpd.conf`** — baked from `docker/mpd.conf` into the app image at
+  `/etc/mpd/mpd.conf` (`music_directory "/libraries"`, `bind_to_address
+127.0.0.1`, `port 6600`, `log_file /app/data/mpd/mpd.log`, plus the `include`
+  directive). **Never modified at runtime.**
 - **`mpd-audio.conf`** (`process.env.MPD_CONFIG_PATH`, default
-  `/opt/sonect/data/mpd-audio.conf`; set to `/mpd-config/mpd-audio.conf` in
+  `/opt/sonect/data/mpd-audio.conf`; set to `/app/data/mpd-audio.conf` in
   docker) — drop-in containing all user-editable settings: `audio_output`
   blocks and advanced config from the Settings UI. Written by the backend with
-  `fs.writeFileSync`.
+  `fs.writeFileSync`; the `mpd` s6 longrun creates it if absent.
 
 **How it's read/edited:**
 
@@ -384,38 +401,54 @@ mpd.conf                    (baked into the MPD image, immutable)
 | Audio tab      | `getCurrentAudioOutput` / `configureAudioOutput` | Reads/writes the `audio_output` block |
 | MPD Config tab | `getConfig` / `updateConfig`                     | Reads/writes the full drop-in content |
 
-After every write the backend returns `{ success: true }` — it does **not**
-restart MPD. The `sonect-mpd` entrypoint watches the drop-in with `inotifywait`
-and restarts the MPD process on change (`docker/mpd/entrypoint.sh`). There is no
-`systemctl`, no `sudo`, no privileged command anywhere.
+After every write the backend invokes its **injectable reload hook**
+(`MpdConfigServiceImpl`'s `reload` constructor arg, defaulting to
+`defaultReload`). The hook is supervisor-based: if `/run/service/mpd` exists
+(the s6 image) it runs `s6-svc -r /run/service/mpd`; otherwise (dev, no s6) it
+sends `SIGHUP` via `pkill -HUP mpd`. There is **no inotify watcher**, no
+`systemctl`, no `sudo`, no privileged command anywhere. Tests inject a stub
+hook so the reload can be asserted without touching MPD.
 
 **Writing new MPD config code:** always read/write the drop-in (not `mpd.conf`),
 using `fs.readFileSync`/`fs.writeFileSync`. Never shell out.
 
-**Dev container:** the `.devcontainer` reproduces this wiring — `conf/mpd.conf`
-is bind-mounted to `/etc/mpd.conf` and includes the drop-in at
+**Dev container:** the `.devcontainer` reproduces this wiring without s6 —
+`conf/mpd.conf` is bind-mounted to `/etc/mpd.conf` and includes the drop-in at
 `/opt/sonect/data/mpd-audio.conf`, which `postCreate.sh` creates before starting
 MPD. Do not remove the `include` directive from `conf/mpd.conf`; keep the drop-in
-at the code default path (`MPD_CONFIG_PATH`) so dev behavior matches docker. The
-Compose mount is the main configuration and `postCreate.sh` must never overwrite
+at the code default path (`MPD_CONFIG_PATH`) so dev behavior matches docker. Since
+dev has no s6, the reload hook takes the `SIGHUP` branch (`pkill -HUP mpd`) and
+the dev MPD process (started by `postCreate.sh`) restarts on its own. The Compose
+mount is the main configuration and `postCreate.sh` must never overwrite
 `/etc/mpd.conf`; overwriting it would make the mounted file include itself
 recursively and can crash MPD with `SIGSEGV`.
 
 ### Library sources & per-source stats
 
-- **Storage is host-provided.** A library source is just a **registered path
-  under `MUSIC_DIR`** (name + path, no type, no credentials). The host bind-mounts
-  each music folder into the containers (`/libraries/<name>`); the backend only
-  validates that the path exists, stores it, and triggers a rescan. It never runs
+- **`MUSIC_DIR` is MPD's single `music_directory`.** MPD can index exactly one
+  tree, so every library must live under `MUSIC_DIR` (`/libraries` in docker) —
+  that is why a source is defined as a path _under_ it rather than an arbitrary
+  host path. A library source is just a **registered path under `MUSIC_DIR`**
+  (name + path, no type, no credentials). The host bind-mounts each music folder
+  into the single container (`/libraries/<name>`); the backend only validates
+  that the path exists, stores it, and triggers a rescan. It never runs
   `mount`/`umount` and needs no elevated privileges.
 - **`storageService.ts`** exposes `createStorageSource({name, path})`,
   `updateStorageSource(id, {name?, path?})`, `deleteStorageSource(id)` and a
   read-only `listMounts()` (parses `/proc/mounts`). Creating/updating/deleting a
   source fires an MPD `update` + `scanLibrary()`. The `storage_sources` table has
   no `type`/`uri`/`mount_path`/`username`/`password` columns.
+- **Mount suggestions (`getDetectedLibraries`).** `storageService` lists the
+  first-level directories under `MUSIC_DIR`, annotates each with `isMount`
+  (cross-checked against `listMounts()`) and `registered`, and computes bounded
+  on-disk stats. Exposed at `GET /system/storage/detected`; the Add-Library form
+  (Settings → Libraries) and the setup wizard use it to offer candidates
+  (Plex/Immich style) in the same name + path form. It never throws for a single
+  unreadable entry and omits stats rather than failing the suggestion.
 - **Frontend (Immich-style):** Settings → Libraries lists the registered
   libraries (with stats) and the mounts detected under the music directory, plus
-  a copy-paste compose snippet. The setup wizard uses the same name + path form.
+  a copy-paste compose snippet. Registered sources are hidden from the suggestion
+  list, and stats can be refreshed on demand (`refreshStats`).
 - Per-source stats (`file_count` / `dir_count` / `total_size`) are produced by
   the scanner walk (`storageStats.walk`/`walkSource`/`computeSourceStats`) at the
   end of every `scanLibrary()` and saved via `storageDb.updateStats()`.
@@ -436,7 +469,7 @@ previous stats) and continues with the remaining sources.
 ## What NOT to do
 
 - All MPD communication must go through `MpdConnectionManager` (`executeCommand` / `getCachedStatus`). Do not create additional MPD connections.
-- Do not introduce privileged operations in the backend — no `mount`/`umount`, no `systemctl`, no `sudo`. Storage is host-provided (bind mounts) and MPD restarts itself when its drop-in changes.
+- Do not introduce privileged operations in the backend — no `mount`/`umount`, no `systemctl`, no `sudo`. Storage is host-provided (bind mounts) and MPD is reloaded by the backend's supervisor hook when its drop-in changes.
 - Do not add new environment variables without documenting them here and in `README.md`.
 - Do not commit `node_modules`, `dist/`, or `.env` files.
 - Do not modify `pnpm-lock.yaml` manually.
