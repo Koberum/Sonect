@@ -1,9 +1,14 @@
+# Dev-only compose. This builds the devcontainer's own image (not the
+# production `ghcr.io/koberum/sonect` image) and starts a single service.
 services:
   sonect:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: sonect-dev
+    # Kept for reliable ALSA access in dev: unlike the prod audio.yml overlay
+    # (devices + group_add + /proc/asound:ro), privileged avoids host-specific
+    # device/group mismatches when developing against local audio hardware.
     privileged: true
 
     volumes:

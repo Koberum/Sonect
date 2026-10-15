@@ -66,11 +66,12 @@ mpc status
 
 `/etc/mpd.conf` is a minimal boilerplate config that `include`s the
 user-editable drop-in at `/opt/sonect/data/mpd-audio.conf` — the same
-two-file architecture the `sonect-mpd` image uses. The
-backend writes the drop-in (via `MPD_CONFIG_PATH`, default
-`/opt/sonect/data/mpd-audio.conf`) as the service user, and the MPD container
-watchdog restarts MPD on change, so frontend audio and MPD-config edits behave
-exactly as they do in production.
+two-file architecture the single `sonect` image uses (where the drop-in lives at
+`/app/data/mpd-audio.conf`). The backend writes the drop-in (via
+`MPD_CONFIG_PATH`, default `/opt/sonect/data/mpd-audio.conf`) as the service
+user. Dev has no s6-overlay, so the backend's reload hook falls back to
+`pkill -HUP mpd` and the dev MPD process (started by `postCreate.sh`) restarts on
+change — frontend audio and MPD-config edits behave exactly as in production.
 
 The Compose mount at `/etc/mpd.conf` is the main configuration and must not be
 overwritten by `postCreate.sh`. The post-create hook only creates the separate
@@ -97,6 +98,6 @@ Since this container uses the same OS (Debian Bookworm) as Raspberry Pi OS, you 
 
 ## Notes
 
-- The container runs with `privileged: true` to access audio devices
+- The container runs with `privileged: true` for reliable ALSA access in dev (the production image instead uses the `audio.yml` overlay with `/dev/snd`, the `audio` group and `/proc/asound:ro`)
 - The `remoteUser` is set to `node` for security
 - All pnpm commands work across the entire monorepo
