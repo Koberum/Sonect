@@ -1,13 +1,82 @@
 import fs from "fs";
 import path from "path";
 import { storageDb } from "@repo/db";
-import { computeSourceStats } from "./storageStats";
+import {
+  computeSourceStats,
+  getAudioExtensions,
+  type SourceStats,
+} from "./storageStats";
 import { ValidationError } from "@middleware/errorHandler";
-import { StorageSource } from "@repo/types";
+import { DetectedLibrary, StorageSource } from "@repo/types";
 import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager";
 import type { CatalogSyncOrchestrator } from "@services/library/catalogSyncOrchestrator";
 
-const MUSIC_DIR = process.env.MUSIC_DIR ?? "/opt/sonect/music";
+/**
+ * Suggestions are best-effort: a huge library must never block the request, so
+ * stats are computed with a file budget and omitted when the cap is exceeded.
+ */
+const MAX_SUGGESTION_STATS_FILES = 20000;
+
+/**
+ * Read MUSIC_DIR at call time (not module load) so tests and config reloads can
+ * point the service at a different library root.
+ */
+function getMusicDir(): string {
+  return path.resolve(process.env.MUSIC_DIR ?? "/opt/sonect/music");
+}
+
+/**
+ * Budget-aware twin of `computeSourceStats`: walks the same tree but stops as
+ * soon as more than `maxFiles` audio files are counted, in which case it
+ * returns `undefined` so the caller can skip stats. Unreadable directories
+ * throw (the caller decides whether to omit stats for that entry).
+ */
+function computeSourceStatsWithBudget(
+  root: string,
+  maxFiles: number,
+): SourceStats | undefined {
+  const exts = getAudioExtensions();
+  let fileCount = 0;
+  let dirCount = 0;
+  let totalSize = 0;
+  let exceeded = false;
+
+  const visit = (dir: string): void => {
+    if (exceeded) return;
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      throw new Error(`Cannot read directory: ${dir}`);
+    }
+    for (const entry of entries) {
+      if (exceeded) return;
+      const full = path.join(dir, entry.name);
+      if (entry.isSymbolicLink()) continue;
+      if (entry.isDirectory()) {
+        dirCount++;
+        visit(full);
+      } else if (entry.isFile()) {
+        const ext = path.extname(entry.name).slice(1).toLowerCase();
+        if (!exts.has(ext)) continue;
+        fileCount++;
+        if (fileCount > maxFiles) {
+          exceeded = true;
+          return;
+        }
+        try {
+          totalSize += fs.statSync(full).size;
+        } catch {
+          // file vanished mid-walk
+        }
+      }
+    }
+  };
+
+  visit(root);
+  if (exceeded) return undefined;
+  return { file_count: fileCount, dir_count: dirCount, total_size: totalSize };
+}
 
 interface MountInfo {
   path: string;
@@ -28,6 +97,8 @@ export interface StorageService {
   ): StorageSource | undefined;
   deleteStorageSource(id: number): boolean;
   listMounts(): MountInfo[];
+  getDetectedLibraries(): DetectedLibrary[];
+  refreshStats(id: number): StorageSource | undefined;
 }
 
 /**
@@ -131,7 +202,7 @@ export class StorageServiceImpl implements StorageService {
    */
   public listMounts(): MountInfo[] {
     try {
-      const musicDir = path.resolve(MUSIC_DIR);
+      const musicDir = getMusicDir();
       const raw = fs.readFileSync("/proc/mounts", "utf-8");
       const mounts: MountInfo[] = [];
       for (const line of raw.split("\n")) {
@@ -150,6 +221,60 @@ export class StorageServiceImpl implements StorageService {
     }
   }
 
+  /**
+   * First-level folders under MUSIC_DIR, annotated with whether the host mounted
+   * them and whether they are already registered as a library source. Used by
+   * the Add-Library form to suggest candidates (Plex/Immich style). Never throws
+   * for a single unreadable entry; stats are best-effort and bounded.
+   */
+  public getDetectedLibraries(): DetectedLibrary[] {
+    const musicDir = getMusicDir();
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(musicDir, { withFileTypes: true });
+    } catch {
+      return [];
+    }
+
+    const mounts = this.listMounts();
+    const registeredPaths = new Set(storageDb.getAll().map((s) => s.path));
+    const libraries: DetectedLibrary[] = [];
+
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const full = path.join(musicDir, entry.name);
+      const library: DetectedLibrary = {
+        path: full,
+        name: entry.name,
+        isMount: mounts.some((m) => m.path === full),
+        registered: registeredPaths.has(full),
+      };
+      try {
+        const stats = computeSourceStatsWithBudget(
+          full,
+          MAX_SUGGESTION_STATS_FILES,
+        );
+        if (stats) library.stats = stats;
+      } catch {
+        // Unreadable directory → omit stats, still surface the suggestion.
+      }
+      libraries.push(library);
+    }
+
+    return libraries;
+  }
+
+  /**
+   * Recompute on-disk stats for a registered source and persist them.
+   */
+  public refreshStats(id: number): StorageSource | undefined {
+    const source = storageDb.getById(id);
+    if (!source) return undefined;
+    const stats = computeSourceStats(source.path);
+    storageDb.updateStats(id, stats);
+    return storageDb.getById(id) as StorageSource | undefined;
+  }
+
   private triggerScan(): void {
     this.mpdConnectionManager.executeCommand("update").catch(() => {});
     this.catalogSyncOrchestrator
@@ -162,7 +287,7 @@ export class StorageServiceImpl implements StorageService {
    * Relative paths are resolved against MUSIC_DIR.
    */
   private resolveLibraryPath(input: string): string {
-    const musicDir = path.resolve(MUSIC_DIR);
+    const musicDir = getMusicDir();
     const normalized = input.replace(/\\/g, "/");
     const full = path.isAbsolute(normalized)
       ? path.resolve(normalized)
