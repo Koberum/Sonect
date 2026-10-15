@@ -3,6 +3,7 @@ import { qk } from "@/lib/queryKeys";
 import { queryClient } from "@/lib/queryClient";
 import {
   getActiveMounts,
+  getDetectedLibraries,
   getAudioDevices,
   getAudioStatus,
   getHardwareUsage,
@@ -14,6 +15,7 @@ import {
   createStorageSource,
   updateStorageSource,
   deleteStorageSource,
+  refreshStorageStats,
   configureAudio,
   getDashboard,
 } from "./api";
@@ -45,6 +47,13 @@ export const systemQueries = {
       queryKey: qk.system.activeMounts(),
       queryFn: ({ signal }) => getActiveMounts(signal),
       staleTime: 60_000,
+    }),
+
+  detectedLibraries: () =>
+    queryOptions({
+      queryKey: qk.system.detectedLibraries(),
+      queryFn: ({ signal }) => getDetectedLibraries(signal),
+      staleTime: 30_000,
     }),
 
   networkStatus: () =>
@@ -107,6 +116,9 @@ export const systemMutations = {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: qk.system.storageSources() });
         queryClient.invalidateQueries({ queryKey: qk.system.activeMounts() });
+        queryClient.invalidateQueries({
+          queryKey: qk.system.detectedLibraries(),
+        });
       },
     }),
 
@@ -119,6 +131,9 @@ export const systemMutations = {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: qk.system.storageSources() });
         queryClient.invalidateQueries({ queryKey: qk.system.activeMounts() });
+        queryClient.invalidateQueries({
+          queryKey: qk.system.detectedLibraries(),
+        });
       },
     }),
 
@@ -128,6 +143,17 @@ export const systemMutations = {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: qk.system.storageSources() });
         queryClient.invalidateQueries({ queryKey: qk.system.activeMounts() });
+        queryClient.invalidateQueries({
+          queryKey: qk.system.detectedLibraries(),
+        });
+      },
+    }),
+
+  refreshStorageStats: () =>
+    mutationOptions({
+      mutationFn: (id: number) => refreshStorageStats(id),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: qk.system.storageSources() });
       },
     }),
 

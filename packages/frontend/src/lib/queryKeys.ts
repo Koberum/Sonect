@@ -38,6 +38,7 @@ export const qk = {
     audioStatus: () => ["system", "audio", "status"] as const,
     storageSources: () => ["system", "storage", "sources"] as const,
     activeMounts: () => ["system", "storage", "mounts"] as const,
+    detectedLibraries: () => ["system", "storage", "detected"] as const,
     networkStatus: () => ["system", "network", "status"] as const,
     backendStatus: () => ["system", "backend", "status"] as const,
     health: () => ["system", "health"] as const,

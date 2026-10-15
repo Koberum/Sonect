@@ -1,5 +1,7 @@
 import { useState } from "react";
-import type { StorageSource } from "@/features/system/api";
+import { useQuery } from "@tanstack/react-query";
+import { systemQueries } from "@/features/system/queries";
+import type { DetectedLibrary, StorageSource } from "@/features/system/api";
 
 export interface LibrarySourceFormValues {
   name: string;
@@ -21,6 +23,18 @@ export function useLibrarySourceForm({
     path: initialValues?.path ?? "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const { data: detected = [] } = useQuery(systemQueries.detectedLibraries());
+
+  const applyDetected = (lib: DetectedLibrary) => {
+    setForm({ name: lib.name, path: lib.path });
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.name;
+      delete next.path;
+      return next;
+    });
+  };
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -63,5 +77,7 @@ export function useLibrarySourceForm({
     handleFieldBlur,
     fieldClass,
     submit,
+    detected,
+    applyDetected,
   };
 }
