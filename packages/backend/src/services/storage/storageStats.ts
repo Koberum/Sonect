@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import { storageDb } from "@repo/db";
 
 const DEFAULT_EXTENSIONS =
   "mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta";
@@ -40,7 +39,7 @@ export function walk(
       entries = fs.readdirSync(dir, { withFileTypes: true });
     } catch {
       // Root unreadable (e.g. SMB not mounted, missing symlink target) →
-      // throw so scanStorageStats skips the source and keeps previous stats.
+      // throw so the caller can skip the source and keep previous stats.
       // An unreadable subdirectory also aborts the walk for this source.
       throw new Error(`Cannot read directory: ${dir}`);
     }
@@ -92,18 +91,4 @@ export function walkSource(
 export function computeSourceStats(root: string): SourceStats {
   const exts = getAudioExtensions();
   return walkSource(root, exts);
-}
-
-export function scanStorageStats(): void {
-  for (const source of storageDb.getAll()) {
-    try {
-      const stats = computeSourceStats(source.path);
-      storageDb.updateStats(source.id, stats);
-    } catch (err) {
-      console.error(
-        `[Storage] Failed to scan stats for ${source.name}:`,
-        err instanceof Error ? err.message : err,
-      );
-    }
-  }
 }

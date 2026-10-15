@@ -31,7 +31,9 @@ async function main() {
 
       default:
         console.log("Usage:");
-        console.log("  pnpm backend:sync sync     - Sync all tracks from MPD");
+        console.log(
+          "  pnpm backend:sync sync     - Sync all tracks from the filesystem library scanner",
+        );
         console.log("  pnpm backend:sync stats    - Show database statistics");
         console.log("  pnpm backend:sync clear    - Clear all database data");
         break;
