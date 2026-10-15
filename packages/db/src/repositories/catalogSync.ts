@@ -9,11 +9,39 @@ import {
   tracks as tracksTable,
 } from "../tables.js";
 import { upsertTrack } from "./tracks.js";
+import { syncMetadataDb } from "./syncMetadata.js";
 
 export type LibraryRebuildResult = {
   synced: number;
   errors: number;
 };
+
+export type LibraryIncrementalResult = {
+  synced: number;
+  deleted: number;
+  errors: number;
+};
+
+// Current on-disk scanner format. Consumers compare getScannerVersion() against
+// this to decide whether a full rebuild is required.
+const SCANNER_VERSION = "1";
+
+// Upsert-on-conflict stamp for the sync_metadata key/value table, shared by
+// rebuild and the incremental apply so both move in lock-step.
+function stampMetadata(
+  executor: DatabaseTransaction,
+  key: string,
+  value: string,
+): void {
+  executor
+    .insert(syncMetadata)
+    .values({ key, value, updated_at: sql`CURRENT_TIMESTAMP` })
+    .onConflictDoUpdate({
+      target: syncMetadata.key,
+      set: { value, updated_at: sql`CURRENT_TIMESTAMP` },
+    })
+    .run();
+}
 
 // SQLite reports constraint violations in the error message text; node:sqlite
 // does not expose SQLITE_* result codes and drizzle wraps driver errors in
@@ -99,19 +127,7 @@ function rebuildInTransaction(
   }
 
   // Step 5: stamp the sync timestamp inside the same transaction.
-  const timestamp = new Date().toISOString();
-  executor
-    .insert(syncMetadata)
-    .values({
-      key: "last_sync",
-      value: timestamp,
-      updated_at: sql`CURRENT_TIMESTAMP`,
-    })
-    .onConflictDoUpdate({
-      target: syncMetadata.key,
-      set: { value: timestamp, updated_at: sql`CURRENT_TIMESTAMP` },
-    })
-    .run();
+  stampMetadata(executor, "last_sync", new Date().toISOString());
 
   return { synced, errors };
 }
@@ -122,6 +138,49 @@ export const catalogSyncDb = {
     onProgress?: (completed: number, track: MPDTrack) => void,
   ): LibraryRebuildResult {
     return transaction((tx) => rebuildInTransaction(tx, tracks, onProgress));
+  },
+
+  // Apply only the changed/deleted files reported by the scanner. Everything
+  // runs in one transaction so a failure leaves the catalog untouched; the
+  // `scanner_version` marker is what tells callers the incremental path is
+  // safe to use instead of a full rebuild.
+  applyIncremental(input: {
+    upserts: MPDTrack[];
+    deletions: string[];
+  }): LibraryIncrementalResult {
+    return transaction((tx) => {
+      let synced = 0;
+      let deleted = 0;
+      let errors = 0;
+
+      for (const track of input.upserts) {
+        try {
+          upsertTrack(tx, track);
+        } catch (error) {
+          if (!isTrackConstraintError(error)) throw error;
+          console.error(`❌ Error syncing track ${track.file}:`, error);
+          errors += 1;
+          continue;
+        }
+        synced += 1;
+      }
+
+      for (const file of input.deletions) {
+        // playlist_tracks.track_id cascades on delete (PRAGMA foreign_keys=ON),
+        // so playlist rows for the removed file disappear with the track.
+        tx.delete(tracksTable).where(eq(tracksTable.file, file)).run();
+        deleted += 1;
+      }
+
+      stampMetadata(tx, "last_sync", new Date().toISOString());
+      stampMetadata(tx, "scanner_version", SCANNER_VERSION);
+
+      return { synced, deleted, errors };
+    });
+  },
+
+  getScannerVersion(): string | undefined {
+    return syncMetadataDb.get("scanner_version");
   },
 
   clearAll(): void {

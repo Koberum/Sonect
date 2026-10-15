@@ -8,6 +8,7 @@ import {
   albumsDb,
   genresDb,
   syncMetadataDb,
+  playlistsDb,
 } from "@repo/db";
 import { db } from "@repo/db";
 import { tracks } from "@repo/db";
@@ -160,5 +161,44 @@ describe("catalogSyncDb (trophy integration)", () => {
     catalogSyncDb.rebuild([mkTrack("a/ts.mp3")]);
     const v = syncMetadataDb.get("last_sync");
     expect(new Date(v!).getTime()).to.be.closeTo(Date.now(), 2000);
+  });
+
+  it("applyIncremental upserts changed tracks and preserves play_count", () => {
+    const id = tracksDb.upsert(mkTrack("a/keep.mp3", { title: "Old" }));
+    db().update(tracks).set({ play_count: 7 }).where(eq(tracks.id, id)).run();
+    const res = catalogSyncDb.applyIncremental({
+      upserts: [mkTrack("a/keep.mp3", { title: "New" })],
+      deletions: [],
+    });
+    expect(res).to.deep.equal({ synced: 1, deleted: 0, errors: 0 });
+    const row = tracksDb.getByFile("a/keep.mp3");
+    expect(row?.title).to.equal("New");
+    expect(row?.play_count).to.equal(7);
+  });
+
+  it("applyIncremental deletes only the listed files", () => {
+    tracksDb.upsert(mkTrack("a/gone.mp3"));
+    tracksDb.upsert(mkTrack("a/kept.mp3"));
+    const res = catalogSyncDb.applyIncremental({
+      upserts: [],
+      deletions: ["a/gone.mp3"],
+    });
+    expect(res.deleted).to.equal(1);
+    expect(tracksDb.getByFile("a/gone.mp3")).to.be.undefined;
+    expect(tracksDb.getByFile("a/kept.mp3")).to.exist;
+  });
+
+  it("applyIncremental cascades playlist rows on delete", () => {
+    const tid = tracksDb.upsert(mkTrack("a/p.mp3"));
+    const pid = playlistsDb.create("P");
+    playlistsDb.addTrack(pid, tid);
+    catalogSyncDb.applyIncremental({ upserts: [], deletions: ["a/p.mp3"] });
+    expect(playlistsDb.getTracks(pid)).to.have.length(0);
+  });
+
+  it("applyIncremental stamps scanner_version and last_sync", () => {
+    catalogSyncDb.applyIncremental({ upserts: [], deletions: [] });
+    expect(catalogSyncDb.getScannerVersion()).to.equal("1");
+    expect(syncMetadataDb.get("last_sync")).to.be.a("string");
   });
 });
