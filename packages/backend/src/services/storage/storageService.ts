@@ -31,7 +31,7 @@ function getMusicDir(): string {
  * returns `undefined` so the caller can skip stats. Unreadable directories
  * throw (the caller decides whether to omit stats for that entry).
  */
-function computeSourceStatsWithBudget(
+export function computeSourceStatsWithinBudget(
   root: string,
   maxFiles: number,
 ): SourceStats | undefined {
@@ -250,7 +250,7 @@ export class StorageServiceImpl implements StorageService {
         registered: registeredPaths.has(full),
       };
       try {
-        const stats = computeSourceStatsWithBudget(
+        const stats = computeSourceStatsWithinBudget(
           full,
           MAX_SUGGESTION_STATS_FILES,
         );
@@ -270,7 +270,16 @@ export class StorageServiceImpl implements StorageService {
   public refreshStats(id: number): StorageSource | undefined {
     const source = storageDb.getById(id);
     if (!source) return undefined;
-    const stats = computeSourceStats(source.path);
+    let stats: SourceStats;
+    try {
+      stats = computeSourceStats(source.path);
+    } catch {
+      // Foreseeable (unmounted share, permissions): surface a 400 rather than
+      // an opaque 500 and leave the stored stats untouched.
+      throw new ValidationError(`Cannot read library path: ${source.path}`, {
+        path: source.path,
+      });
+    }
     storageDb.updateStats(id, stats);
     return storageDb.getById(id) as StorageSource | undefined;
   }

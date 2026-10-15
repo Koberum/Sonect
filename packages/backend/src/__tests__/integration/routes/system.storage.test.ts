@@ -7,6 +7,7 @@ import express from "express";
 import request from "supertest";
 import { errorHandler } from "@middleware/errorHandler";
 import systemRoutes from "@routes/systemRoutes";
+import { computeSourceStatsWithinBudget } from "@services/storage/storageService.js";
 import { createTestDb } from "@tests/helpers/db.js";
 import { storageDb } from "@repo/db";
 import {
@@ -130,5 +131,53 @@ describe("system storage routes", () => {
       "/system/storage/sources/99999/refresh-stats",
     );
     expect(res.status).to.equal(404);
+  });
+
+  it("POST /system/storage/sources/:id/refresh-stats 400s on unreadable path", async () => {
+    const missingPath = path.join(tmpDir, "does-not-exist");
+    const id = storageDb.create({
+      name: "Missing",
+      path: missingPath,
+      enabled: true,
+    });
+
+    const res = await request(makeApp()).post(
+      `/system/storage/sources/${id}/refresh-stats`,
+    );
+    expect(res.status).to.equal(400);
+    expect(res.body.error).to.include("Cannot read library path");
+    // Stats must not be touched on failure.
+    expect(storageDb.getById(id)?.file_count).to.equal(0);
+  });
+
+  describe("computeSourceStatsWithinBudget", () => {
+    it("counts audio files when at or under the cap", () => {
+      const root = path.join(tmpDir, "Budget");
+      fs.mkdirSync(path.join(root, "nested"), { recursive: true });
+      writeAudio(path.join(root, "a.mp3"), "aa");
+      writeAudio(path.join(root, "nested", "b.flac"), "bbb");
+      fs.writeFileSync(path.join(root, "ignore.txt"), "x");
+
+      expect(computeSourceStatsWithinBudget(root, 5)).to.deep.equal({
+        file_count: 2,
+        dir_count: 1,
+        total_size: 5,
+      });
+    });
+
+    it("returns undefined once the file count exceeds the cap", () => {
+      const root = path.join(tmpDir, "Over");
+      fs.mkdirSync(root, { recursive: true });
+      writeAudio(path.join(root, "a.mp3"), "a");
+      writeAudio(path.join(root, "b.mp3"), "b");
+      writeAudio(path.join(root, "c.mp3"), "c");
+
+      expect(computeSourceStatsWithinBudget(root, 2)).to.be.undefined;
+      expect(computeSourceStatsWithinBudget(root, 3)).to.deep.equal({
+        file_count: 3,
+        dir_count: 0,
+        total_size: 3,
+      });
+    });
   });
 });
