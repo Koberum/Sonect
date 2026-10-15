@@ -10,8 +10,11 @@ const ASOUND_CARDS = ` 0 [PCH            ]: HDA-Intel - HDA Intel PCH
                       USB Audio Device at usb-0000:00:14.0-1, full speed
 `;
 
-const ASOUND_PCM = `00-00: ALC671 Analog : playback 1 : capture 1
-01-00: USB Audio : playback 1 : capture 1
+// Mirrors real /proc/asound/pcm: the device name is repeated before the
+// `: playback` marker, and capture-only devices must be ignored.
+const ASOUND_PCM = `00-00: ALC671 Analog : ALC671 Analog : playback 1 : capture 1
+01-00: USB Audio : USB Audio : capture 1
+01-03: USB Audio : USB Audio : playback 1 : capture 1
 `;
 
 function enoent(path: string): NodeJS.ErrnoException {
@@ -66,7 +69,7 @@ describe("SystemServiceImpl.detectAudioDevices (unit)", () => {
           usb: false,
         },
         {
-          card: "hw:1,0",
+          card: "hw:1,3",
           name: "USB Audio (card 1)",
           description: "USB Audio",
           usb: true,
@@ -91,8 +94,9 @@ describe("SystemServiceImpl.detectAudioDevices (unit)", () => {
 
     try {
       const devices = service.detectAudioDevices();
+      expect(devices).to.have.length(2);
       expect(devices[1]).to.deep.equal({
-        card: "hw:1,0",
+        card: "hw:1,3",
         name: "USB Audio (card 1)",
         description: "USB Audio",
         usb: true,
