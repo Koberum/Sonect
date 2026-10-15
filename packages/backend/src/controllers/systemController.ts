@@ -23,8 +23,7 @@ export const getStatusHandler = asyncHandler(
 
 export const getAudioDevicesHandler = asyncHandler(
   async (_req: Request, res: Response) => {
-    const devices = getMpdConfigService().getCurrentAudioOutput();
-    res.json(devices ? [devices] : []);
+    res.json(getSystemService().detectAudioDevices());
   },
 );
 

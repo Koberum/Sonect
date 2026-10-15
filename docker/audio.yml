@@ -17,8 +17,9 @@ services:
       - audio
 
   sonect-app:
-    # The backend enumerates cards with `aplay -l`, reads /proc/asound and
-    # inspects USB devices with `lsusb`.
+    # The backend enumerates playback devices by reading /proc/asound
+    # (cards, pcm, per-card usbid); USB vendor/product names are resolved
+    # best-effort from /sys/bus/usb/devices when available.
     devices:
       - /dev/snd:/dev/snd
     group_add:
