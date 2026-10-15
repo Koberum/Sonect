@@ -10,6 +10,7 @@ import {
   type PlayerService,
 } from "./player/playerService.js";
 import { CatalogSyncService } from "./library/catalogSyncService.js";
+import { LibraryScanner } from "./library/libraryScanner.js";
 import {
   CoverSyncServiceImpl,
   type CoverSyncService,
@@ -103,10 +104,8 @@ export function initializeServices(): void {
     _autoplayService,
   );
 
-  _catalogSyncService = new CatalogSyncService(
-    _mpdConnectionManager,
-    _logService,
-  );
+  const _libraryScanner = new LibraryScanner(_logService);
+  _catalogSyncService = new CatalogSyncService(_libraryScanner, _logService);
 
   _coverSyncService = new CoverSyncServiceImpl(_logService);
   _catalogSyncOrchestrator = new CatalogSyncOrchestratorImpl(

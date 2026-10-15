@@ -13,7 +13,7 @@ async function main() {
 
     switch (command) {
       case "sync":
-        await catalogSyncService.syncAll();
+        await catalogSyncService.scanAll();
         break;
 
       case "stats": {
