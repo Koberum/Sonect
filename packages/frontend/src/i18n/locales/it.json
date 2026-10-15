@@ -364,7 +364,7 @@
     },
     "libraries": {
       "title": "Librerie",
-      "description": "Cartelle montate nel container e scansionate da MPD.",
+      "description": "Cartelle montate nel container e indicizzate da Sonect.",
       "addSource": "Aggiungi Libreria",
       "noSources": "Nessuna libreria configurata",
       "noSourcesDescription": "Monta una cartella nel container, poi registrala qui.",
@@ -529,7 +529,7 @@
     },
     "sync": {
       "title": "Sincronizzazione Libreria",
-      "description": "La tua libreria musicale è pronta per la scansione. Sonect sincronizzerà la musica da MPD. Puoi avviare una sincronizzazione completa in qualsiasi momento.",
+      "description": "Scansiona la tua libreria musicale per creare il catalogo. Puoi avviare una sincronizzazione completa in qualsiasi momento.",
       "finish": "Completa configurazione"
     },
     "stepNames": {

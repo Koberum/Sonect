@@ -144,6 +144,32 @@ describe("LibraryScanner (integration)", () => {
     expect(files).to.not.include(path.join("libA", "old.mp3"));
   });
 
+  it("first run never deletes rows under an unreadable or disabled source", async () => {
+    registerSource("readable", "libA");
+    writeAudio(path.join("libA", "song.mp3"));
+    storageDb.create({
+      name: "broken",
+      path: path.join(tmpDir, "libB-missing"),
+      enabled: true,
+    });
+
+    tracksDb.upsert({ file: path.join("libA", "old.mp3"), title: "oldA" });
+    tracksDb.upsert({
+      file: path.join("libB-missing", "song.mp3"),
+      title: "underB",
+    });
+    tracksDb.upsert({ file: "orphan.mp3", title: "orphan" });
+
+    const result = await scanner.scan();
+    const files = tracksDb.getFiles();
+
+    expect(result.deleted).to.equal(2);
+    expect(files).to.include(path.join("libB-missing", "song.mp3"));
+    expect(files).to.include(path.join("libA", "song.mp3"));
+    expect(files).to.not.include(path.join("libA", "old.mp3"));
+    expect(files).to.not.include("orphan.mp3");
+  });
+
   it("deletes nothing when there are zero enabled sources", async () => {
     registerSource("disabled", "lib1", false);
     tracksDb.upsert({ file: "kept.mp3", title: "kept" });

@@ -152,7 +152,7 @@ export class LibraryScanner {
       }
     }
 
-    const deletions = this.buildDeletions(walked, liveFiles);
+    const deletions = this.buildDeletions(musicDir, walked, liveFiles);
 
     const result = catalogSyncDb.applyIncremental({ upserts, deletions });
 
@@ -173,6 +173,7 @@ export class LibraryScanner {
   }
 
   private buildDeletions(
+    musicDir: string,
     walked: WalkedSource[],
     liveFiles: Set<string>,
   ): string[] {
@@ -181,10 +182,24 @@ export class LibraryScanner {
       walked.some((source) => isUnderPrefix(file, source.prefix));
 
     // First run: legacy/MPD-sourced rows cannot be attributed to a source
-    // prefix, so drop everything not seen by a walked source. `scan()` returns
-    // early when nothing was walked, so this only runs with ≥1 walked source.
+    // prefix by being live, so clean up conservatively. Delete a row only when
+    // it is under a walked prefix that dropped it (steady-state rule) or when
+    // it is under no registered source prefix at all (true orphans/legacy
+    // rows). A row under a registered-but-unwalked (unreadable) or disabled
+    // source is never touched. `scan()` returns early when nothing was walked,
+    // so this only runs with ≥1 walked source.
     if (catalogSyncDb.getScannerVersion() === undefined) {
-      return dbFiles.filter((file) => !liveFiles.has(file));
+      const allSourcePrefixes = storageDb
+        .getAll()
+        .map((source) => path.relative(musicDir, source.path));
+      const underAnyRegistered = (file: string): boolean =>
+        allSourcePrefixes.some((prefix) => isUnderPrefix(file, prefix));
+
+      return dbFiles.filter(
+        (file) =>
+          !liveFiles.has(file) &&
+          (underWalked(file) || !underAnyRegistered(file)),
+      );
     }
 
     return dbFiles.filter((file) => underWalked(file) && !liveFiles.has(file));
