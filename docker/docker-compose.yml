@@ -1,8 +1,13 @@
-# Sonect — two-container deployment (app + MPD).
+# Sonect — single-container deployment (MPD + API + web UI in one image).
 #
 # Storage is provided by the host as bind mounts: mount each music folder under
 # /libraries/<name> (read-only) and register the container path in the Sonect
-# UI. Sonect never mounts anything or runs privileged commands.
+# UI. Sonect never mounts anything or runs privileged commands. Add one volume
+# line per library folder:
+#
+#   volumes:
+#     - /host/path/to/music:/libraries/music:ro
+#     - sonect-data:/app/data
 #
 # Audio output is NOT enabled by default. On a host with a sound card (e.g. a
 # Raspberry Pi with a DAC) also use the overlay:
@@ -12,50 +17,21 @@
 # Copy `.env.example` to `.env` and adjust it first.
 
 services:
-  sonect-mpd:
-    image: ghcr.io/koberum/sonect-mpd:${SONECT_VERSION:-latest}
-    container_name: sonect-mpd
+  sonect:
+    image: ghcr.io/koberum/sonect:${SONECT_VERSION:-latest}
+    container_name: sonect
     restart: unless-stopped
-    volumes:
-      - ${LIBRARIES_DIR:-./libraries}:/libraries:ro
-      - ./mpd-config:/mpd-config
-      - sonect-mpd-state:/mpd-state
-      - sonect-mpd-logs:/mpd-logs
-    networks:
-      - sonect
-
-  sonect-app:
-    image: ghcr.io/koberum/sonect-app:${SONECT_VERSION:-latest}
-    container_name: sonect-app
-    restart: unless-stopped
-    depends_on:
-      - sonect-mpd
     environment:
-      MPD_HOST: sonect-mpd
+      MPD_HOST: 127.0.0.1
       MPD_PORT: "6600"
       MUSIC_DIR: /libraries
-      COVERS_DIR: /data/covers
-      WAVEFORMS_DIR: /data/waveforms
-      DB_PATH: /data/music.db
-      MPD_CONFIG_PATH: /mpd-config/mpd-audio.conf
-      MPD_LOG_PATH: /mpd-logs/mpd.log
-      FRONTEND_DIST: /app/frontend/dist
-      PORT: "3000"
       NODE_ENV: production
+      PORT: "3000"
     volumes:
-      - ${LIBRARIES_DIR:-./libraries}:/libraries:ro
-      - ./mpd-config:/mpd-config
-      - sonect-mpd-logs:/mpd-logs:ro
-      - sonect-data:/data
+      - /host/path/to/music:/libraries/music:ro
+      - sonect-data:/app/data
     ports:
       - "${SONECT_PORT:-3000}:3000"
-    networks:
-      - sonect
 
 volumes:
   sonect-data:
-  sonect-mpd-state:
-  sonect-mpd-logs:
-
-networks:
-  sonect:
