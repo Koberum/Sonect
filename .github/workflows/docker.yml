@@ -134,6 +134,8 @@ jobs:
             exit 1
           fi
 
+          docker exec sonect-smoke nc -z 127.0.0.1 6600 || { echo "::error::mpd is not listening on 6600"; docker logs sonect-smoke || true; exit 1; }
+
           docker exec sonect-smoke ls /app/drizzle
           echo "smoke test passed"
 

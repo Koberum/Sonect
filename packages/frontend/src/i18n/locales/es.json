@@ -370,7 +370,7 @@
     },
     "libraries": {
       "title": "Bibliotecas",
-      "description": "Carpetas montadas en el contenedor y escaneadas por MPD.",
+      "description": "Carpetas montadas en el contenedor e indexadas por Sonect.",
       "addSource": "Agregar Biblioteca",
       "noSources": "No hay bibliotecas configuradas",
       "noSourcesDescription": "Monta una carpeta en el contenedor y luego regístrala aquí.",
@@ -562,7 +562,7 @@
     },
     "sync": {
       "title": "Sincronización de biblioteca",
-      "description": "Tu biblioteca de música está lista para escanearse. Sonect sincronizará tu música desde MPD. Puedes iniciar una sincronización completa en cualquier momento.",
+      "description": "Escanea tu biblioteca de música para crear el catálogo. Puedes iniciar una sincronización completa en cualquier momento.",
       "finish": "Finalizar configuración"
     },
     "stepNames": {

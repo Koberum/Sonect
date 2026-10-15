@@ -370,7 +370,7 @@
     },
     "libraries": {
       "title": "Libraries",
-      "description": "Folders bind-mounted into the container and scanned by MPD.",
+      "description": "Folders bind-mounted into the container and indexed by Sonect.",
       "addSource": "Add Library",
       "noSources": "No libraries configured",
       "noSourcesDescription": "Bind-mount a folder into the container, then register it here.",
@@ -562,7 +562,7 @@
     },
     "sync": {
       "title": "Library Sync",
-      "description": "Your music library is ready to scan. Sonect will sync your music from MPD. You can trigger a full sync at any time.",
+      "description": "Scan your music library to build the catalog. You can trigger a full sync at any time.",
       "finish": "Finish Setup"
     },
     "stepNames": {
