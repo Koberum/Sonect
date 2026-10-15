@@ -10,10 +10,10 @@ import {
 } from "@services/storage/storageStats";
 import { mapAudioMetadata } from "@services/library/audioMetadata";
 
-// music-metadata is ESM: its namespace object is immutable, so sinon cannot
-// stub `mm.parseFile` directly. Routing calls through this mutable object
-// gives tests a seam to count parses without changing runtime behavior.
-export const mediaMetadata = { parseFile: mm.parseFile };
+export type ParseFileFn = (
+  filePath: string,
+  options?: mm.IOptions,
+) => Promise<mm.IAudioMetadata>;
 
 export type ScanProgress = {
   phase: "tracks";
@@ -41,7 +41,11 @@ function isUnderPrefix(file: string, prefix: string): boolean {
 }
 
 export class LibraryScanner {
-  constructor(private readonly logService: LogService) {}
+  constructor(
+    private readonly logService: LogService,
+    private readonly parseFile: ParseFileFn = (filePath, options) =>
+      mm.parseFile(filePath, options),
+  ) {}
 
   async scan(onProgress?: (p: ScanProgress) => void): Promise<ScanResult> {
     // Read MUSIC_DIR at scan time so tests (and hot config reloads) can
@@ -80,6 +84,17 @@ export class LibraryScanner {
       totalFiles += files.length;
     }
 
+    // No readable source was walked: bail out before `applyIncremental` so the
+    // one-time `scanner_version` marker is not spent while the legacy-row
+    // cleanup cannot run. This also guarantees nothing is ever deleted here.
+    if (walked.length === 0) {
+      this.logService.pushLog(
+        "info",
+        "Library scan skipped: no readable storage sources",
+      );
+      return { synced: 0, deleted: 0, errors: 0 };
+    }
+
     const liveFiles = new Set<string>();
     const upserts: MPDTrack[] = [];
     let inspected = 0;
@@ -108,9 +123,7 @@ export class LibraryScanner {
 
         const fallbackTitle = path.parse(file.file).name;
         try {
-          const metadata = await mediaMetadata.parseFile(absPath, {
-            duration: true,
-          });
+          const metadata = await this.parseFile(absPath, { duration: true });
           upserts.push(
             mapAudioMetadata(
               {
@@ -168,10 +181,9 @@ export class LibraryScanner {
       walked.some((source) => isUnderPrefix(file, source.prefix));
 
     // First run: legacy/MPD-sourced rows cannot be attributed to a source
-    // prefix, so drop everything not seen by a walked source. Never wipe when
-    // nothing was walked (unreadable/absent sources must not delete data).
+    // prefix, so drop everything not seen by a walked source. `scan()` returns
+    // early when nothing was walked, so this only runs with ≥1 walked source.
     if (catalogSyncDb.getScannerVersion() === undefined) {
-      if (walked.length === 0) return [];
       return dbFiles.filter((file) => !liveFiles.has(file));
     }
 
