@@ -1,9 +1,6 @@
 import { albumsDb } from "@repo/db";
-import type {
-  SyncProgress,
-  CatalogSyncService,
-} from "@services/library/catalogSyncService";
-import { scanStorageStats } from "@services/storage/storageStats";
+import type { CatalogSyncService } from "@services/library/catalogSyncService";
+import type { ScanProgress } from "@services/library/libraryScanner";
 import { broadcast } from "../../ws/broadcast";
 import type { CoverSyncService } from "@services/library/coverSyncService";
 
@@ -51,11 +48,9 @@ export class CatalogSyncOrchestratorImpl implements CatalogSyncOrchestrator {
     broadcast({ type: "sync-progress", ...this.currentSyncProgress });
 
     try {
-      await this.catalogSyncService.updateLibrary();
-
-      // Phase 1: Sync tracks from MPD
-      await this.catalogSyncService.syncAll((progress: SyncProgress) => {
-        this.currentSyncProgress = { ...progress } as Record<string, unknown>;
+      // Phase 1: Scan storage sources and sync tracks into the catalog
+      await this.catalogSyncService.scanAll((progress: ScanProgress) => {
+        this.currentSyncProgress = { ...progress };
         broadcast({ type: "sync-progress", ...progress });
       });
 
@@ -78,13 +73,6 @@ export class CatalogSyncOrchestratorImpl implements CatalogSyncOrchestrator {
             ...this.currentSyncProgress,
           });
         });
-      }
-
-      // Phase 3: Refresh per-source library statistics
-      try {
-        scanStorageStats();
-      } catch (err) {
-        console.error("[Library] Failed to scan storage stats:", err);
       }
 
       this.currentSyncProgress = null;
