@@ -144,6 +144,21 @@ export const listMountsHandler = asyncHandler(
   },
 );
 
+export const getDetectedLibrariesHandler = asyncHandler(
+  async (_req: Request, res: Response) => {
+    res.json(getStorageService().getDetectedLibraries());
+  },
+);
+
+export const refreshStorageStatsHandler = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { id } = systemSchemas.idParam.parse(req.params);
+    const source = getStorageService().refreshStats(id);
+    if (!source) throw new NotFoundError(`Storage source ${id}`);
+    res.json(source);
+  },
+);
+
 export const getSetupProgressHandler = asyncHandler(
   async (_req: Request, res: Response) => {
     const progress = getSetupService().getSetupProgress();
