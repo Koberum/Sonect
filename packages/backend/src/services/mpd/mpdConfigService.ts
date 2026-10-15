@@ -1,7 +1,21 @@
 import fs from "fs";
 import path from "path";
+import { execSync } from "child_process";
 import type { OutputMode } from "@repo/types";
 import type { MpdConnectionManager } from "./mpdConnectionManager.js";
+
+/**
+ * Reload MPD after the drop-in changed. Under s6 (single-container image) it
+ * asks the supervisor to restart the service; in dev it sends SIGHUP to the
+ * MPD process. Both are unprivileged — no `sudo`, no `systemctl`.
+ */
+function defaultReload(): void {
+  if (fs.existsSync("/run/service/mpd")) {
+    execSync("s6-svc -r /run/service/mpd");
+  } else {
+    execSync("pkill -HUP mpd");
+  }
+}
 
 export interface MpdConfigService {
   // ConfigService
@@ -39,7 +53,10 @@ export class MpdConfigServiceImpl implements MpdConfigService {
   private _lastDeviceName: string | null = null;
   private _mpdOwnerSessionId: string | null = null;
 
-  constructor(private readonly mpdConnectionManager: MpdConnectionManager) {}
+  constructor(
+    private readonly mpdConnectionManager: MpdConnectionManager,
+    private readonly reload: () => void = defaultReload,
+  ) {}
 
   // ConfigService
   public getConfig(): { content: string; path: string } {
@@ -168,11 +185,18 @@ export class MpdConfigServiceImpl implements MpdConfigService {
   }
 
   /**
-   * The MPD container restarts itself whenever the drop-in changes (an inotify
-   * watcher in the MPD image). The backend only writes the file — no
-   * `systemctl`, no `sudo`, no privileged commands.
+   * Reload MPD through the injected supervisor hook (s6 in the image, SIGHUP
+   * in dev; tests inject a stub). The backend never runs `systemctl` or `sudo`.
    */
   public restartMPD(): { success: boolean; warning?: string } {
+    try {
+      this.reload();
+    } catch (error) {
+      return {
+        success: false,
+        warning: `Failed to reload MPD: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
     return { success: true };
   }
 
