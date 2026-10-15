@@ -68,8 +68,8 @@ export class StorageServiceImpl implements StorageService {
     let created = storageDb.getById(id);
 
     // Compute initial stats eagerly so the setup wizard can show immediate
-    // feedback. This does not persist stats; the periodic scanStorageStats()
-    // job remains the source of truth for long-term values.
+    // feedback. These are not persisted here; the library scanner walk that
+    // runs during sync remains the source of truth for long-term values.
     if (created) {
       try {
         const stats = computeSourceStats(fullPath);

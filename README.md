@@ -204,7 +204,7 @@ Configure via `packages/backend/.env`:
 | `WAVEFORMS_DIR`    | `<COVERS_DIR>/../waveforms` or `./data/waveforms`              | Where waveform JSON caches are saved (`SHA1(file).json`)            |
 | `DB_PATH`          | `/db/music.db` (dev) / `/data/music.db` (docker)               | SQLite database path                                                |
 | `MPD_CONFIG_PATH`  | `/opt/sonect/data/mpd-audio.conf`                              | MPD config drop-in (`/mpd-config/mpd-audio.conf` in docker)         |
-| `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | MPD log file for sync progress (`/mpd-logs/mpd.log` in docker)      |
+| `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | MPD log file (legacy; sync progress now comes from the scanner)     |
 | `DNS_CHECK_HOST`   | `example.com`                                                  | Host resolved to verify DNS connectivity                            |
 | `PORT`             | `3000`                                                         | Backend HTTP port                                                   |
 | `FRONTEND_DIST`    | `../frontend/dist`                                             | Built frontend static files                                         |
@@ -232,8 +232,11 @@ elevated privileges. Settings → Libraries shows the registered libraries and
 the mounts detected under the music directory.
 
 Each library source shows **file count, folder count, and total music-file
-size**, refreshed at the end of every library scan. `MUSIC_EXTENSIONS`
-controls which audio extensions are counted as music files.
+size**, refreshed at the end of every library scan. Sonect owns the library
+scan: it is **incremental**, skipping files whose `(mtime, size)` are unchanged
+and re-parsing only changed or new files, so existing play counts survive.
+MPD's `update` runs fire-and-forget and is not the source of the catalog.
+`MUSIC_EXTENSIONS` controls which audio extensions are counted as music files.
 
 Sonect does not manage host Wi-Fi connections. `GET /system/network/status`
 returns whether the server has a non-loopback network address and whether the
