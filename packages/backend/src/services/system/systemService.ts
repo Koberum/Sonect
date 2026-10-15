@@ -1,4 +1,4 @@
-import { execSync } from "child_process";
+import fs from "fs";
 import os from "os";
 import { readAppVersion } from "../utils/appVersion.js";
 import { checkTool } from "../utils/utils.js";
@@ -10,13 +10,23 @@ import type {
   HardwareUsage,
 } from "@repo/types/system";
 
+const ASOUND_CARDS_PATH = "/proc/asound/cards";
+const ASOUND_PCM_PATH = "/proc/asound/pcm";
+const USB_DEVICES_PATH = "/sys/bus/usb/devices";
+
+function readTextFile(path: string): string | null {
+  try {
+    return fs.readFileSync(path, "utf-8");
+  } catch {
+    return null;
+  }
+}
+
 export interface SystemServiceInterface {
   getSystemStatus(): SystemStatus;
   getHardwareUsage(): HardwareUsage;
   detectAudioDevices(): AudioDevice[];
   checkTool(name: string): boolean;
-  getUsbDeviceInfo(usbId: string): { vendor: string; product: string } | null;
-  getUsbIdForCard(cardNumber: string): string | null;
 }
 
 export class SystemServiceImpl implements SystemServiceInterface {
@@ -93,7 +103,7 @@ export class SystemServiceImpl implements SystemServiceInterface {
       mpd: this.checkTool("mpd"),
     };
 
-    const cards = tools.aplay ? this.detectAudioDevices() : [];
+    const cards = this.detectAudioDevices();
 
     return {
       tools,
@@ -113,100 +123,111 @@ export class SystemServiceImpl implements SystemServiceInterface {
 
   public detectAudioDevices(): AudioDevice[] {
     const devices: AudioDevice[] = [];
+    const pcm = readTextFile(ASOUND_PCM_PATH);
+    if (!pcm) return devices;
 
-    try {
-      const output = execSync("aplay -l 2>/dev/null", {
-        encoding: "utf-8",
-        timeout: 5000,
-      });
+    const cardNames = this.readCardNames();
 
-      /* List of PLAYBACK Hardware Devices ****
-        card 0: PCH [HDA Intel PCH], device 0: ALC671 Analog [ALC671 Analog]
-          Subdevices: 1/1
-          Subdevice #0: subdevice #0
-        card 1: HDMI [HDA Intel HDMI], device 3: HDMI 0 [HDMI 0]
-          Subdevices: 1/1
-          Subdevice #0: subdevice #0
-        card 1: HDMI [HDA Intel HDMI], device 7: HDMI 1 [HDMI 1]
-          Subdevices: 1/1
-          Subdevice #0: subdevice #0
-        card 1: HDMI [HDA Intel HDMI], device 8: HDMI 2 [HDMI 2]
-          Subdevices: 1/1
-          Subdevice #0: subdevice #0
-      */
+    // Playback PCM lines look like:
+    //   00-00: ALC671 Analog : ALC671 Analog : playback 1 : capture 1
+    // The name is repeated before the `: playback` marker; keep the first part.
+    for (const line of pcm.split("\n")) {
+      const match = /^(\d+)-(\d+):\s*(.+?)\s*:\s*playback/.exec(line);
+      if (!match) continue;
 
-      const deviceRegex =
-        /card (\d+): ([^[]+)\s*\[([^\]]*)\], device (\d+): ([^[]+)\s*\[([^\]]*)\]/g;
-      let match: RegExpExecArray | null;
+      const cardIndex = Number(match[1]);
+      const deviceIndex = Number(match[2]);
+      const description = match[3].split(" : ")[0].trim();
+      const cardName = cardNames.get(cardIndex);
+      const usbId = this.readUsbId(cardIndex);
 
-      while ((match = deviceRegex.exec(output)) !== null) {
-        const cardNumber = match[1];
-        const cardName = match[2].trim();
-        const deviceNumber = match[4];
-        const deviceName = match[5].trim();
+      const device: AudioDevice = {
+        card: `hw:${cardIndex},${deviceIndex}`,
+        name: `${cardName ?? `card ${cardIndex}`} (card ${cardIndex})`,
+        description,
+        usb: !!usbId,
+      };
 
-        const usbId = this.getUsbIdForCard(cardNumber);
-        const usbInfo = usbId ? this.getUsbDeviceInfo(usbId) : undefined;
-
-        devices.push({
-          card: `hw:${cardNumber},${deviceNumber}`,
-          name: `${cardName} (card ${cardNumber})`,
-          description: deviceName,
-          usb: !!usbId,
-          usbVendor: usbInfo?.vendor,
-          usbProduct: usbInfo?.product,
-        });
+      if (usbId) {
+        const { vendor, product } = this.resolveUsbNames(usbId);
+        if (vendor) device.usbVendor = vendor;
+        if (product) device.usbProduct = product;
       }
-    } catch {
-      return devices;
+
+      devices.push(device);
     }
 
     return devices;
   }
 
-  public getUsbIdForCard(cardNumber: string): string | null {
-    try {
-      const usbId = execSync(
-        `cat /proc/asound/card${cardNumber}/usbid 2>/dev/null`,
-        {
-          encoding: "utf-8",
-          timeout: 2000,
-        },
-      ).trim();
-      return usbId || null;
-    } catch {
-      return null;
+  // /proc/asound/cards lines look like:
+  //    0 [PCH            ]: HDA-Intel - HDA Intel PCH
+  private readCardNames(): Map<number, string> {
+    const names = new Map<number, string>();
+    const cards = readTextFile(ASOUND_CARDS_PATH);
+    if (!cards) return names;
+
+    for (const line of cards.split("\n")) {
+      const match = /^\s*(\d+)\s*\[([^\]]+)\]/.exec(line);
+      if (!match) continue;
+      names.set(Number(match[1]), match[2].trim());
     }
+
+    return names;
   }
 
-  public getUsbDeviceInfo(
-    usbId: string,
-  ): { vendor: string; product: string } | null {
-    const USB_VENDOR_MAP: Record<string, string> = {
-      "0bda": "Realtek Semiconductor Corp.",
-      "08bb": "Texas Instruments",
-      "041e": "Creative Technology",
-      "0d8c": "C-Media Electronics",
-      "1b3f": "Generalplus Technology",
-      "20b1": "XMOS",
-      "16d0": "MCS Electronics",
-      "10c4": "Silicon Labs",
-      "0483": "STMicroelectronics",
-      "0424": "Microchip Technology",
-    };
+  private readUsbId(cardIndex: number): string | null {
+    const content = readTextFile(`/proc/asound/card${cardIndex}/usbid`);
+    const usbId = content?.trim();
+    return usbId ? usbId : null;
+  }
+
+  // Best-effort resolution of human-readable USB names from sysfs. The
+  // /proc/asound/cardN/usbid file is "vendorId:productId" in hex; we scan
+  // /sys/bus/usb/devices for a matching device. Missing sysfs (typical
+  // inside containers) just leaves the names undefined.
+  private resolveUsbNames(usbId: string): {
+    vendor?: string;
+    product?: string;
+  } {
+    const [vendorId, productId] = usbId.toLowerCase().split(":");
+    if (!vendorId || !productId) return {};
+
+    let entries: string[];
     try {
-      const output = execSync(`lsusb -d ${usbId} 2>/dev/null`, {
-        encoding: "utf-8",
-        timeout: 5000,
-      }).trim();
-      if (!output) return null;
-      const parts = output.split(/\s+/).slice(6).join(" ");
-      return {
-        vendor: USB_VENDOR_MAP[usbId.split(":")[0]] || parts,
-        product: parts,
-      };
+      entries = fs.readdirSync(USB_DEVICES_PATH);
     } catch {
-      return null;
+      return {};
     }
+
+    for (const entry of entries) {
+      const base = `${USB_DEVICES_PATH}/${entry}`;
+      try {
+        const entryVendor = fs
+          .readFileSync(`${base}/idVendor`, "utf-8")
+          .trim()
+          .toLowerCase();
+        const entryProduct = fs
+          .readFileSync(`${base}/idProduct`, "utf-8")
+          .trim()
+          .toLowerCase();
+        if (entryVendor !== vendorId || entryProduct !== productId) continue;
+
+        return {
+          vendor: this.readTrimmed(`${base}/manufacturer`),
+          product: this.readTrimmed(`${base}/product`),
+        };
+      } catch {
+        continue;
+      }
+    }
+
+    return {};
+  }
+
+  private readTrimmed(path: string): string | undefined {
+    const content = readTextFile(path);
+    const value = content?.trim();
+    return value ? value : undefined;
   }
 }
