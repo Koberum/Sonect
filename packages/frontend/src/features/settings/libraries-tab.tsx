@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Copy, Folder, HardDrive, Loader2, Plus, Trash2 } from "lucide-react";
+import {
+  Copy,
+  Folder,
+  HardDrive,
+  Loader2,
+  Plus,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -9,6 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,10 +36,7 @@ import { LibrariesForm } from "./libraries-form";
 import type { LibrarySourceFormValues } from "./library-source-form";
 
 const COMPOSE_SNIPPET = `services:
-  sonect-app:
-    volumes:
-      - /host/path/to/music:/libraries/music:ro
-  sonect-mpd:
+  sonect:
     volumes:
       - /host/path/to/music:/libraries/music:ro`;
 
@@ -52,10 +58,11 @@ export function LibrariesTab() {
   const { data: sources = [], isPending: loading } = useQuery(
     systemQueries.storageSources(),
   );
-  const { data: mounts = [] } = useQuery(systemQueries.activeMounts());
+  const { data: detected = [] } = useQuery(systemQueries.detectedLibraries());
   const createMut = useMutation(systemMutations.createStorageSource());
   const updateMut = useMutation(systemMutations.updateStorageSource());
   const deleteMut = useMutation(systemMutations.deleteStorageSource());
+  const refreshMut = useMutation(systemMutations.refreshStorageStats());
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -106,6 +113,18 @@ export function LibrariesTab() {
     } catch {
       toast.error(
         t("settings.libraries.deleteError", "Failed to delete library"),
+      );
+    }
+  };
+
+  const handleRefreshStats = async (id: number) => {
+    try {
+      await refreshMut.mutateAsync(id);
+      toast.success(t("settings.libraries.statsRefreshed", "Stats updated"));
+    } catch (err) {
+      toast.error(
+        (err instanceof Error && err.message) ||
+          t("settings.libraries.refreshStatsError", "Failed to refresh stats"),
       );
     }
   };
@@ -176,7 +195,30 @@ export function LibrariesTab() {
                     </div>
                   )}
                 </div>
-                <div className="flex shrink-0 gap-1">
+                <div className="flex shrink-0 flex-wrap justify-end gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRefreshStats(src.id)}
+                    disabled={
+                      refreshMut.isPending && refreshMut.variables === src.id
+                    }
+                    aria-label={t(
+                      "settings.libraries.refreshStats",
+                      "Refresh stats",
+                    )}
+                  >
+                    {refreshMut.isPending && refreshMut.variables === src.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                    <span className="ml-2 hidden sm:inline">
+                      {refreshMut.isPending && refreshMut.variables === src.id
+                        ? t("settings.libraries.refreshing", "Refreshing…")
+                        : t("settings.libraries.refreshStats", "Refresh stats")}
+                    </span>
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -205,11 +247,11 @@ export function LibrariesTab() {
         )}
 
         <div className="space-y-2 rounded-lg border p-3">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <HardDrive className="text-muted-foreground h-4 w-4 shrink-0" />
               <span className="text-sm font-medium">
-                {t("settings.libraries.detectedMounts", "Detected mounts")}
+                {t("settings.libraries.detected", "Detected libraries")}
               </span>
             </div>
             <Button variant="ghost" size="sm" onClick={copySnippet}>
@@ -217,21 +259,47 @@ export function LibrariesTab() {
               {t("settings.libraries.copySnippet", "Copy compose snippet")}
             </Button>
           </div>
-          {mounts.length === 0 ? (
+          {detected.length === 0 ? (
             <p className="text-muted-foreground text-xs">
               {t(
-                "settings.libraries.noMounts",
-                "No bind mounts detected under the music directory.",
+                "settings.libraries.noDetected",
+                "No folders detected under the music directory.",
               )}
             </p>
           ) : (
-            <ul className="space-y-1">
-              {mounts.map((m) => (
+            <ul className="space-y-2">
+              {detected.map((lib) => (
                 <li
-                  key={m.path}
-                  className="text-muted-foreground truncate font-mono text-xs"
+                  key={lib.path}
+                  className={`flex flex-wrap items-center gap-x-2 gap-y-1 ${
+                    lib.registered ? "opacity-60" : ""
+                  }`}
                 >
-                  {m.uri} → {m.path}
+                  <span className="truncate text-sm font-medium">
+                    {lib.name}
+                  </span>
+                  {lib.isMount && (
+                    <Badge variant="secondary">
+                      {t("settings.libraries.isMount", "Mount")}
+                    </Badge>
+                  )}
+                  {lib.registered && (
+                    <Badge variant="outline">
+                      {t("settings.libraries.alreadyAdded", "Already added")}
+                    </Badge>
+                  )}
+                  <span className="text-muted-foreground w-full truncate font-mono text-xs">
+                    {lib.path}
+                  </span>
+                  {lib.stats && (
+                    <span className="text-muted-foreground w-full truncate text-xs">
+                      {t("settings.libraries.stats", {
+                        files: formatCount(lib.stats.file_count),
+                        folders: formatCount(lib.stats.dir_count),
+                        size: formatBytes(lib.stats.total_size),
+                      })}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>

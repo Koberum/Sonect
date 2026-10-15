@@ -29,6 +29,18 @@ export interface MountInfo {
   uri: string;
 }
 
+export interface DetectedLibrary {
+  path: string;
+  name: string;
+  isMount: boolean;
+  registered: boolean;
+  stats?: {
+    file_count: number;
+    dir_count: number;
+    total_size: number;
+  };
+}
+
 export interface SetupStep {
   step: string;
   completed: boolean;
@@ -83,6 +95,18 @@ export function deleteStorageSource(id: number): Promise<void> {
 
 export function getActiveMounts(signal?: AbortSignal): Promise<MountInfo[]> {
   return apiFetch("/system/storage/mounts", { signal });
+}
+
+export function getDetectedLibraries(
+  signal?: AbortSignal,
+): Promise<DetectedLibrary[]> {
+  return apiFetch("/system/storage/detected", { signal });
+}
+
+export function refreshStorageStats(id: number): Promise<StorageSource> {
+  return apiFetch(`/system/storage/sources/${id}/refresh-stats`, {
+    method: "POST",
+  });
 }
 
 export function getSetupProgress(signal?: AbortSignal): Promise<{

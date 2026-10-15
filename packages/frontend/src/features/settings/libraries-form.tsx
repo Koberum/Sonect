@@ -47,6 +47,8 @@ function LibrariesFormFields({
         errors={form.errors}
         handleFieldBlur={form.handleFieldBlur}
         fieldClass={form.fieldClass}
+        detected={form.detected}
+        applyDetected={form.applyDetected}
       />
       <DialogFooter>
         <Button variant="outline" onClick={onClose}>
