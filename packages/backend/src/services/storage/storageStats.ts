@@ -11,6 +11,12 @@ export interface SourceStats {
   total_size: number;
 }
 
+export interface SourceFile {
+  file: string;
+  mtimeMs: number;
+  size: number;
+}
+
 function getAudioExtensions(): Set<string> {
   const raw = process.env.MUSIC_EXTENSIONS ?? DEFAULT_EXTENSIONS;
   return new Set(
@@ -21,11 +27,12 @@ function getAudioExtensions(): Set<string> {
   );
 }
 
-export function walkSource(
+function walk(
   root: string,
   exts: ReadonlySet<string>,
-): SourceStats {
-  const stats: SourceStats = { file_count: 0, dir_count: 0, total_size: 0 };
+): { files: SourceFile[]; dirCount: number } {
+  const files: SourceFile[] = [];
+  let dirCount = 0;
 
   function visit(dir: string): void {
     let entries: fs.Dirent[];
@@ -41,24 +48,45 @@ export function walkSource(
       const full = path.join(dir, entry.name);
       if (entry.isSymbolicLink()) continue;
       if (entry.isDirectory()) {
-        stats.dir_count++;
+        dirCount++;
         visit(full);
       } else if (entry.isFile()) {
         const ext = path.extname(entry.name).slice(1).toLowerCase();
-        if (exts.has(ext)) {
-          stats.file_count++;
-          try {
-            stats.total_size += fs.statSync(full).size;
-          } catch {
-            // file vanished mid-walk
-          }
+        if (!exts.has(ext)) continue;
+        try {
+          const stat = fs.statSync(full);
+          files.push({
+            file: path.relative(root, full),
+            mtimeMs: stat.mtimeMs,
+            size: stat.size,
+          });
+        } catch {
+          // file vanished mid-walk
         }
       }
     }
   }
 
   visit(root);
-  return stats;
+  files.sort((a, b) => a.file.localeCompare(b.file));
+  return { files, dirCount };
+}
+
+export function walkSourceFiles(
+  root: string,
+  exts: ReadonlySet<string>,
+): SourceFile[] {
+  return walk(root, exts).files;
+}
+
+export function walkSource(
+  root: string,
+  exts: ReadonlySet<string>,
+): SourceStats {
+  const { files, dirCount } = walk(root, exts);
+  let total_size = 0;
+  for (const f of files) total_size += f.size;
+  return { file_count: files.length, dir_count: dirCount, total_size };
 }
 
 export function computeSourceStats(root: string): SourceStats {
