@@ -19,8 +19,19 @@ RUN pnpm --filter @repo/types build && \
 
 # ---- Production stage ----
 FROM node:24-alpine
-RUN apk add --no-cache dumb-init ffmpeg alsa-utils usbutils
+RUN apk add --no-cache ffmpeg alsa-utils mpd xz ca-certificates
 RUN npm install -g pnpm@10.34.7
+
+# s6-overlay v3 supervisord: runs the mpd and node longruns as siblings.
+ARG S6_OVERLAY_VERSION=3.2.0.0
+ARG TARGETARCH
+RUN case "$TARGETARCH" in \
+      amd64) S6_ARCH=x86_64 ;; \
+      arm64) S6_ARCH=aarch64 ;; \
+      *) echo "unsupported arch: $TARGETARCH" >&2; exit 1 ;; \
+    esac \
+ && wget -qO- "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz" | tar -Jxpf - -C / \
+ && wget -qO- "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${S6_ARCH}.tar.xz" | tar -Jxpf - -C /
 
 WORKDIR /app
 
@@ -33,6 +44,11 @@ COPY --from=builder /build/packages/backend/dist/bundle.cjs ./bundle.cjs
 # startup with ENOENT scandir '/app/drizzle/'. Do not remove.
 COPY --from=builder /build/packages/backend/dist/drizzle ./drizzle
 COPY --from=builder /build/packages/frontend/dist ./frontend/dist/
+
+# Base MPD config (immutable) and the s6-overlay service tree. The drop-in
+# /app/data/mpd-audio.conf is created at runtime by the mpd longrun.
+COPY docker/mpd.conf /etc/mpd/mpd.conf
+COPY docker/s6/s6-rc.d /etc/s6-overlay/s6-rc.d
 
 RUN cat > package.json <<-'PKGJSON'
 {
@@ -51,6 +67,9 @@ RUN pnpm install --prod
 ENV NODE_ENV=production
 ENV FRONTEND_DIST=/app/frontend/dist
 ENV DB_PATH=/app/data/music.db
+ENV MPD_CONFIG_PATH=/app/data/mpd-audio.conf
+ENV MPD_HOST=127.0.0.1
+ENV MPD_PORT=6600
 
 # Strip a leading "v" so both `v1.2.3` and `1.2.3` tags report the same string.
 RUN printf '%s' "${SONECT_VERSION#v}" > /app/.version
@@ -60,4 +79,8 @@ VOLUME /app/data
 
 EXPOSE 3000
 
-CMD ["dumb-init", "node", "bundle.cjs"]
+# node:24-alpine ships CMD ["node"]; clear it so s6 does not run an extra CMD
+# that exits immediately (which would tear the container down). mpd + node run
+# as supervised s6 longruns instead.
+ENTRYPOINT ["/init"]
+CMD []
