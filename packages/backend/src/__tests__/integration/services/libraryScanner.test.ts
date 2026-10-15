@@ -3,12 +3,12 @@ import sinon from "sinon";
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { eq } from "drizzle-orm";
 import type * as mm from "music-metadata";
 import { createTestDb } from "@tests/helpers/db.js";
-import { catalogSyncDb, storageDb, tracksDb } from "@repo/db";
+import { catalogSyncDb, db, storageDb, tracks, tracksDb } from "@repo/db";
 import {
   LibraryScanner,
-  mediaMetadata,
   type ScanProgress,
 } from "@services/library/libraryScanner.js";
 import type { LogService } from "@services/utils/logService";
@@ -30,6 +30,7 @@ describe("LibraryScanner (integration)", () => {
   let close: () => void;
   let sandbox: sinon.SinonSandbox;
   let tmpDir: string;
+  let parseFile: sinon.SinonStub;
   let scanner: LibraryScanner;
 
   function writeAudio(rel: string, content = "x"): string {
@@ -57,7 +58,8 @@ describe("LibraryScanner (integration)", () => {
     const logService = {
       pushLog: sandbox.stub(),
     } as unknown as LogService;
-    scanner = new LibraryScanner(logService);
+    parseFile = sandbox.stub().resolves(METADATA);
+    scanner = new LibraryScanner(logService, parseFile);
   });
 
   afterEach(() => {
@@ -68,9 +70,6 @@ describe("LibraryScanner (integration)", () => {
   });
 
   it("does not re-parse or delete unchanged files", async () => {
-    const parseFile = sandbox
-      .stub(mediaMetadata, "parseFile")
-      .resolves(METADATA);
     registerSource("lib1", "lib1");
     writeAudio(path.join("lib1", "a.mp3"));
     writeAudio(path.join("lib1", "b.mp3"));
@@ -91,9 +90,6 @@ describe("LibraryScanner (integration)", () => {
   });
 
   it("re-parses a file whose size/mtime changed", async () => {
-    const parseFile = sandbox
-      .stub(mediaMetadata, "parseFile")
-      .resolves(METADATA);
     registerSource("lib1", "lib1");
     const abs = writeAudio(path.join("lib1", "a.mp3"), "12345");
 
@@ -110,7 +106,6 @@ describe("LibraryScanner (integration)", () => {
   });
 
   it("deletes a track removed from a readable source", async () => {
-    sandbox.stub(mediaMetadata, "parseFile").resolves(METADATA);
     registerSource("lib1", "lib1");
     writeAudio(path.join("lib1", "a.mp3"));
     const removed = writeAudio(path.join("lib1", "b.mp3"));
@@ -125,7 +120,6 @@ describe("LibraryScanner (integration)", () => {
   });
 
   it("keeps rows of an unreadable source", async () => {
-    sandbox.stub(mediaMetadata, "parseFile").resolves(METADATA);
     catalogSyncDb.applyIncremental({ upserts: [], deletions: [] });
 
     registerSource("readable", "libA");
@@ -151,7 +145,6 @@ describe("LibraryScanner (integration)", () => {
   });
 
   it("deletes nothing when there are zero enabled sources", async () => {
-    sandbox.stub(mediaMetadata, "parseFile").resolves(METADATA);
     registerSource("disabled", "lib1", false);
     tracksDb.upsert({ file: "kept.mp3", title: "kept" });
 
@@ -161,8 +154,22 @@ describe("LibraryScanner (integration)", () => {
     expect(tracksDb.getFiles()).to.deep.equal(["kept.mp3"]);
   });
 
+  it("does not spend the first-run marker when nothing is walked", async () => {
+    storageDb.create({
+      name: "broken",
+      path: path.join(tmpDir, "missing"),
+      enabled: true,
+    });
+    tracksDb.upsert({ file: "legacy.mp3", title: "legacy" });
+
+    const result = await scanner.scan();
+
+    expect(result).to.deep.equal({ synced: 0, deleted: 0, errors: 0 });
+    expect(catalogSyncDb.getScannerVersion()).to.equal(undefined);
+    expect(tracksDb.getFiles()).to.deep.equal(["legacy.mp3"]);
+  });
+
   it("drops MPD-only rows on the first run when a source is walked", async () => {
-    sandbox.stub(mediaMetadata, "parseFile").resolves(METADATA);
     registerSource("lib1", "lib1");
     writeAudio(path.join("lib1", "a.mp3"));
     tracksDb.upsert({ file: "ghost.mp3", title: "ghost" });
@@ -172,8 +179,34 @@ describe("LibraryScanner (integration)", () => {
     expect(tracksDb.getFiles()).to.deep.equal([path.join("lib1", "a.mp3")]);
   });
 
+  it("preserves play_count and last_played for present files", async () => {
+    registerSource("lib1", "lib1");
+    const abs = writeAudio(path.join("lib1", "a.mp3"), "12345");
+    const rel = path.join("lib1", "a.mp3");
+
+    await scanner.scan();
+    db()
+      .update(tracks)
+      .set({ play_count: 42, last_played: "2024-01-01 00:00:00" })
+      .where(eq(tracks.file, rel))
+      .run();
+
+    await scanner.scan();
+    let row = tracksDb.getByFile(rel);
+    expect(row?.play_count).to.equal(42);
+    expect(row?.last_played).to.equal("2024-01-01 00:00:00");
+
+    fs.writeFileSync(abs, "1234567890");
+    const future = new Date(Date.now() + 5_000);
+    fs.utimesSync(abs, future, future);
+
+    await scanner.scan();
+    row = tracksDb.getByFile(rel);
+    expect(row?.play_count).to.equal(42);
+    expect(row?.last_played).to.equal("2024-01-01 00:00:00");
+  });
+
   it("emits track progress with the total file count", async () => {
-    sandbox.stub(mediaMetadata, "parseFile").resolves(METADATA);
     registerSource("lib1", "lib1");
     writeAudio(path.join("lib1", "a.mp3"));
     writeAudio(path.join("lib1", "b.mp3"));
@@ -188,9 +221,7 @@ describe("LibraryScanner (integration)", () => {
   });
 
   it("still indexes a file when metadata parsing fails", async () => {
-    sandbox
-      .stub(mediaMetadata, "parseFile")
-      .rejects(new Error("unsupported codec"));
+    parseFile.rejects(new Error("unsupported codec"));
     registerSource("lib1", "lib1");
     const abs = writeAudio(path.join("lib1", "mystery.mp3"));
 
