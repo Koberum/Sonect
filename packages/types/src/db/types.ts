@@ -22,6 +22,8 @@ export type DBTrack = {
   duration?: number;
   date?: string;
   last_modified?: string;
+  mtime?: number;
+  size?: number;
   play_count?: number;
   last_played?: string;
   created_at?: string;

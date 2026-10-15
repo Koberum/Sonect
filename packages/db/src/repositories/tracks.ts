@@ -95,6 +95,8 @@ export function upsertTrack(executor: QueryExecutor, track: MPDTrack): number {
         duration: track.duration ?? null,
         date: track.date ?? null,
         last_modified: track.lastModified ?? null,
+        mtime: track.mtime ?? null,
+        size: track.size ?? null,
         updated_at: sql`CURRENT_TIMESTAMP`,
       })
       .where(eq(tracks.id, existing.id))
@@ -115,6 +117,8 @@ export function upsertTrack(executor: QueryExecutor, track: MPDTrack): number {
       duration: track.duration ?? null,
       date: track.date ?? null,
       last_modified: track.lastModified ?? null,
+      mtime: track.mtime ?? null,
+      size: track.size ?? null,
     })
     .run();
   return normalizeRowId(result.lastInsertRowid);
