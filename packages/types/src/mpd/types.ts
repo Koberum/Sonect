@@ -15,6 +15,8 @@ export type MPDTrack = {
   date?: string;
   disc?: string;
   duration?: number;
+  mtime?: number;
+  size?: number;
 };
 
 export type MPDQueuedTrack = MPDTrack & {

@@ -103,6 +103,16 @@ describe("tracksDb (trophy integration)", () => {
       expect(row?.album_id).to.be.null;
       expect(row?.genre_id).to.be.null;
     });
+    it("upsert stores file mtime and size", () => {
+      tracksDb.upsert({
+        ...mpdTrack({ file: "a/t.mp3" }),
+        mtime: 1700000000000,
+        size: 4096,
+      });
+      const row = tracksDb.getByFile("a/t.mp3");
+      expect(row?.mtime).to.equal(1700000000000);
+      expect(row?.size).to.equal(4096);
+    });
     it("handles albumArtist fallback for album artist", () => {
       const id = tracksDb.upsert(
         mpdTrack({
