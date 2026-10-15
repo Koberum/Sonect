@@ -67,6 +67,8 @@ RUN pnpm install --prod
 ENV NODE_ENV=production
 ENV FRONTEND_DIST=/app/frontend/dist
 ENV DB_PATH=/app/data/music.db
+ENV COVERS_DIR=/app/data/covers
+ENV WAVEFORMS_DIR=/app/data/waveforms
 ENV MPD_CONFIG_PATH=/app/data/mpd-audio.conf
 ENV MPD_HOST=127.0.0.1
 ENV MPD_PORT=6600
