@@ -98,6 +98,9 @@ export class LibraryScanner {
     const liveFiles = new Set<string>();
     const upserts: MPDTrack[] = [];
     let inspected = 0;
+    let newCount = 0;
+    let updatedCount = 0;
+    let unchangedCount = 0;
 
     for (const source of walked) {
       for (const file of source.files) {
@@ -118,8 +121,22 @@ export class LibraryScanner {
           existing.mtime === file.mtimeMs &&
           existing.size === file.size
         ) {
+          unchangedCount += 1;
           continue;
         }
+
+        if (existing) {
+          updatedCount += 1;
+        } else {
+          newCount += 1;
+        }
+
+        this.logService.pushLog(
+          "debug",
+          existing
+            ? `Scanner updated track: ${rel}`
+            : `Scanner found new track: ${rel}`,
+        );
 
         const fallbackTitle = path.parse(file.file).name;
         try {
@@ -153,6 +170,15 @@ export class LibraryScanner {
     }
 
     const deletions = this.buildDeletions(musicDir, walked, liveFiles);
+
+    for (const file of deletions) {
+      this.logService.pushLog("debug", `Scanner removed track: ${file}`);
+    }
+
+    this.logService.pushLog(
+      "debug",
+      `Scanner inspected ${liveFiles.size} files: ${newCount} new, ${updatedCount} updated, ${unchangedCount} unchanged, ${deletions.length} removed`,
+    );
 
     const result = catalogSyncDb.applyIncremental({ upserts, deletions });
 

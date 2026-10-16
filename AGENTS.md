@@ -68,20 +68,21 @@ After making changes:
 
 ## Environment variables (packages/backend/.env)
 
-| Variable           | Default                                                        | Purpose                                                                       |
-| ------------------ | -------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `MPD_HOST`         | `localhost`                                                    | MPD daemon hostname                                                           |
-| `MPD_PORT`         | `6600`                                                         | MPD daemon port                                                               |
-| `COVERS_DIR`       | —                                                              | Path where cover WebPs are saved                                              |
-| `COVER_SIZE`       | `400`                                                          | Cover resize dimension (px, square fit inside)                                |
-| `COVER_QUALITY`    | `80`                                                           | WebP quality for covers                                                       |
-| `MUSIC_DIR`        | `/music`                                                       | Root directory of the music library                                           |
-| `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta` | Audio extensions counted as music files in per-source library stats           |
-| `PORT`             | `3000`                                                         | Backend HTTP server port                                                      |
-| `FRONTEND_DIST`    | `../frontend/dist`                                             | Path to built frontend static files (prod)                                    |
-| `WAVEFORMS_DIR`    | `<COVERS_DIR>/../waveforms` or `./data/waveforms`              | Path where waveform JSON caches are saved (SHA1(file).json)                   |
-| `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | MPD log file; no longer read by Sonect (sync progress comes from the scanner) |
-| `DNS_CHECK_HOST`   | `example.com`                                                  | Host resolved to verify DNS connectivity                                      |
+| Variable           | Default                                                        | Purpose                                                                                                        |
+| ------------------ | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `MPD_HOST`         | `localhost`                                                    | MPD daemon hostname                                                                                            |
+| `MPD_PORT`         | `6600`                                                         | MPD daemon port                                                                                                |
+| `COVERS_DIR`       | —                                                              | Path where cover WebPs are saved                                                                               |
+| `COVER_SIZE`       | `400`                                                          | Cover resize dimension (px, square fit inside)                                                                 |
+| `COVER_QUALITY`    | `80`                                                           | WebP quality for covers                                                                                        |
+| `MUSIC_DIR`        | `/music`                                                       | Root directory of the music library                                                                            |
+| `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta` | Audio extensions counted as music files in per-source library stats                                            |
+| `PORT`             | `3000`                                                         | Backend HTTP server port                                                                                       |
+| `FRONTEND_DIST`    | `../frontend/dist`                                             | Path to built frontend static files (prod)                                                                     |
+| `WAVEFORMS_DIR`    | `<COVERS_DIR>/../waveforms` or `./data/waveforms`              | Path where waveform JSON caches are saved (SHA1(file).json)                                                    |
+| `LOG_LEVEL`        | `info`                                                         | Console log level (`debug`/`info`/`warn`/`error`); `debug` logs every found/updated/removed track during scans |
+| `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | MPD log file; no longer read by Sonect (sync progress comes from the scanner)                                  |
+| `DNS_CHECK_HOST`   | `example.com`                                                  | Host resolved to verify DNS connectivity                                                                       |
 
 ## Production deployment (Docker)
 

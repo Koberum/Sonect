@@ -27,12 +27,7 @@ export class CatalogSyncService {
     onProgress?: (progress: ScanProgress) => void,
   ): Promise<ScanResult> {
     this.logService.pushLog("info", "Starting library scan");
-    const result = await this.scanner.scan(onProgress);
-    this.logService.pushLog(
-      "info",
-      `Library scan finished: ${result.synced} synced, ${result.deleted} deleted, ${result.errors} errors`,
-    );
-    return result;
+    return this.scanner.scan(onProgress);
   }
 
   getStats(): {
