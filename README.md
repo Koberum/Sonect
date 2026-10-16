@@ -198,22 +198,23 @@ complete database file.
 
 Configure via `packages/backend/.env`:
 
-| Variable           | Default                                                        | Description                                                         |
-| ------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `MPD_HOST`         | `127.0.0.1` (docker) / `localhost` (dev)                       | MPD server host — the daemon runs in the same container in docker   |
-| `MPD_PORT`         | `6600`                                                         | MPD server port                                                     |
-| `MUSIC_DIR`        | `/libraries` (docker) / `/music` (dev)                         | Root of your music library — MPD's single `music_directory`         |
-| `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta` | Audio extensions counted as music files in per-source library stats |
-| `COVERS_DIR`       | `/app/data/covers` (docker) / `./data/covers` (dev)            | Where cover WebPs are cached                                        |
-| `COVER_SIZE`       | `400`                                                          | Cover resize dimension (px, square fit inside)                      |
-| `COVER_QUALITY`    | `80`                                                           | WebP quality for covers                                             |
-| `WAVEFORMS_DIR`    | `/app/data/waveforms` (docker) / `<COVERS_DIR>/../waveforms`   | Where waveform JSON caches are saved (`SHA1(file).json`)            |
-| `DB_PATH`          | `/app/data/music.db` (docker) / `/db/music.db` (dev)           | SQLite database path (docker: under the `sonect-data` volume)       |
-| `MPD_CONFIG_PATH`  | `/app/data/mpd-audio.conf` (docker) / `/opt/sonect/data/...`   | MPD config drop-in (`audio_output` + advanced settings)             |
-| `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | Legacy; **no longer read** — sync progress comes from the scanner   |
-| `DNS_CHECK_HOST`   | `example.com`                                                  | Host resolved to verify DNS connectivity                            |
-| `PORT`             | `3000`                                                         | Backend HTTP port                                                   |
-| `FRONTEND_DIST`    | `../frontend/dist`                                             | Built frontend static files                                         |
+| Variable           | Default                                                        | Description                                                                    |
+| ------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `MPD_HOST`         | `127.0.0.1` (docker) / `localhost` (dev)                       | MPD server host — the daemon runs in the same container in docker              |
+| `MPD_PORT`         | `6600`                                                         | MPD server port                                                                |
+| `MUSIC_DIR`        | `/libraries` (docker) / `/music` (dev)                         | Root of your music library — MPD's single `music_directory`                    |
+| `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta` | Audio extensions counted as music files in per-source library stats            |
+| `COVERS_DIR`       | `/app/data/covers` (docker) / `./data/covers` (dev)            | Where cover WebPs are cached                                                   |
+| `COVER_SIZE`       | `400`                                                          | Cover resize dimension (px, square fit inside)                                 |
+| `COVER_QUALITY`    | `80`                                                           | WebP quality for covers                                                        |
+| `WAVEFORMS_DIR`    | `/app/data/waveforms` (docker) / `<COVERS_DIR>/../waveforms`   | Where waveform JSON caches are saved (`SHA1(file).json`)                       |
+| `DB_PATH`          | `/app/data/music.db` (docker) / `/db/music.db` (dev)           | SQLite database path (docker: under the `sonect-data` volume)                  |
+| `LOG_LEVEL`        | `info`                                                         | Console log level; `debug` logs every found/updated/removed track during scans |
+| `MPD_CONFIG_PATH`  | `/app/data/mpd-audio.conf` (docker) / `/opt/sonect/data/...`   | MPD config drop-in (`audio_output` + advanced settings)                        |
+| `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | Legacy; **no longer read** — sync progress comes from the scanner              |
+| `DNS_CHECK_HOST`   | `example.com`                                                  | Host resolved to verify DNS connectivity                                       |
+| `PORT`             | `3000`                                                         | Backend HTTP port                                                              |
+| `FRONTEND_DIST`    | `../frontend/dist`                                             | Built frontend static files                                                    |
 
 ### Library sources
 
