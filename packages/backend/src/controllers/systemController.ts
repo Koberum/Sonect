@@ -8,7 +8,11 @@ import {
   getSetupService,
   getNetworkService,
 } from "@services/factory";
-import { LockedError, NotFoundError } from "../middleware/errorHandler";
+import {
+  LockedError,
+  NotFoundError,
+  ValidationError,
+} from "../middleware/errorHandler";
 
 export const getStatusHandler = asyncHandler(
   async (_req: Request, res: Response) => {
@@ -110,7 +114,7 @@ export const getStorageSourceHandler = asyncHandler(
 export const createStorageSourceHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const data = systemSchemas.storageSource.parse(req.body);
-    const source = getStorageService().createStorageSource({
+    const source = await getStorageService().createStorageSource({
       ...data,
       enabled: data.enabled ?? true,
     });
@@ -147,6 +151,17 @@ export const listMountsHandler = asyncHandler(
 export const getDetectedLibrariesHandler = asyncHandler(
   async (_req: Request, res: Response) => {
     res.json(getStorageService().getDetectedLibraries());
+  },
+);
+
+export const getStorageStatsHandler = asyncHandler(
+  async (req: Request, res: Response) => {
+    const requestedPath =
+      typeof req.query.path === "string" ? req.query.path : "";
+    if (!requestedPath) {
+      throw new ValidationError("Missing path query parameter", { path: "" });
+    }
+    res.json(await getStorageService().getStatsForPath(requestedPath));
   },
 );
 

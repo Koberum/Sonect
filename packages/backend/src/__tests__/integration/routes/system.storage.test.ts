@@ -13,6 +13,9 @@ import { storageDb } from "@repo/db";
 import {
   initializeServices,
   isServicesInitialized,
+  getStorageService,
+  getMpdConnectionManager,
+  getCatalogSyncOrchestrator,
 } from "@services/factory.js";
 
 describe("system storage routes", () => {
@@ -148,6 +151,97 @@ describe("system storage routes", () => {
     expect(res.body.error).to.include("Cannot read library path");
     // Stats must not be touched on failure.
     expect(storageDb.getById(id)?.file_count).to.equal(0);
+  });
+
+  describe("GET /system/storage/stats", () => {
+    it("returns stats for a first-level folder", async () => {
+      const libPath = path.join(tmpDir, "StatsLib");
+      writeAudio(path.join(libPath, "a.mp3"), "aa");
+      writeAudio(path.join(libPath, "nested", "b.flac"), "bbb");
+
+      const res = await request(makeApp())
+        .get("/system/storage/stats")
+        .query({ path: libPath });
+      expect(res.status).to.equal(200);
+      expect(res.body).to.deep.equal({
+        file_count: 2,
+        dir_count: 1,
+        total_size: 5,
+      });
+    });
+
+    it("400s when the path query parameter is missing", async () => {
+      const res = await request(makeApp()).get("/system/storage/stats");
+      expect(res.status).to.equal(400);
+    });
+
+    it("400s for a path outside MUSIC_DIR", async () => {
+      const res = await request(makeApp())
+        .get("/system/storage/stats")
+        .query({ path: "/etc" });
+      expect(res.status).to.equal(400);
+    });
+
+    it("400s for a nested path", async () => {
+      const libPath = path.join(tmpDir, "Nested");
+      fs.mkdirSync(path.join(libPath, "sub"), { recursive: true });
+      const res = await request(makeApp())
+        .get("/system/storage/stats")
+        .query({ path: path.join(libPath, "sub") });
+      expect(res.status).to.equal(400);
+    });
+
+    it("400s for a non-existent folder", async () => {
+      const res = await request(makeApp())
+        .get("/system/storage/stats")
+        .query({ path: path.join(tmpDir, "ghost") });
+      expect(res.status).to.equal(400);
+    });
+
+    it("keeps computed stats in /storage/detected when the bounded walk omits them", async () => {
+      const libPath = path.join(tmpDir, "BigLib");
+      writeAudio(path.join(libPath, "a.mp3"), "aaaaa");
+
+      const statsRes = await request(makeApp())
+        .get("/system/storage/stats")
+        .query({ path: libPath });
+      expect(statsRes.status).to.equal(200);
+
+      // Simulate the 20k-file budget cutting in for this folder.
+      const service = getStorageService() as unknown as {
+        computeBoundedStats: (root: string) => unknown;
+      };
+      sandbox.stub(service, "computeBoundedStats").returns(undefined);
+
+      const res = await request(makeApp()).get("/system/storage/detected");
+      const lib = (res.body as Array<{ name: string; stats?: unknown }>).find(
+        (l) => l.name === "BigLib",
+      );
+      expect(lib?.stats).to.deep.equal({
+        file_count: 1,
+        dir_count: 0,
+        total_size: 5,
+      });
+    });
+  });
+
+  it("POST /system/storage/sources persists eager stats", async () => {
+    sandbox.stub(getMpdConnectionManager(), "executeCommand").resolves();
+    sandbox.stub(getCatalogSyncOrchestrator(), "scanLibrary").resolves();
+
+    const libPath = path.join(tmpDir, "NewLib");
+    writeAudio(path.join(libPath, "one.mp3"), "12345");
+
+    const res = await request(makeApp())
+      .post("/system/storage/sources")
+      .send({ name: "NewLib", path: libPath });
+    expect(res.status).to.equal(201);
+    expect(res.body.file_count).to.equal(1);
+    expect(res.body.total_size).to.equal(5);
+
+    const id = res.body.id as number;
+    expect(storageDb.getById(id)?.file_count).to.equal(1);
+    expect(storageDb.getById(id)?.total_size).to.equal(5);
   });
 
   describe("computeSourceStatsWithinBudget", () => {

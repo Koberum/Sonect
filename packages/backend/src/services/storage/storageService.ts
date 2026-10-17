@@ -3,6 +3,7 @@ import path from "path";
 import { storageDb } from "@repo/db";
 import {
   computeSourceStats,
+  computeSourceStatsAsync,
   getAudioExtensions,
   type SourceStats,
 } from "./storageStats";
@@ -90,7 +91,7 @@ export interface StorageService {
     name: string;
     path: string;
     enabled?: boolean;
-  }): StorageSource | undefined;
+  }): Promise<StorageSource | undefined>;
   updateStorageSource(
     id: number,
     data: { name?: string; path?: string; enabled?: boolean },
@@ -99,6 +100,7 @@ export interface StorageService {
   listMounts(): MountInfo[];
   getDetectedLibraries(): DetectedLibrary[];
   refreshStats(id: number): StorageSource | undefined;
+  getStatsForPath(input: string): Promise<SourceStats>;
 }
 
 /**
@@ -107,6 +109,14 @@ export interface StorageService {
  * already exists inside the container under MUSIC_DIR.
  */
 export class StorageServiceImpl implements StorageService {
+  /**
+   * Stats computed on demand for (unregistered) detected folders via
+   * `getStatsForPath`. Detected suggestions are not persisted anywhere, so this
+   * in-memory cache keeps a user-requested compute visible across refetches
+   * until the backend restarts. Bounded live walks always win over the cache.
+   */
+  private detectedStatsCache = new Map<string, SourceStats>();
+
   constructor(
     private mpdConnectionManager: MpdConnectionManager,
     private catalogSyncOrchestrator: CatalogSyncOrchestrator,
@@ -120,11 +130,11 @@ export class StorageServiceImpl implements StorageService {
     return storageDb.getById(id) as StorageSource | undefined;
   }
 
-  public createStorageSource(data: {
+  public async createStorageSource(data: {
     name: string;
     path: string;
     enabled?: boolean;
-  }): StorageSource | undefined {
+  }): Promise<StorageSource | undefined> {
     const fullPath = this.resolveLibraryPath(data.path);
     this.validateLibraryPath(fullPath);
 
@@ -136,26 +146,42 @@ export class StorageServiceImpl implements StorageService {
 
     this.triggerScan();
 
-    let created = storageDb.getById(id);
-
-    // Compute initial stats eagerly so the setup wizard can show immediate
-    // feedback. These are not persisted here; the library scanner walk that
-    // runs during sync remains the source of truth for long-term values.
-    if (created) {
-      try {
-        const stats = computeSourceStats(fullPath);
-        created = { ...created, ...stats };
-      } catch (err) {
-        console.error(
-          "[Storage] Failed to scan stats for",
-          data.name,
-          ":",
-          err instanceof Error ? err.message : err,
-        );
-      }
+    // Compute initial stats eagerly (async walk — a sync walk would freeze MPD
+    // polling and HTTP on large folders) and persist them, so the new row shows
+    // real values instead of 0/0/0 until the scanner finishes. The scanner walk
+    // remains the long-term source of truth.
+    try {
+      const stats = await computeSourceStatsAsync(fullPath);
+      storageDb.updateStats(id, stats);
+    } catch (err) {
+      console.error(
+        "[Storage] Failed to scan stats for",
+        data.name,
+        ":",
+        err instanceof Error ? err.message : err,
+      );
     }
 
-    return created as StorageSource | undefined;
+    return storageDb.getById(id) as StorageSource | undefined;
+  }
+
+  /**
+   * Compute (and remember) stats for a first-level folder under MUSIC_DIR.
+   * Used for detected suggestions whose stats the budget-aware walk omitted.
+   */
+  public async getStatsForPath(input: string): Promise<SourceStats> {
+    const fullPath = this.resolveLibraryPath(input);
+    if (path.dirname(fullPath) !== getMusicDir()) {
+      throw new ValidationError(
+        "Stats are only available for first-level folders under the music directory",
+        { path: input },
+      );
+    }
+    this.validateLibraryPath(fullPath);
+
+    const stats = await computeSourceStatsAsync(fullPath);
+    this.detectedStatsCache.set(fullPath, stats);
+    return stats;
   }
 
   public updateStorageSource(
@@ -250,11 +276,14 @@ export class StorageServiceImpl implements StorageService {
         registered: registeredPaths.has(full),
       };
       try {
-        const stats = computeSourceStatsWithinBudget(
-          full,
-          MAX_SUGGESTION_STATS_FILES,
-        );
-        if (stats) library.stats = stats;
+        const stats = this.computeBoundedStats(full);
+        if (stats) {
+          library.stats = stats;
+        } else {
+          // Budget exceeded: fall back to stats the user computed on demand.
+          const cached = this.detectedStatsCache.get(full);
+          if (cached) library.stats = cached;
+        }
       } catch {
         // Unreadable directory → omit stats, still surface the suggestion.
       }
@@ -262,6 +291,14 @@ export class StorageServiceImpl implements StorageService {
     }
 
     return libraries;
+  }
+
+  /**
+   * Budget-aware sync walk for suggestions. Exposed as an instance method so
+   * tests can simulate "stats omitted" without creating 20k+ files.
+   */
+  protected computeBoundedStats(root: string): SourceStats | undefined {
+    return computeSourceStatsWithinBudget(root, MAX_SUGGESTION_STATS_FILES);
   }
 
   /**
