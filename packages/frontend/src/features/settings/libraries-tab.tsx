@@ -214,23 +214,25 @@ export function LibrariesTab() {
           {sourcesQuery.isPending ? (
             skeleton
           ) : sources.length === 0 ? (
-            <EmptyState
-              icon={FolderPlus}
-              title={t(
-                "settings.libraries.noSources",
-                "No libraries configured",
-              )}
-              description={t(
-                "settings.libraries.noSourcesDescription",
-                "Bind-mount a folder into the container, then register it here.",
-              )}
-              action={
-                <Button variant="outline" onClick={openAddDialog}>
-                  <Plus />
-                  {t("settings.libraries.addManual", "Add manually")}
-                </Button>
-              }
-            />
+            hasError ? null : (
+              <EmptyState
+                icon={FolderPlus}
+                title={t(
+                  "settings.libraries.noSources",
+                  "No libraries configured",
+                )}
+                description={t(
+                  "settings.libraries.noSourcesDescription",
+                  "Bind-mount a folder into the container, then register it here.",
+                )}
+                action={
+                  <Button variant="outline" onClick={openAddDialog}>
+                    <Plus />
+                    {t("settings.libraries.addManual", "Add manually")}
+                  </Button>
+                }
+              />
+            )
           ) : (
             sources.map((src) => (
               <RegisteredLibraryRow
@@ -280,12 +282,14 @@ export function LibrariesTab() {
           {detectedQuery.isPending ? (
             skeleton
           ) : detected.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              {t(
-                "settings.libraries.noDetected",
-                "No folders detected under the music directory.",
-              )}
-            </p>
+            hasError ? null : (
+              <p className="text-muted-foreground text-sm">
+                {t(
+                  "settings.libraries.noDetected",
+                  "No folders detected under the music directory.",
+                )}
+              </p>
+            )
           ) : (
             <div className="space-y-2">
               {detected.map((lib) => (

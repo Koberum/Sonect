@@ -198,6 +198,35 @@ describe("system storage routes", () => {
       expect(res.status).to.equal(400);
     });
 
+    it("400s when the folder cannot be read", async () => {
+      const libPath = path.join(tmpDir, "Unreadable");
+      writeAudio(path.join(libPath, "a.mp3"), "aa");
+      sandbox
+        .stub(fs.promises, "readdir")
+        .rejects(new Error("EACCES: permission denied"));
+
+      const res = await request(makeApp())
+        .get("/system/storage/stats")
+        .query({ path: libPath });
+      expect(res.status).to.equal(400);
+      expect(res.body.error).to.include("Cannot read library path");
+    });
+
+    it("400s for a symlink that points outside MUSIC_DIR", async () => {
+      const outside = fs.mkdtempSync(path.join(os.tmpdir(), "sonect-outside-"));
+      fs.writeFileSync(path.join(outside, "a.mp3"), "aa");
+      fs.symlinkSync(outside, path.join(tmpDir, "linked"), "dir");
+
+      try {
+        const res = await request(makeApp())
+          .get("/system/storage/stats")
+          .query({ path: path.join(tmpDir, "linked") });
+        expect(res.status).to.equal(400);
+      } finally {
+        fs.rmSync(outside, { recursive: true, force: true });
+      }
+    });
+
     it("keeps computed stats in /storage/detected when the bounded walk omits them", async () => {
       const libPath = path.join(tmpDir, "BigLib");
       writeAudio(path.join(libPath, "a.mp3"), "aaaaa");

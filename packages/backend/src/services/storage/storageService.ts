@@ -179,7 +179,36 @@ export class StorageServiceImpl implements StorageService {
     }
     this.validateLibraryPath(fullPath);
 
-    const stats = await computeSourceStatsAsync(fullPath);
+    // Resolve symlinks and require the real folder to stay a direct child of
+    // the real music directory: a first-level symlink must never let the walk
+    // escape MUSIC_DIR.
+    let realPath: string;
+    let realMusicDir: string;
+    try {
+      realPath = fs.realpathSync(fullPath);
+      realMusicDir = fs.realpathSync(getMusicDir());
+    } catch {
+      throw new ValidationError(`Cannot read library path: ${fullPath}`, {
+        path: input,
+      });
+    }
+    if (path.dirname(realPath) !== realMusicDir) {
+      throw new ValidationError(
+        "Stats are only available for first-level folders under the music directory",
+        { path: input },
+      );
+    }
+
+    let stats: SourceStats;
+    try {
+      stats = await computeSourceStatsAsync(fullPath);
+    } catch {
+      // Unreadable folder (unmounted share, permissions): same 400 contract as
+      // refreshStats rather than an opaque 500.
+      throw new ValidationError(`Cannot read library path: ${fullPath}`, {
+        path: input,
+      });
+    }
     this.detectedStatsCache.set(fullPath, stats);
     return stats;
   }

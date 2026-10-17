@@ -62,6 +62,7 @@
   },
   "queue": {
     "upNext": "Up Next",
+    "remove": "Remove from queue",
     "tracksInQueue_one": "{{count}} track in queue",
     "tracksInQueue_other": "{{count}} tracks in queue"
   },
