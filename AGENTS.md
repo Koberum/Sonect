@@ -13,7 +13,7 @@ Sonect is a self-hosted music streaming application. A Node.js/Express backend c
 | `backend`     | `packages/backend`  | Express 5 HTTP + WebSocket server                  |
 | `frontend`    | `packages/frontend` | React 19 + Vite SPA                                |
 | `@repo/db`    | `packages/db`       | Native SQLite (node:sqlite) + Drizzle repositories |
-| `@repo/types` | `packages/types`    | Shared TypeScript types (no runtime deps)          |
+| `@repo/types` | `packages/types`    | Shared TypeScript types + zod validation schemas   |
 
 ## Commands
 
@@ -39,8 +39,10 @@ pnpm clean              # Remove node_modules and dist from all packages
 ### Turborepo
 
 The monorepo is orchestrated by **Turborepo** (`turbo.json` at the repo root,
-`turbo` as a root devDependency). `dev`, `build`, `lint`, and `test` are
-turbo tasks:
+`turbo` as a root devDependency). `build`, `lint`, and `test` are turbo tasks;
+`dev` is a root pnpm script that first runs `turbo run build --filter @repo/db
+--filter @repo/types` and then starts every package's watch process via
+`concurrently`:
 
 - `build` and `lint` are **cached**: re-running them without source
   changes is near-instant (`>>> FULL TURBO`); after an edit only the touched
@@ -52,11 +54,8 @@ turbo tasks:
 "VITE_WEBSOCKET_URL", "VITE_COVER_PATH", "VITE_DEBUG"]` — if you add a new
   `VITE_*` env var read by frontend code, add it to that list or stale cached
   builds will be served.
-- `dev` is `cache: false` + `persistent: true` with `dependsOn: ["^build"]`,
-  so workspace deps (`@repo/types`, `@repo/db`) are compiled before their
-  consumers' watch processes start.
-- Turbo cache lives in `.turbo/` (gitignored). CI does not benefit from the
-  cache until a remote cache / `actions/cache` is wired up.
+- Turbo cache lives in `.turbo/` (gitignored). CI restores it with
+  `actions/cache` (`.github/workflows/ci.yml`); a remote cache is not wired up.
 
 ### Verification steps
 
@@ -68,21 +67,21 @@ After making changes:
 
 ## Environment variables (packages/backend/.env)
 
-| Variable           | Default                                                        | Purpose                                                                                                        |
-| ------------------ | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `MPD_HOST`         | `localhost`                                                    | MPD daemon hostname                                                                                            |
-| `MPD_PORT`         | `6600`                                                         | MPD daemon port                                                                                                |
-| `COVERS_DIR`       | —                                                              | Path where cover WebPs are saved                                                                               |
-| `COVER_SIZE`       | `400`                                                          | Cover resize dimension (px, square fit inside)                                                                 |
-| `COVER_QUALITY`    | `80`                                                           | WebP quality for covers                                                                                        |
-| `MUSIC_DIR`        | `/music`                                                       | Root directory of the music library                                                                            |
-| `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta` | Audio extensions counted as music files in per-source library stats                                            |
-| `PORT`             | `3000`                                                         | Backend HTTP server port                                                                                       |
-| `FRONTEND_DIST`    | `../frontend/dist`                                             | Path to built frontend static files (prod)                                                                     |
-| `WAVEFORMS_DIR`    | `<COVERS_DIR>/../waveforms` or `./data/waveforms`              | Path where waveform JSON caches are saved (SHA1(file).json)                                                    |
-| `LOG_LEVEL`        | `info`                                                         | Console log level (`debug`/`info`/`warn`/`error`); `debug` logs every found/updated/removed track during scans |
-| `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | MPD log file; no longer read by Sonect (sync progress comes from the scanner)                                  |
-| `DNS_CHECK_HOST`   | `example.com`                                                  | Host resolved to verify DNS connectivity                                                                       |
+| Variable           | Default                                                         | Purpose                                                                                                        |
+| ------------------ | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `MPD_HOST`         | `localhost`                                                     | MPD daemon hostname                                                                                            |
+| `MPD_PORT`         | `6600`                                                          | MPD daemon port                                                                                                |
+| `COVERS_DIR`       | `./data/covers`                                                 | Path where cover WebPs are saved                                                                               |
+| `COVER_SIZE`       | `400`                                                           | Cover resize dimension (px, square fit inside)                                                                 |
+| `COVER_QUALITY`    | `80`                                                            | WebP quality for covers                                                                                        |
+| `MUSIC_DIR`        | `/opt/sonect/music` (code default; `/libraries` in docker)      | Root directory of the music library                                                                            |
+| `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta`  | Audio extensions counted as music files in per-source library stats                                            |
+| `PORT`             | `3000`                                                          | Backend HTTP server port                                                                                       |
+| `FRONTEND_DIST`    | `@frontend/dist` (cwd-relative; `/app/frontend/dist` in docker) | Path to built frontend static files (prod)                                                                     |
+| `WAVEFORMS_DIR`    | `<COVERS_DIR>/../waveforms` or `./data/waveforms`               | Path where waveform JSON caches are saved (SHA1(file).json)                                                    |
+| `LOG_LEVEL`        | `info`                                                          | Console log level (`debug`/`info`/`warn`/`error`); `debug` logs every found/updated/removed track during scans |
+| `MPD_LOG_PATH`     | —                                                               | MPD log file; no longer read by Sonect (sync progress comes from the scanner)                                  |
+| `DNS_CHECK_HOST`   | `example.com`                                                   | Host resolved to verify DNS connectivity                                                                       |
 
 ## Production deployment (Docker)
 
@@ -187,10 +186,11 @@ sonect (single image, ENTRYPOINT /init)
   - `"@typescript/native": "npm:typescript@7.0.2"` — provides the `tsc` binary (TS 7)
   - `"typescript": "npm:@typescript/typescript6@6.0.2"` — provides the TS 6 JS API that
     `typescript-eslint` imports at runtime
-  - Backend, db, and types packages use `typescript@7.0.2` directly (no typescript-eslint dep).
+  - All four packages (`backend`, `frontend`, `db`, `types`) use this two-alias setup
+    and keep `typescript-eslint` as a devDependency.
   - This setup is temporary. When typescript-eslint gains native TS 7 support (blocked on TS
-    7.1 shipping a new programmatic API), remove both aliases from
-    `packages/frontend/package.json` and restore `"typescript": "npm:typescript@^7.x"`.
+    7.1 shipping a new programmatic API), remove both aliases from every package's
+    `package.json` and restore `"typescript": "npm:typescript@^7.x"`.
 
 ### Backend
 
@@ -198,12 +198,12 @@ sonect (single image, ENTRYPOINT /init)
 - Business logic lives in `packages/backend/src/services/`.
 - WebSocket handlers live in `packages/backend/src/ws/`.
 - Controllers (input validation / response shaping) live in `packages/backend/src/controllers/`.
-- **MpdConnectionManager** (`services/mpdConnectionManager.ts`) is a singleton that manages **two** TCP connections to MPD: a command client (`cmdClient`) and a polling client (`pollSocket`). The **cmdClient** uses the `mpd` npm package (v1.3.0) for command execution. The **pollSocket** uses raw TCP (`net` module) to send `status` commands directly — this avoids the `mpd` package's `idle`-based callback queue which caused silent polling failures. Polling happens on a timer: every 2s during `play`, every 10s during `pause`/`stop`. The in-memory `PlaybackStatus` cache is maintained and `stateChanged` events are emitted to subscribers on each poll. A `refreshNow()` method is also exposed for immediate cache refresh after user-initiated commands. When MPD disconnects, each connection auto-reconnects with exponential backoff (1s–30s).
-- `playerService.ts` reads the cached status synchronously via `mpdConnectionManager.getCachedStatus()`. It delegates all commands to `mpdConnectionManager.executeCommand()` and calls `mpdConnectionManager.refreshNow()` after each command for immediate feedback. Note: `getQueue()` is an exception — it runs an async MPD query (`playlistinfo`).
+- **MpdConnectionManager** (`services/mpd/mpdConnectionManager.ts`) is a singleton that manages **two** TCP connections to MPD: a command client (`cmdClient`) and a polling client (`pollSocket`). The **cmdClient** uses the `mpd` npm package (v1.3.0) for command execution. The **pollSocket** uses raw TCP (`net` module) to send `status` commands directly — this avoids the `mpd` package's `idle`-based callback queue which caused silent polling failures. Polling happens on a timer: every 2s during `play`, every 10s during `pause`/`stop`. The in-memory `PlaybackStatus` cache is maintained and `stateChanged` events are emitted to subscribers on each poll. A `refreshNow()` method is also exposed for immediate cache refresh after user-initiated commands. When MPD disconnects, each connection auto-reconnects with exponential backoff (1s–30s).
+- `playerService.ts` reads the cached status synchronously via `mpdConnectionManager.getCachedStatus()`. It delegates commands to `mpdConnectionManager.executeCommand()` / `executeCommandList()` and fires `mpdConnectionManager.refreshNow()` (fire-and-forget with `.catch`) after each command for prompt feedback; if a poll is already in flight the refresh is skipped and the next tick applies. Note: `getQueue()` is an exception — it runs an async MPD query (`playlistinfo`).
 - `player.ws.ts` sends the cached status to new WebSocket clients immediately on connect (wrapped in `{ type: "player-status", ... }` envelope), then forwards subsequent `stateChanged` events from the polling loop. All WS messages follow a standard format with a `type` field: `"player-status"`, `"sync-progress"`, `"sync-complete"`, `"sync-error"`, or `"log"`.
 - The `mpd` npm package (v1.3.0) is bundled into the backend output; it is only used for the `cmdClient`. The `pollSocket` uses raw TCP to avoid idle-protocol callback desync.
 - Use `process.env` variables for configuration; never hard-code hosts, ports, or paths.
-- **Zod validation** is applied directly in controller functions via `schema.parse(req.body)` / `schema.parse(req.params)`. Schemas are defined in `@repo/types` (`packages/types/src/schemas.ts`). `ZodError` propagates to `errorHandler` which returns a 400 response with `flatten().fieldErrors`.
+- **Zod validation** is applied directly in controller functions via `schema.parse(req.body)` / `schema.parse(req.params)`. Schemas are defined in `@repo/types` (`packages/types/src/schemas/types.ts`, re-exported from `packages/types/src/schemas/index.ts`). `ZodError` propagates to `errorHandler` which returns a 400 response with `flatten().fieldErrors` under `details`.
 - **asyncHandler** (`middleware/asyncHandler.ts`) wraps all async controllers; it **returns the promise chain** so tests can `await` it.
 - **errorHandler** (`middleware/errorHandler.ts`) is registered in `app.ts` as the last middleware. Controllers throw `NotFoundError`/`ValidationError` for centralized handling.
 - **autoplayService** (`services/mpd/autoplayService.ts`) is always active for both MPD and browser sessions. A manual track selection queues that track through the end of its album, without wrapping to earlier tracks. Smart batches then add complete albums in this order: same artist → same genre → similar genres → (genre-less only) library-wide, ranking each tier by the sum of its tracks' `play_count` (title order breaks ties). Similar genres are resolved via `services/mpd/genreSimilarity.ts`: a curated map for common tags (e.g. `techno → tech house, minimal, house…`) with token/substring fallback for arbitrary MPD `Genre` tags (`Vaporwave → Vapor House` via `genresDb.getAll()` substring match). Ranking stays anchored to the manually selected track as playback advances. A batch stops only after reaching at least 25 tracks, so albums are never split; if the genre pool is sparse the batch may be short and will stay genre-coherent rather than drifting to unrelated genres. For MPD, the connection manager refills below five remaining tracks and prevents overlapping fills; used albums are committed only after MPD accepts them and are not repeated until the cycle is exhausted, and the next cycle preserves albums still in the MPD queue. For browser, each `SessionPlayer` owns its own `AutoplayService` instance (via `SessionRegistry`) — `playTrack` appends an initial batch beyond the album slice, and `advance`/`tick` refills when <5 tracks remain with the same ranking and commit semantics. There is no autoplay toggle API.
@@ -225,12 +225,12 @@ sonect (single image, ENTRYPOINT /init)
 
 - Components follow the shadcn/ui pattern: primitive Radix UI components wrapped in `packages/frontend/src/components/`.
 - Pages live in `packages/frontend/src/pages/`.
-- Feature-specific logic (hooks, context, slices) lives in `packages/frontend/src/features/`.
+- Feature-specific logic (hooks, context, api, queries) lives in `packages/frontend/src/features/`.
 - The `music-player.tsx` component interpolates elapsed time locally via `setInterval` (250ms ticks) during `state === "play"`. The elapsed anchor is reset on each WebSocket message from the server, keeping the progress bar smooth between MPD polls.
 - Styling is Tailwind CSS 4; avoid inline styles.
 - Use `lucide-react` for icons.
 - Use `react-router-dom` v7 for routing.
-- Use `i18next` / `react-i18next` for ALL user-visible strings. Every hardcoded label, heading, button text, menu item, aria-label, alt text, toast message, and placeholder must use `t("namespace.key")`. Translation keys live in `packages/frontend/src/i18n/locales/{lang}.json`. When building a new feature or component, define all labels in both `en.json` and `es.json` as part of the implementation — never ship untranslated UI text.
+- Use `i18next` / `react-i18next` for ALL user-visible strings. Every hardcoded label, heading, button text, menu item, aria-label, alt text, toast message, and placeholder must use `t("key.path")`. Translation keys live in `packages/frontend/src/i18n/locales/{lang}.json` (`en`, `es`, `it`). When building a new feature or component, define all labels in every locale as part of the implementation — never ship untranslated UI text. Plural keys use the i18next v4 suffixes (`_one`/`_other`).
 - **Vite proxy** — When adding new backend route prefixes (e.g. `/playlists`), you **must** add a corresponding proxy entry in `packages/frontend/vite.config.ts` so the Vite dev server forwards those requests to the backend on port 3000.
 - **Responsive design** — Every page and component must work at all viewport sizes. Use Tailwind responsive prefixes (`sm:`, `md:`, `lg:`, `xl:`). Never ship a layout that breaks below 375px (mobile). After any UI change, verify with Playwright at 3 viewport sizes: 375px (mobile), 768px (tablet), 1280px (desktop).
 - **Data fetching — TanStack Query** — All REST fetching goes through `@tanstack/react-query` (v5). Idiomatic layout:
@@ -291,9 +291,9 @@ sonect (single image, ENTRYPOINT /init)
   Dockerfile `COPY` may be removed** (the migrator resolves `/app/drizzle/`
   from the bundle anchor and crashes with `ENOENT` otherwise).
 - **Queries** live in the focused repository modules under
-  `packages/db/src/repositories/` (`artists`, `albums`, `tracks`,
-  `librarySync`, `playlists`, `syncMetadata`, `stats`, `storage`, `setup`).
-  Put new queries there; the old `models.ts` no longer exists.
+  `packages/db/src/repositories/` (`artists`, `albums`, `tracks`, `catalogSync`,
+  `genres`, `playlists`, `syncMetadata`, `stats`, `storage`, `setup`,
+  `profiles`). Put new queries there; the old `models.ts` no longer exists.
 - **Raw SQL must stay inside `@repo/db`** and use Drizzle's typed `sql`
   template (or parameterized `prepare()` calls) — never string-concatenate
   values into SQL outside the package. Keep queries simple and indexed.
@@ -301,7 +301,7 @@ sonect (single image, ENTRYPOINT /init)
 ### Code style
 
 - Prettier with `trailingComma: "all"` and the Tailwind CSS plugin.
-- ESLint with `@typescript-eslint` rules and `unused-imports`.
+- ESLint with `@typescript-eslint` rules (including `no-unused-vars`; there is no `unused-imports` plugin).
 - Run `pnpm lint` before committing.
 - No `console.log` in production code paths.
 - No `any` without an explanatory comment.
@@ -315,7 +315,7 @@ sonect (single image, ENTRYPOINT /init)
   - `e2e/` — full-stack `app` + `supertest`
 - Mock external dependencies (MPD, DB, filesystem) with **Sinon** stubs/spies and constructor/factory DI. ESM module mocking is not used: `esmock` was removed because it cannot patch through the `tsx` loader for route/service/WS tests.
 - Use **Sinon stubs + dynamic `import()`** when a module must be imported after stubs are set up (see route tests).
-- **Route tests** create a minimal Express app in `before()` and manually add `errorHandler` middleware.
+- **Route tests** build a minimal Express app via a local `makeApp()` helper and manually add `errorHandler` middleware.
 - Before adding new test files, check existing patterns in `__tests__/` for consistency.
 
 ## Architecture notes
@@ -332,7 +332,7 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 
 - The MPD connection is **polling-based**, not event-driven.
 - Polling interval: **2s during play**, **10s during pause/stop**.
-- After every user-initiated command, `refreshNow()` triggers an immediate poll so the UI updates without waiting for the next interval tick.
+- After every user-initiated command, `playerService` fires `refreshNow()` (fire-and-forget) for a prompt cache refresh; if a poll is already in flight the refresh is skipped and the next tick applies.
 - `playerService.ts` reads the cache synchronously. The only exception is `getQueue()` which executes `playlistinfo` as an async MPD query.
 
 ### WebSocket architecture
@@ -345,9 +345,9 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 
 ### Unified per-session playback (`/player`)
 
-` /player` is the **single** playback API (`routes/unifiedPlayerRoutes.ts`, controllers in `controllers/unifiedPlayerController.ts`). Every request requires `X-Session-Id` (`middleware/sessionId.ts` → 400 if missing) + optional `X-Device-Id` (per-browser UUID from `lib/deviceId.ts` stored in `localStorage['sonect.deviceId']`) and always appends `?sessionId=&deviceId=` on the WS URL. There is **no frontend fork** between browser/MPD — `features/player/api.ts` calls only `/player/*`; the backend decides per session.
+` /player` is the **single** playback API (`routes/unifiedPlayerRoutes.ts`, controllers in `controllers/unifiedPlayerController.ts`). Every request requires `X-Session-Id` (`middleware/sessionId.ts` → 400 if missing) + optional `X-Device-Id` (per-browser random id from `lib/deviceId.ts` stored in `localStorage['sonect.deviceId']`) and always appends `?sessionId=&deviceId=` on the WS URL. There is **no frontend fork** between browser/MPD — `features/player/api.ts` calls only `/player/*`; the backend decides per session.
 
-- **Session identity** — `lib/selectedProfile.ts` returns `profile.id` as `X-Session-Id` (legacy `lib/session.ts` delegates). `lib/deviceId.ts` generates a per-browser UUID `localStorage['sonect.deviceId']` sent as `X-Device-Id`/`?deviceId=`. Profile = queue owner; device = output target.
+- **Session identity** — `lib/selectedProfile.ts` returns `profile.id` as `X-Session-Id` (legacy `lib/session.ts` delegates). `lib/deviceId.ts` generates a per-browser random id `localStorage['sonect.deviceId']` sent as `X-Device-Id`/`?deviceId=`. Profile = queue owner; device = output target.
 - **PlayerRouter** (`services/player/playerRouter.ts`) — `Map<sessionId, {mode, engine, activeDeviceId, volume}>` singleton. `mode` is per-profile (`browser` default, `mpd` requires lock). `engine` is `SessionPlayer` wrapper or `MpdAdapter`. `activeDeviceId` is per-profile for `browser` mode (which browser device renders audio); `mpd` mode has `null`. Browser `PUT /player/output-mode {mode:'browser'}` with `X-Device-Id` hands off same `file+elapsed+state` to new device (no engine recreation), emits `stateChanged`. `setVolume` is stored per-profile for browser (remote volumes affect shared state) vs delegated to MPD. `getStatus()` merges `engine.getStatus()` + `volume` + `activeDeviceId` + `mode`.
 - **Browser engine (shared per-profile)** — `SessionPlayer` (`services/session/sessionPlayer.ts`) per `SessionRegistry` (`services/session/sessionRegistry.ts` 30m idle sweep): single queue/clock per profile, auto-advance, `playTrack` queues through end of album then appends a smart autoplay batch, `pause`/`resume` control the clock. First `play` from a browser device auto-claims `activeDeviceId` if `null` (`setActiveDeviceIfUnclaimed`). Subsequent remote controls (play/pause/seek/volume) from passive devices mutate shared state but keep `activeDeviceId`. `random/repeat` are no-ops. Each `SessionPlayer` owns its own `AutoplayService` instance (no global singleton) with refill when <5 tracks remain.
 - **MPD engine (shared, single-owner)** — `MpdAdapter` wraps `PlayerServiceImpl` + `MpdConnectionManager`. Shared global queue/daemon. `resume` uses explicit `pause 0`. Lock via `MpdConfigService.tryAcquireMpd(sessionId)` (`services/mpd/mpdConfigService.ts`); `PUT /player/output-mode {mode:'mpd'}` returns 423 if another session owns MPD. `mpd→browser` handoff sets `activeDeviceId` to requesting device.
@@ -365,12 +365,12 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 
 1. `waveformService.ts` (`services/library/waveformService.ts`) generates per-track waveforms on demand. It decodes audio via `ffmpeg` (`-f s16le -ac 1 -ar 8000`) and computes **120** normalized peaks (`0–255`) by `max(|sample|)/32768` per bin, scaling max to 255 for contrast — mirroring Monochrome's `waveform.js:168` `extractPeaks` (4 peaks/sec, capped 1000). If `ffmpeg` is missing or decode fails, a deterministic fallback envelope is used so the UI never shows a flat line.
 2. Waveforms are cached as `SHA1(file).json` under `WAVEFORMS_DIR` (`{samples, duration, version:1}`) with atomic write + an in-memory `Map` (volatile, not an LRU) + request coalescing (`pendingGeneration` map). Served via `GET /waveforms/:trackId` (`routes/waveformRoutes.ts`, `controllers/waveformController.ts`) with `Cache-Control: immutable` (86400s). `Vite` proxy forwards `/waveforms` (`frontend/vite.config.ts`).
-3. Frontend `components/waveform.tsx` renders a **canvas** SoundCloud-style bar waveform: `numBars=min(samples, floor(width/3))`, `barWidth=0.65*slot`, `gap=0.35*slot`, rounded `barHeight=max(2, peak*height*0.82)`, centered vertically. Played vs unplayed are two clipped fills (`--primary` vs `--muted-foreground` at 35% opacity) driven by `elapsed/duration` progress. `PlaybackWaveform` (`features/dashboard/components/playback-waveform.tsx`) fetches via `playerQueries.waveform(trackId)` (`lib/queryKeys.ts: qk.player.waveform`, 5m stale/30m gc) and renders the **28px waveform** (`h-7`) wrapped in a Radix slider (click-to-seek + a11y). `music-player.tsx` + `full-page-player.tsx` pass `trackId={track?.id}` — mobile progress switches from `h-1` to dynamic height accordingly. Responsive at 375/768/1280 via `ResizeObserver` + Tailwind.
+3. Frontend `components/waveform.tsx` renders a **canvas** SoundCloud-style bar waveform: `numBars=min(samples, floor(width/3))`, `barWidth=0.65*slot`, `gap=0.35*slot`, rounded `barHeight=max(2, peak*height*0.82)`, centered vertically. Played vs unplayed are two clipped fills (`--primary` vs `--muted-foreground` at 35% opacity) driven by `elapsed/duration` progress. `PlaybackWaveform` (`features/dashboard/components/playback-waveform.tsx`) fetches via `playerQueries.waveform(trackId)` (`lib/queryKeys.ts: qk.player.waveform`, 5m stale/30m gc), renders the **20px waveform track** (`h-5`) wrapped in a Radix slider (click-to-seek + a11y) and falls back to a 6px progress bar (`h-1.5`) when no waveform data is available. `music-player.tsx` + `full-page-player.tsx` pass `trackId={track?.id}`; on mobile (`md:hidden`) the player uses `PlaybackProgressBar` (`h-1.5`) instead. Responsive at 375/768/1280 via `ResizeObserver` + Tailwind.
 
 ### First-run setup wizard
 
 - Route: `/setup`, guarded by `SetupGuard` (`components/setup-guard.tsx`), which wraps the routed page content in `MainLayout`. The first guard check in each browser-tab session calls `GET /system/setup/progress`, caches the backend `complete` result in `sessionStorage["setup-complete"]`, and redirects to `/setup` when it is false. Later checks in that tab use the cached backend result.
-- The gate is **not** "all steps done": setup is considered complete only when a permanent done flag is set. The flag is a pseudo-step `complete` in the `setup_progress` table and is written only by the explicit `POST /system/setup/complete` endpoint, used by both Skip and Finish. Updating an individual step or creating a storage source does not set it. `isSetupComplete()` does **not** consider existing storage sources — the stored `complete` flag is the single source of truth.
+- The gate is **not** "all steps done": setup is considered complete only when a permanent done flag is set. The flag is a pseudo-step `complete` in the `setup_progress` table and is written by the explicit `POST /system/setup/complete` endpoint (the only intended writer), used by both Skip and Finish; the endpoint accepts any non-empty step name, so the invariant is by convention, not enforced. Updating an individual step or creating a storage source does not set it. `isSetupComplete()` does **not** consider existing storage sources — the stored `complete` flag is the single source of truth.
 - `getSetupProgress()` (`services/setupService.ts`) reports steps in order `["storage", "audio", "sync"]`; the `storage` step's `completed` flag is **derived** from `storageDb.getAll().length > 0` (not stored), while `audio`/`sync` flags come from `setup_progress` rows.
 - Frontend wizard steps: Welcome → Storage → Audio → Sync. An incomplete setup currently starts at Welcome.
 - Skip is persisted by the backend, so it applies to normal and private/incognito browser sessions. `sessionStorage["setup-complete"]` is only a per-tab cache of a confirmed backend result, not a local skip flag. `POST /system/setup/reset` (also exposed as the "Reset setup wizard" button in Settings → Debug) clears every `setup_progress` flag, invalidates the current tab's cache, and reloads without touching `storage_sources`. A reset performed by another tab is observed when a new tab session starts.
@@ -397,10 +397,13 @@ the single container:
 
 **How it's read/edited:**
 
-| Frontend tab   | Service (`mpdConfigService.ts`)                  | What it does                          |
-| -------------- | ------------------------------------------------ | ------------------------------------- |
-| Audio tab      | `getCurrentAudioOutput` / `configureAudioOutput` | Reads/writes the `audio_output` block |
-| MPD Config tab | `getConfig` / `updateConfig`                     | Reads/writes the full drop-in content |
+| Frontend tab | Service (`mpdConfigService.ts`)                  | What it does                          |
+| ------------ | ------------------------------------------------ | ------------------------------------- |
+| Audio tab    | `getCurrentAudioOutput` / `configureAudioOutput` | Reads/writes the `audio_output` block |
+
+The full-config editor tab (and its `getConfig`/`updateConfig` service methods)
+was removed; the drop-in is only written by `configureAudioOutput`, which
+rewrites the `audio_output` block in place.
 
 After every write the backend invokes its **injectable reload hook**
 (`MpdConfigServiceImpl`'s `reload` constructor arg, defaulting to
@@ -436,8 +439,9 @@ recursively and can crash MPD with `SIGSEGV`.
   `mount`/`umount` and needs no elevated privileges.
 - **`storageService.ts`** exposes `createStorageSource({name, path})`,
   `updateStorageSource(id, {name?, path?})`, `deleteStorageSource(id)` and a
-  read-only `listMounts()` (parses `/proc/mounts`). Creating/updating/deleting a
-  source fires an MPD `update` + `scanLibrary()`. The `storage_sources` table has
+  read-only `listMounts()` (parses `/proc/mounts`). Creating or deleting a
+  source, or updating its `path`, fires an MPD `update` + `scanLibrary()`;
+  name/enabled-only edits do not rescan. The `storage_sources` table has
   no `type`/`uri`/`mount_path`/`username`/`password` columns.
 - **Mount suggestions (`getDetectedLibraries`).** `storageService` lists the
   first-level directories under `MUSIC_DIR`, annotates each with `isMount`
@@ -448,8 +452,9 @@ recursively and can crash MPD with `SIGSEGV`.
   unreadable entry and omits stats rather than failing the suggestion.
 - **Frontend (Immich-style):** Settings → Libraries lists the registered
   libraries (with stats) and the mounts detected under the music directory, plus
-  a copy-paste compose snippet. Registered sources are hidden from the suggestion
-  list, and stats can be refreshed on demand (`refreshStats`).
+  a copy-paste compose snippet. Registered sources stay in the suggestion list,
+  dimmed with an `Already added` badge, and stats can be refreshed on demand
+  (`refreshStats`).
 - Per-source stats (`file_count` / `dir_count` / `total_size`) are produced by
   the scanner walk (`storageStats.walk`/`walkSource`/`computeSourceStats`) at the
   end of every `scanLibrary()` and saved via `storageDb.updateStats()`.
@@ -469,7 +474,7 @@ previous stats) and continues with the remaining sources.
 
 ## What NOT to do
 
-- All MPD communication must go through `MpdConnectionManager` (`executeCommand` / `getCachedStatus`). Do not create additional MPD connections.
+- All MPD communication must go through `MpdConnectionManager` (`executeCommand`/`executeCommandList`/`getCachedStatus`). Do not create additional MPD connections.
 - Do not introduce privileged operations in the backend — no `mount`/`umount`, no `systemctl`, no `sudo`. Storage is host-provided (bind mounts) and MPD is reloaded by the backend's supervisor hook when its drop-in changes.
 - Do not add new environment variables without documenting them here and in `README.md`.
 - Do not commit `node_modules`, `dist/`, or `.env` files.

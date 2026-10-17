@@ -5,7 +5,7 @@ description: Write or review code that interacts with MPD (Music Player Daemon) 
 
 # Sonect MPD Architecture
 
-Sonect uses a **polling-based cache** — MPD is never queried directly per-request. All reads come from an in-memory cache; all writes go through `mpdConnectionManager.executeCommand()`.
+Sonect uses a **polling-based cache** — MPD is never queried directly per-request. All reads come from an in-memory cache; all writes go through `mpdConnectionManager.executeCommand()` / `executeCommandList()`.
 
 ```
 User action
@@ -14,10 +14,10 @@ User action
 executeCommand()        ← sends command to MPD via cmdClient (dedicated command connection)
     │
     ▼
-refreshNow()            ← triggers an immediate status poll (don't wait for next tick)
+refreshNow()            ← fires an immediate status poll (fire-and-forget)
     │
     ▼
-status poll             ← pollClient fetches MPD status, updates PlaybackStatus cache
+status poll             ← pollSocket fetches MPD status, updates PlaybackStatus cache
     │
     ▼
 stateChanged event      ← emitted to subscribers (WebSocket handler listens here)
@@ -28,27 +28,28 @@ WebSocket broadcast     ← all connected clients receive updated state via broa
 
 Polling interval: **2s during play**, **10s during pause/stop**.
 
-`MpdConnectionManager` maintains **two** TCP connections internally:
-- `cmdClient` — sends commands (play, pause, setvol, etc.)
-- `pollClient` — polls `status` on a timer
+`MpdConnectionManager` (`services/mpd/mpdConnectionManager.ts`) maintains **two** TCP connections internally:
 
-This two-connection design prevents commands from interleaving with polls.
+- `cmdClient` — sends commands via the `mpd` npm package (play, pause, setvol, …)
+- `pollSocket` — raw-TCP socket that polls `status` on a timer
+
+This two-connection design prevents commands from interleaving with polls (the `mpd` package's `idle`-based callback queue caused silent polling failures, which is why the poll side is raw TCP).
 
 ---
 
 ## The golden rule: `playerService.ts` is synchronous (with one exception)
 
-`playerService` never makes async MPD calls for status reads. It reads the cache:
+`PlayerServiceImpl` never makes async MPD calls for status reads. It reads the cache:
 
 ```ts
 // CORRECT — synchronous cache read
-export function getStatus(): PlaybackStatus {
-  return mpdConnectionManager.getCachedStatus();
+public getPlaybackStatus(): PlaybackStatus {
+  return this.mpdConnectionManager.getCachedStatus();
 }
 
 // WRONG — do not do this
-export async function getStatus(): Promise<PlaybackStatus> {
-  const status = await mpdClient.sendCommand("status"); // NO
+public async getPlaybackStatus(): Promise<PlaybackStatus> {
+  const status = await this.mpdConnectionManager.executeCommand("status"); // NO
   return parseStatus(status);
 }
 ```
@@ -57,9 +58,9 @@ export async function getStatus(): Promise<PlaybackStatus> {
 
 ```ts
 // CORRECT — getQueue() is the only async read in playerService
-export async function getQueue(): Promise<QueueItem[]> {
-  const raw = await mpdConnectionManager.executeCommand("playlistinfo");
-  return parseQueue(raw);
+public async getQueue(): Promise<QueuedTrack[]> {
+  const raw = await this.mpdConnectionManager.executeCommand("playlistinfo");
+  return this.parseQueueResponse(raw);
 }
 ```
 
@@ -69,21 +70,25 @@ Any other read that isn't `getQueue()` should use `getCachedStatus()`. If you fi
 
 ## Sending commands
 
-All MPD commands go through `mpdConnectionManager.executeCommand()`. After every user-initiated command, call `refreshNow()` so the UI updates immediately without waiting for the next poll tick:
+All MPD commands go through `MpdConnectionManager`. Batches (multiple `add` commands) use `executeCommandList()`. After every user-initiated command, fire `refreshNow()` **without awaiting** — this is the actual pattern used throughout `playerService.ts`:
 
 ```ts
-export async function play(): Promise<void> {
-  await mpdConnectionManager.executeCommand("play");
-  await mpdConnectionManager.refreshNow(); // triggers immediate poll
+public async pauseTrack(): Promise<PlayTrackResponse> {
+  await this.mpdConnectionManager.executeCommand("pause");
+  this.mpdConnectionManager.refreshNow().catch((err) => {
+    console.error("[Player] refreshNow failed after pauseTrack:", err);
+  });
+  return { success: true };
 }
 
-export async function setVolume(volume: number): Promise<void> {
-  await mpdConnectionManager.executeCommand(`setvol ${volume}`);
-  await mpdConnectionManager.refreshNow();
+public async queueFiles(files: string[]): Promise<void> {
+  if (files.length === 0) return;
+  const commands = files.map((f) => ({ command: "add" as const, args: [f] }));
+  await this.mpdConnectionManager.executeCommandList(commands);
 }
 ```
 
-Always `await refreshNow()` — don't fire-and-forget it.
+`refreshNow()` skips the refresh when a poll is already in flight (the next tick applies), so it is a best-effort prompt update, never a guarantee.
 
 ---
 
@@ -96,12 +101,13 @@ Always `await refreshNow()` — don't fire-and-forget it.
 import mpd from "mpd";
 const client = mpd.connect({ host: "localhost", port: 6600 });
 
-// CORRECT — always go through the singleton
-import { mpdConnectionManager } from "../services/mpdConnectionManager.js";
+// CORRECT — always go through the factory-managed singleton
+import { getMpdConnectionManager } from "@services/factory";
+const mpdConnectionManager = getMpdConnectionManager();
 await mpdConnectionManager.executeCommand("play");
 ```
 
-All MPD communication in the backend goes through `mpdConnectionManager`.
+All MPD communication in the backend goes through the manager obtained from `getMpdConnectionManager()` (wired once in `services/factory.ts`; tests may substitute with Sinon stubs/DI).
 
 ---
 
@@ -109,53 +115,74 @@ All MPD communication in the backend goes through `mpdConnectionManager`.
 
 Pattern for adding a new command (e.g., `seek`):
 
-1. **playerService.ts** — add the function:
+1. **playerService.ts** — add a class method:
+
 ```ts
-export async function seek(seconds: number): Promise<void> {
-  await mpdConnectionManager.executeCommand(`seekcur ${seconds}`);
-  await mpdConnectionManager.refreshNow();
+public async seekTo(seconds: number): Promise<void> {
+  await this.mpdConnectionManager.executeCommand("seekcur", [seconds.toString()]);
+  this.mpdConnectionManager.refreshNow().catch((err) => {
+    console.error("[Player] refreshNow failed after seekTo:", err);
+  });
 }
 ```
 
-2. **Controller** — parse input with Zod schema from `@repo/types`, call service:
-```ts
-import { seekSchema } from "@repo/types/schemas.js";
+2. **Schema** — add a member to the matching group in `packages/types/src/schemas/types.ts`:
 
-export const seekController = asyncHandler(async (req, res) => {
-  const { seconds } = seekSchema.parse(req.body); // throws ZodError → 400 via errorHandler
-  await playerService.seek(seconds);
+```ts
+export const playerSchemas = {
+  // ...existing entries...
+  seekTo: z.object({ seconds: z.number().min(0) }),
+};
+```
+
+3. **Controller** — parse with the grouped schema and call the session engine:
+
+```ts
+import { playerSchemas } from "@repo/types/schemas";
+import { resolvePlayerRouter } from "@services/player/playerRouter.js";
+
+export const seekHandler = asyncHandler(async (req, res) => {
+  const { seconds } = playerSchemas.seekTo.parse(req.body); // ZodError → 400 via errorHandler
+  await resolvePlayerRouter()
+    .forSession(req.sessionId as string)
+    .seek(seconds);
   res.json({ success: true });
 });
 ```
 
-3. **Route** — wire the controller:
-```ts
-router.post("/seek", seekController);
-```
+4. **Route** — wire the controller in `routes/unifiedPlayerRoutes.ts` (playback is per-session through `/player`, never a global MPD call).
 
-4. **Schema** — add to `packages/types/src/schemas.ts`:
-```ts
-export const seekSchema = z.object({ seconds: z.number().min(0) });
-```
-
-5. **refreshNow** is called inside the service — the controller doesn't call it again.
+5. **refreshNow** is fired inside the service — the controller doesn't call it again.
 
 ---
 
-## Reading cached state in WebSocket handler
+## Reading cached state in the WebSocket handler
 
-The WS handler reads the cache on connect and then listens for `stateChanged` events — it does not poll MPD itself. Broadcasts use `ws/broadcast.ts`:
+The WS handler reads the cache on connect and then listens for `stateChanged` events — it does not poll MPD itself. Messages use the `{ type, ... }` envelope and `broadcast(data)` takes a single argument:
 
 ```ts
 import { broadcast } from "./broadcast.js";
 
-// On new client connection — send current state immediately
-ws.send(JSON.stringify(mpdConnectionManager.getCachedStatus()));
+// On a new connection — send current state immediately
+ws.send(
+  JSON.stringify({
+    type: "player-status",
+    ...mpdConnectionManager.getCachedStatus(),
+  }),
+);
 
 // Subscribe to subsequent updates
-mpdConnectionManager.on("stateChanged", (status: PlaybackStatus) => {
-  broadcast(wss, status); // sends to all open clients
-});
+const onStateChanged = () => {
+  sendJson(ws, {
+    type: "player-status",
+    ...mpdConnectionManager.getCachedStatus(),
+  });
+};
+mpdConnectionManager.on("stateChanged", onStateChanged);
+ws.on("close", () => mpdConnectionManager.off("stateChanged", onStateChanged));
+
+// Fan-out helper (used by sync progress etc.)
+broadcast({ type: "sync-progress", current: 1, total: 10 });
 ```
 
 Don't set up your own polling interval in the WS handler — the connection manager handles timing.
@@ -165,7 +192,8 @@ Don't set up your own polling interval in the WS handler — the connection mana
 ## Checklist
 
 - [ ] No `await` for status reads in `playerService.ts` — use `getCachedStatus()` (except `getQueue()`)
-- [ ] Every command call is followed by `await mpdConnectionManager.refreshNow()`
-- [ ] No direct MPD connections created outside `MpdConnectionManager`
-- [ ] New schemas defined in `packages/types/src/schemas.ts` and parsed in controllers via `schema.parse()`
-- [ ] WS broadcasts use `broadcast.ts`, not manual `ws.send()` loops
+- [ ] Commands use `executeCommand()` (single) or `executeCommandList()` (batch)
+- [ ] Every user-initiated command is followed by `refreshNow().catch(...)` (fire-and-forget)
+- [ ] No direct MPD connections created outside `MpdConnectionManager` (use `getMpdConnectionManager()`)
+- [ ] New schemas are members of a group in `packages/types/src/schemas/types.ts` and parsed in controllers via `schema.parse()`
+- [ ] WS messages use the `{ type: "player-status", ... }` envelope and `broadcast(data)` (single argument)

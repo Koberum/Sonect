@@ -29,22 +29,28 @@ no subscriptions, no limits.
 ## Features
 
 - **MPD-powered playback** — Gapless, battle-tested, supports virtually any
-  audio format. Repeat, random, consume, and single modes are all first-class.
+  audio format. Random and repeat have UI controls; `consume` is forced by the
+  queue engine and `single` is reflected from MPD status.
 - **Live WebSocket state** — Playback changes reflect instantly across every
-  open tab. MPD idle events are pushed to all connected clients in real time.
+  open tab. MPD status is polled (2 s during play, 10 s during pause/stop) and
+  pushed to all connected clients over WebSocket; browser sessions tick locally
+  and broadcast through the same channel.
 - **Always-on smart queue** — Playback continues from the selected track to
   the end of its album, then queues complete albums from the same artist, the
   same genre, and similar genres (curated map + token fallback for arbitrary
   MPD `Genre` tags); library-wide fallback only for genre-less tracks — ranking
   stays anchored to the seed track and never drifts to unrelated genres.
 - **Album art pipeline** — Artwork is extracted from your audio files, resized
-  to 500x500 JPEG, served over HTTP, and cached in the browser for 30 days.
+  to 400×400 WebP (`COVER_SIZE`/`COVER_QUALITY`), served over HTTP, and cached
+  in the browser for 30 days.
 - **Waveform progress bar** — SoundCloud-style waveform (120 peaks) is decoded
   via `ffmpeg` on demand, cached as `SHA1(file).json` under `WAVEFORMS_DIR`,
-  and rendered as a 28px canvas bar (played vs unplayed) — fallback to a
-  minimal bar when `ffmpeg` is unavailable.
-- **In-browser MPD config** — Edit audio outputs and MPD settings from the
-  Settings page. Save once, MPD restarts automatically — no SSH needed.
+  and rendered as a 20px canvas bar (`h-5`, played vs unplayed). If `ffmpeg`
+  is unavailable a deterministic synthetic envelope is used, and the UI falls
+  back to a plain progress bar when no waveform data exists.
+- **Audio output setup in the browser** — Pick the ALSA `audio_output` (card,
+  name, mixer) from Settings → Audio. The drop-in is written and MPD is
+  reloaded automatically — no SSH needed.
 - **Session-based browser playback** — `browser` output mode streams through a
   backend session engine independent of MPD, so playback state follows the
   browser session rather than the shared MPD daemon — the foundation for
@@ -92,7 +98,8 @@ EOF
 pnpm dev
 ```
 
-Open `http://localhost:5173` and trigger a library scan from the Settings page.
+Open `http://localhost:5173` and trigger a library scan from the sidebar
+refresh button (or from the setup wizard's Sync step).
 
 On first launch, the setup wizard guides you through storage, audio, and library
 sync. Finishing or skipping the wizard is persisted by the backend, so the
@@ -134,19 +141,18 @@ card / USB DAC — it grants `/dev/snd`, the `audio` group and a read-only
 ```
 sonect/
 ├── packages/
-│   ├── backend/       Express 5 API + WebSocket server (port 3000)
+│   ├── backend/       Express 5 API + WebSocket server (port 3000; app Dockerfile)
 │   ├── frontend/      React 19 + Vite SPA (port 5173 in dev)
-│   ├── @repo/db/      Native SQLite (node:sqlite) + Drizzle repositories
-│   └── @repo/types/   Shared TypeScript types (no runtime deps)
-├── docker/            Dockerfile config, s6-overlay tree, docker-compose.yml
+│   ├── @repo/db       Native SQLite (node:sqlite) + Drizzle repositories
+│   └── @repo/types    Shared TypeScript types + zod schemas
+├── docker/            MPD config, s6-overlay service tree, compose files
 ├── assets/            Screenshots and 3D print files
 ├── conf/              MPD configuration (dev container)
-├── data/              MPD state, sticker DB, tag cache, playlists (dev)
-└── music/             Mount point for your music library (dev)
+└── data/              Dev scratch root: music (`MUSIC_DIR`), covers, waveforms, MPD state
 ```
 
 ```
-Browser ──HTTP──► Express /player (per-profile, requires X-Session-Id + X-Device-Id) ─┬─► Browser engine: shared SessionPlayer per profile (one queue), activeDeviceId routes audio to one browser
+Browser ──HTTP──► Express /player (per-profile, requires X-Session-Id; X-Device-Id optional) ─┬─► Browser engine: shared SessionPlayer per profile (one queue), activeDeviceId routes audio to one browser
         ──WS───► WebSocket ?sessionId=&deviceId= ────────────────────────────────────┘
                                                                                     └─► MPD engine: shared MPD daemon (locked to one profile)
 
@@ -161,60 +167,60 @@ immediately after user-initiated commands. Browser sessions run entirely in-memo
 
 The database is native SQLite through Node's built-in `node:sqlite` module,
 accessed via a synchronous Drizzle repository layer in `@repo/db` — no WASM
-SQLite build ships in the image. Node.js **24** is required (the driver itself
-needs 22.14.0). The database runs in WAL mode and is checkpointed during graceful
-shutdown, so a copy taken from the `sonect-data` volume always contains a
-complete database file.
+SQLite build ships in the image. Node.js **24** is required (the `node:sqlite`
+driver needs Node ≥ 22.14 upstream). The database runs in WAL mode and is
+checkpointed during graceful shutdown, so a copy taken from the `sonect-data`
+volume always contains a complete database file.
 
 ---
 
 ## API Overview
 
-| Method | Path                                     | Description                                                                                                                                     |
-| ------ | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/library/albums`                        | List all albums                                                                                                                                 |
-| GET    | `/library/albums/:id`                    | Get album by ID                                                                                                                                 |
-| GET    | `/library/albums/:id/tracks`             | Tracks for an album                                                                                                                             |
-| GET    | `/library/artists`                       | List all artists                                                                                                                                |
-| GET    | `/library/artists/:id/albums`            | Albums for an artist                                                                                                                            |
-| POST   | `/library/scan`                          | Trigger library re-scan                                                                                                                         |
-| POST   | `/player/play`                           | Play track (per-profile, requires `X-Session-Id`+`X-Device-Id`) — queues through end of album; first play claims browser output for that device |
-| POST   | `/player/pause`                          | Pause (per-profile, remote control if not active browser device)                                                                                |
-| POST   | `/player/resume`                         | Resume (per-profile) — fixes `pause`/`play` toggle; uses explicit `pause 0` for MPD                                                             |
-| POST   | `/player/next`                           | Next track (per-profile)                                                                                                                        |
-| POST   | `/player/previous`                       | Previous track (per-profile)                                                                                                                    |
-| POST   | `/player/seek`                           | Seek to position (per-profile)                                                                                                                  |
-| GET    | `/player/queue`                          | Queue for this profile (browser: shared per profile, MPD: shared global)                                                                        |
-| PUT    | `/player/output-mode`                    | Switch `browser`↔`mpd` (per-profile, `mpd` locked → 423 if busy; `browser` with `X-Device-Id` hands off to that browser)                        |
-| PATCH  | `/player/volume`                         | Set volume (per-profile; browser stored in-memory and broadcast to active device)                                                               |
-| GET    | `/waveforms/:trackId`                    | Get waveform peaks for a track (`{samples,duration,version}`)                                                                                   |
-| GET    | `/system/network/status`                 | Read network/DNS status                                                                                                                         |
-| GET    | `/system/setup/progress`                 | Read setup progress                                                                                                                             |
-| POST   | `/system/setup/complete`                 | Complete or skip setup                                                                                                                          |
-| POST   | `/system/setup/reset`                    | Reset the setup wizard                                                                                                                          |
-| GET    | `ws://host:3000/ws?sessionId=&deviceId=` | WebSocket playback state (per-profile, requires `sessionId`+`deviceId` params) — `player-status` includes `activeDeviceId`+`mode`               |
+| Method | Path                                     | Description                                                                                                                                                                                              |
+| ------ | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/catalog/albums`                        | List all albums                                                                                                                                                                                          |
+| GET    | `/catalog/albums/:id`                    | Get album by ID                                                                                                                                                                                          |
+| GET    | `/catalog/albums/:albumId/tracks`        | Tracks for an album                                                                                                                                                                                      |
+| GET    | `/catalog/artists`                       | List all artists                                                                                                                                                                                         |
+| GET    | `/catalog/artists/:artistId/albums`      | Albums for an artist                                                                                                                                                                                     |
+| POST   | `/catalog/scan`                          | Trigger library re-scan                                                                                                                                                                                  |
+| POST   | `/player/play`                           | Play track (per-profile, requires `X-Session-Id`; `X-Device-Id` optional) — queues through end of album; first play claims browser output for that device                                                |
+| POST   | `/player/pause`                          | Pause (per-profile, remote control if not active browser device)                                                                                                                                         |
+| POST   | `/player/resume`                         | Resume (per-profile) — fixes `pause`/`play` toggle; uses explicit `pause 0` for MPD                                                                                                                      |
+| POST   | `/player/next`                           | Next track (per-profile)                                                                                                                                                                                 |
+| POST   | `/player/previous`                       | Previous track (per-profile)                                                                                                                                                                             |
+| POST   | `/player/seek`                           | Seek to position (per-profile)                                                                                                                                                                           |
+| GET    | `/player/queue`                          | Queue for this profile (browser: shared per profile, MPD: shared global)                                                                                                                                 |
+| PUT    | `/player/output-mode`                    | Switch `browser`↔`mpd` (per-profile, `mpd` locked → 423 if busy; `browser` with `X-Device-Id` hands off to that browser)                                                                                 |
+| PATCH  | `/player/volume`                         | Set volume (per-profile; browser stored in-memory and broadcast to active device)                                                                                                                        |
+| GET    | `/waveforms/:trackId`                    | Get waveform peaks for a track (`{samples,duration,version}`)                                                                                                                                            |
+| GET    | `/system/network/status`                 | Read network/DNS status                                                                                                                                                                                  |
+| GET    | `/system/setup/progress`                 | Read setup progress                                                                                                                                                                                      |
+| POST   | `/system/setup/complete`                 | Complete or skip setup                                                                                                                                                                                   |
+| POST   | `/system/setup/reset`                    | Reset the setup wizard                                                                                                                                                                                   |
+| GET    | `ws://host:3000/ws?sessionId=&deviceId=` | WebSocket playback state — `?sessionId=` selects the per-profile stream (without it, the shared MPD status is sent); `deviceId` identifies the browser; `player-status` includes `activeDeviceId`+`mode` |
 
 ### Environment variables
 
 Configure via `packages/backend/.env`:
 
-| Variable           | Default                                                        | Description                                                                    |
-| ------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `MPD_HOST`         | `127.0.0.1` (docker) / `localhost` (dev)                       | MPD server host — the daemon runs in the same container in docker              |
-| `MPD_PORT`         | `6600`                                                         | MPD server port                                                                |
-| `MUSIC_DIR`        | `/libraries` (docker) / `/music` (dev)                         | Root of your music library — MPD's single `music_directory`                    |
-| `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta` | Audio extensions counted as music files in per-source library stats            |
-| `COVERS_DIR`       | `/app/data/covers` (docker) / `./data/covers` (dev)            | Where cover WebPs are cached                                                   |
-| `COVER_SIZE`       | `400`                                                          | Cover resize dimension (px, square fit inside)                                 |
-| `COVER_QUALITY`    | `80`                                                           | WebP quality for covers                                                        |
-| `WAVEFORMS_DIR`    | `/app/data/waveforms` (docker) / `<COVERS_DIR>/../waveforms`   | Where waveform JSON caches are saved (`SHA1(file).json`)                       |
-| `DB_PATH`          | `/app/data/music.db` (docker) / `/db/music.db` (dev)           | SQLite database path (docker: under the `sonect-data` volume)                  |
-| `LOG_LEVEL`        | `info`                                                         | Console log level; `debug` logs every found/updated/removed track during scans |
-| `MPD_CONFIG_PATH`  | `/app/data/mpd-audio.conf` (docker) / `/opt/sonect/data/...`   | MPD config drop-in (`audio_output` + advanced settings)                        |
-| `MPD_LOG_PATH`     | `/var/lib/mpd/mpd.log`                                         | Legacy; **no longer read** — sync progress comes from the scanner              |
-| `DNS_CHECK_HOST`   | `example.com`                                                  | Host resolved to verify DNS connectivity                                       |
-| `PORT`             | `3000`                                                         | Backend HTTP port                                                              |
-| `FRONTEND_DIST`    | `../frontend/dist`                                             | Built frontend static files                                                    |
+| Variable           | Default                                                                  | Description                                                                    |
+| ------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| `MPD_HOST`         | `127.0.0.1` (docker) / `localhost` (dev)                                 | MPD server host — the daemon runs in the same container in docker              |
+| `MPD_PORT`         | `6600`                                                                   | MPD server port                                                                |
+| `MUSIC_DIR`        | `/libraries` (docker) / `/opt/sonect/music` (code default)               | Root of your music library — MPD's single `music_directory`                    |
+| `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta`           | Audio extensions counted as music files in per-source library stats            |
+| `COVERS_DIR`       | `/app/data/covers` (docker) / `./data/covers` (dev)                      | Where cover WebPs are cached                                                   |
+| `COVER_SIZE`       | `400`                                                                    | Cover resize dimension (px, square fit inside)                                 |
+| `COVER_QUALITY`    | `80`                                                                     | WebP quality for covers                                                        |
+| `WAVEFORMS_DIR`    | `/app/data/waveforms` (docker) / `<COVERS_DIR>/../waveforms`             | Where waveform JSON caches are saved (`SHA1(file).json`)                       |
+| `DB_PATH`          | `/app/data/music.db` (docker) / `/db/music.db` (dev)                     | SQLite database path (docker: under the `sonect-data` volume)                  |
+| `LOG_LEVEL`        | `info`                                                                   | Console log level; `debug` logs every found/updated/removed track during scans |
+| `MPD_CONFIG_PATH`  | `/app/data/mpd-audio.conf` (docker) / `/opt/sonect/data/...`             | MPD config drop-in (`audio_output` + advanced settings)                        |
+| `MPD_LOG_PATH`     | —                                                                        | Legacy; **no longer read** — sync progress comes from the scanner              |
+| `DNS_CHECK_HOST`   | `example.com`                                                            | Host resolved to verify DNS connectivity                                       |
+| `PORT`             | `3000`                                                                   | Backend HTTP port                                                              |
+| `FRONTEND_DIST`    | `@frontend/dist` (cwd-relative fallback; `/app/frontend/dist` in docker) | Built frontend static files                                                    |
 
 ### Library sources
 
@@ -260,11 +266,12 @@ shows this read-only status in the desktop top bar.
 ## Build & Deploy
 
 The monorepo uses [Turborepo](https://turbo.build) for task orchestration:
-`build`, `lint`, and `test` are cached — re-running them without changes
-finishes in milliseconds (`>>> FULL TURBO`), and only the affected packages
-rebuild after an edit. Frontend build caching is keyed on the
-`VITE_BACKEND_URL`, `VITE_WEBSOCKET_URL`, `VITE_COVER_PATH`, and `VITE_DEBUG`
-environment variables, so changing any of them invalidates the cache.
+`build` and `lint` are cached — re-running them without changes finishes in
+milliseconds (`>>> FULL TURBO`), and only the affected packages rebuild after
+an edit. `test` always runs fresh (`cache: false`). Frontend build caching is
+keyed on the `VITE_BACKEND_URL`, `VITE_WEBSOCKET_URL`, `VITE_COVER_PATH`, and
+`VITE_DEBUG` environment variables, so changing any of them invalidates the
+cache.
 
 ```bash
 pnpm build          # Compile all packages (turbo-cached)

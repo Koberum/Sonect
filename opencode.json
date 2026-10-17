@@ -45,7 +45,7 @@
   "mcp": {
     "playwright": {
       "type": "local",
-      "command": ["npx", "@playwright/mcp@latest"],
+      "command": ["npx", "@playwright/mcp@latest", "--no-sandbox"],
       "enabled": true
     },
     "shadcn": {

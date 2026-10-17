@@ -1,6 +1,6 @@
 ---
 name: sonect-playwright
-description: Use Playwright to visually verify, test, or debug the Sonect frontend UI. Use this skill whenever the user asks to check what the UI looks like, verify a frontend change rendered correctly, take a screenshot of a page or component, click through a user flow to confirm it works, or write end-to-end tests. This skill requires the Playwright MCP server to be running — see setup below. Trigger whenever the user wants to see the frontend, confirm visual output, or validate a UI interaction.
+description: Use Playwright to visually verify, test, or debug the Sonect frontend UI. Use this skill whenever the user asks to check what the UI looks like, verify a frontend change rendered correctly, take a screenshot of a page or component, click through a user flow to confirm it works, or write end-to-end tests. This skill requires the Playwright MCP server (configured in opencode.json) — see setup below. Trigger whenever the user wants to see the frontend, confirm visual output, or validate a UI interaction.
 ---
 
 # Sonect Playwright — Frontend Visibility
@@ -10,49 +10,46 @@ The Playwright MCP server gives the agent eyes: it can navigate to the Vite dev 
 ## Prerequisites
 
 The frontend dev server must be running:
+
 ```bash
 pnpm frontend:dev   # starts on http://localhost:5173
 ```
 
-The Playwright MCP server must be configured in `opencode.jsonc` (see Setup below).
+The Playwright MCP server is already configured in `/workspace/opencode.json` (`mcp.playwright`, `type: "local"`, command `npx @playwright/mcp@latest`, `enabled: true`). opencode spawns it automatically — there is no manual start step.
 
 ---
 
 ## What you can do
 
-### Take a screenshot to see the current state
+The MCP server exposes `browser_*` tools; depending on the harness they may appear namespaced as `playwright_browser_*` (e.g. `playwright_browser_navigate`). The common ones:
+
+| Tool                       | What it does                                               |
+| -------------------------- | ---------------------------------------------------------- |
+| `browser_navigate`         | Go to a URL                                                |
+| `browser_take_screenshot`  | Capture the current page (viewport or full page)           |
+| `browser_snapshot`         | Accessibility snapshot — prefer this to find elements/refs |
+| `browser_click`            | Click an element by ref/selector                           |
+| `browser_type`             | Type into an input                                         |
+| `browser_fill_form`        | Fill multiple fields at once                               |
+| `browser_select_option`    | Choose a dropdown option                                   |
+| `browser_hover`            | Hover over an element                                      |
+| `browser_press_key`        | Send a key                                                 |
+| `browser_evaluate`         | Run arbitrary JS in the page context                       |
+| `browser_wait_for`         | Wait for text to appear/disappear or a delay               |
+| `browser_resize`           | Resize the viewport                                        |
+| `browser_console_messages` | Read console output                                        |
+| `browser_network_requests` | Inspect network traffic                                    |
+| `browser_navigate_back`    | Go back in history                                         |
+
+Typical usage:
 
 ```
-Use the playwright_screenshot tool to capture http://localhost:5173
+Use browser_navigate to go to http://localhost:5173/albums
+Use browser_take_screenshot to capture the page
+Use browser_click on the element with ref "e12" (found via browser_snapshot)
 ```
 
-Always take a screenshot **after** making frontend changes to confirm the result before telling the user it's done.
-
-### Navigate to a specific page
-
-```
-Use playwright_navigate to go to http://localhost:5173/library
-```
-
-### Click a button or element
-
-```
-Use playwright_click with selector "button[aria-label='Play']"
-```
-
-Prefer `aria-label`, `role`, and `data-testid` selectors over CSS class selectors — they're more stable and match how the i18n system labels things.
-
-### Fill an input
-
-```
-Use playwright_fill with selector "input[placeholder]" and value "Radiohead"
-```
-
-### Get page content / check text
-
-```
-Use playwright_evaluate to run document.body.innerText and check for expected strings
-```
+Prefer refs from `browser_snapshot` (or `browser_find` for text) over CSS selectors — they're stable and match the accessible labels the i18n system renders.
 
 ---
 
@@ -60,11 +57,11 @@ Use playwright_evaluate to run document.body.innerText and check for expected st
 
 After making changes to a component or page:
 
-1. Confirm `pnpm frontend:dev` is running (check if port 5173 responds)
-2. Take a screenshot with `playwright_screenshot`
-3. Inspect the screenshot — does the layout look right? Are labels correct? Is the component visible?
-4. If something looks wrong, check the browser console with `playwright_evaluate`: `console.log` is not available in prod paths but errors will show up via `window.__errors` or by checking network tab equivalents
-5. Navigate to the specific route if needed
+1. Confirm `pnpm frontend:dev` is running (check that port 5173 responds)
+2. `browser_navigate` to the affected route
+3. `browser_take_screenshot` and inspect the layout, labels and states
+4. If something looks wrong, read `browser_console_messages` (level `warning`/`error`) and `browser_network_requests` for failed fetches
+5. For responsive checks, repeat with `browser_resize` at 375/768/1280 and check `document.documentElement.scrollWidth > document.documentElement.clientWidth` via `browser_evaluate`
 6. Report findings to the user with the screenshot
 
 ---
@@ -73,10 +70,15 @@ After making changes to a component or page:
 
 After adding translation keys:
 
-1. Navigate to the affected page
-2. Take a screenshot
-3. Look for any raw translation keys rendered as text (e.g. `player.controls.play` instead of `Play`) — these indicate missing or mismatched keys
-4. Check both EN and ES by toggling language if the app has a language switcher, or by evaluating `localStorage.setItem('i18nextLng', 'es')` and reloading
+1. Navigate to the affected page and take a screenshot
+2. Look for raw translation keys rendered as text (e.g. `player.title` instead of the label) — these indicate missing or mismatched keys
+3. Switch language by setting the app's real key and reloading:
+   ```js
+   localStorage.setItem("language", "es"); // NOT "i18nextLng"
+   location.reload();
+   ```
+   (The app also exposes the switch in Settings → Appearance.)
+4. Check **EN, ES and IT** — all three locales must have the key; a missing key silently falls back to English
 
 ---
 
@@ -85,67 +87,32 @@ After adding translation keys:
 After adding a new backend route + Vite proxy entry:
 
 1. Navigate to a page that calls the new endpoint
-2. Use `playwright_evaluate` to check for network errors:
-   ```js
-   // Run in browser context
-   performance.getEntriesByType('resource').filter(r => r.name.includes('/your-new-route'))
-   ```
-3. Or open the network panel equivalent by checking `playwright_evaluate` for failed fetches
-4. A 404 on the API call usually means the Vite proxy entry is missing — go add it to `vite.config.ts`
+2. Use `browser_network_requests` (filtered on the new path) to confirm the request went to the backend and got a 2xx
+3. A 404 on the API call usually means the Vite proxy entry is missing — add it to `packages/frontend/vite.config.ts`
 
 ---
 
-## Setup
+## Setup reference
 
-Add this to your `opencode.jsonc` under `mcpServers`:
+The server entry in `/workspace/opencode.json`:
 
 ```json
-{
-  "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest"]
-    }
+"mcp": {
+  "playwright": {
+    "type": "local",
+    "command": ["npx", "@playwright/mcp@latest", "--no-sandbox"],
+    "enabled": true
   }
 }
 ```
 
-The `@playwright/mcp` package runs a headless Chromium browser on demand — no separate install needed. On first run it may download the browser binary (~150MB).
-
-If you want a visible browser window for debugging (useful when building new interactions):
-
-```json
-{
-  "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest", "--headed"]
-    }
-  }
-}
-```
-
----
-
-## Available Playwright MCP tools (reference)
-
-| Tool | What it does |
-|------|-------------|
-| `playwright_navigate` | Go to a URL |
-| `playwright_screenshot` | Capture the current page as an image |
-| `playwright_click` | Click an element by selector |
-| `playwright_fill` | Type into an input |
-| `playwright_select` | Choose a dropdown option |
-| `playwright_hover` | Hover over an element |
-| `playwright_evaluate` | Run arbitrary JS in the browser context |
-| `playwright_wait_for_selector` | Wait for an element to appear |
-| `playwright_go_back` / `playwright_go_forward` | Browser navigation |
+`--no-sandbox` is required because the dev container runs as root (Chromium refuses to sandbox as root). The `@playwright/mcp` package launches headless Chromium on demand — no separate install needed; if Chrome is missing, run `npx playwright install chrome`. On first run it may download the browser binary (~150MB). For a visible browser while debugging a new interaction, append `"--headed"` to the `command` array.
 
 ---
 
 ## Tips
 
 - Take a screenshot first, then act — don't assume the page is in the state you expect.
-- When clicking, prefer `aria-label` over CSS selectors. The Sonect frontend uses `t("key")` for all labels, so the rendered text matches the English translation.
-- If the page shows a blank white screen, the Vite dev server may not be running or there's a JS error — check with `playwright_evaluate`: `document.querySelector('#root')?.innerHTML`.
+- Prefer `browser_snapshot`/`browser_find` refs over CSS selectors: the Sonect frontend labels everything through `t("key")`, so rendered text matches the English translation.
+- If the page shows a blank screen, the Vite dev server may not be running or there's a JS error — check `browser_console_messages` and `document.querySelector('#root')?.innerHTML` via `browser_evaluate`.
 - Tailwind CSS 4 class names are generated at build time; don't rely on class selectors in assertions.

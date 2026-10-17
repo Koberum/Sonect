@@ -956,9 +956,9 @@
                 <div class="term-line">
                   <span class="term-prompt">$</span
                   ><span class="term-cmd">
-                    curl -fsSL
-                    https://raw.githubusercontent.com/Koberum/Sonect/main/installer.sh
-                    | sudo bash</span
+                    docker run -d --name sonect -p 3000:3000 -v
+                    /path/to/music:/libraries/music:ro -v sonect-data:/app/data
+                    ghcr.io/koberum/sonect:latest</span
                   ><span class="cursor" aria-hidden="true"></span>
                 </div>
               </div>
@@ -1073,9 +1073,9 @@
               </div>
               <h3 class="feat-card__title">Live WebSocket state</h3>
               <p class="feat-card__desc">
-                Playback changes reflect instantly across every open tab. No
-                polling — MPD idle events pushed directly to all connected
-                clients.
+                Playback changes reflect instantly across every open tab. State
+                is polled from MPD (2 s during play, 10 s paused) and pushed to
+                all connected clients over WebSocket.
               </p>
             </article>
 
@@ -1092,8 +1092,9 @@
               </div>
               <h3 class="feat-card__title">Smart queue strategy</h3>
               <p class="feat-card__desc">
-                Album → artist → genre fallback fills your queue intelligently.
-                Repeat, random, consume, and single modes are all first-class.
+                Album → artist → genre → similar-genre fallback fills your queue
+                intelligently, ranked by your play counts. Random and repeat are
+                one click away.
               </p>
             </article>
 
@@ -1130,10 +1131,12 @@
                   />
                 </svg>
               </div>
-              <h3 class="feat-card__title">In-browser MPD config</h3>
+              <h3 class="feat-card__title">
+                Audio output setup in the browser
+              </h3>
               <p class="feat-card__desc">
-                Edit audio output settings and MPD config drop-ins right from
-                the Settings page. Save once, MPD restarts automatically.
+                Pick your ALSA output device from the Settings page. Sonect
+                writes the MPD drop-in and reloads the daemon automatically.
               </p>
             </article>
           </div>
@@ -1161,8 +1164,8 @@
                 "
               >
                 Sonect is a <code>pnpm</code> monorepo. You need
-                <strong style="color: var(--text)">Node.js 22.14.0+</strong> and
-                a running MPD instance on port <code>6600</code>.
+                <strong style="color: var(--text)">Node.js 24+</strong> and a
+                running MPD instance on port <code>6600</code>.
               </p>
               <p
                 style="
@@ -1185,8 +1188,8 @@
                 "
               >
                 Once running, open <code>http://localhost:5173</code> and
-                trigger a library scan from the Settings page to populate your
-                collection.
+                trigger a library scan from the sidebar refresh button to
+                populate your collection.
               </p>
             </div>
 
@@ -1229,15 +1232,20 @@
               </div>
               <div class="code-block__body">
                 <div>
-                  <span class="hl-comment"># Raspberry Pi (production)</span>
+                  <span class="hl-comment"># Docker (production)</span>
                 </div>
                 <div>
-                  <span class="hl-cmd">curl -fsSL</span>
+                  <span class="hl-cmd">docker run -d --name sonect</span>
+                  <span class="hl-str">-p 3000:3000</span>
+                </div>
+                <div>
                   <span class="hl-str"
-                    >https://raw.githubusercontent.com/Koberum/Sonect/main/installer.sh</span
+                    >-v /path/to/music:/libraries/music:ro</span
                   >
-                  <span class="hl-punct">|</span>
-                  <span class="hl-cmd">sudo bash</span>
+                  <span class="hl-str">-v sonect-data:/app/data</span>
+                </div>
+                <div>
+                  <span class="hl-str">ghcr.io/koberum/sonect:latest</span>
                 </div>
                 <div>&nbsp;</div>
                 <div>
@@ -1324,10 +1332,11 @@
               >
                 <h2 id="doc-installation-h">Installation</h2>
                 <p>
-                  Sonect requires <strong>Node.js 22.14.0 or later</strong> and
-                  <strong>pnpm 9+</strong>. A running MPD instance is also
-                  required — Sonect does not manage MPD itself, it connects to
-                  one you provide.
+                  Sonect requires <strong>Node.js 24 or later</strong> and
+                  <strong>pnpm 10.34.7</strong> (pinned via
+                  <code>packageManager</code>). For local development you also
+                  need a running MPD instance — the single Docker image bundles
+                  its own.
                 </p>
                 <ul>
                   <li>
@@ -1340,11 +1349,12 @@
                     Ensure MPD is listening on port <code>6600</code> (default)
                   </li>
                   <li>
-                    On a Raspberry Pi, run the one-line installer:
+                    For production (including Raspberry Pi), run the single
+                    Docker image:
                     <code style="font-size: 0.78rem"
-                      >curl -fsSL
-                      https://raw.githubusercontent.com/Koberum/Sonect/main/installer.sh
-                      | sudo bash</code
+                      >docker run -d -p 3000:3000 -v
+                      /path/to/music:/libraries/music:ro -v
+                      sonect-data:/app/data ghcr.io/koberum/sonect:latest</code
                     >
                   </li>
                   <li>
@@ -1367,8 +1377,8 @@
                 <p>
                   Create a <code>.env</code> file in
                   <code>packages/backend/</code>. All variables have sensible
-                  defaults except <code>COVERS_DIR</code>, which you should set
-                  to a writable directory.
+                  defaults; set <code>MUSIC_DIR</code> and
+                  <code>COVERS_DIR</code> explicitly for production.
                 </p>
                 <table class="api-table" aria-label="Environment variables">
                   <thead>
@@ -1391,19 +1401,19 @@
                     </tr>
                     <tr>
                       <td>MUSIC_DIR</td>
-                      <td>/music</td>
+                      <td>
+                        /opt/sonect/music (code default; /libraries in docker)
+                      </td>
                       <td>Root of your music library</td>
                     </tr>
                     <tr>
                       <td>COVERS_DIR</td>
-                      <td>—</td>
-                      <td>Where cover JPEGs are cached</td>
+                      <td>./data/covers</td>
+                      <td>Where cover WebPs are cached</td>
                     </tr>
                     <tr>
                       <td>DB_PATH</td>
-                      <td>
-                        /db/music.db (dev) / /opt/sonect/data/music.db (prod)
-                      </td>
+                      <td>/db/music.db (dev) / /app/data/music.db (docker)</td>
                       <td>SQLite database path</td>
                     </tr>
                     <tr>
@@ -1414,10 +1424,15 @@
                   </tbody>
                 </table>
                 <p>
-                  MPD configuration is split between a root-owned
-                  <code>/etc/mpd.conf</code> and a user-editable drop-in at
-                  <code>/opt/sonect/data/mpd-audio.conf</code>. The drop-in is
-                  edited from the Settings page in the UI.
+                  MPD configuration is split between a baked
+                  <code>mpd.conf</code>
+                  (immutable) and a user-editable drop-in at
+                  <code>/app/data/mpd-audio.conf</code> in the container (<code
+                    >/opt/sonect/data/mpd-audio.conf</code
+                  >
+                  in dev). The Audio settings tab rewrites the
+                  <code>audio_output</code>
+                  block and reloads MPD automatically.
                 </p>
               </article>
 
@@ -1441,24 +1456,20 @@
                     development
                   </li>
                   <li>
-                    <code>db</code> — SQLite schema and query layer
-                    (Drizzle-style)
-                  </li>
-                  <li>
                     <code>@repo/db</code> — SQLite schema, migrations, and query
-                    helpers
+                    layer (node:sqlite + Drizzle)
                   </li>
                   <li>
-                    <code>@repo/types</code> — Shared TypeScript types (no
-                    runtime dependencies)
+                    <code>@repo/types</code> — shared TypeScript types and zod
+                    schemas
                   </li>
                 </ul>
                 <p>
                   The browser communicates with the backend over both HTTP
-                  (REST) and WebSocket. The WebSocket connection listens to MPD
-                  idle events and fans out state changes to all connected
-                  clients — this is what keeps every tab in sync without
-                  polling.
+                  (REST) and WebSocket. MPD status is polled (2 s while playing,
+                  10 s paused) and fanned out to all connected clients; browser
+                  sessions tick locally and broadcast through the same channel —
+                  this is what keeps every tab in sync.
                 </p>
 
                 <div
@@ -1494,7 +1505,7 @@
                       <span class="hl-punct">──WS────►</span>
                       <span class="hl-cmd">WS Server </span>
                       <span class="hl-punct">──►</span>
-                      <span class="hl-str">MPD idle</span>
+                      <span class="hl-str">MPD poll (2s/10s)</span>
                     </div>
                   </div>
                 </div>
@@ -1521,57 +1532,57 @@
                   <tbody>
                     <tr>
                       <td>GET</td>
-                      <td>/library/albums</td>
+                      <td>/catalog/albums</td>
                       <td>List all albums</td>
                     </tr>
                     <tr>
                       <td>GET</td>
-                      <td>/library/albums/:id</td>
+                      <td>/catalog/albums/:id</td>
                       <td>Get album by ID</td>
                     </tr>
                     <tr>
                       <td>GET</td>
-                      <td>/library/albums/:id/tracks</td>
+                      <td>/catalog/albums/:albumId/tracks</td>
                       <td>Tracks for an album</td>
                     </tr>
                     <tr>
                       <td>GET</td>
-                      <td>/library/artists</td>
+                      <td>/catalog/artists</td>
                       <td>List all artists</td>
                     </tr>
                     <tr>
                       <td>GET</td>
-                      <td>/library/artists/:id/albums</td>
+                      <td>/catalog/artists/:artistId/albums</td>
                       <td>Albums for an artist</td>
                     </tr>
                     <tr>
                       <td>POST</td>
-                      <td>/library/scan</td>
+                      <td>/catalog/scan</td>
                       <td>Trigger library re-scan</td>
                     </tr>
                     <tr>
                       <td>POST</td>
-                      <td>/mpd/play</td>
-                      <td>Play a track</td>
+                      <td>/player/play</td>
+                      <td>Play a track (requires <code>X-Session-Id</code>)</td>
                     </tr>
                     <tr>
                       <td>POST</td>
-                      <td>/mpd/pause</td>
-                      <td>Toggle pause</td>
+                      <td>/player/pause</td>
+                      <td>Pause playback</td>
                     </tr>
                     <tr>
                       <td>POST</td>
-                      <td>/mpd/next</td>
+                      <td>/player/next</td>
                       <td>Skip to next track</td>
                     </tr>
                     <tr>
                       <td>PATCH</td>
-                      <td>/mpd/volume</td>
+                      <td>/player/volume</td>
                       <td>Set volume (0–100)</td>
                     </tr>
                     <tr>
                       <td>WS</td>
-                      <td>ws://host:3000</td>
+                      <td>ws://host:3000/ws?sessionId=&amp;deviceId=</td>
                       <td>Live playback state</td>
                     </tr>
                   </tbody>
@@ -1597,16 +1608,17 @@
                     frontend directory
                   </li>
                   <li>
-                    Run the backend with
-                    <code>node packages/backend/dist/index.js</code>
+                    Run the backend with <code>pnpm backend:start</code> (the
+                    esbuild bundle at <code>backend/dist/bundle.cjs</code>)
                   </li>
                   <li>
                     GitHub Actions CI builds both artifacts on every push to
                     <code>main</code>
                   </li>
                   <li>
-                    For containerised deployments, mount your music directory at
-                    <code>MUSIC_DIR</code>
+                    For containerised deployments, bind-mount music under
+                    <code>/libraries/&lt;name&gt;</code> and persist
+                    <code>/app/data</code>
                   </li>
                 </ul>
               </article>

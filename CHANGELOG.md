@@ -85,7 +85,6 @@
 * drizzle studio export port ([eb3744a](https://github.com/Koberum/Sonect/commit/eb3744aeaa392386b9b6471b03aa182739e1f930))
 * **frontend:** adjusting logo width ([45f032d](https://github.com/Koberum/Sonect/commit/45f032de6a2e3b3c2822e09b2351f14430630c93))
 * **frontend:** reusable selectable row component ([d020fb1](https://github.com/Koberum/Sonect/commit/d020fb1119c4c235966650bafd9fdfc156be821a))
-* **frontend:** reusable selectable row component ([d020fb1](https://github.com/Koberum/Sonect/commit/d020fb1119c4c235966650bafd9fdfc156be821a))
 * **frontend:** route mobile full-page player through session engine in browser mode ([ce878a9](https://github.com/Koberum/Sonect/commit/ce878a93a4c54ea7a553cea59a3ab77a626f3fe5))
 * **frontend:** show real mount path instead of hardcoded prod prefix ([8c536a1](https://github.com/Koberum/Sonect/commit/8c536a13797f40e1d65ac222014d84050d590c08))
 * init changing mpd config logic inside dev container ([e4b52ef](https://github.com/Koberum/Sonect/commit/e4b52efdc60c0e5ca6402b33c5d742d99b4676d1))
@@ -101,4 +100,3 @@
 * reverting to MIT license ([0aeb86c](https://github.com/Koberum/Sonect/commit/0aeb86ca62725338506876c60468b695bc9d86cf))
 * spacing for selectors ([6a15e45](https://github.com/Koberum/Sonect/commit/6a15e459094e200e9ca4814dc70b05248072fddb))
 
-## Changelog

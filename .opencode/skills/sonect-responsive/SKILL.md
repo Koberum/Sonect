@@ -72,7 +72,7 @@ Album art uses `aspectRatio="square"` — the `w-full` ensures it fills its grid
 
 ## Design rules
 
-1. **No horizontal overflow** — `overflow-x-hidden` on body, no fixed-width containers wider than viewport. If a scrollable horizontal area is intentional (Dashboard scrollable rows), use `ScrollArea` with hidden scrollbar styling.
+1. **No horizontal overflow** — the app shell clamps overflow (`MainLayout` root uses `overflow-hidden`); no fixed-width containers wider than the viewport. If a scrollable horizontal area is intentional (Dashboard scrollable rows), use `ScrollArea` with hidden scrollbar styling.
 2. **Touch targets ≥ 44px** — Buttons, icon buttons, links must be at least 44×44px on touch devices. Use `min-h-11 min-w-11` or `p-3` if needed.
 3. **Bottom player bar** — Fixed at bottom, slides up with `translate-y-full`/`translate-y-0`. Ensure content above it is not obscured (the player pushes content up when visible).
 4. **Sidebar** — Hidden by default on mobile, toggleable via hamburger button. Uses slide animation. Never show sidebar as a permanent overlay on mobile.
@@ -84,31 +84,12 @@ Album art uses `aspectRatio="square"` — the `w-full` ensures it fills its grid
 
 ## Playwright verification workflow
 
-Before declaring a frontend change done, verify at 3 viewports:
+Before declaring a frontend change done, verify at 3 viewports using the Playwright MCP server (`playwright_browser_*` tools — see the `sonect-playwright` skill; `playwright` is not a workspace dependency, so do not write `import { chromium } from "playwright"` scripts):
 
-```mjs
-import { chromium } from "playwright";
-const browser = await chromium.launch({ headless: true });
-const viewports = [
-  { width: 375, height: 812 }, // mobile (iPhone)
-  { width: 768, height: 1024 }, // tablet (iPad)
-  { width: 1280, height: 800 }, // desktop
-];
-for (const vp of viewports) {
-  const page = await browser.newPage({ viewport: vp });
-  await page.goto("http://localhost:5173/PATH", { waitUntil: "networkidle" });
-  // Check for horizontal overflow
-  const overflow = await page.evaluate(
-    () =>
-      document.documentElement.scrollWidth >
-      document.documentElement.clientWidth,
-  );
-  if (overflow) console.error(`Overflow at ${vp.width}px — fix it`);
-  await page.screenshot({ path: `/tmp/screenshot-${vp.width}.png` });
-  await page.close();
-}
-await browser.close();
-```
+1. `browser_navigate` to `http://localhost:5173/PATH` (frontend dev server must be running)
+2. For each viewport — `browser_resize(375, 812)`, `browser_resize(768, 1024)`, `browser_resize(1280, 800)`:
+   - `browser_evaluate`: `document.documentElement.scrollWidth > document.documentElement.clientWidth` → horizontal overflow
+   - `browser_take_screenshot` for the visual check
 
 Check each screenshot for:
 
