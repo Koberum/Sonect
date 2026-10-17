@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { Profile } from "@repo/types";
 import { useProfile } from "./profile-context";
@@ -97,11 +98,12 @@ function ProfilePicker({ onAdd, onDone }: ProfilePickerProps) {
           />
         ))}
         {onAdd && (
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={onAdd}
             aria-label={t("profile.addProfile")}
-            className="border-border text-muted-foreground hover:border-primary hover:text-foreground flex min-h-[132px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-4 transition-colors"
+            className="text-muted-foreground hover:border-primary hover:text-foreground h-auto min-h-[132px] flex-col gap-3 rounded-xl border-dashed p-4"
           >
             <span className="border-muted-foreground/30 flex h-12 w-12 items-center justify-center rounded-full border-2 border-dashed">
               <Plus className="h-6 w-6" />
@@ -109,7 +111,7 @@ function ProfilePicker({ onAdd, onDone }: ProfilePickerProps) {
             <span className="text-sm font-medium">
               {t("profile.addProfile")}
             </span>
-          </button>
+          </Button>
         )}
       </div>
 

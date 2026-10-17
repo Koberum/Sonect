@@ -38,17 +38,17 @@ export function HardwareMonitor() {
 
   const cpuColor =
     usage.cpu.usage > 80
-      ? "bg-red-500"
+      ? "bg-destructive"
       : usage.cpu.usage > 50
-        ? "bg-yellow-500"
-        : "bg-green-500";
+        ? "bg-warning"
+        : "bg-success";
 
   const ramColor =
     usage.ram.usagePercent > 80
-      ? "bg-red-500"
+      ? "bg-destructive"
       : usage.ram.usagePercent > 50
-        ? "bg-yellow-500"
-        : "bg-green-500";
+        ? "bg-warning"
+        : "bg-success";
 
   return (
     <div className="space-y-4">

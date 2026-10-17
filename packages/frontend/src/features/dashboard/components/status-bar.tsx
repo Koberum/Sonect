@@ -32,7 +32,7 @@ export function StatusBar() {
     return (
       <div className="bg-background flex h-[44px] w-[270px] shrink-0 items-center justify-start overflow-hidden px-4">
         <div className="flex w-full min-w-0 items-center gap-2 py-1">
-          <Check className="h-4 w-4 shrink-0 text-green-500" />
+          <Check className="text-success h-4 w-4 shrink-0" />
           <span className="min-w-0 truncate text-xs font-medium md:text-sm">
             {t("sync.complete")}
           </span>

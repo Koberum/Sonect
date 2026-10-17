@@ -184,11 +184,12 @@ export function FullPagePlayer({
                   </span>
                   <Button
                     variant="ghost"
-                    size="icon-xs"
-                    className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:!opacity-100"
+                    size="icon-sm"
+                    className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
                     onClick={(e) => handleRemove(e, track.pos)}
+                    aria-label={t("queue.remove")}
                   >
-                    <X className="h-3 w-3" />
+                    <X />
                   </Button>
                 </div>
               );

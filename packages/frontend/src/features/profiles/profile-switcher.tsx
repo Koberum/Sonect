@@ -159,18 +159,20 @@ export function ProfileSwitcher() {
                   <Check className="h-4 w-4 shrink-0" />
                 )}
               </DropdownMenuItem>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-sm"
                 aria-label={`${t("profile.rename")}: ${candidate.name}`}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   setEditTarget(candidate);
                 }}
-                className="hover:bg-accent mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded p-0"
+                className="mr-1 shrink-0"
               >
-                <Pencil className="h-3.5 w-3.5 opacity-60 hover:opacity-100" />
-              </button>
+                <Pencil className="opacity-60 hover:opacity-100" />
+              </Button>
             </div>
           ))}
           <DropdownMenuSeparator />

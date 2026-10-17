@@ -19,6 +19,8 @@
   --accent-foreground: #ffffff;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
+  --success: #22c55e;
+  --warning: #f59e0b;
   --border: #e4e4e7;
   --input: #e4e4e7;
   --ring: #f97316;
@@ -36,7 +38,6 @@
   --sidebar-border: #e4e4e7;
   --sidebar-ring: #f97316;
   --font-sans: JetBrains Mono, monospace;
-  --font-serif: Source Serif 4, serif;
   --font-mono: JetBrains Mono, monospace;
   --radius: 0.625rem;
   --shadow-x: 0;
@@ -82,6 +83,8 @@
   --accent-foreground: #e8e8ea;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
+  --success: #4ade80;
+  --warning: #fbbf24;
   --border: #2a2a2e;
   --input: #2a2a2e;
   --ring: #f97316;
@@ -99,7 +102,6 @@
   --sidebar-border: #2a2a2e;
   --sidebar-ring: #f97316;
   --font-sans: JetBrains Mono, monospace;
-  --font-serif: Source Serif 4, serif;
   --font-mono: JetBrains Mono, monospace;
   --radius: 0.625rem;
   --shadow-x: 0;
@@ -144,6 +146,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -163,7 +167,6 @@
 
   --font-sans: JetBrains Mono, monospace;
   --font-mono: JetBrains Mono, monospace;
-  --font-serif: Source Serif 4, serif;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

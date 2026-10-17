@@ -57,7 +57,7 @@ export function PlaybackControls({
             setRandom(!playbackStatus.random);
           }}
         >
-          <ShuffleIcon size={20} />
+          <ShuffleIcon className="size-5" />
         </Button>
 
         <Button
@@ -66,7 +66,7 @@ export function PlaybackControls({
           className={`${showAlways} ${btnBase}`}
           onClick={previousTrack}
         >
-          <SkipBackIcon size={20} />
+          <SkipBackIcon className="size-5" />
         </Button>
 
         <Button
@@ -76,9 +76,9 @@ export function PlaybackControls({
           onClick={handleMain}
         >
           {playbackStatus.state === "play" ? (
-            <PauseIcon size={20} fill="currentColor" />
+            <PauseIcon className="size-5" fill="currentColor" />
           ) : (
-            <PlayIcon size={20} fill="currentColor" />
+            <PlayIcon className="size-5" fill="currentColor" />
           )}
         </Button>
 
@@ -88,7 +88,7 @@ export function PlaybackControls({
           className={`${showAlways} ${btnBase}`}
           onClick={nextTrack}
         >
-          <SkipForwardIcon size={20} />
+          <SkipForwardIcon className="size-5" />
         </Button>
 
         <Button
@@ -99,7 +99,7 @@ export function PlaybackControls({
             setRepeat(!playbackStatus.repeat);
           }}
         >
-          <RepeatIcon size={20} />
+          <RepeatIcon className="size-5" />
         </Button>
       </div>
     </div>

@@ -220,7 +220,7 @@ export default function Dashboard() {
             })}
           </h2>
           <div
-            className="flex cursor-pointer items-center justify-between rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-600/20 p-6"
+            className="from-primary/15 to-primary/5 flex cursor-pointer items-center justify-between rounded-lg bg-gradient-to-br p-6"
             onClick={() =>
               data.genreQuickMix!.tracks[0]?.file &&
               play(data.genreQuickMix!.tracks[0])
