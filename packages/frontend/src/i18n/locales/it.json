@@ -20,12 +20,14 @@
     "playlists": "Playlist",
     "settings": "Impostazioni",
     "refreshLibrary": "Aggiorna Libreria",
-    "refreshingLibrary": "Aggiornamento..."
+    "refreshingLibrary": "Aggiornamento...",
+    "toggleSidebar": "Mostra/nascondi barra laterale"
   },
   "artists": {
     "title": "Artisti",
     "titleSingle": "Artista",
     "noAlbums": "Nessun album trovato",
+    "noArtists": "Nessun artista trovato",
     "description": "Sfoglia la tua musica per artista"
   },
   "artist": {

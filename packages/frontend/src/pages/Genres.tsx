@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   SelectableRow,
   SelectableRowDescription,
@@ -23,22 +25,22 @@ export default function Genres() {
         description={t("genres.description")}
       />
       {isPending ? (
-        <div className="flex justify-center py-16">
-          <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 w-full rounded-xl" />
+          ))}
         </div>
       ) : (
         <>
           {genres.length === 0 && (
-            <p className="text-muted-foreground mt-8 text-center">
-              {t("genres.noGenres")}
-            </p>
+            <EmptyState icon={Music} title={t("genres.noGenres")} />
           )}
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {genres.map((g) => (
               <SelectableRow
                 key={g.id}
                 asChild
-                className="bg-card gap-4 rounded-xl p-4 py-6 shadow-sm"
+                className="bg-card gap-4 rounded-xl p-4 shadow-sm"
                 onClick={() =>
                   navigate(`/genres/${encodeURIComponent(g.name)}`)
                 }
@@ -53,7 +55,7 @@ export default function Genres() {
                     </SelectableRowTitle>
                     <SelectableRowDescription className="flex items-center gap-3">
                       <span className="flex items-center gap-1">
-                        <Disc3 className="h-3 w-3" />
+                        <Disc3 className="size-4" />
                         {t("genres.albumCount", { count: g.album_count })}
                       </span>
                       <span>

@@ -20,12 +20,14 @@
     "playlists": "Playlists",
     "settings": "Settings",
     "refreshLibrary": "Refresh Library",
-    "refreshingLibrary": "Refreshing..."
+    "refreshingLibrary": "Refreshing...",
+    "toggleSidebar": "Toggle sidebar"
   },
   "artists": {
     "title": "Artists",
     "titleSingle": "Artist",
     "noAlbums": "No Albums found",
+    "noArtists": "No artists found",
     "description": "Browse your music by artist"
   },
   "artist": {

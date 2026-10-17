@@ -107,13 +107,13 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
+                  size="icon-sm"
                   onClick={handleRefreshLibrary}
                   disabled={isRefreshing}
+                  aria-label={t("sidebar.refreshLibrary")}
                 >
                   <LoaderCircle
-                    className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+                    className={isRefreshing ? "animate-spin" : ""}
                   />
                 </Button>
               </TooltipTrigger>
@@ -158,8 +158,8 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
               {t("sidebar.artists")}
             </Button>
             <Button
-              onClick={() => handleNavigation("/catalog/stats")}
-              variant={isMenuActive("/catalog/stats") ? "secondary" : "ghost"}
+              onClick={() => handleNavigation("/library/stats")}
+              variant={isMenuActive("/library/stats") ? "secondary" : "ghost"}
               className="w-full justify-start"
             >
               <BarChart3 className="mr-2 h-4 w-4" />
@@ -191,8 +191,12 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-6 w-6">
-                      <Plus className="h-4 w-4" />
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={t("playlist.new")}
+                    >
+                      <Plus />
                     </Button>
                   </DialogTrigger>
                 </TooltipTrigger>

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "react-i18next";
 import {
   AlbumIcon,
@@ -10,7 +11,6 @@ import {
   ListMusic,
   MicVocal,
   Music,
-  LoaderCircle,
   Tags,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,8 +75,10 @@ export function Statistics() {
           title={t("statistics.title")}
           description={t("statistics.description")}
         />
-        <div className="flex items-center justify-center py-20">
-          <LoaderCircle className="text-muted-foreground h-8 w-8 animate-spin" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 w-full rounded-xl" />
+          ))}
         </div>
       </div>
     );
@@ -156,7 +158,7 @@ export function Statistics() {
         <StatCard
           title={t("statistics.lastSync")}
           value={formatDate(stats.lastSync, t)}
-          icon={<LoaderCircle className="h-4 w-4" />}
+          icon={<Clock className="h-4 w-4" />}
         />
       </div>
     </div>

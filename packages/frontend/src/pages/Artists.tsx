@@ -1,10 +1,13 @@
 import { ArtistArtwork } from "@/features/dashboard/components/artist-artwork";
 import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
+import { UserRound } from "lucide-react";
 
 export function Artists() {
   const navigate = useNavigate();
@@ -39,12 +42,17 @@ export function Artists() {
       />
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
         {isPending ? (
-          <div className="flex w-full justify-center py-16">
-            <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
+          Array.from({ length: 12 }).map((_, i) => (
+            <Skeleton key={i} className="aspect-square w-full rounded-lg" />
+          ))
+        ) : artists.length === 0 ? (
+          <div className="col-span-full">
+            <EmptyState icon={UserRound} title={t("artists.noArtists")} />
           </div>
         ) : (
           artists.map((artist) => (
             <ArtistArtwork
+              key={artist.id}
               artist={artist}
               aspectRatio="square"
               className="w-full"
@@ -55,9 +63,7 @@ export function Artists() {
       </div>
       <div ref={sentinelRef} className="h-4" />
       {isFetchingNextPage && (
-        <div className="flex justify-center py-4">
-          <div className="border-primary h-6 w-6 animate-spin rounded-full border-b-2" />
-        </div>
+        <Skeleton className="mt-2 h-12 w-full rounded-lg" />
       )}
     </div>
   );
