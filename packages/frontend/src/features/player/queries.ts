@@ -22,6 +22,3 @@ export const playerQueries = {
       retry: 1,
     }),
 };
-
-// Backcompat alias — remove once all callers migrated
-export const mpdQueries = playerQueries;

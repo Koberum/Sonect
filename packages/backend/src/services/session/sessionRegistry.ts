@@ -64,10 +64,6 @@ export class SessionRegistry {
     }
   }
 
-  listSessions(): string[] {
-    return [...this.sessions.keys()];
-  }
-
   dispose(): void {
     if (this.cleanupTimer !== null) clearInterval(this.cleanupTimer);
     for (const s of this.sessions.values()) s.stop();

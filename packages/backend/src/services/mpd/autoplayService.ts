@@ -13,10 +13,6 @@ export class AutoplayService {
   private seedFile: string | undefined;
   private _sessionId = 0;
 
-  get threshold(): number {
-    return 5;
-  }
-
   get sessionId(): number {
     return this._sessionId;
   }

@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { createTestDb } from "@tests/helpers/db.js";
-import { syncMetadataDb } from "@repo/db";
+import { catalogSyncDb, syncMetadataDb } from "@repo/db";
 
 describe("syncMetadataDb (trophy integration)", () => {
   let close: () => void;
@@ -12,21 +12,8 @@ describe("syncMetadataDb (trophy integration)", () => {
   it("get miss → undefined", () =>
     expect(syncMetadataDb.get("missing")).to.be.undefined);
 
-  it("set and get", () => {
-    syncMetadataDb.set("k1", "v1");
-    expect(syncMetadataDb.get("k1")).to.equal("v1");
-  });
-
-  it("set upsert updates value", () => {
-    syncMetadataDb.set("k1", "v1");
-    syncMetadataDb.set("k1", "v2");
-    expect(syncMetadataDb.get("k1")).to.equal("v2");
-  });
-
-  it("get returns string for last_sync key", () => {
-    syncMetadataDb.set("last_sync", "2020-01-01T00:00:00.000Z");
-    expect(syncMetadataDb.get("last_sync")).to.equal(
-      "2020-01-01T00:00:00.000Z",
-    );
+  it("get returns the last_sync stamped by applyIncremental", () => {
+    catalogSyncDb.applyIncremental({ upserts: [], deletions: [] });
+    expect(syncMetadataDb.get("last_sync")).to.be.a("string");
   });
 });

@@ -18,11 +18,6 @@ function defaultReload(): void {
 }
 
 export interface MpdConfigService {
-  // ConfigService
-  getConfig(): { content: string; path: string };
-  updateConfig(content: string): { success: boolean; warning?: string };
-  getConfigPath(): string;
-  restartMpdInternal(): { success: boolean; warning?: string };
   // AudioService
   getCurrentAudioOutput(): { card: string; name: string } | null;
   configureAudioOutput(params: {
@@ -42,7 +37,6 @@ export interface MpdConfigService {
   getMpdOwner(): string | null;
   tryAcquireMpd(sessionId: string): { success: boolean; owner?: string };
   releaseMpd(sessionId: string): boolean;
-  isMpdLockedByOther(sessionId: string): boolean;
 }
 
 export class MpdConfigServiceImpl implements MpdConfigService {
@@ -50,59 +44,12 @@ export class MpdConfigServiceImpl implements MpdConfigService {
     process.env.MPD_CONFIG_PATH ?? "/opt/sonect/data/mpd-audio.conf";
 
   private _currentOutputMode: OutputMode = "mpd";
-  private _lastDeviceName: string | null = null;
   private _mpdOwnerSessionId: string | null = null;
 
   constructor(
     private readonly mpdConnectionManager: MpdConnectionManager,
     private readonly reload: () => void = defaultReload,
   ) {}
-
-  // ConfigService
-  public getConfig(): { content: string; path: string } {
-    if (!fs.existsSync(this.MPD_CONFIG_PATH)) {
-      try {
-        fs.mkdirSync(path.dirname(this.MPD_CONFIG_PATH), { recursive: true });
-        fs.writeFileSync(
-          this.MPD_CONFIG_PATH,
-          "# This file is managed by the Sonect frontend.\n# It is owned by the service user, so no sudo is needed for edits.\n",
-          "utf-8",
-        );
-      } catch {
-        return { content: "", path: this.MPD_CONFIG_PATH };
-      }
-    }
-    try {
-      const content = fs.readFileSync(this.MPD_CONFIG_PATH, "utf-8");
-      return { content, path: this.MPD_CONFIG_PATH };
-    } catch {
-      return { content: "", path: this.MPD_CONFIG_PATH };
-    }
-  }
-
-  public updateConfig(content: string): {
-    success: boolean;
-    warning?: string;
-  } {
-    try {
-      fs.mkdirSync(path.dirname(this.MPD_CONFIG_PATH), { recursive: true });
-      fs.writeFileSync(this.MPD_CONFIG_PATH, content, "utf-8");
-    } catch {
-      return {
-        success: false,
-        warning: `Cannot write to ${this.MPD_CONFIG_PATH}. Check file permissions.`,
-      };
-    }
-    return this.restartMpdInternal();
-  }
-
-  public getConfigPath(): string {
-    return this.MPD_CONFIG_PATH;
-  }
-
-  public restartMpdInternal(): { success: boolean; warning?: string } {
-    return this.restartMPD();
-  }
 
   // AudioService
   public getCurrentAudioOutput(): {
@@ -209,9 +156,9 @@ export class MpdConfigServiceImpl implements MpdConfigService {
   }
 
   /**
-   * Backcompat no-op: browser sessions run on a separate playback engine, so
-   * MPD always stays on the physical speakers. The drop-in config file is
-   * never rewritten. Kept for the GET/PUT /system/output-mode endpoints.
+   * Backcompat no-op kept for the GET/PATCH /system/output-mode endpoints:
+   * browser sessions run on a separate playback engine, so MPD always stays on
+   * the physical speakers and the drop-in config file is never rewritten here.
    */
   public setOutputMode(mode: OutputMode): {
     success: boolean;
@@ -230,7 +177,7 @@ export class MpdConfigServiceImpl implements MpdConfigService {
       const status = this.getCurrentAudioOutput();
       return status?.name ?? null;
     }
-    return this._lastDeviceName;
+    return null;
   }
 
   public getMpdOwner(): string | null {
@@ -257,11 +204,5 @@ export class MpdConfigServiceImpl implements MpdConfigService {
       return true;
     }
     return false;
-  }
-
-  public isMpdLockedByOther(sessionId: string): boolean {
-    return (
-      this._mpdOwnerSessionId !== null && this._mpdOwnerSessionId !== sessionId
-    );
   }
 }

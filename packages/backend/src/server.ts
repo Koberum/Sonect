@@ -30,7 +30,7 @@ async function main() {
 
   // HTTP server
   server = app.listen(PORT, () => {
-    console.log(`🚀 Backend Express su http://localhost:${PORT}`);
+    getLogService().pushLog("info", `Backend listening on port ${PORT}`);
   });
 
   // WebSocket server
@@ -57,7 +57,11 @@ function finish() {
 function shutdown() {
   if (shuttingDown) return;
   shuttingDown = true;
-  console.log("\nShutting down...");
+  try {
+    getLogService().pushLog("info", "Shutting down...");
+  } catch {
+    // logger may not be initialized on very early signals
+  }
 
   setTimeout(() => {
     console.error("Forced shutdown after timeout");

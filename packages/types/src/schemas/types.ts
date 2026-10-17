@@ -10,9 +10,6 @@ export const playerSchemas = {
   playPosition: z.object({
     pos: z.number().int("pos must be an integer").min(0, "pos must be >= 0"),
   }),
-  queuePos: z.object({
-    pos: z.number().int("pos must be an integer").min(0, "pos must be >= 0"),
-  }),
   addToQueue: z.object({
     file: z.string().min(1, "file is required"),
   }),
@@ -30,7 +27,6 @@ export const playerSchemas = {
   toggle: z.object({
     enabled: z.boolean({ error: "enabled is required" }),
   }),
-  empty: z.object({}).strict(),
 };
 
 export const playlistSchemas = {
@@ -83,9 +79,6 @@ export const systemSchemas = {
     name: z.string().min(1).max(255).optional(),
     path: z.string().min(1).optional(),
     enabled: z.boolean().optional(),
-  }),
-  configUpdate: z.object({
-    content: z.string().min(1, "content is required"),
   }),
   setupProgress: z.object({
     step: z.string().min(1, "step is required"),

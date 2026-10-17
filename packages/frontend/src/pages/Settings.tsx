@@ -25,7 +25,6 @@ export function Settings() {
           <TabsTrigger value="appearance">
             {t("settings.tabs.appearance")}
           </TabsTrigger>
-          <TabsTrigger value="config">{t("settings.tabs.config")}</TabsTrigger>
           <TabsTrigger value="debug">{t("settings.tabs.debug")}</TabsTrigger>
         </TabsList>
 
@@ -38,7 +37,6 @@ export function Settings() {
         <TabsContent value="appearance">
           <AppearanceTab />
         </TabsContent>
-        <TabsContent value="config"></TabsContent>
         <TabsContent value="debug">
           <DebugTab />
         </TabsContent>

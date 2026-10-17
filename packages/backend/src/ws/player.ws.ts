@@ -145,7 +145,6 @@ export function setupPlayerWebSocket(wss: WebSocketServer) {
     ws.on("close", () => {
       safeLog("debug", `[WS][legacy] disconnected`, {});
       mpdConnectionManager.off("stateChanged", onStateChanged);
-      console.log("WS client disconnected");
     });
 
     ws.on("error", (err) => {

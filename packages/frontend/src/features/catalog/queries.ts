@@ -11,7 +11,6 @@ import {
   getGenres,
   getLibraryStats,
   getTracksByAlbum,
-  getTracksByArtist,
   getTracksByGenre,
   search,
 } from "./api";
@@ -98,14 +97,6 @@ export const catalogQueries = {
       queryKey: qk.catalog.tracksByAlbum(albumId),
       queryFn: ({ signal }) => getTracksByAlbum(albumId, signal),
       enabled: !!albumId,
-      staleTime: 5 * 60_000,
-    }),
-
-  tracksByArtist: (artistId: string) =>
-    queryOptions({
-      queryKey: qk.catalog.tracksByArtist(artistId),
-      queryFn: ({ signal }) => getTracksByArtist(artistId, signal),
-      enabled: !!artistId,
       staleTime: 5 * 60_000,
     }),
 

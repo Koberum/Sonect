@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import type { DBArtist } from "@repo/types";
-import { artistsDb } from "@repo/db";
+import { artistsDb, db, findOrCreateArtist } from "@repo/db";
 
 export type ArtistOverrides = Partial<Pick<DBArtist, "name">>;
 
@@ -18,7 +18,7 @@ export const artist = {
 
   create(overrides: ArtistOverrides = {}, seed?: number): DBArtist {
     const data = buildArtist(overrides, seed);
-    const id = artistsDb.findOrCreate(data.name);
+    const id = findOrCreateArtist(db(), data.name);
     const row = artistsDb.getById(id);
     if (!row)
       throw new Error("artist.create: failed to read back inserted row");

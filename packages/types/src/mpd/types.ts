@@ -4,7 +4,6 @@
 
 export type MPDTrack = {
   file: string;
-  lastModified?: string;
   format?: string;
   title?: string;
   artist?: string;

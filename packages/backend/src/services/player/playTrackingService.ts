@@ -18,10 +18,6 @@ export class PlayTrackingService {
     this._emitter.on("trackChanged", this._onTrackChanged.bind(this));
   }
 
-  stop(): void {
-    this._emitter.removeAllListeners("trackChanged");
-  }
-
   private _onTrackChanged(track: TrackEvent): void {
     const now = Date.now();
     if (now - this._lastRecordedAt < DEBOUNCE_MS) return;

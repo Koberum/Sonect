@@ -73,8 +73,3 @@ export function clearSelectedProfile(): void {
 export function getProfileSessionId(): string {
   return getSelectedProfile()?.id ?? "";
 }
-
-export function profileSessionHeaders(): Record<string, string> {
-  const id = getProfileSessionId();
-  return id ? { "X-Session-Id": id } : {};
-}

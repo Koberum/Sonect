@@ -10,12 +10,11 @@ import {
   isNotNull,
   like,
   lt,
-  notInArray,
   or,
   sql,
 } from "drizzle-orm";
 import type { DBTrack, MPDTrack, DBTrackWithRelations } from "@repo/types";
-import { db, transaction } from "../connection.js";
+import { db } from "../connection.js";
 import { albums, artists, genres, tracks } from "../tables.js";
 import { normalizeRowId, type QueryExecutor } from "./rowId.js";
 import { findOrCreateArtist } from "./artists.js";
@@ -53,8 +52,8 @@ function yearOf(track: MPDTrack): number | undefined {
   return track.date ? parseInt(track.date.split("-")[0]) : undefined;
 }
 
-// Single definition used by tracksDb.upsert() and by the transactional
-// library rebuild: playback statistics are never touched here, only metadata.
+// Single definition used by tracksDb and by the transactional catalog apply:
+// playback statistics are never touched here, only metadata.
 export function upsertTrack(executor: QueryExecutor, track: MPDTrack): number {
   const genreId =
     track.genre && track.genre.trim() !== ""
@@ -94,7 +93,6 @@ export function upsertTrack(executor: QueryExecutor, track: MPDTrack): number {
         disc_number: discNumberOf(track),
         duration: track.duration ?? null,
         date: track.date ?? null,
-        last_modified: track.lastModified ?? null,
         mtime: track.mtime ?? null,
         size: track.size ?? null,
         updated_at: sql`CURRENT_TIMESTAMP`,
@@ -116,7 +114,6 @@ export function upsertTrack(executor: QueryExecutor, track: MPDTrack): number {
       disc_number: discNumberOf(track),
       duration: track.duration ?? null,
       date: track.date ?? null,
-      last_modified: track.lastModified ?? null,
       mtime: track.mtime ?? null,
       size: track.size ?? null,
     })
@@ -219,10 +216,6 @@ export const tracksDb = {
       .all() as DBTrackWithRelations[];
   },
 
-  upsert(track: MPDTrack): number {
-    return transaction((tx) => upsertTrack(tx, track));
-  },
-
   count(): number {
     const row = db().select({ value: count() }).from(tracks).get();
     return row?.value ?? 0;
@@ -235,16 +228,6 @@ export const tracksDb = {
       .all() as DBTrackWithRelations[];
   },
 
-  getByGenre(genre: string): DBTrack[] {
-    return db()
-      .select(getColumns(tracks))
-      .from(tracks)
-      .innerJoin(genres, eq(tracks.genre_id, genres.id))
-      .where(sql`${genres.name} = ${genre} COLLATE NOCASE`)
-      .orderBy(asc(tracks.title))
-      .all() as DBTrack[];
-  },
-
   getByGenreWithRelations(genre: string): DBTrackWithRelations[] {
     return joinedOnArtistAndAlbum()
       .where(sql`${genres.name} = ${genre} COLLATE NOCASE`)
@@ -255,15 +238,6 @@ export const tracksDb = {
   getById(id: number): DBTrack | undefined {
     return db().select().from(tracks).where(eq(tracks.id, id)).get() as
       DBTrack | undefined;
-  },
-
-  getByArtist(artistId: number): DBTrack[] {
-    return db()
-      .select()
-      .from(tracks)
-      .where(eq(tracks.artist_id, artistId))
-      .orderBy(asc(tracks.title))
-      .all() as DBTrack[];
   },
 
   getByAlbum(albumId: number): DBTrack[] {
@@ -301,17 +275,6 @@ export const tracksDb = {
       .map((row) => row.file);
   },
 
-  getRandomTracks(limit: number, excludeFiles?: string[]): DBTrack[] {
-    let query = db().select().from(tracks).$dynamic();
-    if (excludeFiles && excludeFiles.length > 0) {
-      query = query.where(notInArray(tracks.file, excludeFiles));
-    }
-    return query
-      .orderBy(sql`random()`)
-      .limit(limit)
-      .all() as DBTrack[];
-  },
-
   getByArtistAlbumTitle(
     artist: string,
     album: string,
@@ -332,10 +295,6 @@ export const tracksDb = {
       )
       .limit(1)
       .get() as DBTrackWithRelations | undefined;
-  },
-
-  deleteByFile(file: string): void {
-    db().delete(tracks).where(eq(tracks.file, file)).run();
   },
 
   search(query: string, limit = 100): DBTrackWithRelations[] {

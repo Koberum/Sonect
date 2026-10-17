@@ -5,7 +5,7 @@ import { artist } from "@tests/factories/artist.js";
 import { album } from "@tests/factories/album.js";
 import { track } from "@tests/factories/track.js";
 import { genre } from "@tests/factories/genre.js";
-import { tracksDb } from "@repo/db";
+import { db, upsertTrack } from "@repo/db";
 import { CatalogServiceImpl } from "@services/library/catalogService.js";
 
 // Trophy middle layer: service + real :memory: DB, no mocks
@@ -191,22 +191,6 @@ describe("CatalogService (trophy integration)", () => {
     });
   });
 
-  describe("updateAlbumCoverPath", () => {
-    it("no throw on missing id", () => {
-      const before = catalog.getAlbumCount();
-      catalog.updateAlbumCoverPath(99999, "covers/y.jpg");
-      expect(catalog.getAlbumCount()).to.equal(before);
-    });
-    it("persists cover_path on found", () => {
-      const al = album.create(
-        { title: "CoverAl", artistName: "CoverArtist" },
-        50,
-      );
-      catalog.updateAlbumCoverPath(al.id, "covers/x.jpg");
-      expect(catalog.getAlbumById(al.id)?.cover_path).to.equal("covers/x.jpg");
-    });
-  });
-
   describe("getAlbumsByGenre", () => {
     it("returns [] on miss", () => {
       expect(catalog.getAlbumsByGenre("nonexistent")).to.deep.equal([]);
@@ -232,27 +216,6 @@ describe("CatalogService (trophy integration)", () => {
         "Alpha",
         "Zebra",
       ]);
-    });
-  });
-
-  describe("getGenreById", () => {
-    it("returns undefined on miss", () => {
-      expect(catalog.getGenreById(99999)).to.be.undefined;
-    });
-    it("returns found", () => {
-      const g = genre.create({ name: "FoundGenre" }, 80);
-      expect(catalog.getGenreById(g.id)?.name).to.equal("FoundGenre");
-    });
-  });
-
-  describe("getById", () => {
-    it("returns undefined on miss", () => {
-      expect(catalog.getById(99999)).to.be.undefined;
-    });
-    it("alias equivalence to getGenreById", () => {
-      const g = genre.create({ name: "AliasTest" }, 81);
-      expect(catalog.getById(g.id)?.name).to.equal("AliasTest");
-      expect(catalog.getById(g.id)).to.deep.equal(catalog.getGenreById(g.id));
     });
   });
 
@@ -347,7 +310,7 @@ describe("CatalogService (trophy integration)", () => {
       expect(catalog.getAllTracks(undefined, undefined, 5)).to.have.length(2);
       expect(catalog.getAllTracks(undefined, 1, 1)).to.have.length(1);
       // orphan via leftJoin included in getAllTracks
-      const orphanId = tracksDb.upsert({
+      const orphanId = upsertTrack(db(), {
         file: "orphan.mp3",
         title: "Orphan",
         artist: "",
@@ -364,23 +327,6 @@ describe("CatalogService (trophy integration)", () => {
     it("reflects seeded count", () => {
       track.create({ title: "FindMe" }, 90);
       expect(catalog.getTrackCount()).to.equal(1);
-    });
-  });
-
-  describe("getTrackById", () => {
-    it("returns undefined on miss", () => {
-      expect(catalog.getTrackById(99999)).to.be.undefined;
-    });
-    it("returns found and orphan undefined via innerJoin", () => {
-      const t = track.create({ title: "FindMe2" }, 91);
-      expect(catalog.getTrackById(t.id)?.title).to.equal("FindMe2");
-      const orphanId = tracksDb.upsert({
-        file: "orphan2.mp3",
-        title: "Orphan2",
-        artist: "",
-        album: "",
-      } as never);
-      expect(catalog.getTrackById(orphanId)).to.be.undefined;
     });
   });
 

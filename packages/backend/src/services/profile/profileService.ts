@@ -5,7 +5,6 @@ import { ConflictError } from "@middleware/errorHandler.js";
 
 export interface ProfileService {
   getAllProfiles(): Profile[];
-  getProfileById(id: string): Profile | undefined;
   createProfile(name: string, avatarColor?: string): Profile;
   updateProfile(
     id: string,
@@ -38,11 +37,6 @@ export class ProfileServiceImpl implements ProfileService {
 
   public getAllProfiles(): Profile[] {
     return profilesDb.getAll().map((p) => this.mapProfile(p));
-  }
-
-  public getProfileById(id: string): Profile | undefined {
-    const row = profilesDb.getById(id);
-    return row ? this.mapProfile(row) : undefined;
   }
 
   public createProfile(name: string, avatarColor?: string): Profile {

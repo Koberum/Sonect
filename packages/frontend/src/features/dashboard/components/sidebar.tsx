@@ -76,7 +76,7 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
       setNewName("");
       setDialogOpen(false);
     } catch {
-      console.error(t("playlist.createError"));
+      // mutation state surfaces the error inside the dialog
     }
   };
 

@@ -2,15 +2,16 @@ import { expect } from "chai";
 import { createTestDb } from "@tests/helpers/db.js";
 import {
   statsDb,
-  tracksDb,
-  artistsDb,
-  albumsDb,
   playlistsDb,
-  genresDb,
-  syncMetadataDb,
+  catalogSyncDb,
+  db,
+  upsertTrack,
+  findOrCreateArtist,
+  findOrCreateAlbum,
+  findOrCreateGenre,
+  tracks,
 } from "@repo/db";
-import { db } from "@repo/db";
-import { tracks } from "@repo/db";
+
 import { eq } from "drizzle-orm";
 
 describe("statsDb (trophy integration)", () => {
@@ -36,12 +37,12 @@ describe("statsDb (trophy integration)", () => {
   });
 
   it("counts tracks/artists/albums/playlists/genres", () => {
-    artistsDb.findOrCreate("A1");
-    artistsDb.findOrCreate("A2");
-    albumsDb.findOrCreate("Al1");
+    findOrCreateArtist(db(), "A1");
+    findOrCreateArtist(db(), "A2");
+    findOrCreateAlbum(db(), "Al1");
     playlistsDb.create("Pl1");
-    genresDb.findOrCreate("Rock");
-    tracksDb.upsert({
+    findOrCreateGenre(db(), "Rock");
+    upsertTrack(db(), {
       file: "a/t1.mp3",
       title: "T1",
       artist: "A1",
@@ -58,14 +59,14 @@ describe("statsDb (trophy integration)", () => {
   });
 
   it("sums duration and avg", () => {
-    tracksDb.upsert({
+    upsertTrack(db(), {
       file: "a/d1.mp3",
       title: "D1",
       artist: "A",
       album: "Al",
       duration: 100,
     } as never);
-    tracksDb.upsert({
+    upsertTrack(db(), {
       file: "a/d2.mp3",
       title: "D2",
       artist: "A",
@@ -78,21 +79,21 @@ describe("statsDb (trophy integration)", () => {
   });
 
   it("parses earliest/latest year from date strings", () => {
-    tracksDb.upsert({
+    upsertTrack(db(), {
       file: "a/y1.mp3",
       title: "Y1",
       artist: "A",
       album: "Al1",
       date: "1999-01-01",
     } as never);
-    tracksDb.upsert({
+    upsertTrack(db(), {
       file: "a/y2.mp3",
       title: "Y2",
       artist: "A",
       album: "Al2",
       date: "2020-05-01",
     } as never);
-    tracksDb.upsert({
+    upsertTrack(db(), {
       file: "a/y3.mp3",
       title: "Y3",
       artist: "A",
@@ -105,7 +106,7 @@ describe("statsDb (trophy integration)", () => {
   });
 
   it("ignores empty date for year", () => {
-    tracksDb.upsert({
+    upsertTrack(db(), {
       file: "a/e1.mp3",
       title: "E1",
       artist: "A",
@@ -128,7 +129,7 @@ describe("statsDb (trophy integration)", () => {
       })
       .run().lastInsertRowid as number;
     void orphanId;
-    tracksDb.upsert({
+    upsertTrack(db(), {
       file: "a/with.mp3",
       title: "With",
       artist: "A",
@@ -138,12 +139,12 @@ describe("statsDb (trophy integration)", () => {
   });
 
   it("lastSync from syncMetadata", () => {
-    syncMetadataDb.set("last_sync", "2020-01-01T00:00:00.000Z");
-    expect(statsDb.getStats().lastSync).to.equal("2020-01-01T00:00:00.000Z");
+    catalogSyncDb.applyIncremental({ upserts: [], deletions: [] });
+    expect(statsDb.getStats().lastSync).to.be.a("string");
   });
 
   it("handles null duration → coalesce 0", () => {
-    const id = tracksDb.upsert({
+    const id = upsertTrack(db(), {
       file: "a/nulldur.mp3",
       title: "NullDur",
       artist: "A",

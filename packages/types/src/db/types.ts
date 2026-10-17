@@ -21,7 +21,6 @@ export type DBTrack = {
   disc_number?: number;
   duration?: number;
   date?: string;
-  last_modified?: string;
   mtime?: number;
   size?: number;
   play_count?: number;
@@ -74,13 +73,6 @@ export type DBStorageSource = {
   total_size?: number;
   created_at?: string;
   updated_at?: string;
-};
-
-export type DBSetupProgress = {
-  id: number;
-  step: string;
-  completed: number;
-  completed_at?: string;
 };
 
 export type DBProfile = {

@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import type { LibraryStats } from "@repo/types";
 import { db } from "../connection.js";
 import { syncMetadataDb } from "./syncMetadata.js";
 
@@ -15,20 +16,6 @@ type StatsRow = {
   earliestYear: string | null;
   latestYear: string | null;
   tracksWithoutAlbum: number;
-};
-
-export type LibraryStats = {
-  totalTracks: number;
-  totalArtists: number;
-  totalAlbums: number;
-  totalPlaylists: number;
-  totalGenres: number;
-  totalDuration: number;
-  averageDuration: number;
-  earliestYear: number | null;
-  latestYear: number | null;
-  tracksWithoutAlbum: number;
-  lastSync: string | null;
 };
 
 export const statsDb = {

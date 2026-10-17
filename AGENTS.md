@@ -200,7 +200,7 @@ sonect (single image, ENTRYPOINT /init)
 - Controllers (input validation / response shaping) live in `packages/backend/src/controllers/`.
 - **MpdConnectionManager** (`services/mpdConnectionManager.ts`) is a singleton that manages **two** TCP connections to MPD: a command client (`cmdClient`) and a polling client (`pollSocket`). The **cmdClient** uses the `mpd` npm package (v1.3.0) for command execution. The **pollSocket** uses raw TCP (`net` module) to send `status` commands directly — this avoids the `mpd` package's `idle`-based callback queue which caused silent polling failures. Polling happens on a timer: every 2s during `play`, every 10s during `pause`/`stop`. The in-memory `PlaybackStatus` cache is maintained and `stateChanged` events are emitted to subscribers on each poll. A `refreshNow()` method is also exposed for immediate cache refresh after user-initiated commands. When MPD disconnects, each connection auto-reconnects with exponential backoff (1s–30s).
 - `playerService.ts` reads the cached status synchronously via `mpdConnectionManager.getCachedStatus()`. It delegates all commands to `mpdConnectionManager.executeCommand()` and calls `mpdConnectionManager.refreshNow()` after each command for immediate feedback. Note: `getQueue()` is an exception — it runs an async MPD query (`playlistinfo`).
-- `player.ws.ts` sends the cached status to new WebSocket clients immediately on connect (wrapped in `{ type: "player-status", ... }` envelope), then forwards subsequent `stateChanged` events from the polling loop. All WS messages follow a standard format with a `type` field: `"player-status"`, `"sync-progress"`, `"log"`, or `"sync-complete"`.
+- `player.ws.ts` sends the cached status to new WebSocket clients immediately on connect (wrapped in `{ type: "player-status", ... }` envelope), then forwards subsequent `stateChanged` events from the polling loop. All WS messages follow a standard format with a `type` field: `"player-status"`, `"sync-progress"`, `"sync-complete"`, `"sync-error"`, or `"log"`.
 - The `mpd` npm package (v1.3.0) is bundled into the backend output; it is only used for the `cmdClient`. The `pollSocket` uses raw TCP to avoid idle-protocol callback desync.
 - Use `process.env` variables for configuration; never hard-code hosts, ports, or paths.
 - **Zod validation** is applied directly in controller functions via `schema.parse(req.body)` / `schema.parse(req.params)`. Schemas are defined in `@repo/types` (`packages/types/src/schemas.ts`). `ZodError` propagates to `errorHandler` which returns a 400 response with `flatten().fieldErrors`.
@@ -341,7 +341,7 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 - On client connect: server immediately sends current cached playback status.
 - Subsequent updates pushed via `stateChanged` events from the polling loop.
 - All connected clients receive the same broadcast via `broadcast.ts` (`ws/broadcast.ts`), a utility that iterates `wss.clients` and sends JSON to all open connections.
-- All WS messages follow a standard format with a `type` field: `"player-status"`, `"sync-progress"`, `"log"`, or `"sync-complete"`.
+- All WS messages follow a standard format with a `type` field: `"player-status"`, `"sync-progress"`, `"sync-complete"`, `"sync-error"`, or `"log"`.
 
 ### Unified per-session playback (`/player`)
 
@@ -357,15 +357,15 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 
 ### Cover art pipeline
 
-1. `coverService.ts` (`services/coverService.ts`) handles cover extraction using `music-metadata` for embedded art.
+1. `coverSyncService.ts` (`services/library/coverSyncService.ts`) handles cover extraction using `music-metadata` for embedded art.
 2. Filesystem covers (`cover.jpg`, `folder.jpg`, etc.) are checked first; embedded art is used as fallback. Covers are resized to **400×400 WebP** (`COVER_SIZE`/`COVER_QUALITY` envs) with `sharp`, saved to `COVERS_DIR` as `SHA1(artist+album).webp` (legacy `.jpg` auto-migrated on next sync).
 3. Backend serves them under `/covers` with `Cache-Control: immutable` (30 days).
 
 ### Waveform pipeline (SoundCloud-style progress bar)
 
 1. `waveformService.ts` (`services/library/waveformService.ts`) generates per-track waveforms on demand. It decodes audio via `ffmpeg` (`-f s16le -ac 1 -ar 8000`) and computes **120** normalized peaks (`0–255`) by `max(|sample|)/32768` per bin, scaling max to 255 for contrast — mirroring Monochrome's `waveform.js:168` `extractPeaks` (4 peaks/sec, capped 1000). If `ffmpeg` is missing or decode fails, a deterministic fallback envelope is used so the UI never shows a flat line.
-2. Waveforms are cached as `SHA1(file).json` under `WAVEFORMS_DIR` (`{samples, duration, version:1}`) with atomic write + in-memory LRU + request coalescing (`pendingGeneration` map). Served via `GET /waveforms/:trackId` (`routes/waveformRoutes.ts`, `controllers/waveformController.ts`) with `Cache-Control: immutable` (86400s). `Vite` proxy forwards `/waveforms` (`frontend/vite.config.ts`).
-3. Frontend `components/waveform.tsx` renders a **canvas** SoundCloud-style bar waveform: `numBars=min(samples, floor(width/3))`, `barWidth=0.65*slot`, `gap=0.35*slot`, rounded `barHeight=max(2, peak*height*0.82)`, centered vertically. Played vs unplayed are two clipped fills (`--primary` vs `--muted-foreground` at 35% opacity) driven by `elapsed/duration` progress. `PlaybackProgressBar` (`features/dashboard/components/playback-progress-bar.tsx`) fetches via `playerQueries.waveform(trackId)` (`lib/queryKeys.ts: qk.player.waveform`, 5m stale/30m gc) and switches from the 6px solid bar to a **28px waveform** (`h-7`) when samples exist, retaining click-to-seek + `role=slider` a11y. `music-player.tsx` + `full-page-player.tsx` pass `trackId={track?.id}` — mobile progress switches from `h-1` to dynamic height accordingly. Responsive at 375/768/1280 via `ResizeObserver` + Tailwind.
+2. Waveforms are cached as `SHA1(file).json` under `WAVEFORMS_DIR` (`{samples, duration, version:1}`) with atomic write + an in-memory `Map` (volatile, not an LRU) + request coalescing (`pendingGeneration` map). Served via `GET /waveforms/:trackId` (`routes/waveformRoutes.ts`, `controllers/waveformController.ts`) with `Cache-Control: immutable` (86400s). `Vite` proxy forwards `/waveforms` (`frontend/vite.config.ts`).
+3. Frontend `components/waveform.tsx` renders a **canvas** SoundCloud-style bar waveform: `numBars=min(samples, floor(width/3))`, `barWidth=0.65*slot`, `gap=0.35*slot`, rounded `barHeight=max(2, peak*height*0.82)`, centered vertically. Played vs unplayed are two clipped fills (`--primary` vs `--muted-foreground` at 35% opacity) driven by `elapsed/duration` progress. `PlaybackWaveform` (`features/dashboard/components/playback-waveform.tsx`) fetches via `playerQueries.waveform(trackId)` (`lib/queryKeys.ts: qk.player.waveform`, 5m stale/30m gc) and renders the **28px waveform** (`h-7`) wrapped in a Radix slider (click-to-seek + a11y). `music-player.tsx` + `full-page-player.tsx` pass `trackId={track?.id}` — mobile progress switches from `h-1` to dynamic height accordingly. Responsive at 375/768/1280 via `ResizeObserver` + Tailwind.
 
 ### First-run setup wizard
 

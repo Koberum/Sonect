@@ -1,6 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import { sessionHeaders } from "@/lib/session";
-import type { QueuedTrack, PlaybackStatus, OutputMode } from "@repo/types";
+import type { QueuedTrack, OutputMode } from "@repo/types";
 import type { Track } from "@repo/types/catalog";
 
 const h = sessionHeaders;
@@ -75,16 +75,6 @@ export function addToQueue(file: string): Promise<void> {
     headers: h(),
     body: { file },
   });
-}
-export function moveQueueItem(from: number, to: number): Promise<void> {
-  return apiFetch("/player/queue/move", {
-    method: "POST",
-    headers: h(),
-    body: { from, to },
-  });
-}
-export function getStatus(signal?: AbortSignal): Promise<PlaybackStatus> {
-  return apiFetch("/player/status", { headers: h(), signal });
 }
 export function getOutputMode(signal?: AbortSignal): Promise<{
   mode: OutputMode;

@@ -15,8 +15,6 @@ export const qk = {
       ["catalog", "tracks", "infinite", sort] as const,
     tracksByAlbum: (albumId: string) =>
       ["catalog", "tracksByAlbum", albumId] as const,
-    tracksByArtist: (artistId: string) =>
-      ["catalog", "tracksByArtist", artistId] as const,
     tracksByGenre: (genre: string) =>
       ["catalog", "tracksByGenre", genre] as const,
     stats: () => ["catalog", "stats"] as const,
@@ -30,21 +28,14 @@ export const qk = {
     queue: () => ["player", "queue"] as const,
     waveform: (trackId: number) => ["player", "waveform", trackId] as const,
   },
-  mpd: {
-    queue: () => ["player", "queue"] as const,
-  },
   system: {
     audioDevices: () => ["system", "audio", "devices"] as const,
     audioStatus: () => ["system", "audio", "status"] as const,
     storageSources: () => ["system", "storage", "sources"] as const,
-    activeMounts: () => ["system", "storage", "mounts"] as const,
     detectedLibraries: () => ["system", "storage", "detected"] as const,
-    networkStatus: () => ["system", "network", "status"] as const,
-    backendStatus: () => ["system", "backend", "status"] as const,
     health: () => ["system", "health"] as const,
     hardwareUsage: () => ["system", "hardware", "usage"] as const,
     outputMode: () => ["system", "outputMode"] as const,
-    mpdStatus: () => ["system", "mpd", "status"] as const,
   },
   profiles: {
     list: () => ["profiles", "list"] as const,
