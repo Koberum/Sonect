@@ -184,16 +184,6 @@ export function getPlayerService(): PlayerService {
   return _playerService;
 }
 
-export function getCatalogSyncService(): CatalogSyncService {
-  assertInitialized();
-  return _catalogSyncService;
-}
-
-export function getCoverSyncService(): CoverSyncService {
-  assertInitialized();
-  return _coverSyncService;
-}
-
 export function getCatalogSyncOrchestrator(): CatalogSyncOrchestrator {
   assertInitialized();
   return _catalogSyncOrchestrator;

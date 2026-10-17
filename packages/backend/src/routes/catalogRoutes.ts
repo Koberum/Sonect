@@ -3,7 +3,6 @@ import {
   getAlbums,
   getAlbumById,
   scanLibrary,
-  scanImagesOnly,
   getTracksByArtist,
   getArtistById,
   getTracksByAlbum,
@@ -35,6 +34,5 @@ router.get("/genres", getGenres);
 router.get("/genres/:genre/albums", getAlbumsByGenre);
 router.get("/genres/:genre/tracks", getTracksByGenre);
 router.post("/scan", scanLibrary);
-router.post("/sync-images", scanImagesOnly);
 
 export default router;

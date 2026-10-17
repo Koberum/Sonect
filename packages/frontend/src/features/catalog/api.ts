@@ -116,7 +116,3 @@ export function getLibraryStats(signal?: AbortSignal): Promise<LibraryStats> {
 export function scanLibrary(signal?: AbortSignal): Promise<void> {
   return apiFetch("/catalog/scan", { method: "POST", signal });
 }
-
-export function syncImages(signal?: AbortSignal): Promise<void> {
-  return apiFetch("/catalog/sync-images", { method: "POST", signal });
-}

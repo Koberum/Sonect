@@ -132,10 +132,3 @@ export const scanLibrary = asyncHandler(
     res.json({ message: "Library scan completed" });
   },
 );
-
-export const scanImagesOnly = asyncHandler(
-  async (_req: Request, res: Response) => {
-    await getCatalogSyncOrchestrator().scanImagesOnly();
-    res.json({ message: "Cover sync completed" });
-  },
-);

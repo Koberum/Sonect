@@ -22,13 +22,4 @@ export const syncMetadataDb = {
       .get();
     return row?.value ?? undefined;
   },
-
-  getLastSync(): Date | undefined {
-    const result = syncMetadataDb.get("last_sync");
-    return result ? new Date(result) : undefined;
-  },
-
-  setLastSync(): void {
-    syncMetadataDb.set("last_sync", new Date().toISOString());
-  },
 };

@@ -436,15 +436,6 @@
       "deleteButton": "Elimina",
       "formDescription": "Registra una cartella montata nel container."
     },
-    "library": {
-      "title": "Libreria",
-      "description": "Gestisci la sincronizzazione della tua libreria musicale.",
-      "syncAll": "Sincronizza tutto",
-      "syncImages": "Solo immagini",
-      "syncing": "Sincronizzazione...",
-      "lastSync": "Ultima sincronizzazione: {{time}}",
-      "never": "Mai"
-    },
     "config": {
       "title": "Config MPD",
       "description": "Modifica direttamente mpd.conf. Una configurazione non valida potrebbe impedire l'avvio di MPD.",
