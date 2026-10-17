@@ -1,9 +1,3 @@
-import {
-  initDatabase,
-  tracksDb,
-  syncMetadataDb,
-  catalogSyncDb,
-} from "@repo/db";
 import type { LogService } from "@services/utils/logService";
 import {
   LibraryScanner,
@@ -19,30 +13,10 @@ export class CatalogSyncService {
     private readonly logService: LogService,
   ) {}
 
-  async initDatabase(): Promise<void> {
-    await initDatabase();
-  }
-
   async scanAll(
     onProgress?: (progress: ScanProgress) => void,
   ): Promise<ScanResult> {
     this.logService.pushLog("info", "Starting library scan");
     return this.scanner.scan(onProgress);
-  }
-
-  getStats(): {
-    totalTracks: number;
-    lastSync?: Date;
-  } {
-    return {
-      totalTracks: tracksDb.count(),
-      lastSync: syncMetadataDb.getLastSync(),
-    };
-  }
-
-  clearAll(): void {
-    this.logService.pushLog("warn", "Clearing all database data");
-    catalogSyncDb.clearAll();
-    this.logService.pushLog("info", "Database cleared");
   }
 }

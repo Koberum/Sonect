@@ -11,8 +11,6 @@ describe("syncMetadataDb (trophy integration)", () => {
 
   it("get miss → undefined", () =>
     expect(syncMetadataDb.get("missing")).to.be.undefined);
-  it("getLastSync miss → undefined", () =>
-    expect(syncMetadataDb.getLastSync()).to.be.undefined);
 
   it("set and get", () => {
     syncMetadataDb.set("k1", "v1");
@@ -23,13 +21,6 @@ describe("syncMetadataDb (trophy integration)", () => {
     syncMetadataDb.set("k1", "v1");
     syncMetadataDb.set("k1", "v2");
     expect(syncMetadataDb.get("k1")).to.equal("v2");
-  });
-
-  it("setLastSync / getLastSync roundtrip", () => {
-    syncMetadataDb.setLastSync();
-    const d = syncMetadataDb.getLastSync();
-    expect(d).to.be.instanceOf(Date);
-    expect(d!.getTime()).to.be.closeTo(Date.now(), 2000);
   });
 
   it("get returns string for last_sync key", () => {

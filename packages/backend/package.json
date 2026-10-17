@@ -10,7 +10,6 @@
     "test": "mocha",
     "test:watch": "mocha --watch",
     "test:coverage": "c8 --all --src=src --include='src/**/*.ts' --exclude='src/__tests__/**' --exclude='src/**/*.d.ts' --exclude-after-remap --reporter=text --reporter=lcov node --import=tsx/esm ./node_modules/mocha/bin/mocha.js --no-config --timeout=10000 'src/__tests__/**/*.test.ts'",
-    "sync": "tsx src/scripts/sync.ts",
     "lint": "eslint ."
   },
   "dependencies": {

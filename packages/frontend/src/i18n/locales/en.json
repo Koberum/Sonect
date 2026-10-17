@@ -442,15 +442,6 @@
       "deleteButton": "Delete",
       "formDescription": "Register a folder that is bind-mounted into the container."
     },
-    "library": {
-      "title": "Library",
-      "description": "Manage your music library synchronization.",
-      "syncAll": "Sync All",
-      "syncImages": "Sync Images Only",
-      "syncing": "Syncing...",
-      "lastSync": "Last sync: {{time}}",
-      "never": "Never"
-    },
     "config": {
       "title": "MPD Config",
       "description": "Edit mpd.conf directly. Invalid config may prevent MPD from starting.",

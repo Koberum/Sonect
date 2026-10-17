@@ -1,20 +1,9 @@
 import { eq, sql } from "drizzle-orm";
 import type { MPDTrack } from "@repo/types";
 import { transaction, type DatabaseTransaction } from "../connection.js";
-import {
-  albums,
-  artists,
-  genres,
-  syncMetadata,
-  tracks as tracksTable,
-} from "../tables.js";
+import { syncMetadata, tracks as tracksTable } from "../tables.js";
 import { upsertTrack } from "./tracks.js";
 import { syncMetadataDb } from "./syncMetadata.js";
-
-export type LibraryRebuildResult = {
-  synced: number;
-  errors: number;
-};
 
 export type LibraryIncrementalResult = {
   synced: number;
@@ -22,12 +11,12 @@ export type LibraryIncrementalResult = {
   errors: number;
 };
 
-// Current on-disk scanner format. Consumers compare getScannerVersion() against
-// this to decide whether a full rebuild is required.
+// Current on-disk scanner format. The presence of the `scanner_version`
+// marker tells LibraryScanner whether a scan is the first run (and so must
+// clean up legacy/unattributed rows conservatively). See buildDeletions().
 const SCANNER_VERSION = "1";
 
-// Upsert-on-conflict stamp for the sync_metadata key/value table, shared by
-// rebuild and the incremental apply so both move in lock-step.
+// Upsert-on-conflict stamp for the sync_metadata key/value table.
 function stampMetadata(
   executor: DatabaseTransaction,
   key: string,
@@ -49,7 +38,7 @@ function stampMetadata(
 // violations of the track schema itself (NOT NULL / UNIQUE / FOREIGN KEY /
 // CHECK) are expected per-track failures — a property of the one row being
 // persisted. Anything else (I/O errors, corruption, bugs) must escape so the
-// complete rebuild rolls back to the previous library state.
+// whole apply rolls back to the previous library state.
 function isTrackConstraintError(error: unknown): boolean {
   let cause: unknown = error;
   for (let depth = 0; depth < 5 && cause instanceof Error; depth += 1) {
@@ -61,89 +50,11 @@ function isTrackConstraintError(error: unknown): boolean {
   return false;
 }
 
-// One transaction wipes and repopulates the music tables. Every step runs on
-// the transaction executor so a failure anywhere restores the pre-rebuild
-// library exactly as it was.
-function rebuildInTransaction(
-  executor: DatabaseTransaction,
-  tracks: MPDTrack[],
-  onProgress?: (completed: number, track: MPDTrack) => void,
-): LibraryRebuildResult {
-  // Step 1: snapshot playback statistics keyed by file before any destructive
-  // work, so surviving files keep their play counts.
-  const previousStats = new Map(
-    executor
-      .select({
-        file: tracksTable.file,
-        play_count: tracksTable.play_count,
-        last_played: tracksTable.last_played,
-      })
-      .from(tracksTable)
-      .all()
-      .map((row) => [row.file, row] as const),
-  );
-
-  // Step 2: FK-safe wipe (tracks reference albums, artists, and genres; albums reference artists and genres).
-  executor.delete(tracksTable).run();
-  executor.delete(albums).run();
-  executor.delete(artists).run();
-  executor.delete(genres).run();
-
-  let synced = 0;
-  let errors = 0;
-
-  for (const track of tracks) {
-    try {
-      // Step 3: each track persists inside a savepoint so a rejected track
-      // also rolls back the artist and album rows created for it.
-      executor.transaction((savepoint) => {
-        const id = upsertTrack(savepoint, track);
-        // Step 4: restore playback fields for surviving files.
-        const stats = previousStats.get(track.file);
-        if (stats) {
-          savepoint
-            .update(tracksTable)
-            .set({
-              play_count: stats.play_count ?? 0,
-              last_played: stats.last_played,
-            })
-            .where(eq(tracksTable.id, id))
-            .run();
-        }
-      });
-    } catch (error) {
-      if (!isTrackConstraintError(error)) throw error;
-      // Keep individual malformed tracks operator-reportable, as they were
-      // before the rebuild became transactional.
-      console.error(`❌ Error syncing track ${track.file}:`, error);
-      errors += 1;
-      continue;
-    }
-
-    // Step 6: progress fires only after the track is durably persisted within
-    // the transaction. A throwing callback escapes and rolls back everything.
-    synced += 1;
-    onProgress?.(synced, track);
-  }
-
-  // Step 5: stamp the sync timestamp inside the same transaction.
-  stampMetadata(executor, "last_sync", new Date().toISOString());
-
-  return { synced, errors };
-}
-
 export const catalogSyncDb = {
-  rebuild(
-    tracks: MPDTrack[],
-    onProgress?: (completed: number, track: MPDTrack) => void,
-  ): LibraryRebuildResult {
-    return transaction((tx) => rebuildInTransaction(tx, tracks, onProgress));
-  },
-
   // Apply only the changed/deleted files reported by the scanner. Everything
   // runs in one transaction so a failure leaves the catalog untouched; the
-  // `scanner_version` marker is what tells callers the incremental path is
-  // safe to use instead of a full rebuild.
+  // `scanner_version` marker is stamped so the scanner can tell later runs
+  // apart from the first one.
   applyIncremental(input: {
     upserts: MPDTrack[];
     deletions: string[];
@@ -157,7 +68,7 @@ export const catalogSyncDb = {
         try {
           // Per-track savepoint: a rejected track must also roll back the
           // artist/album/genre lookup rows created for it, or repeated syncs
-          // would leak orphan entities (matches rebuild semantics).
+          // would leak orphan entities.
           tx.transaction((savepoint) => {
             upsertTrack(savepoint, track);
           });
@@ -186,15 +97,5 @@ export const catalogSyncDb = {
 
   getScannerVersion(): string | undefined {
     return syncMetadataDb.get("scanner_version");
-  },
-
-  clearAll(): void {
-    transaction((tx) => {
-      tx.delete(tracksTable).run();
-      tx.delete(albums).run();
-      tx.delete(artists).run();
-      tx.delete(genres).run();
-      tx.delete(syncMetadata).run();
-    });
   },
 };
