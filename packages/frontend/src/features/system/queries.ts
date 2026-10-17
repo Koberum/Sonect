@@ -13,6 +13,7 @@ import {
   updateStorageSource,
   deleteStorageSource,
   refreshStorageStats,
+  getStorageStats,
   configureAudio,
   getDashboard,
 } from "./api";
@@ -125,6 +126,16 @@ export const systemMutations = {
       mutationFn: (id: number) => refreshStorageStats(id),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: qk.system.storageSources() });
+      },
+    }),
+
+  computeStorageStats: () =>
+    mutationOptions({
+      mutationFn: (path: string) => getStorageStats(path),
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: qk.system.detectedLibraries(),
+        });
       },
     }),
 

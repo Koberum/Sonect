@@ -75,8 +75,7 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
           errors={form.errors}
           handleFieldBlur={form.handleFieldBlur}
           fieldClass={form.fieldClass}
-          detected={form.detected}
-          applyDetected={form.applyDetected}
+          onSubmit={form.submit}
         />
       </WizardStepContent>
       <WizardStepActions>

@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { systemQueries } from "@/features/system/queries";
-import type { DetectedLibrary, StorageSource } from "@/features/system/api";
+import { useTranslation } from "react-i18next";
+import type { StorageSource } from "@/features/system/api";
 
 export interface LibrarySourceFormValues {
   name: string;
@@ -17,6 +16,7 @@ export function useLibrarySourceForm({
   initialValues,
   onSave,
 }: UseLibrarySourceFormOptions) {
+  const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: initialValues?.name ?? "",
@@ -24,22 +24,12 @@ export function useLibrarySourceForm({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { data: detected = [] } = useQuery(systemQueries.detectedLibraries());
-
-  const applyDetected = (lib: DetectedLibrary) => {
-    setForm({ name: lib.name, path: lib.path });
-    setErrors((prev) => {
-      const next = { ...prev };
-      delete next.name;
-      delete next.path;
-      return next;
-    });
-  };
+  const requiredMessage = t("settings.libraries.required", "Required");
 
   const validate = () => {
     const errs: Record<string, string> = {};
-    if (!form.name.trim()) errs.name = "Required";
-    if (!form.path.trim()) errs.path = "Required";
+    if (!form.name.trim()) errs.name = requiredMessage;
+    if (!form.path.trim()) errs.path = requiredMessage;
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -48,7 +38,7 @@ export function useLibrarySourceForm({
     setErrors((prev) => {
       const val = form[field as keyof typeof form];
       if (typeof val === "string" && !val.trim()) {
-        return { ...prev, [field]: "Required" };
+        return { ...prev, [field]: requiredMessage };
       }
       const next = { ...prev };
       delete next[field];
@@ -57,7 +47,9 @@ export function useLibrarySourceForm({
   };
 
   const fieldClass = (field: string) =>
-    errors[field] ? "border-red-500 focus-visible:ring-red-500" : "";
+    errors[field]
+      ? "border-destructive focus-visible:ring-destructive focus-visible:border-destructive"
+      : "";
 
   const submit = () => {
     if (!validate()) return;
@@ -77,7 +69,5 @@ export function useLibrarySourceForm({
     handleFieldBlur,
     fieldClass,
     submit,
-    detected,
-    applyDetected,
   };
 }

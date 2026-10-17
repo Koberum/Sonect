@@ -100,6 +100,12 @@ export function refreshStorageStats(id: number): Promise<StorageSource> {
   });
 }
 
+export function getStorageStats(
+  path: string,
+): Promise<{ file_count: number; dir_count: number; total_size: number }> {
+  return apiFetch("/system/storage/stats", { params: { path } });
+}
+
 export function getSetupProgress(signal?: AbortSignal): Promise<{
   steps: SetupStep[];
   complete: boolean;
