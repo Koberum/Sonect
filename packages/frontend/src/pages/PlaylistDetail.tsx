@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
-import { PageTitle } from "@/features/dashboard/components/pageTitle";
+import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -188,7 +188,7 @@ export default function PlaylistDetail() {
       </Breadcrumb>
 
       <div className="flex items-start justify-between">
-        <PageTitle
+        <PageHeader
           title={playlist.name}
           description={
             playlist.tracks.length > 0

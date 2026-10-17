@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { useRef, useEffect, useState } from "react";
 import { formatTime } from "@/lib/utils";
-import { PageTitle } from "@/features/dashboard/components/pageTitle";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -12,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { PlayIcon, ListPlus } from "lucide-react";
+import { PlayIcon, ListPlus, Music } from "lucide-react";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { usePlaybackContext } from "@/components/playback-context";
 import { SortTabs } from "@/features/dashboard/components/sort-tabs";
@@ -66,7 +67,7 @@ export default function Tracks() {
 
   return (
     <div>
-      <PageTitle
+      <PageHeader
         title={t("tracks.title")}
         description={t("tracks.description")}
       />
@@ -102,8 +103,8 @@ export default function Tracks() {
               <TableBody>
                 {tracks.length === 0 && !isFetchingNextPage && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center">
-                      {t("tracks.noTracks")}
+                    <TableCell colSpan={6}>
+                      <EmptyState icon={Music} title={t("tracks.noTracks")} />
                     </TableCell>
                   </TableRow>
                 )}

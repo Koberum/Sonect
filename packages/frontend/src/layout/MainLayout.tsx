@@ -48,7 +48,7 @@ export default function MainLayout() {
         )}
 
         <main className="no-scrollbar flex-1 overflow-y-auto">
-          <div className="px-4 pb-24 sm:px-4 lg:px-8">
+          <div className="px-4 pt-6 pb-24 sm:px-4 lg:px-8">
             <SetupGuard>
               <ProfileGuard>
                 <Outlet />

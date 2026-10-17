@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
 import { ScrollBar, ScrollArea } from "@/components/ui/scroll-area";
-import { PageTitle } from "@/features/dashboard/components/pageTitle";
+import { PageHeader } from "@/components/ui/page-header";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { systemQueries } from "@/features/system/queries";
@@ -40,7 +40,7 @@ export default function Dashboard() {
 
   return (
     <div>
-      <PageTitle
+      <PageHeader
         title={t("dashboard.title")}
         description={t("dashboard.loading")}
       />

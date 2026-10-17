@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { PageTitle } from "@/features/dashboard/components/pageTitle";
+import { PageHeader } from "@/components/ui/page-header";
 import { useTranslation } from "react-i18next";
 import {
   AlbumIcon,
@@ -71,7 +71,7 @@ export function Statistics() {
   if (isPending || !stats) {
     return (
       <div>
-        <PageTitle
+        <PageHeader
           title={t("statistics.title")}
           description={t("statistics.description")}
         />
@@ -84,7 +84,7 @@ export function Statistics() {
 
   return (
     <div>
-      <PageTitle
+      <PageHeader
         title={t("statistics.title", "Library Statistics")}
         description={t(
           "statistics.description",

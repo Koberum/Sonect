@@ -4,14 +4,14 @@ import { AudioTab } from "@/features/settings/audio-tab";
 import { LibrariesTab } from "@/features/settings/libraries-tab";
 import { AppearanceTab } from "@/features/settings/appearance-tab";
 import { DebugTab } from "@/features/settings/debug-tab";
-import { PageTitle } from "@/features/dashboard/components/pageTitle";
+import { PageHeader } from "@/components/ui/page-header";
 
 export function Settings() {
   const { t } = useTranslation();
 
   return (
     <div>
-      <PageTitle
+      <PageHeader
         title={t("settings.title")}
         description={t("settings.description")}
       />

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { PlayIcon, ListPlus } from "lucide-react";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
-import { PageTitle } from "@/features/dashboard/components/pageTitle";
+import { PageHeader } from "@/components/ui/page-header";
 import { usePlaybackContext } from "@/components/playback-context";
 import {
   ContextMenu,
@@ -46,7 +46,7 @@ export default function AlbumPage() {
   const { play, addToQueue } = usePlayTrack();
   return (
     <>
-      <PageTitle
+      <PageHeader
         title={album?.title || t("album.loading")}
         description={
           album?.artist_name && album?.artist_id ? (

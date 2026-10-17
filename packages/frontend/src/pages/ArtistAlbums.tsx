@@ -1,5 +1,5 @@
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
-import { PageTitle } from "@/features/dashboard/components/pageTitle";
+import { PageHeader } from "@/components/ui/page-header";
 import { SortTabs } from "@/features/dashboard/components/sort-tabs";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -40,7 +40,7 @@ export function ArtistAlbums() {
 
   return (
     <div>
-      <PageTitle
+      <PageHeader
         title={artist ? artist.name : t("artist.loading")}
         description={t("artist.description")}
       />

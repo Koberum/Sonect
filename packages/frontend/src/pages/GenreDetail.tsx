@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
-import { PageTitle } from "@/features/dashboard/components/pageTitle";
+import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatTime } from "@/lib/utils";
 import {
@@ -49,7 +49,7 @@ export default function GenreDetail() {
   if (isPending) {
     return (
       <div>
-        <PageTitle title={genre} description={t("genres.description")} />
+        <PageHeader title={genre} description={t("genres.description")} />
         <div className="flex justify-center py-16">
           <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
         </div>
@@ -59,7 +59,7 @@ export default function GenreDetail() {
 
   return (
     <div>
-      <PageTitle title={genre} description={t("genres.description")} />
+      <PageHeader title={genre} description={t("genres.description")} />
       <Tabs defaultValue="albums" className="mt-4">
         <TabsList>
           <TabsTrigger value="albums">

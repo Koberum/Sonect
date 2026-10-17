@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
 import { useNavigate } from "react-router-dom";
-import { PageTitle } from "@/features/dashboard/components/pageTitle";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   SelectableRow,
   SelectableRowDescription,
@@ -18,7 +18,7 @@ export default function Genres() {
 
   return (
     <div>
-      <PageTitle
+      <PageHeader
         title={t("genres.title")}
         description={t("genres.description")}
       />

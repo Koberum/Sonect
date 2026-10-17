@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
-import { PageTitle } from "@/features/dashboard/components/pageTitle";
+import { PageHeader } from "@/components/ui/page-header";
 import { SortTabs } from "@/features/dashboard/components/sort-tabs";
 
 type SortOption = "title" | "year" | "recent";
@@ -43,7 +43,7 @@ export default function Albums() {
 
   return (
     <div>
-      <PageTitle
+      <PageHeader
         title={t("albums.title")}
         description={t("albums.description")}
       />
