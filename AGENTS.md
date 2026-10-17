@@ -415,6 +415,11 @@ sends `SIGHUP` via `pkill -HUP mpd`. There is **no inotify watcher**, no
 `systemctl`, no `sudo`, no privileged command anywhere. Tests inject a stub
 hook so the reload can be asserted without touching MPD.
 
+**Health:** the app image declares a Docker `HEALTHCHECK` polling
+`GET /system/health` (interval 30s, start-period 30s). s6 restarts crashed
+longruns internally; the HEALTHCHECK only reports status (it does not trigger
+restarts under `restart: unless-stopped`).
+
 **Writing new MPD config code:** always read/write the drop-in (not `mpd.conf`),
 using `fs.readFileSync`/`fs.writeFileSync`. Never shell out.
 

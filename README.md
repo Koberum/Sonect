@@ -133,7 +133,10 @@ Settings → Libraries (folders detected under `/libraries` are suggested
 automatically and added with a single click; per-library statistics are shown
 inline). The `-f audio.yml` overlay is only needed on hosts with a sound
 card / USB DAC — it grants `/dev/snd`, the `audio` group and a read-only
-`/proc/asound` so Sonect can enumerate and play through the devices.
+`/proc/asound` so Sonect can enumerate and play through the devices. The image
+reports container health via a `HEALTHCHECK` on `GET /system/health` (visible
+in `docker ps`); s6-overlay restarts the MPD/node services internally if they
+crash.
 
 ---
 

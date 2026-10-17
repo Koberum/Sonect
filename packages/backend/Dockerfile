@@ -81,6 +81,12 @@ VOLUME /app/data
 
 EXPOSE 3000
 
+# Container health reported to the orchestrator (docker ps, compose).
+# wget is already present in node:24-alpine. /system/health answers 200
+# whenever the API is up (its DNS check is bounded by a 3s timeout).
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD wget -q -O /dev/null --tries=1 --timeout=5 http://127.0.0.1:${PORT:-3000}/system/health
+
 # node:24-alpine ships CMD ["node"]; clear it so s6 does not run an extra CMD
 # that exits immediately (which would tear the container down). mpd + node run
 # as supervised s6 longruns instead.
