@@ -92,3 +92,49 @@ export function computeSourceStats(root: string): SourceStats {
   const exts = getAudioExtensions();
   return walkSource(root, exts);
 }
+
+/**
+ * Async twin of `computeSourceStats`: identical counting rules (skip symlinks,
+ * count directories, filter audio extensions, sum sizes, ignore files that
+ * vanish mid-walk, throw on unreadable directories) but does not block the
+ * event loop — used for on-demand stats of large folders where a sync walk
+ * would freeze MPD polling and HTTP handling.
+ */
+export async function computeSourceStatsAsync(
+  root: string,
+): Promise<SourceStats> {
+  const exts = getAudioExtensions();
+  let fileCount = 0;
+  let dirCount = 0;
+  let totalSize = 0;
+
+  async function visit(dir: string): Promise<void> {
+    let entries: fs.Dirent[];
+    try {
+      entries = await fs.promises.readdir(dir, { withFileTypes: true });
+    } catch {
+      throw new Error(`Cannot read directory: ${dir}`);
+    }
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name);
+      if (entry.isSymbolicLink()) continue;
+      if (entry.isDirectory()) {
+        dirCount++;
+        await visit(full);
+      } else if (entry.isFile()) {
+        const ext = path.extname(entry.name).slice(1).toLowerCase();
+        if (!exts.has(ext)) continue;
+        fileCount++;
+        try {
+          const stat = await fs.promises.stat(full);
+          totalSize += stat.size;
+        } catch {
+          // file vanished mid-walk
+        }
+      }
+    }
+  }
+
+  await visit(root);
+  return { file_count: fileCount, dir_count: dirCount, total_size: totalSize };
+}
