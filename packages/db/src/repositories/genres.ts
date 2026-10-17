@@ -1,4 +1,4 @@
-import { asc, count, eq, like, sql } from "drizzle-orm";
+import { asc, count, eq, sql } from "drizzle-orm";
 import type { DBGenre, DBGenreWithCounts } from "@repo/types";
 import { db } from "../connection.js";
 import { genres } from "../tables.js";
@@ -21,10 +21,6 @@ export function findOrCreateGenre(
 }
 
 export const genresDb = {
-  findOrCreate(name: string): number {
-    return findOrCreateGenre(db(), name);
-  },
-
   getAll({
     limit,
     offset,
@@ -62,24 +58,5 @@ export const genresDb = {
   getById(id: number): DBGenre | undefined {
     return db().select().from(genres).where(eq(genres.id, id)).get() as
       DBGenre | undefined;
-  },
-
-  getByName(name: string): DBGenre | undefined {
-    return db()
-      .select()
-      .from(genres)
-      .where(sql`${genres.name} = ${name.trim()} COLLATE NOCASE`)
-      .get() as DBGenre | undefined;
-  },
-
-  search(query: string, limit = 20): DBGenre[] {
-    const pattern = `%${query}%`;
-    return db()
-      .select()
-      .from(genres)
-      .where(like(genres.name, pattern))
-      .orderBy(asc(genres.name))
-      .limit(limit)
-      .all() as DBGenre[];
   },
 };

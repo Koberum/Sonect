@@ -1,11 +1,14 @@
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
-import { PageTitle } from "@/features/dashboard/components/pageTitle";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SortTabs } from "@/features/dashboard/components/sort-tabs";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
+import { Disc3 } from "lucide-react";
 
 type SortOption = "title" | "year" | "recent";
 
@@ -40,13 +43,15 @@ export function ArtistAlbums() {
 
   return (
     <div>
-      <PageTitle
+      <PageHeader
         title={artist ? artist.name : t("artist.loading")}
         description={t("artist.description")}
       />
       {isPending ? (
-        <div className="flex justify-center py-16">
-          <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <Skeleton key={i} className="aspect-square w-full rounded-lg" />
+          ))}
         </div>
       ) : (
         <>
@@ -54,22 +59,23 @@ export function ArtistAlbums() {
             value={sort}
             onValueChange={setSort}
             options={sortOptions}
+            className="mb-4"
           />
-          <div className="mt-4 flex flex-wrap gap-4">
-            {sortedAlbums.map((album) => (
-              <div
-                key={album.id}
-                className="min-w-40 flex-1 sm:max-w-20 md:max-w-40"
-              >
+          {sortedAlbums.length === 0 ? (
+            <EmptyState icon={Disc3} title={t("albums.noAlbums")} />
+          ) : (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+              {sortedAlbums.map((album) => (
                 <AlbumArtwork
+                  key={album.id}
                   album={album}
                   aspectRatio="square"
                   className="w-full"
                   onClick={() => navigate(`/albums/${album.id}`)}
                 />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </>
       )}
     </div>

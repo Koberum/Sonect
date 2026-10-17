@@ -92,16 +92,6 @@ export function getTracksByGenre(
   });
 }
 
-export function getRecentlyAdded(
-  limit = 20,
-  signal?: AbortSignal,
-): Promise<{ albums: Album[]; tracks: TrackWithRelations[] }> {
-  return apiFetch("/catalog/recently-added", {
-    params: { limit },
-    signal,
-  });
-}
-
 export function search(
   query: string,
   signal?: AbortSignal,
@@ -115,8 +105,4 @@ export function getLibraryStats(signal?: AbortSignal): Promise<LibraryStats> {
 
 export function scanLibrary(signal?: AbortSignal): Promise<void> {
   return apiFetch("/catalog/scan", { method: "POST", signal });
-}
-
-export function syncImages(signal?: AbortSignal): Promise<void> {
-  return apiFetch("/catalog/sync-images", { method: "POST", signal });
 }

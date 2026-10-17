@@ -1,4 +1,4 @@
-# Overlay that grants both containers access to the host audio hardware.
+# Overlay that grants the Sonect container access to the host audio hardware.
 #
 # Use it when Sonect should play through a local sound card / USB DAC:
 #
@@ -10,19 +10,10 @@
 # On a host without a sound card (e.g. a NAS) leave this overlay out.
 
 services:
-  sonect-mpd:
-    devices:
-      - /dev/snd:/dev/snd
-    group_add:
-      - audio
-
-  sonect-app:
-    # The backend enumerates cards with `aplay -l`, reads /proc/asound and
-    # inspects USB devices with `lsusb`.
+  sonect:
     devices:
       - /dev/snd:/dev/snd
     group_add:
       - audio
     volumes:
       - /proc/asound:/proc/asound:ro
-      - /dev/bus/usb:/dev/bus/usb

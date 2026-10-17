@@ -52,3 +52,15 @@ export interface HardwareUsage {
 }
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
+
+export interface DetectedLibrary {
+  path: string;
+  name: string;
+  isMount: boolean;
+  registered: boolean;
+  stats?: {
+    file_count: number;
+    dir_count: number;
+    total_size: number;
+  };
+}

@@ -1,0 +1,5 @@
+#!/command/with-contenv sh
+mkdir -p /app/data/mpd/playlists
+mkdir -p /libraries
+[ -f /app/data/mpd-audio.conf ] || : > /app/data/mpd-audio.conf
+exec mpd --no-daemon /etc/mpd/mpd.conf

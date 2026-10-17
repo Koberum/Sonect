@@ -53,6 +53,24 @@ import { createTestDb } from "@tests/helpers/db.js";
 
 ---
 
+## Test data: use the factories (which use the production write path)
+
+`__tests__/factories/` seed real rows through the same functions production uses: `track.create()` calls `upsertTrack(db(), …)`, `artist.create()` calls `findOrCreateArtist(db(), …)`, etc. (`tracksDb.upsert`, `artistsDb.findOrCreate`, `albumsDb.findOrCreate`, `genresDb.findOrCreate` no longer exist.)
+
+```ts
+import { artist } from "@tests/factories/artist.js";
+import { album } from "@tests/factories/album.js";
+import { track } from "@tests/factories/track.js";
+
+const a = artist.create({ name: "ArtistA" }, 1);
+const al = album.create({ title: "AlbumA", artistName: a.name }, 1);
+const t = track.create({ artist: a.name, album: al.title, title: "T1" }, 2);
+```
+
+Seeds take `(overrides, seed)`; the seed makes faker deterministic.
+
+---
+
 ## Service / controller unit tests (DI or Sinon on real instances)
 
 **Constructor DI** — inject collaborators directly (preferred for services with a clear dependency boundary):
@@ -129,7 +147,7 @@ Key points:
 
 ## Route tests (Sinon + dynamic import + Supertest)
 
-Set up stubs before importing the router, then verify them after.
+Route modules are **default exports** (`catalogRoutes.ts`, `unifiedPlayerRoutes.ts`, …). Build a minimal Express app with a local `makeApp()` helper, add `errorHandler` last, and import the router dynamically after any stubs are set up:
 
 ```ts
 import sinon from "sinon";
@@ -138,32 +156,27 @@ import express from "express";
 import { expect } from "chai";
 import { errorHandler } from "@middleware/errorHandler.js";
 
-describe("GET /player/status", () => {
+describe("GET /catalog/artists", () => {
   let app: express.Express;
 
-  before(async () => {
-    app = express();
+  function makeApp(routes: express.Router) {
+    const app = express();
     app.use(express.json());
+    app.use("/catalog", routes);
+    app.use(errorHandler); // ALWAYS last — controllers throw NotFound/ValidationError
+    return app;
+  }
 
-    // Dynamic import AFTER stubs exist
-    const { playerRouter } = await import("@routes/player.js");
-    app.use("/player", playerRouter);
-
-    // ALWAYS add errorHandler last — controllers throw NotFoundError/ValidationError
-    app.use(errorHandler);
+  before(async () => {
+    const { default: catalogRoutes } = await import("@routes/catalogRoutes.js");
+    app = makeApp(catalogRoutes);
   });
 
   after(() => sinon.restore());
 
-  it("returns 200 with playback status", async () => {
-    const res = await request(app).get("/player/status");
+  it("returns 200 with artists", async () => {
+    const res = await request(app).get("/catalog/artists");
     expect(res.status).to.equal(200);
-    expect(res.body).to.have.property("state");
-  });
-
-  it("returns 404 for unknown resource", async () => {
-    const res = await request(app).get("/player/nonexistent");
-    expect(res.status).to.equal(404);
   });
 });
 ```
@@ -171,65 +184,65 @@ describe("GET /player/status", () => {
 Key points:
 
 - Always add `errorHandler` as the last middleware — without it, thrown `NotFoundError`/`ValidationError` crash the test instead of returning the right HTTP status.
-- Build the app in `before()`, not `beforeEach()` — dynamic `import()` is cached after first load.
+- Dynamic `import()` is cached after first load, so build the app once in `before()` (or per-test via `makeApp()` when you need fresh state).
+- Routes under `/player` require the `X-Session-Id` header (`middleware/sessionId.ts` → 400 without it); send `.set("X-Session-Id", "test")` when hitting them.
 
 ---
 
 ## WebSocket handler tests
 
+`player.ws.ts` exports `setupPlayerWebSocket(wss)` (one argument). Integration tests build a real HTTP server + `WebSocketServer` on an ephemeral port:
+
 ```ts
-import sinon from "sinon";
 import { expect } from "chai";
+import { createServer } from "http";
+import { WebSocketServer, WebSocket } from "ws";
+import { setupPlayerWebSocket } from "../../../ws/player.ws.js";
 
-describe("player.ws.ts", () => {
-  let onConnection: (ws: unknown) => void;
-  let mpdManagerStub: Record<string, unknown>;
-  let fakeWs: {
-    send: sinon.SinonStub;
-    on: sinon.SinonStub;
-    readyState: number;
-  };
+describe("player WS", () => {
+  let server: ReturnType<typeof createServer>;
+  let wss: WebSocketServer;
+  let baseUrl: string;
 
-  before(async () => {
-    mpdManagerStub = {
-      getCachedStatus: sinon.stub().returns({ state: "play" }),
-      on: sinon.stub(),
-      off: sinon.stub(),
-    };
-
-    const { createPlayerWsHandler } = await import("../../ws/player.ws.js");
-    onConnection = createPlayerWsHandler(mpdManagerStub);
+  beforeEach((done) => {
+    server = createServer();
+    wss = new WebSocketServer({ server });
+    setupPlayerWebSocket(wss);
+    server.listen(0, () => {
+      baseUrl = `ws://localhost:${(server.address() as { port: number }).port}/ws`;
+      done();
+    });
   });
 
-  beforeEach(() => {
-    fakeWs = { send: sinon.stub(), on: sinon.stub(), readyState: 1 };
+  afterEach(() => {
+    wss.close();
+    server.close();
   });
 
-  afterEach(() => sinon.reset());
-  after(() => sinon.restore());
-
-  it("sends cached status on connect", () => {
-    onConnection(fakeWs);
-    expect(fakeWs.send.calledOnce).to.be.true;
-    const payload = JSON.parse(fakeWs.send.firstCall.args[0]);
-    expect(payload.state).to.equal("play");
+  it("sends player-status on connect", (done) => {
+    const ws = new WebSocket(`${baseUrl}?sessionId=abc`);
+    ws.on("message", (data) => {
+      const msg = JSON.parse(data.toString()) as Record<string, unknown>;
+      expect(msg.type).to.equal("player-status");
+      ws.close();
+      done();
+    });
   });
 });
 ```
 
-There is no `@ws/*` alias — import WS modules with a relative path (e.g. `../../ws/player.ws.js`) from tests under `src/__tests__/`.
+There is no `@ws/*` alias — import WS modules with a relative path (e.g. `../../ws/player.ws.js`). Session-scoped WS tests override the global registry with `registryOverrideForTests()` (see `integration/ws/sessionWs.test.ts`).
 
 ---
 
 ## Error type testing
 
-Controllers throw `NotFoundError` and `ValidationError` from `middleware/errorHandler.ts`. Test them via HTTP response codes:
+Controllers throw `NotFoundError`, `ValidationError`, `ConflictError` and `LockedError` from `middleware/errorHandler.ts`. Test them via HTTP response codes:
 
 ```ts
-it("returns 404 when track not found", async () => {
-  const res = await request(app).get("/library/tracks/99999");
+it("returns 404 when the album does not exist", async () => {
+  const res = await request(app).get("/catalog/albums/99999");
   expect(res.status).to.equal(404);
-  expect(res.body.error).to.include("not found");
 });
 ```
 
@@ -237,18 +250,15 @@ it("returns 404 when track not found", async () => {
 
 ## Zod validation testing
 
-Zod schemas live in `@repo/types` and are called via `schema.parse(req.body)` / `schema.parse(req.params)` directly in controllers. A `ZodError` propagates to `errorHandler` which returns 400 with `flatten().fieldErrors`. Test by sending bad payloads:
+Zod schemas live in the grouped objects in `@repo/types` and are parsed directly in controllers (`schema.parse(req.body)` / `schema.parse(req.params)`). A `ZodError` propagates to `errorHandler`, which returns 400 with `{ error, details: flatten().fieldErrors }`:
 
 ```ts
 it("returns 400 for missing required field", async () => {
-  const res = await request(app).post("/player/volume").send({}); // missing `volume`
+  const res = await request(app)
+    .post("/system/storage/sources")
+    .send({ path: "/libraries/x" }); // missing `name`
   expect(res.status).to.equal(400);
-  expect(res.body).to.have.property("fieldErrors");
-});
-
-it("returns 400 for out-of-range value", async () => {
-  const res = await request(app).post("/player/volume").send({ volume: 150 }); // max is 100
-  expect(res.status).to.equal(400);
+  expect(res.body.details.fieldErrors).to.have.property("name");
 });
 ```
 
@@ -260,5 +270,6 @@ it("returns 400 for out-of-range value", async () => {
 - [ ] `errorHandler` added as last middleware in route test apps
 - [ ] Imports use the `@services`/`@controllers`/`@tests` aliases (`.js` extension)
 - [ ] `sandbox.restore()` / `sinon.restore()` in every cleanup block
+- [ ] Test data seeded via `@tests/factories/*` (they use the production write path)
 - [ ] `pnpm backend:test` passes with zero failures
 - [ ] `pnpm lint` passes (no unused imports, no `any` without comments)

@@ -14,6 +14,9 @@ import {
   updateStorageSourceHandler,
   deleteStorageSourceHandler,
   listMountsHandler,
+  getDetectedLibrariesHandler,
+  getStorageStatsHandler,
+  refreshStorageStatsHandler,
   getSetupProgressHandler,
   updateSetupProgressHandler,
   completeSetupHandler,
@@ -42,6 +45,9 @@ router.post("/storage/sources", createStorageSourceHandler);
 router.patch("/storage/sources/:id", updateStorageSourceHandler);
 router.delete("/storage/sources/:id", deleteStorageSourceHandler);
 router.get("/storage/mounts", listMountsHandler);
+router.get("/storage/detected", getDetectedLibrariesHandler);
+router.get("/storage/stats", getStorageStatsHandler);
+router.post("/storage/sources/:id/refresh-stats", refreshStorageStatsHandler);
 
 router.get("/setup/progress", getSetupProgressHandler);
 router.post("/setup/progress", updateSetupProgressHandler);

@@ -1,0 +1,2 @@
+#!/command/with-contenv sh
+cd /app && exec node /app/bundle.cjs

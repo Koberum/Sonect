@@ -69,10 +69,6 @@ export class MpdConnectionManager extends EventEmitter {
     return this._cmdConnected;
   }
 
-  getCmdClient(): MPDClient | null {
-    return this.cmdClient;
-  }
-
   setAutoplayCallback(cb: (currentFile: string) => Promise<void>): void {
     this._autoplayCallback = cb;
   }
@@ -82,7 +78,6 @@ export class MpdConnectionManager extends EventEmitter {
   }
 
   async executeCommand(command: string, args: string[] = []): Promise<string> {
-    console.log(`[MPD] Executing command: ${command} ${args.join(" ")}`);
     this.logService.pushLog("info", `MPD cmd: ${command} ${args.join(" ")}`);
 
     if (!this._cmdConnected || !this.cmdClient) {
@@ -183,14 +178,12 @@ export class MpdConnectionManager extends EventEmitter {
       this.cmdClient = client;
 
       client.on("ready", () => {
-        console.log("[MPD] Command connection ready");
         this.logService.pushLog("info", "MPD command connection ready");
         this._cmdConnected = true;
         this._cmdReconnectDelay = RECONNECT_BASE_MS;
       });
 
       client.on("end", () => {
-        console.log("[MPD] Command connection closed");
         this.logService.pushLog("warn", "MPD command connection closed");
         this._cmdConnected = false;
         this.scheduleReconnectCmd();
@@ -232,7 +225,6 @@ export class MpdConnectionManager extends EventEmitter {
             this.pollBuffer = this.pollBuffer.substring(greetingEnd + 1);
 
             if (greeting.startsWith("OK MPD ")) {
-              console.log("[MPD] Poll connection ready");
               this.logService.pushLog("info", "MPD poll connection ready");
               this._pollConnected = true;
               this._pollReconnectDelay = RECONNECT_BASE_MS;
@@ -264,7 +256,6 @@ export class MpdConnectionManager extends EventEmitter {
       });
 
       socket.on("close", () => {
-        console.log("[MPD] Poll connection closed");
         this.logService.pushLog("warn", "MPD poll connection closed");
         this._pollConnected = false;
         this.stopPolling();
@@ -474,9 +465,6 @@ export class MpdConnectionManager extends EventEmitter {
   private scheduleReconnectCmd(): void {
     if (!this._running || this._cmdReconnectTimer) return;
 
-    console.log(
-      `[MPD] Reconnecting command in ${this._cmdReconnectDelay}ms ...`,
-    );
     this.logService.pushLog(
       "warn",
       `MPD cmd reconnecting in ${this._cmdReconnectDelay}ms`,
@@ -497,7 +485,6 @@ export class MpdConnectionManager extends EventEmitter {
   private scheduleReconnectPoll(): void {
     if (!this._running || this._pollReconnectTimer) return;
 
-    console.log(`[MPD] Reconnecting poll in ${this._pollReconnectDelay}ms ...`);
     this.logService.pushLog(
       "warn",
       `MPD poll reconnecting in ${this._pollReconnectDelay}ms`,

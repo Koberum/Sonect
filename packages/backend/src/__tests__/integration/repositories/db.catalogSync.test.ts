@@ -8,9 +8,12 @@ import {
   albumsDb,
   genresDb,
   syncMetadataDb,
+  playlistsDb,
+  db,
+  upsertTrack,
+  tracks,
 } from "@repo/db";
-import { db } from "@repo/db";
-import { tracks } from "@repo/db";
+
 import { eq } from "drizzle-orm";
 
 describe("catalogSyncDb (trophy integration)", () => {
@@ -34,131 +37,78 @@ describe("catalogSyncDb (trophy integration)", () => {
       track: "1",
       disc: "1",
       date: "2020-01-01",
-      lastModified: "2020-01-01T00:00:00Z",
       ...overrides,
     } as unknown as import("@repo/types").MPDTrack;
   }
 
-  it("rebuild empty list clears and stamps timestamp", () => {
-    tracksDb.upsert(mkTrack("a/old.mp3"));
-    const res = catalogSyncDb.rebuild([]);
-    expect(res).to.deep.equal({ synced: 0, errors: 0 });
-    expect(tracksDb.count()).to.equal(0);
-    expect(artistsDb.count()).to.equal(0);
-    expect(albumsDb.count()).to.equal(0);
+  it("applyIncremental upserts changed tracks and preserves play_count", () => {
+    const id = upsertTrack(db(), mkTrack("a/keep.mp3", { title: "Old" }));
+    db().update(tracks).set({ play_count: 7 }).where(eq(tracks.id, id)).run();
+    const res = catalogSyncDb.applyIncremental({
+      upserts: [mkTrack("a/keep.mp3", { title: "New" })],
+      deletions: [],
+    });
+    expect(res).to.deep.equal({ synced: 1, deleted: 0, errors: 0 });
+    const row = tracksDb.getByFile("a/keep.mp3");
+    expect(row?.title).to.equal("New");
+    expect(row?.play_count).to.equal(7);
+  });
+
+  it("applyIncremental deletes only the listed files", () => {
+    upsertTrack(db(), mkTrack("a/gone.mp3"));
+    upsertTrack(db(), mkTrack("a/kept.mp3"));
+    const res = catalogSyncDb.applyIncremental({
+      upserts: [],
+      deletions: ["a/gone.mp3"],
+    });
+    expect(res.deleted).to.equal(1);
+    expect(tracksDb.getByFile("a/gone.mp3")).to.be.undefined;
+    expect(tracksDb.getByFile("a/kept.mp3")).to.exist;
+  });
+
+  it("applyIncremental cascades playlist rows on delete", () => {
+    const tid = upsertTrack(db(), mkTrack("a/p.mp3"));
+    const pid = playlistsDb.create("P");
+    playlistsDb.addTrack(pid, tid);
+    catalogSyncDb.applyIncremental({ upserts: [], deletions: ["a/p.mp3"] });
+    expect(playlistsDb.getTracks(pid)).to.have.length(0);
+  });
+
+  it("applyIncremental stamps scanner_version and last_sync", () => {
+    catalogSyncDb.applyIncremental({ upserts: [], deletions: [] });
+    expect(catalogSyncDb.getScannerVersion()).to.equal("1");
     expect(syncMetadataDb.get("last_sync")).to.be.a("string");
   });
 
-  it("rebuild inserts tracks and creates relations", () => {
-    const res = catalogSyncDb.rebuild([
-      mkTrack("a/t1.mp3", { title: "T1" }),
-      mkTrack("a/t2.mp3", { title: "T2" }),
-    ]);
-    expect(res.synced).to.equal(2);
-    expect(res.errors).to.equal(0);
-    expect(tracksDb.count()).to.equal(2);
-    expect(tracksDb.getByFile("a/t1.mp3")?.title).to.equal("T1");
-  });
-
-  it("rebuild preserves play_count/last_played for surviving files", () => {
-    const id = tracksDb.upsert(mkTrack("a/keep.mp3", { title: "Keep" }));
-    db()
-      .update(tracks)
-      .set({ play_count: 42, last_played: "2020-01-01 00:00:00" })
-      .where(eq(tracks.id, id))
-      .run();
-    catalogSyncDb.rebuild([mkTrack("a/keep.mp3", { title: "KeepNew" })]);
-    const row = tracksDb.getByFile("a/keep.mp3");
-    expect(row?.play_count).to.equal(42);
-    expect(row?.last_played).to.equal("2020-01-01 00:00:00");
-    expect(row?.title).to.equal("KeepNew");
-  });
-
-  it("rebuild does not preserve stats for non-surviving files", () => {
-    tracksDb.upsert(mkTrack("a/gone.mp3"));
-    const id = tracksDb.getByFile("a/gone.mp3")!.id;
-    db().update(tracks).set({ play_count: 99 }).where(eq(tracks.id, id)).run();
-    catalogSyncDb.rebuild([mkTrack("a/new.mp3")]);
-    expect(tracksDb.getByFile("a/gone.mp3")).to.be.undefined;
-    expect(tracksDb.getByFile("a/new.mp3")?.play_count).to.equal(0);
-  });
-
-  it("onProgress called per synced track with synced count and track", () => {
-    const spy = sinon.stub();
-    catalogSyncDb.rebuild([mkTrack("a/p1.mp3"), mkTrack("a/p2.mp3")], spy);
-    expect(spy.callCount).to.equal(2);
-    expect(spy.firstCall.args[0]).to.equal(1);
-    expect(spy.secondCall.args[0]).to.equal(2);
-    expect(spy.firstCall.args[1].file).to.equal("a/p1.mp3");
-  });
-
-  it("rebuild wipes previous artists/albums/genres FK-safe", () => {
-    tracksDb.upsert(
-      mkTrack("a/old.mp3", {
-        artist: "OldArtist",
-        album: "OldAlbum",
-        genre: "OldGenre",
-      }),
-    );
-    catalogSyncDb.rebuild([
-      mkTrack("a/new.mp3", {
-        artist: "NewArtist",
-        album: "NewAlbum",
-        genre: "NewGenre",
-      }),
-    ]);
-    expect(tracksDb.getByFile("a/old.mp3")).to.be.undefined;
-    expect(artistsDb.getAll().some((a) => a.name === "OldArtist")).to.be.false;
-    expect(genresDb.getAll().some((g) => g.name === "OldGenre")).to.be.false;
-  });
-
-  it("per-track constraint error is counted and skipped (savepoint)", () => {
+  it("applyIncremental rolls back orphan lookup rows for a rejected track (savepoint)", () => {
     const stub = sinon.stub(console, "error");
-    // Valid track
-    const valid = mkTrack("a/valid.mp3");
-    // Invalid: file is null violates NOT NULL — will trigger constraint failed
+    const valid = mkTrack("a/valid-inc.mp3", {
+      artist: "KeepArtist",
+      album: "KeepAlbum",
+      genre: "KeepGenre",
+    });
+    // Invalid: file is null violates NOT NULL. It carries distinct lookup names
+    // so any artist/album/genre it creates would be a detectable orphan.
     const invalid = {
-      ...(mkTrack("a/invalid.mp3") as unknown as Record<string, unknown>),
+      ...(mkTrack("a/invalid-inc.mp3", {
+        artist: "OrphanArtist",
+        album: "OrphanAlbum",
+        genre: "OrphanGenre",
+      }) as unknown as Record<string, unknown>),
       file: null,
     } as unknown as import("@repo/types").MPDTrack;
-    const res = catalogSyncDb.rebuild([valid, invalid]);
+    const res = catalogSyncDb.applyIncremental({
+      upserts: [valid, invalid],
+      deletions: [],
+    });
     expect(res.synced).to.equal(1);
     expect(res.errors).to.equal(1);
-    expect(tracksDb.count()).to.equal(1);
-    expect(tracksDb.getByFile("a/valid.mp3")).to.exist;
+    expect(tracksDb.getByFile("a/valid-inc.mp3")).to.exist;
+    expect(artistsDb.getAll().some((a) => a.name === "OrphanArtist")).to.be
+      .false;
+    expect(albumsDb.getAll().some((a) => a.title === "OrphanAlbum")).to.be
+      .false;
+    expect(genresDb.getAll().some((g) => g.name === "OrphanGenre")).to.be.false;
     expect(stub.calledOnce).to.be.true;
-  });
-
-  it("non-constraint error rethrows and rolls back entire rebuild", () => {
-    tracksDb.upsert(mkTrack("a/before.mp3", { title: "Before" }));
-    let threw = false;
-    try {
-      catalogSyncDb.rebuild([mkTrack("a/after.mp3")], () => {
-        throw new Error("progress boom");
-      });
-    } catch (e) {
-      threw = true;
-      expect((e as Error).message).to.equal("progress boom");
-    }
-    expect(threw).to.be.true;
-    // rolled back to previous state
-    expect(tracksDb.getByFile("a/before.mp3")?.title).to.equal("Before");
-    expect(tracksDb.getByFile("a/after.mp3")).to.be.undefined;
-  });
-
-  it("clearAll wipes all music tables", () => {
-    tracksDb.upsert(mkTrack("a/clear.mp3"));
-    syncMetadataDb.set("last_sync", "x");
-    catalogSyncDb.clearAll();
-    expect(tracksDb.count()).to.equal(0);
-    expect(artistsDb.count()).to.equal(0);
-    expect(albumsDb.count()).to.equal(0);
-    expect(syncMetadataDb.get("last_sync")).to.be.undefined;
-  });
-
-  it("rebuild sets last_sync timestamp inside transaction", () => {
-    catalogSyncDb.rebuild([mkTrack("a/ts.mp3")]);
-    const v = syncMetadataDb.get("last_sync");
-    expect(new Date(v!).getTime()).to.be.closeTo(Date.now(), 2000);
   });
 });

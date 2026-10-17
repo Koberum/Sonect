@@ -24,9 +24,16 @@ export interface StorageSource {
   updated_at?: string;
 }
 
-export interface MountInfo {
+export interface DetectedLibrary {
   path: string;
-  uri: string;
+  name: string;
+  isMount: boolean;
+  registered: boolean;
+  stats?: {
+    file_count: number;
+    dir_count: number;
+    total_size: number;
+  };
 }
 
 export interface SetupStep {
@@ -81,8 +88,22 @@ export function deleteStorageSource(id: number): Promise<void> {
   return apiFetch(`/system/storage/sources/${id}`, { method: "DELETE" });
 }
 
-export function getActiveMounts(signal?: AbortSignal): Promise<MountInfo[]> {
-  return apiFetch("/system/storage/mounts", { signal });
+export function getDetectedLibraries(
+  signal?: AbortSignal,
+): Promise<DetectedLibrary[]> {
+  return apiFetch("/system/storage/detected", { signal });
+}
+
+export function refreshStorageStats(id: number): Promise<StorageSource> {
+  return apiFetch(`/system/storage/sources/${id}/refresh-stats`, {
+    method: "POST",
+  });
+}
+
+export function getStorageStats(
+  path: string,
+): Promise<{ file_count: number; dir_count: number; total_size: number }> {
+  return apiFetch("/system/storage/stats", { params: { path } });
 }
 
 export function getSetupProgress(signal?: AbortSignal): Promise<{
@@ -137,10 +158,6 @@ export function getAudioStatus(
   return apiFetch("/system/audio/status", { signal });
 }
 
-export function getNetworkStatus(signal?: AbortSignal): Promise<NetworkStatus> {
-  return apiFetch("/system/network/status", { signal });
-}
-
 export interface HealthResponse {
   tools: { aplay: boolean; lsusb: boolean; systemctl: boolean; mpd: boolean };
   audio: { available: boolean; cards: AudioDevice[] };
@@ -180,18 +197,6 @@ export function getOutputMode(signal?: AbortSignal): Promise<{
   activeDeviceId?: string | null;
 }> {
   return apiFetch("/player/output-mode", { headers: sessionHeaders(), signal });
-}
-
-export function setOutputMode(mode: OutputMode): Promise<{
-  success: boolean;
-  warning?: string;
-  activeDeviceId?: string | null;
-}> {
-  return apiFetch("/player/output-mode", {
-    method: "PUT",
-    headers: sessionHeaders(),
-    body: { mode },
-  });
 }
 
 export function getDashboard(signal?: AbortSignal): Promise<DashboardData> {

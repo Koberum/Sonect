@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "react-i18next";
 import { useRef, useEffect, useState } from "react";
 import { formatTime } from "@/lib/utils";
-import { PageTitle } from "@/features/dashboard/components/pageTitle";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -12,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { PlayIcon, ListPlus } from "lucide-react";
+import { PlayIcon, ListPlus, Music } from "lucide-react";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { usePlaybackContext } from "@/components/playback-context";
 import { SortTabs } from "@/features/dashboard/components/sort-tabs";
@@ -66,7 +68,7 @@ export default function Tracks() {
 
   return (
     <div>
-      <PageTitle
+      <PageHeader
         title={t("tracks.title")}
         description={t("tracks.description")}
       />
@@ -79,8 +81,10 @@ export default function Tracks() {
       <ScrollArea>
         <ScrollBar orientation="horizontal" />
         {isPending ? (
-          <div className="flex justify-center py-16">
-            <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
+          <div className="space-y-2">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+            ))}
           </div>
         ) : (
           <>
@@ -102,8 +106,8 @@ export default function Tracks() {
               <TableBody>
                 {tracks.length === 0 && !isFetchingNextPage && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center">
-                      {t("tracks.noTracks")}
+                    <TableCell colSpan={6}>
+                      <EmptyState icon={Music} title={t("tracks.noTracks")} />
                     </TableCell>
                   </TableRow>
                 )}
@@ -167,21 +171,21 @@ export default function Tracks() {
                           <Button
                             variant="ghost"
                             size="icon-sm"
-                            className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                            className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
                             onClick={(e) => {
                               e.stopPropagation();
                               addToQueue(track.file);
                             }}
-                            title={t("album.addToQueue")}
+                            aria-label={t("album.addToQueue")}
                           >
-                            <ListPlus className="h-4 w-4" />
+                            <ListPlus />
                           </Button>
                         </TableCell>
                       </TableRow>
                     </ContextMenuTrigger>
                     <ContextMenuContent className="w-48">
                       <ContextMenuItem onClick={() => play(track)}>
-                        {t("contextMenu.playNext")}
+                        {t("contextMenu.play")}
                       </ContextMenuItem>
                       <ContextMenuItem
                         onClick={(e) => {
@@ -203,9 +207,7 @@ export default function Tracks() {
         )}
       </ScrollArea>
       {isFetchingNextPage && (
-        <div className="flex justify-center py-4">
-          <div className="border-primary h-6 w-6 animate-spin rounded-full border-b-2" />
-        </div>
+        <Skeleton className="mt-2 h-12 w-full rounded-lg" />
       )}
     </div>
   );

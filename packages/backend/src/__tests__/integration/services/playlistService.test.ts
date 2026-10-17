@@ -1,10 +1,17 @@
 import { expect } from "chai";
 import sinon from "sinon";
 import { createTestDb } from "@tests/helpers/db.js";
-import { tracksDb, playlistsDb } from "@repo/db";
+import {
+  tracksDb,
+  playlistsDb,
+  db,
+  upsertTrack,
+  playlists,
+  albums,
+  tracks,
+} from "@repo/db";
 import { PlaylistServiceImpl } from "@services/library/playlistService.js";
-import { db, playlists, albums } from "@repo/db";
-import { tracks } from "@repo/db";
+
 import { eq } from "drizzle-orm";
 
 function stubMpd() {
@@ -122,7 +129,7 @@ describe("PlaylistService (trophy integration)", () => {
       expect(svc.getPlaylistWithTracks(99999)).to.be.undefined);
     it("enriches tracks with artist_name/cover_path/genre", () => {
       const pl = svc.createPlaylist("EnrichPl")!;
-      const tid = tracksDb.upsert({
+      const tid = upsertTrack(db(), {
         file: "a/enrich.mp3",
         title: "En",
         artist: "EnArtist",
@@ -161,7 +168,7 @@ describe("PlaylistService (trophy integration)", () => {
     });
     it("resolves genre via album fallback when track genre null", () => {
       const pl = svc.createPlaylist("GenrePl")!;
-      const tid = tracksDb.upsert({
+      const tid = upsertTrack(db(), {
         file: "a/gpl.mp3",
         title: "G",
         artist: "A",
@@ -174,13 +181,13 @@ describe("PlaylistService (trophy integration)", () => {
     });
     it("enriches multiple tracks and preserves position order", () => {
       const pl = svc.createPlaylist("MultiPl")!;
-      const t1 = tracksDb.upsert({
+      const t1 = upsertTrack(db(), {
         file: "a/m1.mp3",
         title: "M1",
         artist: "A",
         album: "Al",
       } as never);
-      const t2 = tracksDb.upsert({
+      const t2 = upsertTrack(db(), {
         file: "a/m2.mp3",
         title: "M2",
         artist: "A",
@@ -201,7 +208,7 @@ describe("PlaylistService (trophy integration)", () => {
       );
     });
     it("throws Playlist not found", () => {
-      const tid = tracksDb.upsert({
+      const tid = upsertTrack(db(), {
         file: "a/add.mp3",
         title: "Add",
         artist: "A",
@@ -213,7 +220,7 @@ describe("PlaylistService (trophy integration)", () => {
     });
     it("adds and returns pt_id and calls playlistadd", () => {
       const pl = svc.createPlaylist("AddOk")!;
-      const tid = tracksDb.upsert({
+      const tid = upsertTrack(db(), {
         file: "a/add2.mp3",
         title: "Add2",
         artist: "A",
@@ -231,7 +238,7 @@ describe("PlaylistService (trophy integration)", () => {
     });
     it("duplicate add still returns existing pt_id (idempotent)", () => {
       const pl = svc.createPlaylist("DupPl")!;
-      const tid = tracksDb.upsert({
+      const tid = upsertTrack(db(), {
         file: "a/dup.mp3",
         title: "Dup",
         artist: "A",
@@ -251,7 +258,7 @@ describe("PlaylistService (trophy integration)", () => {
     });
     it("removes and calls playlistdelete via listplaylistinfo", async () => {
       const pl = svc.createPlaylist("RemOk")!;
-      const tid = tracksDb.upsert({
+      const tid = upsertTrack(db(), {
         file: "a/rem.mp3",
         title: "Rem",
         artist: "A",
@@ -277,13 +284,13 @@ describe("PlaylistService (trophy integration)", () => {
     });
     it("handles listplaylistinfo with multiple files and correct pos", async () => {
       const pl = svc.createPlaylist("MultiRem")!;
-      const t1 = tracksDb.upsert({
+      const t1 = upsertTrack(db(), {
         file: "a/mr1.mp3",
         title: "MR1",
         artist: "A",
         album: "Al",
       } as never);
-      const t2 = tracksDb.upsert({
+      const t2 = upsertTrack(db(), {
         file: "a/mr2.mp3",
         title: "MR2",
         artist: "A",
@@ -314,7 +321,7 @@ describe("PlaylistService (trophy integration)", () => {
     });
     it("swallows MPD listplaylistinfo error", async () => {
       const pl = svc.createPlaylist("SwallowPl")!;
-      const tid = tracksDb.upsert({
+      const tid = upsertTrack(db(), {
         file: "a/swallow.mp3",
         title: "Sw",
         artist: "A",
@@ -331,7 +338,7 @@ describe("PlaylistService (trophy integration)", () => {
     });
     it("remove when playlist row missing still removes junction but no MPD call", async () => {
       const pl = svc.createPlaylist("NoMpdPl")!;
-      const tid = tracksDb.upsert({
+      const tid = upsertTrack(db(), {
         file: "a/nompd.mp3",
         title: "NoMpd",
         artist: "A",

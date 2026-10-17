@@ -4,14 +4,14 @@ import { AudioTab } from "@/features/settings/audio-tab";
 import { LibrariesTab } from "@/features/settings/libraries-tab";
 import { AppearanceTab } from "@/features/settings/appearance-tab";
 import { DebugTab } from "@/features/settings/debug-tab";
-import { PageTitle } from "@/features/dashboard/components/pageTitle";
+import { PageHeader } from "@/components/ui/page-header";
 
 export function Settings() {
   const { t } = useTranslation();
 
   return (
     <div>
-      <PageTitle
+      <PageHeader
         title={t("settings.title")}
         description={t("settings.description")}
       />
@@ -25,7 +25,6 @@ export function Settings() {
           <TabsTrigger value="appearance">
             {t("settings.tabs.appearance")}
           </TabsTrigger>
-          <TabsTrigger value="config">{t("settings.tabs.config")}</TabsTrigger>
           <TabsTrigger value="debug">{t("settings.tabs.debug")}</TabsTrigger>
         </TabsList>
 
@@ -38,7 +37,6 @@ export function Settings() {
         <TabsContent value="appearance">
           <AppearanceTab />
         </TabsContent>
-        <TabsContent value="config"></TabsContent>
         <TabsContent value="debug">
           <DebugTab />
         </TabsContent>

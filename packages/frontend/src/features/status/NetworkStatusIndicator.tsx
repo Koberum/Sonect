@@ -5,6 +5,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import { useNetworkStatus } from "./useNetworkStatus";
 
 export function NetworkStatusIndicator() {
@@ -21,18 +22,18 @@ export function NetworkStatusIndicator() {
       ? {
           label: t("status.networkDisconnected"),
           icon: Unplug,
-          color: "text-red-500",
+          color: "text-destructive",
         }
       : !status.dnsReachable
         ? {
             label: t("status.networkNoDns"),
             icon: Network,
-            color: "text-amber-500",
+            color: "text-warning",
           }
         : {
             label: t("status.networkConnected"),
             icon: Globe2,
-            color: "text-green-500",
+            color: "text-success",
           };
 
   const Icon = indicator.icon;
@@ -40,13 +41,14 @@ export function NetworkStatusIndicator() {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <button
+        <Button
           type="button"
+          variant="ghost"
           aria-label={indicator.label}
-          className="text-muted-foreground inline-flex size-11 items-center justify-center border-0 bg-transparent p-0"
+          className="text-muted-foreground size-11 border-0 bg-transparent p-0"
         >
           <Icon className={`size-4 ${indicator.color}`} aria-hidden="true" />
-        </button>
+        </Button>
       </TooltipTrigger>
       <TooltipContent>{indicator.label}</TooltipContent>
     </Tooltip>

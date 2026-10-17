@@ -7,6 +7,7 @@ import { PlayedTrack } from "./playback-track";
 import { QueueView } from "./queue-view";
 import { FullPagePlayer } from "./full-page-player";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import type { OutputMode } from "@repo/types";
 import {
   nextTrack,
@@ -180,13 +181,13 @@ export default function MusicPlayer() {
         browserAudio.autoplayBlocked &&
         playbackStatus.state === "play" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 fixed bottom-24 left-1/2 z-[60] -translate-x-1/2">
-            <button
+            <Button
               onClick={() => browserAudio.play()}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium shadow-lg"
+              className="rounded-full shadow-lg"
             >
-              <Play className="h-4 w-4" />
+              <Play />
               {t("player.tapToPlay")}
-            </button>
+            </Button>
           </div>
         )}
       <div

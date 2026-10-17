@@ -9,7 +9,7 @@ export class ApiError extends Error {
   }
 }
 
-export class NetworkError extends Error {
+class NetworkError extends Error {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
     this.name = "NetworkError";
@@ -35,7 +35,7 @@ function buildUrl(
   return qs ? `${url}?${qs}` : url;
 }
 
-export interface ApiFetchOptions extends Omit<RequestInit, "body"> {
+interface ApiFetchOptions extends Omit<RequestInit, "body"> {
   params?: Record<string, string | number | boolean | undefined | null>;
   body?: unknown;
 }

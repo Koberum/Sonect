@@ -1,4 +1,6 @@
 import { MenuIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 
 export default function SidebarToggler({
   isOpen,
@@ -7,12 +9,16 @@ export default function SidebarToggler({
   isOpen: boolean;
   toggleSidebar: (open: boolean) => void;
 }) {
+  const { t } = useTranslation();
+
   return (
-    <button
+    <Button
+      variant="ghost"
+      size="icon"
       onClick={() => toggleSidebar(!isOpen)}
-      className="text-muted-foreground hover:text-foreground cursor-pointer rounded-md p-2"
+      aria-label={t("sidebar.toggleSidebar")}
     >
-      <MenuIcon className="h-5 w-5" />
-    </button>
+      <MenuIcon />
+    </Button>
   );
 }

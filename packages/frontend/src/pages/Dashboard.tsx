@@ -4,7 +4,9 @@ import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
 import { ScrollBar, ScrollArea } from "@/components/ui/scroll-area";
-import { PageTitle } from "@/features/dashboard/components/pageTitle";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { systemQueries } from "@/features/system/queries";
@@ -32,15 +34,33 @@ export default function Dashboard() {
 
   if (isPending && !data) {
     return (
-      <div className="flex justify-center py-16">
-        <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
+      <div>
+        <PageHeader
+          title={t("dashboard.title")}
+          description={t("dashboard.loading")}
+        />
+        <div className="space-y-8">
+          {Array.from({ length: 3 }).map((_, section) => (
+            <div key={section} className="space-y-2">
+              <Skeleton className="h-4 w-40" />
+              <div className="flex gap-4 overflow-hidden">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton
+                    key={i}
+                    className="aspect-square w-36 shrink-0 rounded-lg sm:w-40"
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
     <div>
-      <PageTitle
+      <PageHeader
         title={t("dashboard.title")}
         description={t("dashboard.loading")}
       />
@@ -75,11 +95,11 @@ export default function Dashboard() {
             {t("dashboard.recentlyPlayed")}
           </h2>
           <ScrollArea type="always" className="w-full">
-            <div className="flex gap-3 pb-4">
+            <div className="flex gap-4 pb-4">
               {data.recentlyPlayed.map((track) => (
                 <div
                   key={track.id}
-                  className="bg-card flex w-44 shrink-0 cursor-pointer flex-col gap-2 rounded-md p-3"
+                  className="bg-card flex w-44 shrink-0 cursor-pointer flex-col gap-2 rounded-lg p-3"
                   onClick={() => track.file && play(track)}
                 >
                   <div className="bg-muted aspect-square w-full overflow-hidden rounded-md">
@@ -116,11 +136,11 @@ export default function Dashboard() {
             {t("dashboard.topTracks")}
           </h2>
           <ScrollArea type="always" className="w-full">
-            <div className="flex gap-3 pb-4">
+            <div className="flex gap-4 pb-4">
               {data.topTracks.map((track) => (
                 <div
                   key={track.id}
-                  className="bg-card flex w-44 flex-shrink-0 cursor-pointer flex-col gap-2 rounded-md p-3"
+                  className="bg-card flex w-44 flex-shrink-0 cursor-pointer flex-col gap-2 rounded-lg p-3"
                   onClick={() => track.file && play(track)}
                 >
                   <div className="bg-muted aspect-square w-full overflow-hidden rounded-md">
@@ -157,11 +177,11 @@ export default function Dashboard() {
             {t("dashboard.suggestedForYou")}
           </h2>
           <ScrollArea type="always" className="w-full">
-            <div className="flex gap-3 pb-4">
+            <div className="flex gap-4 pb-4">
               {data.suggestedTracks.map((track) => (
                 <div
                   key={track.id}
-                  className="bg-card flex w-44 flex-shrink-0 cursor-pointer flex-col gap-2 rounded-md p-3"
+                  className="bg-card flex w-44 flex-shrink-0 cursor-pointer flex-col gap-2 rounded-lg p-3"
                   onClick={() => track.file && play(track)}
                 >
                   <div className="bg-muted aspect-square w-full overflow-hidden rounded-md">
@@ -200,7 +220,7 @@ export default function Dashboard() {
             })}
           </h2>
           <div
-            className="flex cursor-pointer items-center justify-between rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-600/20 p-6"
+            className="from-primary/15 to-primary/5 flex cursor-pointer items-center justify-between rounded-lg bg-gradient-to-br p-6"
             onClick={() =>
               data.genreQuickMix!.tracks[0]?.file &&
               play(data.genreQuickMix!.tracks[0])
@@ -216,8 +236,8 @@ export default function Dashboard() {
                 })}
               </p>
             </div>
-            <button
-              className="bg-primary text-primary-foreground rounded-full px-6 py-2 text-sm font-medium"
+            <Button
+              className="rounded-full px-6"
               onClick={(e) => {
                 e.stopPropagation();
                 if (data.genreQuickMix!.tracks[0]?.file)
@@ -225,7 +245,7 @@ export default function Dashboard() {
               }}
             >
               {t("dashboard.playMix")}
-            </button>
+            </Button>
           </div>
         </div>
       )}

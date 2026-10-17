@@ -36,10 +36,12 @@ export default defineConfig({
           if (id.includes("node_modules")) {
             if (id.includes("@tanstack/react-query-devtools")) return undefined;
             if (id.includes("@tanstack")) return "vendor-query";
-            if (id.includes("react")) return "vendor-react";
+            // Specific packages before the generic react match, which would
+            // otherwise swallow lucide-react, @radix-ui/* and react-i18next.
             if (id.includes("lucide-react") || id.includes("radix-ui"))
               return "vendor-ui";
             if (id.includes("i18next")) return "vendor-i18n";
+            if (id.includes("react")) return "vendor-react";
             return "vendor-other";
           }
         },

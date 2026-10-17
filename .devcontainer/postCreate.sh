@@ -2,7 +2,12 @@
 set -e
 
 # Create the user-editable MPD drop-in (included by /etc/mpd.conf) so MPD has a
-# default audio output in dev. Mirrors what the sonect-mpd image does in docker.
+# default audio output in dev. Mirrors what the single `sonect` image does in
+# docker (/app/data/mpd-audio.conf).
+#
+# Dev has no s6-overlay, so the backend's MPD reload hook takes its fallback
+# branch and sends SIGHUP via `pkill -HUP mpd`; the MPD process started below
+# restarts itself on change.
 
 mkdir -p /opt/sonect/data
 if [ ! -f /opt/sonect/data/mpd-audio.conf ]; then

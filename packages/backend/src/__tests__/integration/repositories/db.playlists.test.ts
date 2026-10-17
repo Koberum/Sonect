@@ -1,8 +1,13 @@
 import { expect } from "chai";
 import { createTestDb } from "@tests/helpers/db.js";
-import { playlistsDb, tracksDb } from "@repo/db";
-import { db } from "@repo/db";
-import { playlists, playlistTracks } from "@repo/db";
+import {
+  playlistsDb,
+  db,
+  upsertTrack,
+  playlists,
+  playlistTracks,
+} from "@repo/db";
+
 import { eq } from "drizzle-orm";
 
 describe("playlistsDb (trophy integration)", () => {
@@ -75,7 +80,7 @@ describe("playlistsDb (trophy integration)", () => {
   describe("delete", () => {
     it("deletes playlist and cascades tracks", () => {
       const id = playlistsDb.create("DelPl");
-      const tid = tracksDb.upsert({
+      const tid = upsertTrack(db(), {
         file: "a/del.mp3",
         title: "Del",
         artist: "A",
@@ -103,13 +108,13 @@ describe("playlistsDb (trophy integration)", () => {
   describe("addTrack / getTracks / removeTrack", () => {
     it("addTrack assigns position 0 then 1", () => {
       const pid = playlistsDb.create("PosPl");
-      const t1 = tracksDb.upsert({
+      const t1 = upsertTrack(db(), {
         file: "a/p1.mp3",
         title: "T1",
         artist: "A",
         album: "Al",
       } as never);
-      const t2 = tracksDb.upsert({
+      const t2 = upsertTrack(db(), {
         file: "a/p2.mp3",
         title: "T2",
         artist: "A",
@@ -123,7 +128,7 @@ describe("playlistsDb (trophy integration)", () => {
     });
     it("addTrack duplicate is no-op (onConflictDoNothing)", () => {
       const pid = playlistsDb.create("DupPl");
-      const tid = tracksDb.upsert({
+      const tid = upsertTrack(db(), {
         file: "a/dup.mp3",
         title: "Dup",
         artist: "A",
@@ -140,7 +145,7 @@ describe("playlistsDb (trophy integration)", () => {
     });
     it("removeTrack deletes junction row", () => {
       const pid = playlistsDb.create("RemPl");
-      const tid = tracksDb.upsert({
+      const tid = upsertTrack(db(), {
         file: "a/rem.mp3",
         title: "Rem",
         artist: "A",
@@ -157,7 +162,7 @@ describe("playlistsDb (trophy integration)", () => {
     });
     it("getTracks returns PlaylistTrackRow with pt_id and position", () => {
       const pid = playlistsDb.create("RowPl");
-      const tid = tracksDb.upsert({
+      const tid = upsertTrack(db(), {
         file: "a/row.mp3",
         title: "Row",
         artist: "A",

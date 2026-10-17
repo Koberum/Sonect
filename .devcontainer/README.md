@@ -5,7 +5,7 @@ This dev container provides a complete development environment for the Sonect pr
 ## Features
 
 - **OS**: Debian Bookworm (same as Raspberry Pi OS)
-- **Node.js**: Version 22.14.0
+- **Node.js**: Version 24
 - **Package Manager**: pnpm
 - **Audio Support**: MPD (Music Player Daemon), ALSA utilities
 - **Full Workspace**: Access to all packages in the monorepo
@@ -23,6 +23,7 @@ This dev container provides a complete development environment for the Sonect pr
 - **3000**: Backend API server
 - **5173**: Frontend Vite development server
 - **6600**: MPD server
+- **4983**: Drizzle Studio (drizzle-kit)
 
 ## Usage
 
@@ -38,7 +39,7 @@ This dev container provides a complete development environment for the Sonect pr
 Once inside the container:
 
 ```bash
-# Install dependencies (done automatically via postCreateCommand)
+# Install dependencies
 pnpm install
 
 # Run frontend and backend in parallel
@@ -60,17 +61,18 @@ The MPD server is installed and configured. You can test it with:
 # Start MPD (if not already running)
 mpd /etc/mpd.conf
 
-# Check MPD status
-mpc status
+# Check MPD status — install the mpc CLI first (not preinstalled)
+sudo apt-get install -y mpc && mpc status
 ```
 
 `/etc/mpd.conf` is a minimal boilerplate config that `include`s the
 user-editable drop-in at `/opt/sonect/data/mpd-audio.conf` — the same
-two-file architecture the `sonect-mpd` image uses. The
-backend writes the drop-in (via `MPD_CONFIG_PATH`, default
-`/opt/sonect/data/mpd-audio.conf`) as the service user, and the MPD container
-watchdog restarts MPD on change, so frontend audio and MPD-config edits behave
-exactly as they do in production.
+two-file architecture the single `sonect` image uses (where the drop-in lives at
+`/app/data/mpd-audio.conf`). The backend writes the drop-in (via
+`MPD_CONFIG_PATH`, default `/opt/sonect/data/mpd-audio.conf`) as the service
+user. Dev has no s6-overlay, so the backend's reload hook falls back to
+`pkill -HUP mpd` and the dev MPD process (started by `postCreate.sh`) restarts on
+change — frontend audio and MPD-config edits behave exactly as in production.
 
 The Compose mount at `/etc/mpd.conf` is the main configuration and must not be
 overwritten by `postCreate.sh`. The post-create hook only creates the separate
@@ -80,9 +82,10 @@ recursively.
 ## Volume Mounts
 
 - `/workspace`: Your entire project
-- `/music`: Music library directory
+- `/workspace/data/music`: Dev music library (`MUSIC_DIR`, MPD's `music_directory` in `conf/mpd.conf`)
 - `/etc/mpd.conf`: MPD configuration (bind-mounted from `conf/mpd.conf`)
-- `/var/lib/mpd`: MPD data directory
+- `/var/lib/mpd`: MPD state directory (bind-mounted from `data/`)
+- `/db`: SQLite database volume (dev `DB_PATH`)
 - `/dev/snd`: Host audio devices (for local testing)
 - `/opt/sonect/data/mpd-audio.conf`: User-editable MPD drop-in included by `/etc/mpd.conf` (created by `postCreate.sh` and written by the backend)
 
@@ -97,6 +100,6 @@ Since this container uses the same OS (Debian Bookworm) as Raspberry Pi OS, you 
 
 ## Notes
 
-- The container runs with `privileged: true` to access audio devices
-- The `remoteUser` is set to `node` for security
+- The container runs with `privileged: true` for reliable ALSA access in dev (the production image instead uses the `audio.yml` overlay with `/dev/snd`, the `audio` group and `/proc/asound:ro`)
+- The `remoteUser` is `root` (matching the production longruns; the `node` user also exists with passwordless sudo)
 - All pnpm commands work across the entire monorepo

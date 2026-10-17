@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import type { DBAlbum } from "@repo/types";
-import { albumsDb, artistsDb } from "@repo/db";
+import { albumsDb, db, findOrCreateArtist, findOrCreateAlbum } from "@repo/db";
 
 export type AlbumOverrides = Partial<Pick<DBAlbum, "title" | "year">> & {
   artistName?: string;
@@ -24,8 +24,9 @@ export const album = {
 
   create(overrides: AlbumOverrides = {}, seed?: number): DBAlbum {
     const data = buildAlbum(overrides, seed);
-    const artistId = artistsDb.findOrCreate(data.artistName);
-    const id = albumsDb.findOrCreate(
+    const artistId = findOrCreateArtist(db(), data.artistName);
+    const id = findOrCreateAlbum(
+      db(),
       data.title,
       artistId,
       data.year,

@@ -37,6 +37,7 @@ function LibrariesFormFields({
 }) {
   const { t } = useTranslation();
   const form = useLibrarySourceForm({ initialValues, onSave });
+  const formId = "library-source-form";
 
   return (
     <>
@@ -47,12 +48,14 @@ function LibrariesFormFields({
         errors={form.errors}
         handleFieldBlur={form.handleFieldBlur}
         fieldClass={form.fieldClass}
+        formId={formId}
+        onSubmit={form.submit}
       />
       <DialogFooter>
-        <Button variant="outline" onClick={onClose}>
+        <Button variant="outline" type="button" onClick={onClose}>
           {t("common.cancel", "Cancel")}
         </Button>
-        <Button type="button" onClick={form.submit} disabled={form.saving}>
+        <Button type="submit" form={formId} disabled={form.saving}>
           {form.saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {editingId
             ? t("settings.libraries.save", "Save")

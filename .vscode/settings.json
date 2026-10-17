@@ -4,6 +4,9 @@
       "mode": "auto"
     }
   ],
+  "js/ts.referencesCodeLens.enabled": true,
+  "js/ts.referencesCodeLens.showOnAllFunctions": true,
+  "js/ts.implementationsCodeLens.enabled": true,  
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit",
@@ -19,13 +22,12 @@
     "editor.suggest.insertMode": "replace",
     "editor.tabSize": 2
   },
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "[typescript]": {
+  "[js/ts]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.tabSize": 2,
     "editor.insertSpaces": true
   },
-  "[typescriptreact]": {
+  "[js/tsreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.tabSize": 2,
     "editor.insertSpaces": true

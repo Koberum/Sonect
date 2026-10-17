@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import type { DBGenre } from "@repo/types";
-import { genresDb } from "@repo/db";
+import { genresDb, db, findOrCreateGenre } from "@repo/db";
 
 export type GenreOverrides = Partial<Pick<DBGenre, "name">>;
 
@@ -18,7 +18,7 @@ export const genre = {
 
   create(overrides: GenreOverrides = {}, seed?: number): DBGenre {
     const data = buildGenre(overrides, seed);
-    const id = genresDb.findOrCreate(data.name);
+    const id = findOrCreateGenre(db(), data.name);
     const row = genresDb.getById(id);
     if (!row) throw new Error("genre.create: failed to read back inserted row");
     return row;

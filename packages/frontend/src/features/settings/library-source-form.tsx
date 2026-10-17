@@ -17,6 +17,8 @@ interface LibrarySourceFormProps {
   errors: LibrarySourceFormState["errors"];
   handleFieldBlur: LibrarySourceFormState["handleFieldBlur"];
   fieldClass: LibrarySourceFormState["fieldClass"];
+  formId?: string;
+  onSubmit?: () => void;
 }
 
 export function LibrarySourceForm({
@@ -25,15 +27,26 @@ export function LibrarySourceForm({
   errors,
   handleFieldBlur,
   fieldClass,
+  formId = "library-source-form",
+  onSubmit,
 }: LibrarySourceFormProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-4">
+    <form
+      id={formId}
+      className="space-y-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit?.();
+      }}
+    >
       <div className="space-y-2">
-        <Label htmlFor="lib-name">{t("settings.libraries.name", "Name")}</Label>
+        <Label htmlFor={`${formId}-name`}>
+          {t("settings.libraries.name", "Name")}
+        </Label>
         <Input
-          id="lib-name"
+          id={`${formId}-name`}
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
           onBlur={() => handleFieldBlur("name")}
@@ -41,16 +54,16 @@ export function LibrarySourceForm({
           className={fieldClass("name")}
         />
         {errors.name && (
-          <p className="mt-1 text-xs text-red-500">{errors.name}</p>
+          <p className="text-destructive mt-1 text-xs">{errors.name}</p>
         )}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="lib-path">
+        <Label htmlFor={`${formId}-path`}>
           {t("settings.libraries.path", "Folder Path")}
         </Label>
         <Input
-          id="lib-path"
+          id={`${formId}-path`}
           value={form.path}
           onChange={(e) => setForm({ ...form, path: e.target.value })}
           onBlur={() => handleFieldBlur("path")}
@@ -61,7 +74,7 @@ export function LibrarySourceForm({
           className={fieldClass("path")}
         />
         {errors.path && (
-          <p className="mt-1 text-xs text-red-500">{errors.path}</p>
+          <p className="text-destructive mt-1 text-xs">{errors.path}</p>
         )}
         <p className="text-muted-foreground mt-1 text-xs">
           {t(
@@ -70,6 +83,6 @@ export function LibrarySourceForm({
           )}
         </p>
       </div>
-    </div>
+    </form>
   );
 }

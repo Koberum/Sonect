@@ -4,7 +4,6 @@
 
 export type MPDTrack = {
   file: string;
-  lastModified?: string;
   format?: string;
   title?: string;
   artist?: string;
@@ -15,6 +14,8 @@ export type MPDTrack = {
   date?: string;
   disc?: string;
   duration?: number;
+  mtime?: number;
+  size?: number;
 };
 
 export type MPDQueuedTrack = MPDTrack & {

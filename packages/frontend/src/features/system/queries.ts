@@ -2,18 +2,18 @@ import { queryOptions, mutationOptions } from "@tanstack/react-query";
 import { qk } from "@/lib/queryKeys";
 import { queryClient } from "@/lib/queryClient";
 import {
-  getActiveMounts,
+  getDetectedLibraries,
   getAudioDevices,
   getAudioStatus,
   getHardwareUsage,
   getHealth,
-  getMpdStatus,
-  getNetworkStatus,
   getOutputMode,
   getStorageSources,
   createStorageSource,
   updateStorageSource,
   deleteStorageSource,
+  refreshStorageStats,
+  getStorageStats,
   configureAudio,
   getDashboard,
 } from "./api";
@@ -40,20 +40,11 @@ export const systemQueries = {
       staleTime: 60_000,
     }),
 
-  activeMounts: () =>
+  detectedLibraries: () =>
     queryOptions({
-      queryKey: qk.system.activeMounts(),
-      queryFn: ({ signal }) => getActiveMounts(signal),
-      staleTime: 60_000,
-    }),
-
-  networkStatus: () =>
-    queryOptions({
-      queryKey: qk.system.networkStatus(),
-      queryFn: ({ signal }) => getNetworkStatus(signal),
-      staleTime: 0,
-      refetchInterval: 15_000,
-      refetchIntervalInBackground: false,
+      queryKey: qk.system.detectedLibraries(),
+      queryFn: ({ signal }) => getDetectedLibraries(signal),
+      staleTime: 30_000,
     }),
 
   health: () =>
@@ -84,13 +75,6 @@ export const systemQueries = {
       staleTime: 60_000,
     }),
 
-  mpdStatus: () =>
-    queryOptions({
-      queryKey: qk.system.mpdStatus(),
-      queryFn: ({ signal }) => getMpdStatus(signal),
-      staleTime: 30_000,
-    }),
-
   dashboard: () =>
     queryOptions({
       queryKey: qk.dashboard(),
@@ -106,7 +90,9 @@ export const systemMutations = {
         createStorageSource(data),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: qk.system.storageSources() });
-        queryClient.invalidateQueries({ queryKey: qk.system.activeMounts() });
+        queryClient.invalidateQueries({
+          queryKey: qk.system.detectedLibraries(),
+        });
       },
     }),
 
@@ -118,7 +104,9 @@ export const systemMutations = {
       }) => updateStorageSource(vars.id, vars.data),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: qk.system.storageSources() });
-        queryClient.invalidateQueries({ queryKey: qk.system.activeMounts() });
+        queryClient.invalidateQueries({
+          queryKey: qk.system.detectedLibraries(),
+        });
       },
     }),
 
@@ -127,7 +115,27 @@ export const systemMutations = {
       mutationFn: (id: number) => deleteStorageSource(id),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: qk.system.storageSources() });
-        queryClient.invalidateQueries({ queryKey: qk.system.activeMounts() });
+        queryClient.invalidateQueries({
+          queryKey: qk.system.detectedLibraries(),
+        });
+      },
+    }),
+
+  refreshStorageStats: () =>
+    mutationOptions({
+      mutationFn: (id: number) => refreshStorageStats(id),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: qk.system.storageSources() });
+      },
+    }),
+
+  computeStorageStats: () =>
+    mutationOptions({
+      mutationFn: (path: string) => getStorageStats(path),
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: qk.system.detectedLibraries(),
+        });
       },
     }),
 

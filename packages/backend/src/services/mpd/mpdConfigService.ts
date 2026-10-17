@@ -1,14 +1,23 @@
 import fs from "fs";
 import path from "path";
+import { execSync } from "child_process";
 import type { OutputMode } from "@repo/types";
 import type { MpdConnectionManager } from "./mpdConnectionManager.js";
 
+/**
+ * Reload MPD after the drop-in changed. Under s6 (single-container image) it
+ * asks the supervisor to restart the service; in dev it sends SIGHUP to the
+ * MPD process. Both are unprivileged — no `sudo`, no `systemctl`.
+ */
+function defaultReload(): void {
+  if (fs.existsSync("/run/service/mpd")) {
+    execSync("s6-svc -r /run/service/mpd");
+  } else {
+    execSync("pkill -HUP mpd");
+  }
+}
+
 export interface MpdConfigService {
-  // ConfigService
-  getConfig(): { content: string; path: string };
-  updateConfig(content: string): { success: boolean; warning?: string };
-  getConfigPath(): string;
-  restartMpdInternal(): { success: boolean; warning?: string };
   // AudioService
   getCurrentAudioOutput(): { card: string; name: string } | null;
   configureAudioOutput(params: {
@@ -28,7 +37,6 @@ export interface MpdConfigService {
   getMpdOwner(): string | null;
   tryAcquireMpd(sessionId: string): { success: boolean; owner?: string };
   releaseMpd(sessionId: string): boolean;
-  isMpdLockedByOther(sessionId: string): boolean;
 }
 
 export class MpdConfigServiceImpl implements MpdConfigService {
@@ -36,56 +44,12 @@ export class MpdConfigServiceImpl implements MpdConfigService {
     process.env.MPD_CONFIG_PATH ?? "/opt/sonect/data/mpd-audio.conf";
 
   private _currentOutputMode: OutputMode = "mpd";
-  private _lastDeviceName: string | null = null;
   private _mpdOwnerSessionId: string | null = null;
 
-  constructor(private readonly mpdConnectionManager: MpdConnectionManager) {}
-
-  // ConfigService
-  public getConfig(): { content: string; path: string } {
-    if (!fs.existsSync(this.MPD_CONFIG_PATH)) {
-      try {
-        fs.mkdirSync(path.dirname(this.MPD_CONFIG_PATH), { recursive: true });
-        fs.writeFileSync(
-          this.MPD_CONFIG_PATH,
-          "# This file is managed by the Sonect frontend.\n# It is owned by the service user, so no sudo is needed for edits.\n",
-          "utf-8",
-        );
-      } catch {
-        return { content: "", path: this.MPD_CONFIG_PATH };
-      }
-    }
-    try {
-      const content = fs.readFileSync(this.MPD_CONFIG_PATH, "utf-8");
-      return { content, path: this.MPD_CONFIG_PATH };
-    } catch {
-      return { content: "", path: this.MPD_CONFIG_PATH };
-    }
-  }
-
-  public updateConfig(content: string): {
-    success: boolean;
-    warning?: string;
-  } {
-    try {
-      fs.mkdirSync(path.dirname(this.MPD_CONFIG_PATH), { recursive: true });
-      fs.writeFileSync(this.MPD_CONFIG_PATH, content, "utf-8");
-    } catch {
-      return {
-        success: false,
-        warning: `Cannot write to ${this.MPD_CONFIG_PATH}. Check file permissions.`,
-      };
-    }
-    return this.restartMpdInternal();
-  }
-
-  public getConfigPath(): string {
-    return this.MPD_CONFIG_PATH;
-  }
-
-  public restartMpdInternal(): { success: boolean; warning?: string } {
-    return this.restartMPD();
-  }
+  constructor(
+    private readonly mpdConnectionManager: MpdConnectionManager,
+    private readonly reload: () => void = defaultReload,
+  ) {}
 
   // AudioService
   public getCurrentAudioOutput(): {
@@ -168,11 +132,18 @@ export class MpdConfigServiceImpl implements MpdConfigService {
   }
 
   /**
-   * The MPD container restarts itself whenever the drop-in changes (an inotify
-   * watcher in the MPD image). The backend only writes the file — no
-   * `systemctl`, no `sudo`, no privileged commands.
+   * Reload MPD through the injected supervisor hook (s6 in the image, SIGHUP
+   * in dev; tests inject a stub). The backend never runs `systemctl` or `sudo`.
    */
   public restartMPD(): { success: boolean; warning?: string } {
+    try {
+      this.reload();
+    } catch (error) {
+      return {
+        success: false,
+        warning: `Failed to reload MPD: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
     return { success: true };
   }
 
@@ -185,9 +156,9 @@ export class MpdConfigServiceImpl implements MpdConfigService {
   }
 
   /**
-   * Backcompat no-op: browser sessions run on a separate playback engine, so
-   * MPD always stays on the physical speakers. The drop-in config file is
-   * never rewritten. Kept for the GET/PUT /system/output-mode endpoints.
+   * Backcompat no-op kept for the GET/PATCH /system/output-mode endpoints:
+   * browser sessions run on a separate playback engine, so MPD always stays on
+   * the physical speakers and the drop-in config file is never rewritten here.
    */
   public setOutputMode(mode: OutputMode): {
     success: boolean;
@@ -206,7 +177,7 @@ export class MpdConfigServiceImpl implements MpdConfigService {
       const status = this.getCurrentAudioOutput();
       return status?.name ?? null;
     }
-    return this._lastDeviceName;
+    return null;
   }
 
   public getMpdOwner(): string | null {
@@ -233,11 +204,5 @@ export class MpdConfigServiceImpl implements MpdConfigService {
       return true;
     }
     return false;
-  }
-
-  public isMpdLockedByOther(sessionId: string): boolean {
-    return (
-      this._mpdOwnerSessionId !== null && this._mpdOwnerSessionId !== sessionId
-    );
   }
 }

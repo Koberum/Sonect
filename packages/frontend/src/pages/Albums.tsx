@@ -4,8 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
-import { PageTitle } from "@/features/dashboard/components/pageTitle";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SortTabs } from "@/features/dashboard/components/sort-tabs";
+import { Disc3 } from "lucide-react";
 
 type SortOption = "title" | "year" | "recent";
 
@@ -43,7 +46,7 @@ export default function Albums() {
 
   return (
     <div>
-      <PageTitle
+      <PageHeader
         title={t("albums.title")}
         description={t("albums.description")}
       />
@@ -55,8 +58,12 @@ export default function Albums() {
       />
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
         {isPending ? (
-          <div className="col-span-full flex justify-center py-16">
-            <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
+          Array.from({ length: 12 }).map((_, i) => (
+            <Skeleton key={i} className="aspect-square w-full rounded-lg" />
+          ))
+        ) : albums.length === 0 ? (
+          <div className="col-span-full">
+            <EmptyState icon={Disc3} title={t("albums.noAlbums")} />
           </div>
         ) : (
           albums.map((album) => (
@@ -72,9 +79,7 @@ export default function Albums() {
       </div>
       <div ref={sentinelRef} className="h-4" />
       {isFetchingNextPage && (
-        <div className="flex justify-center py-4">
-          <div className="border-primary h-6 w-6 animate-spin rounded-full border-b-2" />
-        </div>
+        <Skeleton className="mt-2 h-12 w-full rounded-lg" />
       )}
     </div>
   );

@@ -10,6 +10,7 @@ import {
   type PlayerService,
 } from "./player/playerService.js";
 import { CatalogSyncService } from "./library/catalogSyncService.js";
+import { LibraryScanner } from "./library/libraryScanner.js";
 import {
   CoverSyncServiceImpl,
   type CoverSyncService,
@@ -103,10 +104,8 @@ export function initializeServices(): void {
     _autoplayService,
   );
 
-  _catalogSyncService = new CatalogSyncService(
-    _mpdConnectionManager,
-    _logService,
-  );
+  const _libraryScanner = new LibraryScanner(_logService);
+  _catalogSyncService = new CatalogSyncService(_libraryScanner, _logService);
 
   _coverSyncService = new CoverSyncServiceImpl(_logService);
   _catalogSyncOrchestrator = new CatalogSyncOrchestratorImpl(
@@ -138,7 +137,6 @@ export function initializeServices(): void {
     _mpdConfigService,
     _playerService as PlayerServiceImpl,
     _mpdConnectionManager,
-    _autoplayService,
     _logService,
   );
   setGlobalPlayerRouter(_playerRouter);
@@ -173,26 +171,6 @@ export function getCatalogService(): CatalogService {
 export function getMpdConnectionManager(): MpdConnectionManager {
   assertInitialized();
   return _mpdConnectionManager;
-}
-
-export function getAutoplayService(): AutoplayService {
-  assertInitialized();
-  return _autoplayService;
-}
-
-export function getPlayerService(): PlayerService {
-  assertInitialized();
-  return _playerService;
-}
-
-export function getCatalogSyncService(): CatalogSyncService {
-  assertInitialized();
-  return _catalogSyncService;
-}
-
-export function getCoverSyncService(): CoverSyncService {
-  assertInitialized();
-  return _coverSyncService;
 }
 
 export function getCatalogSyncOrchestrator(): CatalogSyncOrchestrator {
@@ -238,16 +216,6 @@ export function getSetupService(): SetupService {
 export function getNetworkService(): NetworkService {
   assertInitialized();
   return _networkService;
-}
-
-export function getSessionRegistry(): SessionRegistry {
-  assertInitialized();
-  return _sessionRegistry;
-}
-
-export function getPlayerRouter(): PlayerRouter {
-  assertInitialized();
-  return _playerRouter;
 }
 
 export function getProfileService(): ProfileService {

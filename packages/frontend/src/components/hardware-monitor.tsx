@@ -2,13 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Cpu, MemoryStick } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { systemQueries } from "@/features/system/queries";
-
-function formatBytes(bytes: number): string {
-  if (bytes >= 1073741824) return `${(bytes / 1073741824).toFixed(1)} GB`;
-  if (bytes >= 1048576) return `${(bytes / 1048576).toFixed(0)} MB`;
-  if (bytes >= 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${bytes} B`;
-}
+import { formatBytes } from "@/lib/format";
 
 function formatUptime(seconds: number): string {
   const d = Math.floor(seconds / 86400);
@@ -44,17 +38,17 @@ export function HardwareMonitor() {
 
   const cpuColor =
     usage.cpu.usage > 80
-      ? "bg-red-500"
+      ? "bg-destructive"
       : usage.cpu.usage > 50
-        ? "bg-yellow-500"
-        : "bg-green-500";
+        ? "bg-warning"
+        : "bg-success";
 
   const ramColor =
     usage.ram.usagePercent > 80
-      ? "bg-red-500"
+      ? "bg-destructive"
       : usage.ram.usagePercent > 50
-        ? "bg-yellow-500"
-        : "bg-green-500";
+        ? "bg-warning"
+        : "bg-success";
 
   return (
     <div className="space-y-4">

@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { eq, sql } from "drizzle-orm";
 import type { DBTrack, MPDTrack } from "@repo/types";
-import { db, tracks, tracksDb } from "@repo/db";
+import { db, tracks, tracksDb, upsertTrack } from "@repo/db";
 
 export type TrackOverrides = Partial<{
   title: string;
@@ -14,7 +14,6 @@ export type TrackOverrides = Partial<{
   track: number;
   disc: string;
   date: string;
-  lastModified: string;
   play_count: number;
   last_played: string;
 }>;
@@ -44,7 +43,6 @@ export function buildTrack(
     track: overrides.track ?? faker.number.int({ min: 1, max: 12 }),
     disc: overrides.disc ?? String(faker.number.int({ min: 1, max: 2 })),
     date: overrides.date ?? String(faker.number.int({ min: 1970, max: 2025 })),
-    lastModified: overrides.lastModified ?? new Date().toISOString(),
   };
 }
 
@@ -57,7 +55,7 @@ export const track = {
   /** Persist a faker track via real Drizzle upsert and return the typed DBTrack row */
   create(overrides: TrackOverrides = {}, seed?: number): DBTrack {
     const payload = buildTrack(overrides, seed);
-    const id = tracksDb.upsert(payload);
+    const id = upsertTrack(db(), payload);
 
     // Rehydrate with play_count/last_played overrides if supplied
     if (

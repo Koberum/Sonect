@@ -2,7 +2,6 @@ import { albumsDb, artistsDb, genresDb, statsDb, tracksDb } from "@repo/db";
 import type {
   Album,
   Artist,
-  Genre,
   GenreWithCounts,
   LibraryStats,
   SearchResults,
@@ -21,14 +20,10 @@ export interface CatalogService {
   getAlbumCount(): number;
   getRecentlyAddedAlbums(limit?: number): Album[];
   getAlbumById(id: number): Album | undefined;
-  updateAlbumCoverPath(albumId: number, coverPath: string): void;
   getAlbumsByGenre(genre: string): Album[];
 
   // Genre
   getGenres(): GenreWithCounts[];
-  getGenreById(id: number): Genre | undefined;
-  /** @deprecated use getGenreById — kept for GenreService compat */
-  getById(id: number): Genre | undefined;
 
   // Track
   getTracksByAlbum(albumId: number): TrackWithRelations[];
@@ -39,7 +34,6 @@ export interface CatalogService {
     offset?: number,
   ): TrackWithRelations[];
   getTrackCount(): number;
-  getTrackById(id: number): TrackWithRelations | undefined;
   resolveTrack(
     artist: string,
     album: string,
@@ -98,21 +92,9 @@ export class CatalogServiceImpl implements CatalogService {
     return albumsDb.getByGenre(genre);
   }
 
-  public updateAlbumCoverPath(albumId: number, coverPath: string): void {
-    albumsDb.updateCoverPath(albumId, coverPath);
-  }
-
   // Genre
   public getGenres(): GenreWithCounts[] {
     return genresDb.getAllWithCounts();
-  }
-
-  public getGenreById(id: number): Genre | undefined {
-    return genresDb.getById(id);
-  }
-
-  public getById(id: number): Genre | undefined {
-    return this.getGenreById(id);
   }
 
   // Track
@@ -165,10 +147,6 @@ export class CatalogServiceImpl implements CatalogService {
 
   public getTrackCount(): number {
     return tracksDb.count();
-  }
-
-  public getTrackById(id: number): TrackWithRelations | undefined {
-    return tracksDb.getByIdWithRelations(id);
   }
 
   public searchTracks(query: string): SearchResults {

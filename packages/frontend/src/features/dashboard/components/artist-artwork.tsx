@@ -84,7 +84,7 @@ export function ArtistArtwork({
           </ContextMenuItem>
           <ContextMenuSeparator />
           <ContextMenuItem onClick={handlePlayNext}>
-            {t("contextMenu.playNext")}
+            {t("contextMenu.play")}
           </ContextMenuItem>
           <ContextMenuItem onClick={handlePlayLater}>
             {t("contextMenu.playLater")}

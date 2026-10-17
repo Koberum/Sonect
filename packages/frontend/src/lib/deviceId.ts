@@ -40,13 +40,6 @@ export function getDeviceName(): string {
   return generated;
 }
 
-export function setDeviceName(name: string): void {
-  if (typeof window === "undefined") return;
-  const trimmed = name.trim();
-  if (trimmed.length === 0) return;
-  localStorage.setItem(NAME_KEY, trimmed);
-}
-
 export function getDeviceType(): "mobile" | "desktop" {
   if (typeof window === "undefined") return "desktop";
   const ua = navigator.userAgent ?? "";
@@ -70,19 +63,4 @@ export function getDeviceId(): string {
     Math.random().toString(36).substring(2, 15);
   localStorage.setItem(KEY, id);
   return id;
-}
-
-export function deviceHeaders(): Record<string, string> {
-  const id = getDeviceId();
-  const headers: Record<string, string> = {};
-  if (id) headers["X-Device-Id"] = id;
-  try {
-    const name = getDeviceName();
-    if (name) headers["X-Device-Name"] = name;
-    const type = getDeviceType();
-    if (type) headers["X-Device-Type"] = type;
-  } catch {
-    // ignore
-  }
-  return headers;
 }

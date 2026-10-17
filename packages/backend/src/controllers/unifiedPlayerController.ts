@@ -316,11 +316,7 @@ export const unifiedSetVolumeHandler = asyncHandler(
       },
     );
     // Browser volume is stored per-profile in PlayerRouter; MPD delegates to engine
-    const r = router() as unknown as {
-      setVolume?: (a: string, b: number) => Promise<void>;
-    };
-    if (r.setVolume) await r.setVolume(sid, volume);
-    else await router().forSession(sid).setVolume(volume);
+    await router().setVolume(sid, volume);
     res.json({ success: true });
   },
 );
