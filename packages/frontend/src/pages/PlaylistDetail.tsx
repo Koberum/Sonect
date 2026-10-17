@@ -3,7 +3,8 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { PageHeader } from "@/components/ui/page-header";
-import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -187,117 +188,124 @@ export default function PlaylistDetail() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <div className="flex items-start justify-between">
-        <PageHeader
-          title={playlist.name}
-          description={
-            playlist.tracks.length > 0
-              ? t("playlist.trackCount", { count: playlist.tracks.length })
-              : t("playlist.empty")
-          }
-        />
-        <div className="flex items-center gap-2">
-          <Sheet open={editOpen} onOpenChange={setEditOpen}>
+      <PageHeader
+        title={playlist.name}
+        description={
+          playlist.tracks.length > 0
+            ? t("playlist.trackCount", { count: playlist.tracks.length })
+            : t("playlist.empty")
+        }
+        actions={
+          <>
             <Tooltip>
               <TooltipTrigger asChild>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Edit3 className="h-4 w-4" />
+                <span>
+                  <Button
+                    onClick={handlePlayAll}
+                    disabled={playlist.tracks.length === 0}
+                  >
+                    <Play fill="currentColor" />
+                    {t("album.playAll")}
                   </Button>
-                </SheetTrigger>
+                </span>
               </TooltipTrigger>
-              <TooltipContent>{t("playlist.edit")}</TooltipContent>
+              {playlist.tracks.length === 0 && (
+                <TooltipContent>{t("playlist.empty")}</TooltipContent>
+              )}
             </Tooltip>
-            <SheetContent side="right">
-              <SheetHeader>
-                <SheetTitle>{t("playlist.edit")}</SheetTitle>
-              </SheetHeader>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleEdit();
-                }}
-                className="mt-6 space-y-4"
-              >
-                <Input
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  placeholder={t("playlist.namePlaceholder")}
-                  autoFocus
-                />
-                <Input
-                  value={editDesc}
-                  onChange={(e) => setEditDesc(e.target.value)}
-                  placeholder={t("playlist.descriptionPlaceholder")}
-                />
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={updateMut.isPending}
-                >
-                  {updateMut.isPending
-                    ? t("common.saving")
-                    : t("playlist.save")}
-                </Button>
-              </form>
-            </SheetContent>
-          </Sheet>
 
-          <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="icon">
-                    <Trash2 className="h-4 w-4" />
+            <Sheet open={editOpen} onOpenChange={setEditOpen}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={t("playlist.edit")}
+                    >
+                      <Edit3 />
+                    </Button>
+                  </SheetTrigger>
+                </TooltipTrigger>
+                <TooltipContent>{t("playlist.edit")}</TooltipContent>
+              </Tooltip>
+              <SheetContent side="right">
+                <SheetHeader>
+                  <SheetTitle>{t("playlist.edit")}</SheetTitle>
+                </SheetHeader>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleEdit();
+                  }}
+                  className="mt-6 space-y-4"
+                >
+                  <Input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder={t("playlist.namePlaceholder")}
+                    autoFocus
+                  />
+                  <Input
+                    value={editDesc}
+                    onChange={(e) => setEditDesc(e.target.value)}
+                    placeholder={t("playlist.descriptionPlaceholder")}
+                  />
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={updateMut.isPending}
+                  >
+                    {updateMut.isPending
+                      ? t("common.saving")
+                      : t("playlist.save")}
                   </Button>
-                </AlertDialogTrigger>
-              </TooltipTrigger>
-              <TooltipContent>{t("playlist.delete")}</TooltipContent>
-            </Tooltip>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  {t("playlist.deleteConfirmTitle")}
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t("playlist.deleteConfirmDescription")}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDelete}
-                  disabled={deleteMut.isPending}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {deleteMut.isPending
-                    ? t("common.deleting")
-                    : t("playlist.delete")}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </div>
+                </form>
+              </SheetContent>
+            </Sheet>
 
-      <div className="mt-4 mb-4">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span>
-              <Button
-                onClick={handlePlayAll}
-                disabled={playlist.tracks.length === 0}
-              >
-                <Play className="mr-2 h-4 w-4" fill="currentColor" />
-                {t("album.playAll")}
-              </Button>
-            </span>
-          </TooltipTrigger>
-          {playlist.tracks.length === 0 && (
-            <TooltipContent>{t("playlist.empty")}</TooltipContent>
-          )}
-        </Tooltip>
-      </div>
+            <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="text-destructive hover:text-destructive"
+                      aria-label={t("playlist.delete")}
+                    >
+                      <Trash2 />
+                    </Button>
+                  </AlertDialogTrigger>
+                </TooltipTrigger>
+                <TooltipContent>{t("playlist.delete")}</TooltipContent>
+              </Tooltip>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {t("playlist.deleteConfirmTitle")}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t("playlist.deleteConfirmDescription")}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    disabled={deleteMut.isPending}
+                    className={buttonVariants({ variant: "destructive" })}
+                  >
+                    {deleteMut.isPending
+                      ? t("common.deleting")
+                      : t("playlist.delete")}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </>
+        }
+      />
 
       <Separator className="my-4" />
 
@@ -359,14 +367,15 @@ export default function PlaylistDetail() {
                         <TooltipTrigger asChild>
                           <Button
                             variant="ghost"
-                            size="icon-xs"
-                            className="opacity-0 transition-opacity group-hover:opacity-100 hover:!opacity-100"
+                            size="icon-sm"
+                            className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleRemoveTrack(track.pt_id);
                             }}
+                            aria-label={t("playlist.removeTrack")}
                           >
-                            <X className="h-3 w-3" />
+                            <X />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -411,9 +420,7 @@ export default function PlaylistDetail() {
           </TableBody>
         </Table>
       ) : (
-        <div className="text-muted-foreground flex items-center justify-center py-16">
-          {t("playlist.emptyDescription")}
-        </div>
+        <EmptyState icon={ListMusic} title={t("playlist.emptyDescription")} />
       )}
     </div>
   );

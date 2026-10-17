@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PlayIcon, ListPlus } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { PageHeader } from "@/components/ui/page-header";
 import { usePlaybackContext } from "@/components/playback-context";
@@ -64,8 +65,10 @@ export default function AlbumPage() {
       <Separator className="my-4" />
       <div className="relative">
         {isPending ? (
-          <div className="flex justify-center py-16">
-            <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
+          <div className="space-y-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+            ))}
           </div>
         ) : (
           <ScrollArea>
@@ -73,7 +76,7 @@ export default function AlbumPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="hidden w-12.5 lg:table-cell">
+                  <TableHead className="hidden w-12 lg:table-cell">
                     {t("album.trackNumber")}
                   </TableHead>
                   <TableHead className="w-20"></TableHead>
@@ -87,7 +90,7 @@ export default function AlbumPage() {
                   <ContextMenu key={track.id}>
                     <ContextMenuTrigger asChild>
                       <TableRow
-                        className="group h-15 cursor-pointer"
+                        className="group h-12 cursor-pointer"
                         onClick={() => play(track)}
                       >
                         <TableCell className="hidden lg:table-cell">
@@ -109,7 +112,7 @@ export default function AlbumPage() {
                         </TableCell>
                         <TableCell className="relative font-medium">
                           <img
-                            className="rounded-sm"
+                            className="size-10 rounded-sm object-cover"
                             src={getCoverPath(track.cover_path)}
                             alt={track.title}
                           />
@@ -132,21 +135,21 @@ export default function AlbumPage() {
                           <Button
                             variant="ghost"
                             size="icon-sm"
-                            className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                            className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
                             onClick={(e) => {
                               e.stopPropagation();
                               addToQueue(track.file);
                             }}
-                            title={t("album.addToQueue")}
+                            aria-label={t("album.addToQueue")}
                           >
-                            <ListPlus className="h-4 w-4" />
+                            <ListPlus />
                           </Button>
                         </TableCell>
                       </TableRow>
                     </ContextMenuTrigger>
                     <ContextMenuContent className="w-48">
                       <ContextMenuItem onClick={() => play(track)}>
-                        {t("contextMenu.playNext")}
+                        {t("contextMenu.play")}
                       </ContextMenuItem>
                       <ContextMenuItem
                         onClick={(e) => {

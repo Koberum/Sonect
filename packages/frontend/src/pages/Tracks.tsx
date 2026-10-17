@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "react-i18next";
 import { useRef, useEffect, useState } from "react";
 import { formatTime } from "@/lib/utils";
@@ -80,8 +81,10 @@ export default function Tracks() {
       <ScrollArea>
         <ScrollBar orientation="horizontal" />
         {isPending ? (
-          <div className="flex justify-center py-16">
-            <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
+          <div className="space-y-2">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+            ))}
           </div>
         ) : (
           <>
@@ -168,21 +171,21 @@ export default function Tracks() {
                           <Button
                             variant="ghost"
                             size="icon-sm"
-                            className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                            className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
                             onClick={(e) => {
                               e.stopPropagation();
                               addToQueue(track.file);
                             }}
-                            title={t("album.addToQueue")}
+                            aria-label={t("album.addToQueue")}
                           >
-                            <ListPlus className="h-4 w-4" />
+                            <ListPlus />
                           </Button>
                         </TableCell>
                       </TableRow>
                     </ContextMenuTrigger>
                     <ContextMenuContent className="w-48">
                       <ContextMenuItem onClick={() => play(track)}>
-                        {t("contextMenu.playNext")}
+                        {t("contextMenu.play")}
                       </ContextMenuItem>
                       <ContextMenuItem
                         onClick={(e) => {
@@ -204,9 +207,7 @@ export default function Tracks() {
         )}
       </ScrollArea>
       {isFetchingNextPage && (
-        <div className="flex justify-center py-4">
-          <div className="border-primary h-6 w-6 animate-spin rounded-full border-b-2" />
-        </div>
+        <Skeleton className="mt-2 h-12 w-full rounded-lg" />
       )}
     </div>
   );
