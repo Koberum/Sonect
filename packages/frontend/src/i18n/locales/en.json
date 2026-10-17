@@ -168,6 +168,7 @@
     "cover": "Cover",
     "cancel": "Cancel",
     "retry": "Retry",
+    "continue": "Continue",
     "saving": "Saving...",
     "deleting": "Deleting...",
     "collageImage": "Collage image {{index}}",
@@ -325,12 +326,12 @@
       "skipWizard": "Skip Wizard"
     },
     "storage": {
-      "description": "Add a network or local source for your music library.",
+      "description": "Register a folder that is bind-mounted into the container.",
+      "addManually": "Or add manually",
       "addSourceSubmit": "Create & Continue",
       "creating": "Creating...",
       "confirmTitle": "Library added",
       "confirmDescription": "We validated the folder and scanned your music files.",
-      "confirmCancel": "Back",
       "confirmContinue": "Continue"
     },
     "audio": {

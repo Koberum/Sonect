@@ -1,18 +1,20 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { createStorageSource, type StorageSource } from "@/features/system/api";
+import type { DetectedLibrary, StorageSource } from "@/features/system/api";
+import { systemQueries, systemMutations } from "@/features/system/queries";
+import { DetectedLibraryRow } from "@/features/settings/library-rows";
+import { LibraryStats } from "@/features/settings/library-stats";
 import {
   LibrarySourceForm,
   type LibrarySourceFormValues,
 } from "@/features/settings/library-source-form";
-import { LibraryStats } from "@/features/settings/library-stats";
 import { useLibrarySourceForm } from "@/features/settings/use-library-source-form";
 import {
   AlertDialog,
   AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -33,6 +35,8 @@ interface StorageStepProps {
   onBack?: () => void;
 }
 
+const FORM_ID = "wizard-library-form";
+
 export function StorageStep({ onNext, onBack }: StorageStepProps) {
   const { t } = useTranslation();
   const [createdSource, setCreatedSource] = useState<StorageSource | null>(
@@ -40,11 +44,23 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
   );
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const handleSave = async (data: LibrarySourceFormValues) => {
+  const sourcesQuery = useQuery(systemQueries.storageSources());
+  const detectedQuery = useQuery(systemQueries.detectedLibraries());
+  const createMut = useMutation(systemMutations.createStorageSource());
+  const computeMut = useMutation(systemMutations.computeStorageStats());
+
+  const hasSources = (sourcesQuery.data ?? []).length > 0;
+  const detected = (detectedQuery.data ?? []).filter((l) => !l.registered);
+
+  const showSuccess = (source: StorageSource) => {
+    setCreatedSource(source);
+    setConfirmOpen(true);
+  };
+
+  const handleManualSave = async (data: LibrarySourceFormValues) => {
     try {
-      const source = await createStorageSource(data);
-      setCreatedSource(source);
-      setConfirmOpen(true);
+      const source = await createMut.mutateAsync(data);
+      showSuccess(source);
     } catch (err) {
       toast.error(
         (err instanceof Error && err.message) ||
@@ -53,7 +69,34 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
     }
   };
 
-  const form = useLibrarySourceForm({ onSave: handleSave });
+  const handleAddDetected = async (lib: DetectedLibrary) => {
+    try {
+      const source = await createMut.mutateAsync({
+        name: lib.name,
+        path: lib.path,
+      });
+      showSuccess(source);
+    } catch (err) {
+      toast.error(
+        (err instanceof Error && err.message) ||
+          t("settings.storage.createError", "Failed to create storage source"),
+      );
+    }
+  };
+
+  const handleComputeStats = async (lib: DetectedLibrary) => {
+    try {
+      await computeMut.mutateAsync(lib.path);
+      toast.success(t("settings.libraries.statsRefreshed", "Stats updated"));
+    } catch (err) {
+      toast.error(
+        (err instanceof Error && err.message) ||
+          t("settings.libraries.refreshStatsError", "Failed to refresh stats"),
+      );
+    }
+  };
+
+  const form = useLibrarySourceForm({ onSave: handleManualSave });
 
   return (
     <WizardStep>
@@ -69,12 +112,53 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
         </WizardStepDescription>
       </WizardStepHeader>
       <WizardStepContent>
+        <div className="space-y-2">
+          <p className="text-sm font-medium">
+            {t("settings.libraries.detected", "Detected libraries")}
+          </p>
+          {detectedQuery.isPending ? (
+            <p className="text-muted-foreground text-sm">
+              {t("common.loading", "Loading...")}
+            </p>
+          ) : detected.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              {t(
+                "settings.libraries.noDetected",
+                "No folders detected under the music directory.",
+              )}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {detected.map((lib) => (
+                <DetectedLibraryRow
+                  key={lib.path}
+                  lib={lib}
+                  isAdding={
+                    createMut.isPending &&
+                    createMut.variables?.path === lib.path
+                  }
+                  isComputing={
+                    computeMut.isPending && computeMut.variables === lib.path
+                  }
+                  onAdd={() => handleAddDetected(lib)}
+                  onCompute={() => handleComputeStats(lib)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <p className="text-muted-foreground pt-2 text-sm font-medium">
+          {t("setup.storage.addManually", "Or add manually")}
+        </p>
+
         <LibrarySourceForm
           form={form.form}
           setForm={form.setForm}
           errors={form.errors}
           handleFieldBlur={form.handleFieldBlur}
           fieldClass={form.fieldClass}
+          formId={FORM_ID}
           onSubmit={form.submit}
         />
       </WizardStepContent>
@@ -84,7 +168,12 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
             {t("setup.wizard.back", "Back")}
           </Button>
         )}
-        <Button type="button" onClick={form.submit} disabled={form.saving}>
+        {hasSources && (
+          <Button variant="outline" type="button" onClick={onNext}>
+            {t("common.continue", "Continue")}
+          </Button>
+        )}
+        <Button type="submit" form={FORM_ID} disabled={form.saving}>
           {form.saving
             ? t("setup.storage.creating", "Creating...")
             : t("setup.storage.addSourceSubmit", "Create & Continue")}
@@ -122,14 +211,6 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
             </div>
           )}
           <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => {
-                setConfirmOpen(false);
-                setCreatedSource(null);
-              }}
-            >
-              {t("setup.storage.confirmCancel", "Back")}
-            </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 setConfirmOpen(false);
@@ -137,7 +218,7 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
                 onNext();
               }}
             >
-              {t("setup.storage.confirmContinue", "Continue")}
+              {t("common.continue", "Continue")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

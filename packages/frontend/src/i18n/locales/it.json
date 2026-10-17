@@ -168,6 +168,7 @@
     "cover": "Copertina",
     "cancel": "Annulla",
     "retry": "Riprova",
+    "continue": "Continua",
     "saving": "Salvataggio...",
     "deleting": "Eliminazione...",
     "collageImage": "Immagine collage {{index}}",
@@ -298,12 +299,12 @@
       "skipWizard": "Salta configurazione"
     },
     "storage": {
-      "description": "Aggiungi una sorgente di rete o locale per la tua libreria musicale.",
+      "description": "Registra una cartella montata nel container.",
+      "addManually": "Oppure aggiungi manualmente",
       "addSourceSubmit": "Crea e continua",
       "creating": "Creazione...",
       "confirmTitle": "Libreria aggiunta",
       "confirmDescription": "Abbiamo validato la cartella e scansionato i tuoi file musicali.",
-      "confirmCancel": "Indietro",
       "confirmContinue": "Continua"
     },
     "audio": {

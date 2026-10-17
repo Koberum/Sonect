@@ -168,6 +168,7 @@
     "cover": "Carátula",
     "cancel": "Cancelar",
     "retry": "Reintentar",
+    "continue": "Continuar",
     "saving": "Guardando...",
     "deleting": "Eliminando...",
     "collageImage": "Imagen de collage {{index}}",
@@ -325,12 +326,12 @@
       "skipWizard": "Omitir asistente"
     },
     "storage": {
-      "description": "Añade una fuente de red o local para tu biblioteca de música.",
+      "description": "Registra una carpeta montada en el contenedor.",
+      "addManually": "O añadir manualmente",
       "addSourceSubmit": "Crear y continuar",
       "creating": "Creando...",
       "confirmTitle": "Biblioteca agregada",
       "confirmDescription": "Hemos validado la carpeta y escaneado tus archivos de música.",
-      "confirmCancel": "Volver",
       "confirmContinue": "Continuar"
     },
     "audio": {
