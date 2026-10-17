@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.1.2](https://github.com/Koberum/Sonect/compare/sonect-v0.1.1...sonect-v0.1.2) (2026-10-17)
+
+
+### Features
+
+* **db:** incremental catalog apply + scanner version marker ([668426b](https://github.com/Koberum/Sonect/commit/668426b1118e7caf9fd9c86e0cb08cc7d1af585a))
+* **db:** track file mtime and size ([00b0fac](https://github.com/Koberum/Sonect/commit/00b0fac59cf215bd73dfb2dd6f2fa7a1bb1c7125))
+* **docker:** report container health via HEALTHCHECK on /system/health ([6bad7e8](https://github.com/Koberum/Sonect/commit/6bad7e81dff51cdfb8afd1513a0e778b09d7e438))
+* **docker:** report container health via HEALTHCHECK on /system/health ([ff8c580](https://github.com/Koberum/Sonect/commit/ff8c580248668e19536fc44657396e4487ffadaf))
+* **docker:** single sonect image with s6-overlay (mpd + node) ([4aeaa1d](https://github.com/Koberum/Sonect/commit/4aeaa1d818b0c97708ac282aa3207be506641f83))
+* **docker:** single-service compose + audio overlay ([ecdc875](https://github.com/Koberum/Sonect/commit/ecdc875200f33563a8eaf50605736068c2875927))
+* **frontend:** detected-library suggestions + stats refresh ([20979ae](https://github.com/Koberum/Sonect/commit/20979aefc310fed44906f2a2aadea4513261c827))
+* **frontend:** PageHeader + EmptyState foundations, h1 hierarchy ([6fc828b](https://github.com/Koberum/Sonect/commit/6fc828b2e1756f8d6c047191c1ca56d59d45370e))
+* **frontend:** unified libraries list with one-click add and per-library stats ([14ff86d](https://github.com/Koberum/Sonect/commit/14ff86dd99d9553d3575fc95801db6b50ff89015))
+* **library:** map music-metadata tags to MPDTrack ([62795e7](https://github.com/Koberum/Sonect/commit/62795e7febd33b66b027f83f2987ec8cf8158c56))
+* **library:** self-owned incremental scanner ([83cf63b](https://github.com/Koberum/Sonect/commit/83cf63be731fa78a8c39876a4f3997ff9840dc66))
+* **mpd:** real config reload via injectable supervisor hook ([368f2cb](https://github.com/Koberum/Sonect/commit/368f2cb632c79077e54deedf1ccc3af98141b44d))
+* non privilege commands, docker build ([68de5cd](https://github.com/Koberum/Sonect/commit/68de5cd79f8465f5e3e827d5bedb241ad7211c22))
+* **setup:** storage step reuses one-click add, no dead ends ([0b308d2](https://github.com/Koberum/Sonect/commit/0b308d2fd8b286a40b62b90a0295d287ed67a847))
+* **storage:** async source-stats walk ([b7fb9cb](https://github.com/Koberum/Sonect/commit/b7fb9cb1a803ef5b69ec47fb1a77ea9f2cc3c8b0))
+* **storage:** detected-library suggestions + stats refresh ([b9d02ac](https://github.com/Koberum/Sonect/commit/b9d02ac16f8e75d32c4cc44e099459a49f7b330f))
+* **storage:** on-demand stats endpoint, persisted create stats, detected-stats cache ([cae59da](https://github.com/Koberum/Sonect/commit/cae59daa9803f113becbd2583fe8b5945c22ecef))
+* **system:** enumerate audio devices from /proc/asound ([b8b064c](https://github.com/Koberum/Sonect/commit/b8b064c0a6098d3fbdc3010a49e95de7092e8a31))
+
+
+### Bug Fixes
+
+* **ci:** align smoke ready-check with backend listen log ([2720c5b](https://github.com/Koberum/Sonect/commit/2720c5b8b33fc856fd975aa0a7b11d69fe9a2cd2))
+* **ci:** align smoke ready-check with backend listen log ([7783f4b](https://github.com/Koberum/Sonect/commit/7783f4be3e1d6fca49300052c2e9a58fa06ad6eb))
+* **ci:** publish docker images from the release run ([8685e96](https://github.com/Koberum/Sonect/commit/8685e96b3b57f9b1a9f0adc465fa45f5461b8841))
+* **ci:** stamp app version, align dotenv, dedupe frontend build ([b37cc7b](https://github.com/Koberum/Sonect/commit/b37cc7b09b630f340d261f055c598b31e1f08b5a))
+* **db:** savepoint each incremental upsert to prevent orphan lookup rows ([c070bf1](https://github.com/Koberum/Sonect/commit/c070bf18910fb3e37da15d49fc8562aa17148134))
+* **docker:** mount mpd-config read-write for the MPD watcher ([e42c07c](https://github.com/Koberum/Sonect/commit/e42c07cb35fe816dccc1eb85c955e889fc85eab6))
+* **docker:** pin node longrun cwd to /app and absolute cover/waveform dirs ([a025889](https://github.com/Koberum/Sonect/commit/a025889975443fa2fa540927cfb8bd51819e23cf))
+* **docker:** remove space after heredoc modifier to fix parse error ([f88361c](https://github.com/Koberum/Sonect/commit/f88361ce975c618ffa843e2f5bb99579236b4f06))
+* **docker:** remove space after heredoc modifier to fix parse error ([51f7043](https://github.com/Koberum/Sonect/commit/51f70431434449059f13643410c2553daf019036))
+* **library:** scope first-run deletions to walked/registered prefixes ([fb5ad4a](https://github.com/Koberum/Sonect/commit/fb5ad4aa2a7af5121f1a283c1aa16d4fa0a054d4))
+* **lint:** declare @eslint/js in backend, db and types ([315b0ee](https://github.com/Koberum/Sonect/commit/315b0eeb015e813407d1cbf7f030a212e89aad25))
+* removing logging at starup ([5cab2d5](https://github.com/Koberum/Sonect/commit/5cab2d5ff0181fa3e5365621c9ebba28ea537792))
+* review findings — queue.remove i18n key, stats 400 contract, symlink containment, error-state gating, grid density ([54bac61](https://github.com/Koberum/Sonect/commit/54bac61d59af889e26937cbbfc851caa6be07aae))
+* **storage:** 400 on unreadable refresh-stats + testable stats budget ([0a816a0](https://github.com/Koberum/Sonect/commit/0a816a0d779a6dcf3a9a47533d2de5d350fb1638))
+
 ## [0.1.1](https://github.com/Koberum/Sonect/compare/sonect-v0.1.0...sonect-v0.1.1) (2026-09-26)
 
 
@@ -99,4 +141,3 @@
 * resolve import.meta.url in esbuild CJS bundle without warning ([1a2f52b](https://github.com/Koberum/Sonect/commit/1a2f52b63f52fdf5c08f0fa140a105707a163d65))
 * reverting to MIT license ([0aeb86c](https://github.com/Koberum/Sonect/commit/0aeb86ca62725338506876c60468b695bc9d86cf))
 * spacing for selectors ([6a15e45](https://github.com/Koberum/Sonect/commit/6a15e459094e200e9ca4814dc70b05248072fddb))
-
