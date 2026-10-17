@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { createTestDb } from "@tests/helpers/db.js";
 import { track, artist, album } from "@tests/factories/index.js";
-import { tracksDb, albumsDb } from "@repo/db";
+import { tracksDb, albumsDb, db, upsertTrack } from "@repo/db";
 
 describe("Service + real DB integration (trophy middle layer)", () => {
   let close: () => void;
@@ -56,8 +56,8 @@ describe("Service + real DB integration (trophy middle layer)", () => {
 
   it("upsert is idempotent on file (re-seed same file updates)", () => {
     const payload = track.build({ file: "a/b/same.mp3", title: "First" });
-    const id1 = tracksDb.upsert(payload);
-    const id2 = tracksDb.upsert({ ...payload, title: "Second" });
+    const id1 = upsertTrack(db(), payload);
+    const id2 = upsertTrack(db(), { ...payload, title: "Second" });
     expect(id1).to.equal(id2);
     expect(tracksDb.getById(id1)?.title).to.equal("Second");
   });

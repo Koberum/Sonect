@@ -64,7 +64,6 @@ export const tracks = sqliteTable(
     genre_id: integer("genre_id").references(() => genres.id, {
       onDelete: "set null",
     }),
-    last_modified: text("last_modified"),
     mtime: integer("mtime"),
     size: integer("size"),
     play_count: integer("play_count").default(0),

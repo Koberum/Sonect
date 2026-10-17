@@ -9,7 +9,6 @@ describe("setupDb (trophy integration)", () => {
   });
   afterEach(() => close());
 
-  it("getAll empty → []", () => expect(setupDb.getAll()).to.deep.equal([]));
   it("get miss → undefined", () =>
     expect(setupDb.get("audio")).to.be.undefined);
 
@@ -18,13 +17,11 @@ describe("setupDb (trophy integration)", () => {
     const row = setupDb.get("audio");
     expect(row?.completed).to.be.true;
     expect(row?.step).to.equal("audio");
-    expect(setupDb.getAll()).to.have.length(1);
   });
 
   it("setCompleted upsert keeps idempotent", () => {
     setupDb.setCompleted("sync");
     setupDb.setCompleted("sync");
-    expect(setupDb.getAll()).to.have.length(1);
     expect(setupDb.get("sync")?.completed).to.be.true;
   });
 
@@ -37,13 +34,6 @@ describe("setupDb (trophy integration)", () => {
   it("setIncomplete on missing row no throw", () => {
     setupDb.setIncomplete("missing");
     expect(setupDb.get("missing")).to.be.undefined;
-  });
-
-  it("getAll orders by id asc", () => {
-    setupDb.setCompleted("audio");
-    setupDb.setCompleted("sync");
-    const steps = setupDb.getAll().map((r) => r.step);
-    expect(steps).to.deep.equal(["audio", "sync"]);
   });
 
   it("completed_at is set on setCompleted", () => {

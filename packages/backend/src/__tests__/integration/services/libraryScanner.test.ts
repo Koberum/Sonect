@@ -6,7 +6,14 @@ import path from "path";
 import { eq } from "drizzle-orm";
 import type * as mm from "music-metadata";
 import { createTestDb } from "@tests/helpers/db.js";
-import { catalogSyncDb, db, storageDb, tracks, tracksDb } from "@repo/db";
+import {
+  catalogSyncDb,
+  db,
+  storageDb,
+  tracks,
+  tracksDb,
+  upsertTrack,
+} from "@repo/db";
 import {
   LibraryScanner,
   type ScanProgress,
@@ -129,8 +136,8 @@ describe("LibraryScanner (integration)", () => {
       path: path.join(tmpDir, "libB-missing"),
       enabled: true,
     });
-    tracksDb.upsert({ file: path.join("libA", "old.mp3"), title: "oldA" });
-    tracksDb.upsert({
+    upsertTrack(db(), { file: path.join("libA", "old.mp3"), title: "oldA" });
+    upsertTrack(db(), {
       file: path.join("libB-missing", "song.mp3"),
       title: "underB",
     });
@@ -153,12 +160,12 @@ describe("LibraryScanner (integration)", () => {
       enabled: true,
     });
 
-    tracksDb.upsert({ file: path.join("libA", "old.mp3"), title: "oldA" });
-    tracksDb.upsert({
+    upsertTrack(db(), { file: path.join("libA", "old.mp3"), title: "oldA" });
+    upsertTrack(db(), {
       file: path.join("libB-missing", "song.mp3"),
       title: "underB",
     });
-    tracksDb.upsert({ file: "orphan.mp3", title: "orphan" });
+    upsertTrack(db(), { file: "orphan.mp3", title: "orphan" });
 
     const result = await scanner.scan();
     const files = tracksDb.getFiles();
@@ -172,7 +179,7 @@ describe("LibraryScanner (integration)", () => {
 
   it("deletes nothing when there are zero enabled sources", async () => {
     registerSource("disabled", "lib1", false);
-    tracksDb.upsert({ file: "kept.mp3", title: "kept" });
+    upsertTrack(db(), { file: "kept.mp3", title: "kept" });
 
     const result = await scanner.scan();
     expect(result.synced).to.equal(0);
@@ -186,7 +193,7 @@ describe("LibraryScanner (integration)", () => {
       path: path.join(tmpDir, "missing"),
       enabled: true,
     });
-    tracksDb.upsert({ file: "legacy.mp3", title: "legacy" });
+    upsertTrack(db(), { file: "legacy.mp3", title: "legacy" });
 
     const result = await scanner.scan();
 
@@ -198,7 +205,7 @@ describe("LibraryScanner (integration)", () => {
   it("drops MPD-only rows on the first run when a source is walked", async () => {
     registerSource("lib1", "lib1");
     writeAudio(path.join("lib1", "a.mp3"));
-    tracksDb.upsert({ file: "ghost.mp3", title: "ghost" });
+    upsertTrack(db(), { file: "ghost.mp3", title: "ghost" });
 
     const result = await scanner.scan();
     expect(result.deleted).to.equal(1);

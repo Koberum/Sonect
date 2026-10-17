@@ -18,9 +18,6 @@ import { albums, artists, genres, tracks } from "../tables.js";
 import { normalizeRowId, type QueryExecutor } from "./rowId.js";
 import { findOrCreateGenre } from "./genres.js";
 
-// Backward compat alias - canonical type is Album from @repo/types/catalog.
-export type AlbumWithArtist = Album;
-
 const albumWithArtist = {
   ...getColumns(albums),
   // Coalesced so the API keeps the Track convention ("" when unknown) and
@@ -89,15 +86,6 @@ export function findOrCreateAlbum(
 }
 
 export const albumsDb = {
-  findOrCreate(
-    title: string,
-    artistId?: number,
-    year?: number,
-    genre?: string | number,
-  ): number {
-    return findOrCreateAlbum(db(), title, artistId, year, genre);
-  },
-
   getAll({
     sort,
     limit,

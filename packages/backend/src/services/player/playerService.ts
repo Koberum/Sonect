@@ -4,7 +4,6 @@ import type { LogService } from "@services/utils/logService";
 import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager";
 import type { AutoplayService } from "../mpd/autoplayService";
 import { tracksDb, albumsDb } from "@repo/db";
-import type { MPDTrack } from "@repo/types";
 import { hashFile } from "../../utils/mpd.js";
 
 export interface PlayerService {
@@ -12,15 +11,12 @@ export interface PlayerService {
   playTrack(file?: string): Promise<PlayTrackResponse>;
   pauseTrack(): Promise<PlayTrackResponse>;
   queueFiles(files: string[]): Promise<void>;
-  clearQueue(): Promise<void>;
   getQueue(): Promise<QueuedTrack[]>;
   nextTrack(): Promise<void>;
   previousTrack(): Promise<void>;
   goToPosition(position: number): Promise<void>;
   enableRepeat(enabled: boolean): Promise<void>;
   enableRandom(enabled: boolean): Promise<void>;
-  enableConsume(enabled: boolean): Promise<void>;
-  setSingle(enabled: boolean): Promise<void>;
   setVolume(volume: number): Promise<void>;
   playPosition(pos: number): Promise<void>;
   removeFromQueue(pos: number): Promise<void>;
@@ -109,14 +105,6 @@ export class PlayerServiceImpl implements PlayerService {
     return { success: true };
   }
 
-  public async populateQueue(tracks: MPDTrack[]): Promise<void> {
-    const commands = tracks.map((track) => ({
-      command: "add" as const,
-      args: [track.file],
-    }));
-    await this.mpdConnectionManager.executeCommandList(commands);
-  }
-
   public async queueFiles(files: string[]): Promise<void> {
     if (files.length === 0) return;
     const commands = files.map((f) => ({
@@ -124,13 +112,6 @@ export class PlayerServiceImpl implements PlayerService {
       args: [f],
     }));
     await this.mpdConnectionManager.executeCommandList(commands);
-  }
-
-  public async clearQueue(): Promise<void> {
-    await this.mpdConnectionManager.executeCommand("clear");
-    this.mpdConnectionManager.refreshNow().catch((err) => {
-      console.error("[Player] refreshNow failed after clearQueue:", err);
-    });
   }
 
   public async getQueue(): Promise<QueuedTrack[]> {
@@ -217,24 +198,6 @@ export class PlayerServiceImpl implements PlayerService {
     });
   }
 
-  public async enableConsume(enabled: boolean): Promise<void> {
-    await this.mpdConnectionManager.executeCommand("consume", [
-      enabled ? "1" : "0",
-    ]);
-    this.mpdConnectionManager.refreshNow().catch((err) => {
-      console.error("[Player] refreshNow failed after enableConsume:", err);
-    });
-  }
-
-  public async setSingle(enabled: boolean): Promise<void> {
-    await this.mpdConnectionManager.executeCommand("single", [
-      enabled ? "1" : "0",
-    ]);
-    this.mpdConnectionManager.refreshNow().catch((err) => {
-      console.error("[Player] refreshNow failed after setSingle:", err);
-    });
-  }
-
   public async setVolume(volume: number): Promise<void> {
     if (volume < 0 || volume > 100) {
       throw new Error("Volume needs to be between 0 and 100");
@@ -278,9 +241,3 @@ export class PlayerServiceImpl implements PlayerService {
     });
   }
 }
-
-export const playerService = new PlayerServiceImpl(
-  {} as LogService,
-  {} as MpdConnectionManager,
-  {} as AutoplayService,
-);

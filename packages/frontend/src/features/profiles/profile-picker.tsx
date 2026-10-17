@@ -24,7 +24,7 @@ type ProfilePickerProps = {
   onDone?: () => void;
 };
 
-export function ProfilePicker({ onAdd, onDone }: ProfilePickerProps) {
+function ProfilePicker({ onAdd, onDone }: ProfilePickerProps) {
   const { t } = useTranslation();
   const { profile, selectProfile } = useProfile();
   const {

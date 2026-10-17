@@ -9,9 +9,11 @@ import {
   genresDb,
   syncMetadataDb,
   playlistsDb,
+  db,
+  upsertTrack,
+  tracks,
 } from "@repo/db";
-import { db } from "@repo/db";
-import { tracks } from "@repo/db";
+
 import { eq } from "drizzle-orm";
 
 describe("catalogSyncDb (trophy integration)", () => {
@@ -35,13 +37,12 @@ describe("catalogSyncDb (trophy integration)", () => {
       track: "1",
       disc: "1",
       date: "2020-01-01",
-      lastModified: "2020-01-01T00:00:00Z",
       ...overrides,
     } as unknown as import("@repo/types").MPDTrack;
   }
 
   it("applyIncremental upserts changed tracks and preserves play_count", () => {
-    const id = tracksDb.upsert(mkTrack("a/keep.mp3", { title: "Old" }));
+    const id = upsertTrack(db(), mkTrack("a/keep.mp3", { title: "Old" }));
     db().update(tracks).set({ play_count: 7 }).where(eq(tracks.id, id)).run();
     const res = catalogSyncDb.applyIncremental({
       upserts: [mkTrack("a/keep.mp3", { title: "New" })],
@@ -54,8 +55,8 @@ describe("catalogSyncDb (trophy integration)", () => {
   });
 
   it("applyIncremental deletes only the listed files", () => {
-    tracksDb.upsert(mkTrack("a/gone.mp3"));
-    tracksDb.upsert(mkTrack("a/kept.mp3"));
+    upsertTrack(db(), mkTrack("a/gone.mp3"));
+    upsertTrack(db(), mkTrack("a/kept.mp3"));
     const res = catalogSyncDb.applyIncremental({
       upserts: [],
       deletions: ["a/gone.mp3"],
@@ -66,7 +67,7 @@ describe("catalogSyncDb (trophy integration)", () => {
   });
 
   it("applyIncremental cascades playlist rows on delete", () => {
-    const tid = tracksDb.upsert(mkTrack("a/p.mp3"));
+    const tid = upsertTrack(db(), mkTrack("a/p.mp3"));
     const pid = playlistsDb.create("P");
     playlistsDb.addTrack(pid, tid);
     catalogSyncDb.applyIncremental({ upserts: [], deletions: ["a/p.mp3"] });

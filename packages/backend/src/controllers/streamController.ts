@@ -80,7 +80,7 @@ export async function streamHandler(
       "Content-Type": contentType,
       "Cache-Control": "no-cache",
     });
-    pipeFileSafely(res, stream, true);
+    pipeFileSafely(res, stream);
   } else {
     const stream = fs.createReadStream(safePath);
 
@@ -90,21 +90,13 @@ export async function streamHandler(
       "Accept-Ranges": "bytes",
       "Cache-Control": "no-cache",
     });
-    pipeFileSafely(res, stream, true);
+    pipeFileSafely(res, stream);
   }
 }
 
-function pipeFileSafely(
-  res: Response,
-  stream: fs.ReadStream,
-  headerSent: boolean,
-): void {
+function pipeFileSafely(res: Response, stream: fs.ReadStream): void {
   stream.on("error", () => {
-    if (headerSent) {
-      res.end();
-    } else {
-      res.status(404).json({ error: "File not found" });
-    }
+    res.end();
   });
   stream.pipe(res);
 }

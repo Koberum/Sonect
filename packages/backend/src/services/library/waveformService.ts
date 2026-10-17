@@ -37,11 +37,6 @@ function ensureWaveformsDir(): void {
 const memoryCache = new Map<string, WaveformData>();
 const pendingGeneration = new Map<string, Promise<WaveformData>>();
 
-export function clearWaveformCache(): void {
-  memoryCache.clear();
-  pendingGeneration.clear();
-}
-
 async function generateFromFile(
   absolutePath: string,
   durationHint: number | null,
@@ -249,12 +244,4 @@ export async function getWaveformForTrack(
   } finally {
     pendingGeneration.delete(cacheKey);
   }
-}
-
-export function getWaveformFilePathForTrack(file: string): string {
-  return getWaveformPath(file);
-}
-
-export function getWaveformsDirPath(): string {
-  return getWaveformsDir();
 }

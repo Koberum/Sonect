@@ -137,7 +137,6 @@ export function initializeServices(): void {
     _mpdConfigService,
     _playerService as PlayerServiceImpl,
     _mpdConnectionManager,
-    _autoplayService,
     _logService,
   );
   setGlobalPlayerRouter(_playerRouter);
@@ -172,16 +171,6 @@ export function getCatalogService(): CatalogService {
 export function getMpdConnectionManager(): MpdConnectionManager {
   assertInitialized();
   return _mpdConnectionManager;
-}
-
-export function getAutoplayService(): AutoplayService {
-  assertInitialized();
-  return _autoplayService;
-}
-
-export function getPlayerService(): PlayerService {
-  assertInitialized();
-  return _playerService;
 }
 
 export function getCatalogSyncOrchestrator(): CatalogSyncOrchestrator {
@@ -227,16 +216,6 @@ export function getSetupService(): SetupService {
 export function getNetworkService(): NetworkService {
   assertInitialized();
   return _networkService;
-}
-
-export function getSessionRegistry(): SessionRegistry {
-  assertInitialized();
-  return _sessionRegistry;
-}
-
-export function getPlayerRouter(): PlayerRouter {
-  assertInitialized();
-  return _playerRouter;
 }
 
 export function getProfileService(): ProfileService {

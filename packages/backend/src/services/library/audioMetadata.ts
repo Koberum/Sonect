@@ -28,6 +28,5 @@ export function mapAudioMetadata(
     duration: format?.duration ?? undefined,
     mtime: mtimeMs,
     size,
-    lastModified: new Date(mtimeMs).toISOString(),
   };
 }

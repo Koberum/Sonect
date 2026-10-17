@@ -1,4 +1,3 @@
-export * from "./schemas";
 export { PlayTrackError } from "./errors";
 export type { MPDTrack, MPDQueuedTrack, MPDEntity, MPDEntityType } from "./mpd";
 export type {
@@ -8,14 +7,12 @@ export type {
   DBGenre,
   DBPlaylist,
   DBStorageSource,
-  DBSetupProgress,
   DBTrackWithRelations,
 } from "./db";
-import type { DBStorageSource, DBSetupProgress } from "./db";
+import type { DBStorageSource } from "./db";
 import { TrackWithRelations } from "./catalog";
 
 export type StorageSource = DBStorageSource;
-export type SetupProgress = DBSetupProgress;
 
 export type PlaybackState = "play" | "pause" | "stop";
 export type OutputMode = "mpd" | "browser";

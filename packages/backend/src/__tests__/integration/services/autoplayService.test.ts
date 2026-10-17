@@ -4,9 +4,8 @@ import { artist } from "@tests/factories/artist.js";
 import { album } from "@tests/factories/album.js";
 import { track } from "@tests/factories/track.js";
 import { AutoplayService } from "@services/mpd/autoplayService.js";
-import { albumsDb } from "@repo/db";
-import { db } from "@repo/db";
-import { tracks, albums } from "@repo/db";
+import { albumsDb, db, tracks, albums } from "@repo/db";
+
 import { eq } from "drizzle-orm";
 import type { DBTrack } from "@repo/types";
 

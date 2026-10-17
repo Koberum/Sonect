@@ -35,7 +35,6 @@ describe("mapAudioMetadata", () => {
       duration: 201.5,
       mtime: 1700000000000,
       size: 10,
-      lastModified: new Date(1700000000000).toISOString(),
     });
   });
 

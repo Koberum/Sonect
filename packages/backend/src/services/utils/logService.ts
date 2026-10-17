@@ -2,7 +2,6 @@ import type { LogLevel } from "@repo/types/system";
 
 export interface LogService {
   pushLog(level: LogLevel, message: string, data?: unknown): void;
-  getLogs(): LogEntry[];
   setBroadcaster(fn: (data: unknown) => void): void;
 }
 
@@ -52,9 +51,5 @@ export class LogServiceImpl implements LogService {
         // ignore broadcast failures
       }
     }
-  }
-
-  public getLogs(): LogEntry[] {
-    return this.logs;
   }
 }

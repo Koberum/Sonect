@@ -2,7 +2,6 @@ import type { PlaybackStatus, QueuedTrack } from "@repo/types";
 import { PlayerServiceImpl } from "./playerService.js";
 import { MpdConnectionManager } from "../mpd/mpdConnectionManager.js";
 import type { LogService } from "../utils/logService.js";
-import type { AutoplayService } from "../mpd/autoplayService.js";
 import { EventEmitter } from "events";
 
 export interface PlaybackEngine extends EventEmitter {
@@ -34,7 +33,6 @@ export class MpdAdapter extends EventEmitter implements PlaybackEngine {
     private readonly playerService: PlayerServiceImpl,
     private readonly mpdConnectionManager: MpdConnectionManager,
     private readonly logService: LogService,
-    private readonly _autoplayService: AutoplayService,
     private readonly sessionId?: string,
   ) {
     super();
@@ -85,10 +83,14 @@ export class MpdAdapter extends EventEmitter implements PlaybackEngine {
   }
 
   async pause(): Promise<void> {
-    this.logService?.pushLog?.("debug", `[Session ${this.fmtSid()}][mpd] pause`, {
-      sessionId: this.fmtSid(),
-      engine: "mpd",
-    });
+    this.logService?.pushLog?.(
+      "debug",
+      `[Session ${this.fmtSid()}][mpd] pause`,
+      {
+        sessionId: this.fmtSid(),
+        engine: "mpd",
+      },
+    );
     try {
       await this.playerService.pauseTrack();
     } catch (err) {
@@ -131,9 +133,13 @@ export class MpdAdapter extends EventEmitter implements PlaybackEngine {
   }
 
   async next(): Promise<void> {
-    this.logService?.pushLog?.("debug", `[Session ${this.fmtSid()}][mpd] next`, {
-      sessionId: this.fmtSid(),
-    });
+    this.logService?.pushLog?.(
+      "debug",
+      `[Session ${this.fmtSid()}][mpd] next`,
+      {
+        sessionId: this.fmtSid(),
+      },
+    );
     try {
       await this.playerService.nextTrack();
     } catch (err) {

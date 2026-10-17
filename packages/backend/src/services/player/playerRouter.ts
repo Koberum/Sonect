@@ -9,7 +9,6 @@ import { SessionPlayer } from "../session/sessionPlayer.js";
 import { MpdAdapter, type PlaybackEngine } from "./mpdAdapter.js";
 import type { PlayerServiceImpl } from "./playerService.js";
 import type { MpdConnectionManager } from "../mpd/mpdConnectionManager.js";
-import type { AutoplayService } from "../mpd/autoplayService.js";
 import type { OutputMode, PlaybackStatus, QueuedTrack } from "@repo/types";
 
 type SessionRecord = {
@@ -34,7 +33,6 @@ export class PlayerRouter extends EventEmitter {
     private readonly mpdConfigService: MpdConfigService,
     private readonly playerService: PlayerServiceImpl,
     private readonly mpdConnectionManager: MpdConnectionManager,
-    private readonly autoplayService: AutoplayService,
     private readonly logService: LogService,
   ) {
     super();
@@ -48,20 +46,11 @@ export class PlayerRouter extends EventEmitter {
     }
   }
 
-  private createBrowserEngine(
-    sessionId: string,
-  ): PlaybackEngine & EventEmitter {
-    const s = this.sessionRegistry.getOrCreateSession(sessionId);
-    const emitter = s as unknown as PlaybackEngine & EventEmitter;
-    return emitter as unknown as PlaybackEngine & EventEmitter;
-  }
-
   private createMpdEngine(sessionId?: string): PlaybackEngine & EventEmitter {
     return new MpdAdapter(
       this.playerService,
       this.mpdConnectionManager,
       this.logService,
-      this.autoplayService,
       sessionId,
     ) as unknown as PlaybackEngine & EventEmitter;
   }
@@ -488,33 +477,14 @@ export class PlayerRouter extends EventEmitter {
     this.on(`session:${sessionId}:stateChanged`, cb);
     return () => this.off(`session:${sessionId}:stateChanged`, cb);
   }
-
-  dispose(): void {
-    for (const sid of this.forwarders.keys()) this.detachForwarder(sid);
-    for (const rec of this.records.values()) {
-      rec.engine.removeAllListeners();
-      if (
-        typeof (rec.engine as unknown as { dispose?: () => void }).dispose ===
-        "function"
-      ) {
-        (rec.engine as unknown as { dispose: () => void }).dispose!();
-      }
-    }
-    this.records.clear();
-  }
 }
 
 let singleton: PlayerRouter | null = null;
-let override: PlayerRouter | null = null;
 
 export function setGlobalPlayerRouter(r: PlayerRouter): void {
   singleton = r;
 }
-export function routerOverrideForTests(r: PlayerRouter | null): void {
-  override = r;
-}
 export function resolvePlayerRouter(): PlayerRouter {
-  if (override) return override;
   if (singleton) return singleton;
   throw new Error("PlayerRouter not initialized");
 }

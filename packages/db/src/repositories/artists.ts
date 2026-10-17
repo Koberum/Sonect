@@ -22,10 +22,6 @@ export function findOrCreateArtist(
 }
 
 export const artistsDb = {
-  findOrCreate(name: string): number {
-    return findOrCreateArtist(db(), name);
-  },
-
   getAll({
     limit,
     offset,

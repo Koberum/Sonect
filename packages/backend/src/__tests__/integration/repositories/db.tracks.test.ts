@@ -1,8 +1,16 @@
 import { expect } from "chai";
 import { createTestDb } from "@tests/helpers/db.js";
-import { tracksDb, artistsDb, albumsDb, genresDb } from "@repo/db";
-import { db } from "@repo/db";
-import { tracks } from "@repo/db";
+import {
+  tracksDb,
+  albumsDb,
+  db,
+  upsertTrack,
+  findOrCreateArtist,
+  findOrCreateAlbum,
+  findOrCreateGenre,
+  tracks,
+} from "@repo/db";
+
 import { eq } from "drizzle-orm";
 
 describe("tracksDb (trophy integration)", () => {
@@ -23,22 +31,25 @@ describe("tracksDb (trophy integration)", () => {
       track: "3/10",
       disc: "1",
       date: "2020-05-01",
-      lastModified: "2020-05-01T00:00:00Z",
       ...overrides,
     } as unknown as import("@repo/types").MPDTrack;
   }
 
   describe("upsertTrack parsing helpers", () => {
     it("parses track 3/10 → track_number 3", () => {
-      const id = tracksDb.upsert(mpdTrack({ file: "a/t1.mp3", track: "3/10" }));
+      const id = upsertTrack(
+        db(),
+        mpdTrack({ file: "a/t1.mp3", track: "3/10" }),
+      );
       expect(tracksDb.getById(id)?.track_number).to.equal(3);
     });
     it("parses disc string → int", () => {
-      const id = tracksDb.upsert(mpdTrack({ file: "a/t2.mp3", disc: "2" }));
+      const id = upsertTrack(db(), mpdTrack({ file: "a/t2.mp3", disc: "2" }));
       expect(tracksDb.getById(id)?.disc_number).to.equal(2);
     });
     it("parses date 2020-05-01 → year 2020 via album year", () => {
-      const id = tracksDb.upsert(
+      const id = upsertTrack(
+        db(),
         mpdTrack({ file: "a/t3.mp3", date: "2020-05-01", album: "YearAl" }),
       );
       const row = tracksDb.getById(id);
@@ -47,7 +58,8 @@ describe("tracksDb (trophy integration)", () => {
       expect(al?.year).to.equal(2020);
     });
     it("handles missing track/disc/date → null", () => {
-      const id = tracksDb.upsert(
+      const id = upsertTrack(
+        db(),
         mpdTrack({
           file: "a/t4.mp3",
           track: undefined,
@@ -61,8 +73,8 @@ describe("tracksDb (trophy integration)", () => {
     });
     it("upsert is idempotent on file — second upsert updates title", () => {
       const payload = mpdTrack({ file: "a/same.mp3", title: "First" });
-      const id1 = tracksDb.upsert(payload);
-      const id2 = tracksDb.upsert({
+      const id1 = upsertTrack(db(), payload);
+      const id2 = upsertTrack(db(), {
         ...(payload as Record<string, unknown>),
         title: "Second",
       } as unknown as import("@repo/types").MPDTrack);
@@ -70,13 +82,17 @@ describe("tracksDb (trophy integration)", () => {
       expect(tracksDb.getById(id1)?.title).to.equal("Second");
     });
     it("upsert updates existing without changing id", () => {
-      const id = tracksDb.upsert(mpdTrack({ file: "a/upd.mp3", title: "Old" }));
-      tracksDb.upsert(mpdTrack({ file: "a/upd.mp3", title: "New" }));
+      const id = upsertTrack(
+        db(),
+        mpdTrack({ file: "a/upd.mp3", title: "Old" }),
+      );
+      upsertTrack(db(), mpdTrack({ file: "a/upd.mp3", title: "New" }));
       expect(tracksDb.getById(id)?.title).to.equal("New");
       expect(tracksDb.count()).to.equal(1);
     });
     it("creates artist/album/genre relations", () => {
-      const id = tracksDb.upsert(
+      const id = upsertTrack(
+        db(),
         mpdTrack({
           file: "a/rel.mp3",
           artist: "NewArtist",
@@ -90,7 +106,8 @@ describe("tracksDb (trophy integration)", () => {
       expect(row?.genre).to.equal("Jazz");
     });
     it("handles missing artist/album → null ids and empty genre trimmed", () => {
-      const id = tracksDb.upsert(
+      const id = upsertTrack(
+        db(),
         mpdTrack({
           file: "a/orphan.mp3",
           artist: undefined,
@@ -104,7 +121,7 @@ describe("tracksDb (trophy integration)", () => {
       expect(row?.genre_id).to.be.null;
     });
     it("upsert stores file mtime and size", () => {
-      tracksDb.upsert({
+      upsertTrack(db(), {
         ...mpdTrack({ file: "a/t.mp3" }),
         mtime: 1700000000000,
         size: 4096,
@@ -114,7 +131,8 @@ describe("tracksDb (trophy integration)", () => {
       expect(row?.size).to.equal(4096);
     });
     it("handles albumArtist fallback for album artist", () => {
-      const id = tracksDb.upsert(
+      const id = upsertTrack(
+        db(),
         mpdTrack({
           file: "a/aa.mp3",
           artist: "TrackArtist",
@@ -127,9 +145,10 @@ describe("tracksDb (trophy integration)", () => {
       expect(tracksDb.getById(id)?.album_id).to.equal(al!.id);
     });
     it("reuses existing album and updates title", () => {
-      const aid = artistsDb.findOrCreate("ReuseArtist");
-      const alId = albumsDb.findOrCreate("ReuseAl", aid);
-      const id = tracksDb.upsert(
+      const aid = findOrCreateArtist(db(), "ReuseArtist");
+      const alId = findOrCreateAlbum(db(), "ReuseAl", aid);
+      const id = upsertTrack(
+        db(),
         mpdTrack({
           file: "a/reuse.mp3",
           artist: "ReuseArtist",
@@ -141,7 +160,7 @@ describe("tracksDb (trophy integration)", () => {
     });
   });
 
-  describe("count / getById / getByIdWithRelations / getByArtist / getByAlbum", () => {
+  describe("count / getById / getByIdWithRelations / getByAlbum", () => {
     it("count 0 when empty", () => expect(tracksDb.count()).to.equal(0));
     it("getById miss → undefined", () =>
       expect(tracksDb.getById(99999)).to.be.undefined);
@@ -160,36 +179,9 @@ describe("tracksDb (trophy integration)", () => {
       expect(tracksDb.getByIdWithRelations(orphanId)).to.be.undefined;
       expect(tracksDb.getById(orphanId)?.title).to.equal("Orphan");
     });
-    it("getByArtist returns title asc", () => {
-      const aid = artistsDb.findOrCreate("SortArtist");
-      const al = albumsDb.findOrCreate("SortAl", aid);
-      db()
-        .insert(tracks)
-        .values({
-          file: "a/z.mp3",
-          title: "Zebra",
-          artist_id: aid,
-          album_id: al,
-        })
-        .run();
-      db()
-        .insert(tracks)
-        .values({
-          file: "a/a.mp3",
-          title: "Alpha",
-          artist_id: aid,
-          album_id: al,
-        })
-        .run();
-      expect(tracksDb.getByArtist(aid).map((t) => t.title)).to.deep.equal([
-        "Alpha",
-        "Zebra",
-      ]);
-      expect(tracksDb.getByArtist(99999)).to.deep.equal([]);
-    });
     it("getByAlbum orders disc/track/title", () => {
-      const aid = artistsDb.findOrCreate("AlArtist");
-      const al = albumsDb.findOrCreate("OrdAl", aid);
+      const aid = findOrCreateArtist(db(), "AlArtist");
+      const al = findOrCreateAlbum(db(), "OrdAl", aid);
       db()
         .insert(tracks)
         .values({
@@ -230,8 +222,8 @@ describe("tracksDb (trophy integration)", () => {
       ]);
     });
     it("getByAlbumOrdered orders disc/track only", () => {
-      const aid = artistsDb.findOrCreate("Ord2Artist");
-      const al = albumsDb.findOrCreate("Ord2Al", aid);
+      const aid = findOrCreateArtist(db(), "Ord2Artist");
+      const al = findOrCreateAlbum(db(), "Ord2Al", aid);
       db()
         .insert(tracks)
         .values({
@@ -260,21 +252,16 @@ describe("tracksDb (trophy integration)", () => {
       ]);
     });
     it("getByFile found and miss", () => {
-      const id = tracksDb.upsert(mpdTrack({ file: "a/find.mp3" }));
+      const id = upsertTrack(db(), mpdTrack({ file: "a/find.mp3" }));
       expect(tracksDb.getByFile("a/find.mp3")?.id).to.equal(id);
       expect(tracksDb.getByFile("missing.mp3")).to.be.undefined;
-    });
-    it("deleteByFile removes", () => {
-      tracksDb.upsert(mpdTrack({ file: "a/del.mp3" }));
-      tracksDb.deleteByFile("a/del.mp3");
-      expect(tracksDb.getByFile("a/del.mp3")).to.be.undefined;
     });
   });
 
   describe("getByArtistWithRelations / getByAlbumWithRelations / getByArtistAlbumTitle", () => {
     it("getByArtistWithRelations title asc", () => {
-      const aid = artistsDb.findOrCreate("RelArtist");
-      const al = albumsDb.findOrCreate("RelAl", aid);
+      const aid = findOrCreateArtist(db(), "RelArtist");
+      const al = findOrCreateAlbum(db(), "RelAl", aid);
       db()
         .insert(tracks)
         .values({
@@ -298,8 +285,8 @@ describe("tracksDb (trophy integration)", () => {
       ).to.deep.equal(["Alpha", "Zebra"]);
     });
     it("getByAlbumWithRelations orders disc/track/title", () => {
-      const aid = artistsDb.findOrCreate("RelAlArtist");
-      const al = albumsDb.findOrCreate("RelOrdAl", aid);
+      const aid = findOrCreateArtist(db(), "RelAlArtist");
+      const al = findOrCreateAlbum(db(), "RelOrdAl", aid);
       db()
         .insert(tracks)
         .values({
@@ -327,7 +314,8 @@ describe("tracksDb (trophy integration)", () => {
       ).to.deep.equal(["A", "B"]);
     });
     it("getByArtistAlbumTitle NOCASE artist, case-sensitive album/title", () => {
-      tracksDb.upsert(
+      upsertTrack(
+        db(),
         mpdTrack({
           file: "a/coll.mp3",
           artist: "The Beatles",
@@ -363,7 +351,8 @@ describe("tracksDb (trophy integration)", () => {
 
   describe("search / getAllWithRelations / getRecentWithRelations / getGenres / getByGenre", () => {
     it("search finds via title/artist/album LIKE", () => {
-      tracksDb.upsert(
+      upsertTrack(
+        db(),
         mpdTrack({
           file: "a/s1.mp3",
           title: "UniqueTitle999",
@@ -378,7 +367,8 @@ describe("tracksDb (trophy integration)", () => {
     });
     it("search orders title asc and respects limit", () => {
       for (let i = 0; i < 5; i++)
-        tracksDb.upsert(
+        upsertTrack(
+          db(),
           mpdTrack({
             file: `a/srch${i}.mp3`,
             title: `Srch${String(i).padStart(2, "0")}`,
@@ -390,8 +380,8 @@ describe("tracksDb (trophy integration)", () => {
       );
     });
     it("getAllWithRelations sorts: recent/duration/title and pagination guard", () => {
-      const aid = artistsDb.findOrCreate("SortTArtist");
-      const al = albumsDb.findOrCreate("SortTAl", aid);
+      const aid = findOrCreateArtist(db(), "SortTArtist");
+      const al = findOrCreateAlbum(db(), "SortTAl", aid);
       const id1 = db()
         .insert(tracks)
         .values({
@@ -450,7 +440,7 @@ describe("tracksDb (trophy integration)", () => {
     });
     it("getRecentWithRelations limit", () => {
       for (let i = 0; i < 5; i++)
-        tracksDb.upsert(mpdTrack({ file: `a/recent${i}.mp3` }));
+        upsertTrack(db(), mpdTrack({ file: `a/recent${i}.mp3` }));
       expect(tracksDb.getRecentWithRelations(2)).to.have.length(2);
       expect(tracksDb.getRecentWithRelations(10)).to.have.length(5);
     });
@@ -459,17 +449,17 @@ describe("tracksDb (trophy integration)", () => {
         typeof (tracksDb as unknown as Record<string, unknown>).getGenres,
       ).to.equal("undefined");
     });
-    it("getByGenre case-insensitive", () => {
-      tracksDb.upsert(mpdTrack({ file: "a/gg1.mp3", genre: "Shoegaze" }));
-      expect(tracksDb.getByGenre("shoegaze")).to.have.length(1);
-      expect(tracksDb.getByGenre("SHOEGAZE")).to.have.length(1);
-      expect(tracksDb.getByGenre("missing")).to.deep.equal([]);
-    });
     it("getByGenreWithRelations case-insensitive and ordered title asc", () => {
-      tracksDb.upsert(
+      upsertTrack(
+        db(),
         mpdTrack({ file: "a/gga.mp3", title: "B", genre: "Shoegaze" }),
       );
-      tracksDb.upsert(
+      upsertTrack(
+        db(),
+        mpdTrack({ file: "a/ggb.mp3", title: "A", genre: "Shoegaze" }),
+      );
+      upsertTrack(
+        db(),
         mpdTrack({ file: "a/ggb.mp3", title: "A", genre: "Shoegaze" }),
       );
       expect(
@@ -480,16 +470,18 @@ describe("tracksDb (trophy integration)", () => {
 
   describe("play counts / discovery / top", () => {
     it("incrementPlayCount", () => {
-      const id = tracksDb.upsert(mpdTrack({ file: "a/inc.mp3" }));
+      const id = upsertTrack(db(), mpdTrack({ file: "a/inc.mp3" }));
       db().update(tracks).set({ play_count: 2 }).where(eq(tracks.id, id)).run();
       tracksDb.incrementPlayCount(id);
       expect(tracksDb.getById(id)?.play_count).to.equal(3);
     });
     it("getTopTracks orders play_count desc", () => {
-      const idLow = tracksDb.upsert(
+      const idLow = upsertTrack(
+        db(),
         mpdTrack({ file: "a/low.mp3", title: "Low" }),
       );
-      const idHigh = tracksDb.upsert(
+      const idHigh = upsertTrack(
+        db(),
         mpdTrack({ file: "a/high.mp3", title: "High" }),
       );
       db()
@@ -505,7 +497,7 @@ describe("tracksDb (trophy integration)", () => {
       expect(tracksDb.getTopTracks(1)[0].title).to.equal("High");
     });
     it("getRecentlyPlayed filters last_played not null", () => {
-      const id = tracksDb.upsert(mpdTrack({ file: "a/rp.mp3" }));
+      const id = upsertTrack(db(), mpdTrack({ file: "a/rp.mp3" }));
       expect(tracksDb.getRecentlyPlayed(10)).to.deep.equal([]);
       db()
         .update(tracks)
@@ -515,12 +507,12 @@ describe("tracksDb (trophy integration)", () => {
       expect(tracksDb.getRecentlyPlayed(10)).to.have.length(1);
     });
     it("getTracksForDiscovery empty lists → []", () => {
-      tracksDb.upsert(mpdTrack({ file: "a/d1.mp3" }));
+      upsertTrack(db(), mpdTrack({ file: "a/d1.mp3" }));
       expect(tracksDb.getTracksForDiscovery([], [], 10)).to.deep.equal([]);
     });
     it("getTracksForDiscovery filters play_count <3 or null", () => {
-      const aid = artistsDb.findOrCreate("DiscArtist");
-      const al = albumsDb.findOrCreate("DiscAl", aid);
+      const aid = findOrCreateArtist(db(), "DiscArtist");
+      const al = findOrCreateAlbum(db(), "DiscAl", aid);
       const idHigh = db()
         .insert(tracks)
         .values({
@@ -542,7 +534,7 @@ describe("tracksDb (trophy integration)", () => {
         })
         .run().lastInsertRowid as number;
       // Need genre linkage for discovery — use genre
-      const gid = genresDb.findOrCreate("Rock");
+      const gid = findOrCreateGenre(db(), "Rock");
       db()
         .update(tracks)
         .set({ genre_id: gid })
@@ -558,11 +550,11 @@ describe("tracksDb (trophy integration)", () => {
       expect(res.some((t) => t.id === idHigh)).to.be.false;
     });
     it("getTopGenres / getTopGenre / getTopArtists", () => {
-      const gidRock = genresDb.findOrCreate("Rock");
-      const gidPop = genresDb.findOrCreate("Pop");
-      const aid = artistsDb.findOrCreate("TopArtist");
-      const al1 = albumsDb.findOrCreate("TopAl1", aid);
-      const al2 = albumsDb.findOrCreate("TopAl2", aid);
+      const gidRock = findOrCreateGenre(db(), "Rock");
+      const gidPop = findOrCreateGenre(db(), "Pop");
+      const aid = findOrCreateArtist(db(), "TopArtist");
+      const al1 = findOrCreateAlbum(db(), "TopAl1", aid);
+      const al2 = findOrCreateAlbum(db(), "TopAl2", aid);
       const id1 = db()
         .insert(tracks)
         .values({
@@ -597,25 +589,15 @@ describe("tracksDb (trophy integration)", () => {
       expect(tracksDb.getTopGenre()).to.be.null;
     });
     it("getTracksByGenre with limit", () => {
-      tracksDb.upsert(
+      upsertTrack(
+        db(),
         mpdTrack({ file: "a/gb1.mp3", genre: "Jazz", title: "J1" }),
       );
-      tracksDb.upsert(
+      upsertTrack(
+        db(),
         mpdTrack({ file: "a/gb2.mp3", genre: "Jazz", title: "J2" }),
       );
       expect(tracksDb.getTracksByGenre("Jazz", 1)).to.have.length(1);
-    });
-    it("getRandomTracks with excludeFiles", () => {
-      tracksDb.upsert(mpdTrack({ file: "a/r1.mp3" }));
-      tracksDb.upsert(mpdTrack({ file: "a/r2.mp3" }));
-      const all = tracksDb.getRandomTracks(10);
-      expect(all).to.have.length(2);
-      const excl = tracksDb.getRandomTracks(10, ["a/r1.mp3"]);
-      expect(excl.every((t) => t.file !== "a/r1.mp3")).to.be.true;
-    });
-    it("getRandomTracks without exclude", () => {
-      tracksDb.upsert(mpdTrack({ file: "a/rand.mp3" }));
-      expect(tracksDb.getRandomTracks(1)).to.have.length(1);
     });
   });
 });
