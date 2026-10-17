@@ -115,7 +115,7 @@ jobs:
               docker logs sonect-smoke || true
               exit 1
             fi
-            if docker logs sonect-smoke 2>&1 | grep -q "Backend Express"; then
+            if docker logs sonect-smoke 2>&1 | grep -q "Backend listening on port"; then
               ready=1
               break
             fi
