@@ -101,7 +101,6 @@
     "addToQueue": "Agregar a cola",
     "newPlaylist": "Nueva Lista",
     "play": "Reproducir",
-    "playNext": "Reproducir Siguiente",
     "playLater": "Reproducir Después"
   },
   "search": {
@@ -231,7 +230,6 @@
       "add": "Añadir",
       "isMount": "Montaje",
       "refreshStats": "Actualizar estadísticas",
-      "refreshing": "Actualizando…",
       "statsRefreshed": "Estadísticas actualizadas",
       "refreshStatsError": "Error al actualizar estadísticas",
       "copySnippet": "Copiar fragmento de compose",

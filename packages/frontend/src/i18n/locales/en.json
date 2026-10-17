@@ -101,7 +101,6 @@
     "addToQueue": "Add to queue",
     "newPlaylist": "New Playlist",
     "play": "Play",
-    "playNext": "Play Next",
     "playLater": "Play Later"
   },
   "search": {
@@ -231,7 +230,6 @@
       "add": "Add",
       "isMount": "Mount",
       "refreshStats": "Refresh stats",
-      "refreshing": "Refreshing…",
       "statsRefreshed": "Stats updated",
       "refreshStatsError": "Failed to refresh stats",
       "copySnippet": "Copy compose snippet",

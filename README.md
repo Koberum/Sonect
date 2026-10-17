@@ -130,7 +130,8 @@ docker compose -f docker-compose.yml -f audio.yml up -d
 
 The UI is served on port `3000`. Then register the music folders from
 Settings → Libraries (folders detected under `/libraries` are suggested
-automatically). The `-f audio.yml` overlay is only needed on hosts with a sound
+automatically and added with a single click; per-library statistics are shown
+inline). The `-f audio.yml` overlay is only needed on hosts with a sound
 card / USB DAC — it grants `/dev/snd`, the `audio` group and a read-only
 `/proc/asound` so Sonect can enumerate and play through the devices.
 

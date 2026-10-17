@@ -374,6 +374,7 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 - The gate is **not** "all steps done": setup is considered complete only when a permanent done flag is set. The flag is a pseudo-step `complete` in the `setup_progress` table and is written by the explicit `POST /system/setup/complete` endpoint (the only intended writer), used by both Skip and Finish; the endpoint accepts any non-empty step name, so the invariant is by convention, not enforced. Updating an individual step or creating a storage source does not set it. `isSetupComplete()` does **not** consider existing storage sources — the stored `complete` flag is the single source of truth.
 - `getSetupProgress()` (`services/setupService.ts`) reports steps in order `["storage", "audio", "sync"]`; the `storage` step's `completed` flag is **derived** from `storageDb.getAll().length > 0` (not stored), while `audio`/`sync` flags come from `setup_progress` rows.
 - Frontend wizard steps: Welcome → Storage → Audio → Sync. An incomplete setup currently starts at Welcome.
+- The Storage step shares components with Settings → Libraries: detected (unregistered) folders render as one-click **Add** rows (`DetectedLibraryRow`), an "Or add manually" form covers manual paths, and the success dialog shows the created library with `LibraryStats`. When at least one library is already registered the footer also shows **Continue**, so a re-run (after a setup reset) can never get stuck; with zero libraries, create remains required.
 - Skip is persisted by the backend, so it applies to normal and private/incognito browser sessions. `sessionStorage["setup-complete"]` is only a per-tab cache of a confirmed backend result, not a local skip flag. `POST /system/setup/reset` (also exposed as the "Reset setup wizard" button in Settings → Debug) clears every `setup_progress` flag, invalidates the current tab's cache, and reloads without touching `storage_sources`. A reset performed by another tab is observed when a new tab session starts.
 
 ### MPD config handling
@@ -439,23 +440,36 @@ recursively and can crash MPD with `SIGSEGV`.
   that the path exists, stores it, and triggers a rescan. It never runs
   `mount`/`umount` and needs no elevated privileges.
 - **`storageService.ts`** exposes `createStorageSource({name, path})`,
-  `updateStorageSource(id, {name?, path?})`, `deleteStorageSource(id)` and a
-  read-only `listMounts()` (parses `/proc/mounts`). Creating or deleting a
-  source, or updating its `path`, fires an MPD `update` + `scanLibrary()`;
-  name/enabled-only edits do not rescan. The `storage_sources` table has
-  no `type`/`uri`/`mount_path`/`username`/`password` columns.
+  `updateStorageSource(id, {name?, path?})`, `deleteStorageSource(id)`,
+  `getStatsForPath(path)` and a read-only `listMounts()` (parses `/proc/mounts`).
+  Creating or deleting a source, or updating its `path`, fires an MPD `update` +
+  `scanLibrary()`; name/enabled-only edits do not rescan. `createStorageSource` is
+  **async**: it computes initial stats with the non-blocking
+  `computeSourceStatsAsync` walk and **persists** them via `storageDb.updateStats`
+  before returning, so a fresh library never reads 0/0/0 while the scanner runs
+  (the scanner walk still overwrites them as the long-term source of truth). The
+  `storage_sources` table has no `type`/`uri`/`mount_path`/`username`/`password`
+  columns.
 - **Mount suggestions (`getDetectedLibraries`).** `storageService` lists the
   first-level directories under `MUSIC_DIR`, annotates each with `isMount`
   (cross-checked against `listMounts()`) and `registered`, and computes bounded
-  on-disk stats. Exposed at `GET /system/storage/detected`; the Add-Library form
-  (Settings → Libraries) and the setup wizard use it to offer candidates
-  (Plex/Immich style) in the same name + path form. It never throws for a single
-  unreadable entry and omits stats rather than failing the suggestion.
-- **Frontend (Immich-style):** Settings → Libraries lists the registered
-  libraries (with stats) and the mounts detected under the music directory, plus
-  a copy-paste compose snippet. Registered sources stay in the suggestion list,
-  dimmed with an `Already added` badge, and stats can be refreshed on demand
-  (`refreshStats`).
+  on-disk stats (sync walk, 20k-file budget; omitted when exceeded). Exposed at
+  `GET /system/storage/detected`; Settings → Libraries and the setup wizard offer
+  the candidates (Plex/Immich style). It never throws for a single unreadable
+  entry and omits stats rather than failing the suggestion.
+- **On-demand stats (`GET /system/storage/stats?path=…`).** Computes stats for a
+  first-level folder under `MUSIC_DIR` with the **async** walk and returns
+  `{file_count, dir_count, total_size}`; 400 for missing/outside/nested/non-existent
+  paths. Results are kept in an in-memory `detectedStatsCache` and merged into
+  `getDetectedLibraries` responses (bounded live stats always win), so a
+  user-computed result survives refetches until restart — used for folders whose
+  bounded stats were omitted.
+- **Frontend (Immich-style):** Settings → Libraries is one unified list: registered
+  libraries (with per-row `LibraryStats`, refresh/edit/delete icon actions) and
+  detected folders (with stats and a one-click **Add**; a **Compute stats** action
+  appears when the budget omitted them). Registered folders never appear in the
+  detected section. A collapsible compose-snippet box interpolates the first
+  unregistered folder's real path.
 - Per-source stats (`file_count` / `dir_count` / `total_size`) are produced by
   the scanner walk (`storageStats.walk`/`walkSource`/`computeSourceStats`) at the
   end of every `scanLibrary()` and saved via `storageDb.updateStats()`.

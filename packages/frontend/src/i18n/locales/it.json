@@ -101,7 +101,6 @@
     "addToQueue": "Aggiungi alla coda",
     "newPlaylist": "Nuova Playlist",
     "play": "Riproduci",
-    "playNext": "Riproduci Ora",
     "playLater": "Riproduci Dopo"
   },
   "search": {
@@ -231,7 +230,6 @@
       "add": "Aggiungi",
       "isMount": "Mount",
       "refreshStats": "Aggiorna statistiche",
-      "refreshing": "Aggiornamento…",
       "statsRefreshed": "Statistiche aggiornate",
       "refreshStatsError": "Impossibile aggiornare le statistiche",
       "copySnippet": "Copia frammento compose",
