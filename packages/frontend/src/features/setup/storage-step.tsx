@@ -7,6 +7,7 @@ import {
   LibrarySourceForm,
   type LibrarySourceFormValues,
 } from "@/features/settings/library-source-form";
+import { LibraryStats } from "@/features/settings/library-stats";
 import { useLibrarySourceForm } from "@/features/settings/use-library-source-form";
 import {
   AlertDialog,
@@ -38,22 +39,6 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
     null,
   );
   const [confirmOpen, setConfirmOpen] = useState(false);
-
-  const formatCount = (n: number | undefined): string =>
-    (n ?? 0).toLocaleString();
-
-  function formatBytes(bytes?: number): string {
-    if (!bytes) return "0 B";
-    const units = ["B", "KB", "MB", "GB", "TB"];
-    const i = Math.min(
-      units.length - 1,
-      Math.floor(Math.log(bytes) / Math.log(1024)),
-    );
-    const value = bytes / 1024 ** i;
-    return `${value >= 10 || i === 0 ? value.toFixed(0) : value.toFixed(1)} ${
-      units[i]
-    }`;
-  }
 
   const handleSave = async (data: LibrarySourceFormValues) => {
     try {
@@ -134,13 +119,7 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
               <div className="text-muted-foreground font-mono text-xs break-all">
                 {createdSource.path}
               </div>
-              <div className="text-muted-foreground text-xs">
-                {t("settings.libraries.stats", {
-                  files: formatCount(createdSource.file_count),
-                  folders: formatCount(createdSource.dir_count),
-                  size: formatBytes(createdSource.total_size),
-                })}
-              </div>
+              <LibraryStats stats={createdSource} />
             </div>
           )}
           <AlertDialogFooter>

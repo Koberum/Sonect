@@ -33,25 +33,13 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { systemQueries, systemMutations } from "@/features/system/queries";
 import type { StorageSource } from "@/features/system/api";
 import { LibrariesForm } from "./libraries-form";
+import { LibraryStats } from "./library-stats";
 import type { LibrarySourceFormValues } from "./library-source-form";
 
 const COMPOSE_SNIPPET = `services:
   sonect:
     volumes:
       - /host/path/to/music:/libraries/music:ro`;
-
-const formatCount = (n: number): string => n.toLocaleString();
-
-function formatBytes(bytes: number): string {
-  if (!bytes) return "0 B";
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  const i = Math.min(
-    units.length - 1,
-    Math.floor(Math.log(bytes) / Math.log(1024)),
-  );
-  const value = bytes / 1024 ** i;
-  return `${value >= 10 || i === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[i]}`;
-}
 
 export function LibrariesTab() {
   const { t } = useTranslation();
@@ -185,15 +173,7 @@ export function LibrariesTab() {
                   <div className="text-muted-foreground truncate font-mono text-xs">
                     {src.path}
                   </div>
-                  {typeof src.file_count === "number" && (
-                    <div className="text-muted-foreground truncate text-xs">
-                      {t("settings.libraries.stats", {
-                        files: formatCount(src.file_count),
-                        folders: formatCount(src.dir_count ?? 0),
-                        size: formatBytes(src.total_size ?? 0),
-                      })}
-                    </div>
-                  )}
+                  <LibraryStats stats={src} />
                 </div>
                 <div className="flex shrink-0 flex-wrap justify-end gap-1">
                   <Button
@@ -291,15 +271,7 @@ export function LibrariesTab() {
                   <span className="text-muted-foreground w-full truncate font-mono text-xs">
                     {lib.path}
                   </span>
-                  {lib.stats && (
-                    <span className="text-muted-foreground w-full truncate text-xs">
-                      {t("settings.libraries.stats", {
-                        files: formatCount(lib.stats.file_count),
-                        folders: formatCount(lib.stats.dir_count),
-                        size: formatBytes(lib.stats.total_size),
-                      })}
-                    </span>
-                  )}
+                  {lib.stats && <LibraryStats stats={lib.stats} />}
                 </li>
               ))}
             </ul>
