@@ -302,5 +302,37 @@ describe("system storage routes", () => {
         total_size: 3,
       });
     });
+
+    it("skips an unreadable subdirectory instead of failing the walk", () => {
+      const root = path.join(tmpDir, "Partial");
+      const locked = path.join(root, "locked");
+      fs.mkdirSync(locked, { recursive: true });
+      writeAudio(path.join(root, "a.mp3"), "aa");
+      writeAudio(path.join(locked, "hidden.mp3"), "bbbb");
+
+      const realReaddir = fs.readdirSync;
+      sandbox.stub(fs, "readdirSync").callsFake(((
+        dir: fs.PathLike,
+        options?: unknown,
+      ) => {
+        if (String(dir) === locked) {
+          const err = new Error(
+            "EACCES: permission denied",
+          ) as NodeJS.ErrnoException;
+          err.code = "EACCES";
+          throw err;
+        }
+        return (realReaddir as (d: fs.PathLike, o?: unknown) => unknown)(
+          dir,
+          options,
+        );
+      }) as typeof fs.readdirSync);
+
+      expect(computeSourceStatsWithinBudget(root, 10)).to.deep.equal({
+        file_count: 1,
+        dir_count: 1,
+        total_size: 2,
+      });
+    });
   });
 });

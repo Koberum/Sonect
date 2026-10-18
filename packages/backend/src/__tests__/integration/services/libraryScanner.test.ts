@@ -38,6 +38,7 @@ describe("LibraryScanner (integration)", () => {
   let sandbox: sinon.SinonSandbox;
   let tmpDir: string;
   let parseFile: sinon.SinonStub;
+  let logPushLog: sinon.SinonStub;
   let scanner: LibraryScanner;
 
   function writeAudio(rel: string, content = "x"): string {
@@ -62,8 +63,9 @@ describe("LibraryScanner (integration)", () => {
     sandbox = sinon.createSandbox();
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "sonect-scan-"));
     process.env.MUSIC_DIR = tmpDir;
+    logPushLog = sandbox.stub();
     const logService = {
-      pushLog: sandbox.stub(),
+      pushLog: logPushLog,
     } as unknown as LogService;
     parseFile = sandbox.stub().resolves(METADATA);
     scanner = new LibraryScanner(logService, parseFile);
@@ -263,5 +265,53 @@ describe("LibraryScanner (integration)", () => {
     const row = tracksDb.getByFile(path.join("lib1", "mystery.mp3"));
     expect(row).to.not.equal(undefined);
     expect(row?.mtime).to.equal(fs.statSync(abs).mtimeMs);
+  });
+
+  it("skips a non-UTF-8 subtree, indexes the rest, and never deletes its rows", async () => {
+    const id = registerSource("lib1", "lib1");
+    writeAudio(path.join("lib1", "ok.mp3"));
+    writeAudio(path.join("lib1", "album", "good.mp3"));
+
+    const album = path.join(tmpDir, "lib1", "album");
+    // "2003 - Verità" with a latin-1 0xE0 instead of UTF-8 0xC3 0xA0.
+    const badDir = Buffer.concat([
+      Buffer.from(album + path.sep),
+      Buffer.from([...Buffer.from("2003 - Verit"), 0xe0]),
+    ]);
+    fs.mkdirSync(badDir);
+
+    // A legacy/MPD-era row under the skipped parent must survive cleanup.
+    upsertTrack(db(), {
+      file: path.join("lib1", "album", "legacy.mp3"),
+      title: "legacy",
+    });
+
+    const first = await scanner.scan();
+    expect(first.synced).to.equal(2);
+    expect(first.deleted).to.equal(0);
+    expect(tracksDb.getFiles()).to.have.members([
+      path.join("lib1", "ok.mp3"),
+      path.join("lib1", "album", "good.mp3"),
+      path.join("lib1", "album", "legacy.mp3"),
+    ]);
+    expect(storageDb.getById(id)?.file_count).to.equal(2);
+    expect(
+      logPushLog
+        .getCalls()
+        .some(
+          (call) =>
+            call.args[0] === "warn" &&
+            /skipped/.test(String(call.args[1])) &&
+            /non-UTF-8/.test(String(call.args[1])),
+        ),
+    ).to.equal(true);
+
+    // Steady state: rows under the skipped prefix are never deleted either.
+    fs.rmSync(path.join(tmpDir, "lib1", "album", "good.mp3"));
+    const second = await scanner.scan();
+    expect(second.deleted).to.equal(0);
+    expect(tracksDb.getFiles()).to.include(
+      path.join("lib1", "album", "good.mp3"),
+    );
   });
 });

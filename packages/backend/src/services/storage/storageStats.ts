@@ -16,6 +16,36 @@ export interface SourceFile {
   size: number;
 }
 
+export interface WalkSkip {
+  /**
+   * Absolute path whose contents were skipped. The scanner protects every
+   * catalog row under it from deletion.
+   */
+  path: string;
+  reason: "unreadable" | "encoding";
+  /** errno code, when reason is "unreadable". */
+  code?: string;
+  /** Raw entry name decoded as latin-1, for diagnostics when reason is "encoding". */
+  sample?: string;
+}
+
+export interface WalkResult {
+  files: SourceFile[];
+  dirCount: number;
+  skipped: WalkSkip[];
+}
+
+/**
+ * Decode a raw directory entry name. Returns undefined when the bytes are not
+ * valid UTF-8: Node would decode them lossily to U+FFFD, and re-encoding that
+ * string no longer addresses the entry on disk (`ENOENT`). Such entries can
+ * only be skipped — unless the share's filename charset is fixed upstream.
+ */
+export function decodeEntryName(raw: Buffer): string | undefined {
+  const decoded = raw.toString("utf8");
+  return Buffer.from(decoded, "utf8").equals(raw) ? decoded : undefined;
+}
+
 export function getAudioExtensions(): Set<string> {
   const raw = process.env.MUSIC_EXTENSIONS ?? DEFAULT_EXTENSIONS;
   return new Set(
@@ -26,31 +56,64 @@ export function getAudioExtensions(): Set<string> {
   );
 }
 
-export function walk(
-  root: string,
-  exts: ReadonlySet<string>,
-): { files: SourceFile[]; dirCount: number } {
+export function walk(root: string, exts: ReadonlySet<string>): WalkResult {
   const files: SourceFile[] = [];
+  const skipped: WalkSkip[] = [];
   let dirCount = 0;
 
-  function visit(dir: string): void {
-    let entries: fs.Dirent[];
+  /** Remember a path whose rows must never be deleted; dedupe repeats. */
+  function skip(
+    dir: string,
+    reason: WalkSkip["reason"],
+    code?: string,
+    sample?: string,
+  ): void {
+    if (skipped.some((s) => s.path === dir && s.reason === reason)) return;
+    skipped.push({
+      path: dir,
+      reason,
+      ...(code === undefined ? {} : { code }),
+      ...(sample === undefined ? {} : { sample }),
+    });
+  }
+
+  function visit(dir: string, isRoot: boolean): void {
+    let entries: fs.Dirent<Buffer>[];
     try {
-      entries = fs.readdirSync(dir, { withFileTypes: true });
-    } catch {
-      // Root unreadable (e.g. SMB not mounted, missing symlink target) →
-      // throw so the caller can skip the source and keep previous stats.
-      // An unreadable subdirectory also aborts the walk for this source.
-      throw new Error(`Cannot read directory: ${dir}`);
+      entries = fs.readdirSync(dir, {
+        withFileTypes: true,
+        encoding: "buffer",
+      });
+    } catch (err) {
+      if (isRoot) {
+        // Root unreadable (e.g. SMB not mounted, missing symlink target) →
+        // throw so the caller can skip the source and keep previous stats.
+        const code = (err as NodeJS.ErrnoException).code;
+        throw new Error(
+          `Cannot read directory: ${dir}${code === undefined ? "" : ` (${code})`}`,
+          { cause: err },
+        );
+      }
+      // An unreadable subdirectory no longer aborts the source: skip it, let
+      // the scanner protect its rows, and keep walking its siblings.
+      skip(dir, "unreadable", (err as NodeJS.ErrnoException).code);
+      return;
     }
     for (const entry of entries) {
-      const full = path.join(dir, entry.name);
+      const name = decodeEntryName(entry.name);
+      if (name === undefined) {
+        // Non-UTF-8 name: the entry cannot be addressed as a JS string. Protect
+        // the parent — the DB form of any legacy row is unknowable — and skip.
+        skip(dir, "encoding", undefined, entry.name.toString("latin1"));
+        continue;
+      }
+      const full = path.join(dir, name);
       if (entry.isSymbolicLink()) continue;
       if (entry.isDirectory()) {
         dirCount++;
-        visit(full);
+        visit(full, false);
       } else if (entry.isFile()) {
-        const ext = path.extname(entry.name).slice(1).toLowerCase();
+        const ext = path.extname(name).slice(1).toLowerCase();
         if (!exts.has(ext)) continue;
         try {
           const stat = fs.statSync(full);
@@ -66,9 +129,9 @@ export function walk(
     }
   }
 
-  visit(root);
+  visit(root, true);
   files.sort((a, b) => a.file.localeCompare(b.file));
-  return { files, dirCount };
+  return { files, dirCount, skipped };
 }
 
 export function walkSourceFiles(
@@ -96,9 +159,10 @@ export function computeSourceStats(root: string): SourceStats {
 /**
  * Async twin of `computeSourceStats`: identical counting rules (skip symlinks,
  * count directories, filter audio extensions, sum sizes, ignore files that
- * vanish mid-walk, throw on unreadable directories) but does not block the
- * event loop — used for on-demand stats of large folders where a sync walk
- * would freeze MPD polling and HTTP handling.
+ * vanish mid-walk) but does not block the event loop — used for on-demand stats
+ * of large folders where a sync walk would freeze MPD polling and HTTP
+ * handling. Only an unreadable root throws; unreadable subdirectories and
+ * entries with non-UTF-8 names are skipped so stats reflect the readable subset.
  */
 export async function computeSourceStatsAsync(
   root: string,
@@ -108,21 +172,33 @@ export async function computeSourceStatsAsync(
   let dirCount = 0;
   let totalSize = 0;
 
-  async function visit(dir: string): Promise<void> {
-    let entries: fs.Dirent[];
+  async function visit(dir: string, isRoot: boolean): Promise<void> {
+    let entries: fs.Dirent<Buffer>[];
     try {
-      entries = await fs.promises.readdir(dir, { withFileTypes: true });
-    } catch {
-      throw new Error(`Cannot read directory: ${dir}`);
+      entries = await fs.promises.readdir(dir, {
+        withFileTypes: true,
+        encoding: "buffer",
+      });
+    } catch (err) {
+      if (isRoot) {
+        const code = (err as NodeJS.ErrnoException).code;
+        throw new Error(
+          `Cannot read directory: ${dir}${code === undefined ? "" : ` (${code})`}`,
+          { cause: err },
+        );
+      }
+      return;
     }
     for (const entry of entries) {
-      const full = path.join(dir, entry.name);
+      const name = decodeEntryName(entry.name);
+      if (name === undefined) continue;
+      const full = path.join(dir, name);
       if (entry.isSymbolicLink()) continue;
       if (entry.isDirectory()) {
         dirCount++;
-        await visit(full);
+        await visit(full, false);
       } else if (entry.isFile()) {
-        const ext = path.extname(entry.name).slice(1).toLowerCase();
+        const ext = path.extname(name).slice(1).toLowerCase();
         if (!exts.has(ext)) continue;
         fileCount++;
         try {
@@ -135,6 +211,6 @@ export async function computeSourceStatsAsync(
     }
   }
 
-  await visit(root);
+  await visit(root, true);
   return { file_count: fileCount, dir_count: dirCount, total_size: totalSize };
 }

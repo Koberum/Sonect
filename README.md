@@ -260,6 +260,16 @@ and re-parsing only changed or new files, so existing play counts survive.
 MPD's `update` runs fire-and-forget and is not the source of the catalog.
 `MUSIC_EXTENSIONS` controls which audio extensions are counted as music files.
 
+**Network shares with legacy filenames.** Linux and MPD treat filenames as
+UTF-8. Folders whose names were written by old Windows/SMB clients in a legacy
+codepage (Latin-1/CP1252) contain bytes that are not valid UTF-8 and cannot be
+addressed by path. One such folder never breaks the library: the scan skips it,
+logs a warning naming the folder (including the raw bytes), keeps every catalog
+row under it from being deleted, and indexes the rest. The skipped files stay
+out of the catalog until the names are fixed at the source — remount the share
+with the correct charset (`iocharset=`) or rename the folders through a client
+that displays them correctly.
+
 Sonect does not manage host Wi-Fi connections. `GET /system/network/status`
 returns whether the server has a non-loopback network address and whether the
 configured `DNS_CHECK_HOST` resolves through the system resolver. The frontend
