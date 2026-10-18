@@ -314,4 +314,51 @@ describe("LibraryScanner (integration)", () => {
       path.join("lib1", "album", "good.mp3"),
     );
   });
+
+  it("skips an unreadable subdirectory and keeps its rows", async () => {
+    registerSource("lib1", "lib1");
+    writeAudio(path.join("lib1", "ok.mp3"));
+    const locked = path.join(tmpDir, "lib1", "locked");
+    fs.mkdirSync(locked);
+    writeAudio(path.join("lib1", "locked", "hidden.mp3"));
+    upsertTrack(db(), {
+      file: path.join("lib1", "locked", "legacy.mp3"),
+      title: "legacy",
+    });
+
+    const realReaddir = fs.readdirSync;
+    sandbox.stub(fs, "readdirSync").callsFake(((
+      dir: fs.PathLike,
+      options?: unknown,
+    ) => {
+      if (String(dir) === locked) {
+        const err = new Error(
+          "EACCES: permission denied",
+        ) as NodeJS.ErrnoException;
+        err.code = "EACCES";
+        throw err;
+      }
+      return (realReaddir as (d: fs.PathLike, o?: unknown) => unknown)(
+        dir,
+        options,
+      );
+    }) as typeof fs.readdirSync);
+
+    const result = await scanner.scan();
+
+    expect(result.synced).to.equal(1);
+    expect(result.deleted).to.equal(0);
+    expect(tracksDb.getFiles()).to.have.members([
+      path.join("lib1", "ok.mp3"),
+      path.join("lib1", "locked", "legacy.mp3"),
+    ]);
+    expect(
+      logPushLog
+        .getCalls()
+        .some(
+          (call) =>
+            call.args[0] === "warn" && /\(EACCES\)/.test(String(call.args[1])),
+        ),
+    ).to.equal(true);
+  });
 });

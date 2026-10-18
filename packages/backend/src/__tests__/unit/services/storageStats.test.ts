@@ -125,6 +125,22 @@ describe("walk tolerance", () => {
     expect(result.skipped[0].sample).to.contain("2003 - Verit");
   });
 
+  it("skips a non-UTF-8 file name and reports its parent", () => {
+    fs.writeFileSync(path.join(root, "ok.mp3"), "x");
+    const badFile = rawEntry(
+      root,
+      Buffer.from([...Buffer.from("Citt"), 0xe0, ...Buffer.from(".mp3")]),
+    );
+    fs.writeFileSync(badFile, "x");
+
+    const result = walk(root, new Set(["mp3"]));
+
+    expect(result.files.map((f) => f.file)).to.deep.equal(["ok.mp3"]);
+    expect(result.skipped).to.have.length(1);
+    expect(result.skipped[0]).to.include({ path: root, reason: "encoding" });
+    expect(result.skipped[0].sample).to.contain("Citt");
+  });
+
   it("skips an unreadable subdirectory and keeps walking", () => {
     fs.writeFileSync(path.join(root, "ok.mp3"), "x");
     const locked = path.join(root, "locked");
