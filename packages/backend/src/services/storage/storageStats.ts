@@ -18,8 +18,9 @@ export interface SourceFile {
 
 export interface WalkSkip {
   /**
-   * Absolute path whose contents were skipped. The scanner protects every
-   * catalog row under it from deletion.
+   * Absolute prefix to protect from deletion: the skipped directory itself for
+   * "unreadable", or the parent directory for "encoding" (the DB form of a
+   * legacy row under an undecodable entry is unknowable).
    */
   path: string;
   reason: "unreadable" | "encoding";

@@ -42,6 +42,16 @@ function isUnderPrefix(file: string, prefix: string): boolean {
   return file === prefix || file.startsWith(prefix + path.sep);
 }
 
+/** Replace control characters so a raw name cannot break the one-line log. */
+function sanitizeForLog(value: string): string {
+  let out = "";
+  for (const ch of value) {
+    const code = ch.codePointAt(0) ?? 0;
+    out += code <= 0x1f || (code >= 0x7f && code <= 0x9f) ? "?" : ch;
+  }
+  return out;
+}
+
 export class LibraryScanner {
   constructor(
     private readonly logService: LogService,
@@ -220,9 +230,12 @@ export class LibraryScanner {
     const MAX_DETAILED = 5;
     for (const skip of skipped.slice(0, MAX_DETAILED)) {
       const rel = path.relative(musicDir, skip.path) || ".";
+      // Control characters in a raw name would break the one-line console log.
+      const sample =
+        skip.sample === undefined ? undefined : sanitizeForLog(skip.sample);
       const detail =
         skip.reason === "encoding"
-          ? `non-UTF-8 name(s)${skip.sample === undefined ? "" : ` (raw: "${skip.sample}")`}`
+          ? `non-UTF-8 name(s)${sample === undefined ? "" : ` (raw: "${sample}")`}`
           : `unreadable${skip.code === undefined ? "" : ` (${skip.code})`}`;
       this.logService.pushLog(
         "warn",
@@ -232,7 +245,7 @@ export class LibraryScanner {
     if (skipped.length > MAX_DETAILED) {
       this.logService.pushLog(
         "warn",
-        `Scanner skipped ${skipped.length - MAX_DETAILED} more entries under "${sourceName}"; keeping their catalog rows`,
+        `Scanner skipped ${skipped.length - MAX_DETAILED} more locations under "${sourceName}"; keeping their catalog rows`,
       );
     }
   }
