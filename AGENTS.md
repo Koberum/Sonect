@@ -89,9 +89,9 @@ Sonect ships as a **single container image**, `ghcr.io/koberum/sonect`, bundling
 MPD (Music Player Daemon) and the Node backend (API + WebSocket + built SPA on
 port 3000) under **s6-overlay**, which supervises both as longruns
 (`mpd` and `node`). There is no systemd/native installer — Docker is the only
-production path. `docker/docker-compose.yml` defines the one `sonect` service;
-`docker/audio.yml` is an optional overlay that grants access to host audio
-hardware.
+production path. `docker/docker-compose.yml` defines the one `sonect` service
+and includes audio access by default (live `/dev/snd` bind mount + ALSA device
+cgroup rule); there is no separate audio overlay.
 
 ```
 sonect (single image, ENTRYPOINT /init)
@@ -100,8 +100,9 @@ sonect (single image, ENTRYPOINT /init)
     node longrun → node /app/bundle.cjs (API + WS + SPA)
   env: MPD_HOST=127.0.0.1, MPD_PORT=6600, MUSIC_DIR=/libraries, PORT=3000
   volumes: libraries(ro), sonect-data(rw, mounted at /app/data)
-  audio overlay (audio.yml): devices(/dev/snd), group_add(audio),
-                             /proc/asound:ro  (NO privileged: true)
+  audio access (built into docker-compose.yml): /dev/snd bind mount (live),
+      device_cgroup_rules(c 116:* rwm), group_add(audio)
+      (NO privileged: true, no /proc/asound mount)
 ```
 
 - ` /player` is the single playback API (requires `X-Session-Id`). Legacy `/mpd`
@@ -120,10 +121,17 @@ sonect (single image, ENTRYPOINT /init)
   `s6-svc -r /run/service/mpd`; in dev (no s6) it falls back to `SIGHUP`
   (`pkill -HUP mpd`). There is no `inotifywait` watcher and no separate MPD
   entrypoint.
-- **Audio devices** are enumerated by reading `/proc/asound/cards` and
-  `/proc/asound/pcm` (`systemService.detectAudioDevices`) — no `aplay`/`lsusb`
-  required. Containers therefore need the `audio.yml` overlay to expose
-  `/dev/snd` and a read-only `/proc/asound`.
+- **Audio devices** are enumerated from `/sys/class/sound`
+  (`systemService.detectAudioDevices`): playback PCMs are `pcmC<N>D<M>p`, the
+  card id comes from `card<N>/id`, and USB metadata is resolved from
+  `card<N>/device` (`uevent`, then parent/resolved `idVendor`/`idProduct`/
+  `manufacturer`/`product`). `/proc/asound` is only an enrichment and fallback
+  for bare metal or unusual environments. Device IDs are stable
+  `hw:CARD=<id>,DEV=<n>`, so card-index changes across reboots/hotplug do not
+  break playback; a numeric `hw:<index>,<dev>` is used only when no usable card
+  id exists. Containers therefore need the live `/dev/snd` bind mount and
+  `device_cgroup_rules: c 116:* rwm` from `docker/docker-compose.yml` — not a
+  `/proc/asound` mount.
 
 ### Build pipeline
 

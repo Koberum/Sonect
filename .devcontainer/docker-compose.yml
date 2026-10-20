@@ -6,9 +6,10 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: sonect-dev
-    # Kept for reliable ALSA access in dev: unlike the prod audio.yml overlay
-    # (devices + group_add + /proc/asound:ro), privileged avoids host-specific
-    # device/group mismatches when developing against local audio hardware.
+    # Kept for reliable ALSA access in dev: unlike the production compose
+    # (live /dev/snd bind mount + ALSA device cgroup rule), privileged avoids
+    # host-specific device/group mismatches when developing against local
+    # audio hardware.
     privileged: true
 
     volumes:

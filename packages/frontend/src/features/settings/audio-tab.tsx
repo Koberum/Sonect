@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Loader2 } from "lucide-react";
 import {
@@ -28,14 +28,21 @@ export function AudioTab() {
   );
   const { data: audioStatus } = useQuery(systemQueries.audioStatus());
   const [selected, setSelected] = useState<string>("");
+  const userSelected = useRef(false);
   const configureMut = useMutation(systemMutations.configureAudio());
 
   useEffect(() => {
-    if (audioStatus) {
-      const matched = devices.find((d) => d.card === audioStatus.card);
-      if (matched) setSelected(matched.card);
-    }
+    if (userSelected.current || !audioStatus) return;
+    const matched = devices.find((d) => d.card === audioStatus.card);
+    if (matched) setSelected(matched.card);
   }, [audioStatus, devices]);
+
+  useEffect(() => {
+    if (selected && !devices.some((device) => device.card === selected)) {
+      userSelected.current = false;
+      setSelected("");
+    }
+  }, [devices, selected]);
 
   const handleApply = async () => {
     if (!selected) return;
@@ -74,7 +81,13 @@ export function AudioTab() {
             {t("settings.audio.noDevices")}
           </p>
         ) : null}
-        <Select value={selected} onValueChange={setSelected}>
+        <Select
+          value={selected}
+          onValueChange={(value) => {
+            userSelected.current = true;
+            setSelected(value);
+          }}
+        >
           <SelectTrigger className="w-full sm:w-64">
             <SelectValue placeholder={t("settings.audio.noDevices")} />
           </SelectTrigger>
