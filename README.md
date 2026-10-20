@@ -31,6 +31,10 @@ no subscriptions, no limits.
 - **MPD-powered playback** — Gapless, battle-tested, supports virtually any
   audio format. Random and repeat have UI controls; `consume` is forced by the
   queue engine and `single` is reflected from MPD status.
+- **MPD-backed catalog** — Sonect mirrors MPD's indexed database instead of
+  scanning tags itself. The first sync is full; later syncs are incremental and
+  skip entirely when MPD reports no changes. Track names stream in the status
+  bar while the catalog is imported.
 - **Live WebSocket state** — Playback changes reflect instantly across every
   open tab. MPD status is polled (2 s during play, 10 s during pause/stop) and
   pushed to all connected clients over WebSocket; browser sessions tick locally
@@ -227,7 +231,7 @@ Configure via `packages/backend/.env`:
 | `DB_PATH`          | `/app/data/music.db` (docker) / `/db/music.db` (dev)                     | SQLite database path (docker: under the `sonect-data` volume)                  |
 | `LOG_LEVEL`        | `info`                                                                   | Console log level; `debug` logs every found/updated/removed track during scans |
 | `MPD_CONFIG_PATH`  | `/app/data/mpd-audio.conf` (docker) / `/opt/sonect/data/...`             | MPD config drop-in (`audio_output` + advanced settings)                        |
-| `MPD_LOG_PATH`     | —                                                                        | Legacy; **no longer read** — sync progress comes from the scanner              |
+| `MPD_LOG_PATH`     | —                                                                        | Legacy; **no longer read** — sync progress comes from the MPD protocol         |
 | `DNS_CHECK_HOST`   | `example.com`                                                            | Host resolved to verify DNS connectivity                                       |
 | `PORT`             | `3000`                                                                   | Backend HTTP port                                                              |
 | `FRONTEND_DIST`    | `@frontend/dist` (cwd-relative fallback; `/app/frontend/dist` in docker) | Built frontend static files                                                    |
@@ -261,22 +265,22 @@ exposed the same way. Sonect never runs `mount`/`umount` and requires no
 elevated privileges. Settings → Libraries shows the registered libraries and
 the mounts detected under the music directory.
 
-Each library source shows **file count, folder count, and total music-file
-size**, refreshed at the end of every library scan. Sonect owns the library
-scan: it is **incremental**, skipping files whose `(mtime, size)` are unchanged
-and re-parsing only changed or new files, so existing play counts survive.
-MPD's `update` runs fire-and-forget and is not the source of the catalog.
-`MUSIC_EXTENSIONS` controls which audio extensions are counted as music files.
+Sonect **mirrors MPD's database**: the catalog is rebuilt from what MPD has
+indexed under `MUSIC_DIR`, so every song MPD sees appears in Sonect. The first
+sync is a full read; later syncs are incremental and skip the catalog fetch
+entirely when MPD reports that its database has not changed. Existing play
+counts and playlists survive. Each library source shows **file count, folder
+count, and total music-file size**; the file count is the catalog count for that
+library, while folders and size come from a lightweight filesystem walk and are
+stored on the library row so they are not recomputed on every sync.
+`MUSIC_EXTENSIONS` controls which audio extensions that stats walk counts.
 
 **Network shares with legacy filenames.** Linux and MPD treat filenames as
 UTF-8. Folders whose names were written by old Windows/SMB clients in a legacy
-codepage (Latin-1/CP1252) contain bytes that are not valid UTF-8 and cannot be
-addressed by path. One such folder never breaks the library: the scan skips it,
-logs a warning naming the folder (including the raw bytes), keeps every catalog
-row under it from being deleted, and indexes the rest. The skipped files stay
-out of the catalog until the names are fixed at the source — remount the share
-with the correct charset (`iocharset=`) or rename the folders through a client
-that displays them correctly.
+codepage (Latin-1/CP1252) may not be addressable by path. Fix the names at the
+source — remount the share with the correct charset (`iocharset=`) or rename the
+folders through a client that displays them correctly. Sonect never renames
+files; its stats walk skips unreadable entries and reports the readable subset.
 
 Sonect does not manage host Wi-Fi connections. `GET /system/network/status`
 returns whether the server has a non-loopback network address and whether the
