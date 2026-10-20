@@ -86,6 +86,7 @@
     "syncingCovers": "Sincronizando carátulas...",
     "syncingTracks": "Sincronizando pistas...",
     "scanningMpd": "Escaneando...",
+    "updatingMpd": "Actualizando MPD...",
     "complete": "Sincronización completa"
   },
   "language": {

@@ -86,6 +86,7 @@
     "syncingCovers": "Syncing covers...",
     "syncingTracks": "Syncing tracks...",
     "scanningMpd": "Scanning...",
+    "updatingMpd": "Updating MPD...",
     "complete": "Sync complete"
   },
   "language": {
