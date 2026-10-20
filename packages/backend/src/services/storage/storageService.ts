@@ -9,7 +9,6 @@ import {
 } from "./storageStats";
 import { ValidationError } from "@middleware/errorHandler";
 import { DetectedLibrary, StorageSource } from "@repo/types";
-import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager";
 import type { CatalogSyncOrchestrator } from "@services/library/catalogSyncOrchestrator";
 import type { LibraryStatsService } from "./libraryStatsService";
 
@@ -132,7 +131,6 @@ export class StorageServiceImpl implements StorageService {
   private detectedStatsCache = new Map<string, SourceStats>();
 
   constructor(
-    private mpdConnectionManager: MpdConnectionManager,
     private catalogSyncOrchestrator: CatalogSyncOrchestrator,
     private libraryStatsService: LibraryStatsService,
   ) {}
@@ -363,9 +361,8 @@ export class StorageServiceImpl implements StorageService {
   }
 
   private triggerScan(): void {
-    this.mpdConnectionManager.executeCommand("update").catch(() => {});
     this.catalogSyncOrchestrator
-      .scanLibrary()
+      .scanLibrary({ force: true })
       .catch((err) => console.error("[Storage] Library scan failed:", err));
   }
 

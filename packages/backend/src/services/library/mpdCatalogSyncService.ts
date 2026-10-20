@@ -445,8 +445,9 @@ export class MpdCatalogSyncService implements CatalogSyncService {
   }
 
   private async assertNotAccidentallyEmpty(): Promise<void> {
-    const enabled = storageDb.getAll().filter((source) => source.enabled === 1);
-    for (const source of enabled) {
+    // The catalog mirrors all of MPD, not only enabled storage sources, so a
+    // disabled-but-registered library still protects its rows.
+    for (const source of storageDb.getAll()) {
       let stats: Awaited<ReturnType<typeof computeSourceStatsAsync>>;
       try {
         stats = await computeSourceStatsAsync(source.path);

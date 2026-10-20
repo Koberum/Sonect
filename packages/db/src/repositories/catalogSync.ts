@@ -3,18 +3,12 @@ import type { CatalogTrack } from "@repo/types";
 import { transaction, type DatabaseTransaction } from "../connection.js";
 import { syncMetadata, tracks as tracksTable } from "../tables.js";
 import { upsertTrack } from "./tracks.js";
-import { syncMetadataDb } from "./syncMetadata.js";
 
 export type LibraryIncrementalResult = {
   synced: number;
   deleted: number;
   errors: number;
 };
-
-// Temporary marker kept until Task 3 removes LibraryScanner. The scanner still
-// reads it, so removing it in the same change that deletes the scanner avoids a
-// broken intermediate build.
-const SCANNER_VERSION = "1";
 
 // Upsert-on-conflict stamp for the sync_metadata key/value table.
 function stampMetadata(
@@ -89,7 +83,6 @@ export const catalogSyncDb = {
       }
 
       stampMetadata(tx, "last_sync", new Date().toISOString());
-      stampMetadata(tx, "scanner_version", SCANNER_VERSION);
       if (input.mpdDbUpdate !== undefined) {
         stampMetadata(tx, "mpd_db_update", input.mpdDbUpdate);
       }
@@ -99,9 +92,5 @@ export const catalogSyncDb = {
 
       return { synced, deleted, errors };
     });
-  },
-
-  getScannerVersion(): string | undefined {
-    return syncMetadataDb.get("scanner_version");
   },
 };

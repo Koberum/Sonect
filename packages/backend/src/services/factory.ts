@@ -9,8 +9,7 @@ import {
   PlayerServiceImpl,
   type PlayerService,
 } from "./player/playerService.js";
-import { CatalogSyncService } from "./library/catalogSyncService.js";
-import { LibraryScanner } from "./library/libraryScanner.js";
+import { MpdCatalogSyncService } from "./library/mpdCatalogSyncService.js";
 import {
   CoverSyncServiceImpl,
   type CoverSyncService,
@@ -62,7 +61,7 @@ let _catalogService: CatalogService;
 let _mpdConnectionManager: MpdConnectionManager;
 let _autoplayService: AutoplayService;
 let _playerService: PlayerService;
-let _catalogSyncService: CatalogSyncService;
+let _catalogSyncService: MpdCatalogSyncService;
 let _coverSyncService: CoverSyncService;
 let _catalogSyncOrchestrator: CatalogSyncOrchestrator;
 let _mpdConfigService: MpdConfigService;
@@ -105,18 +104,20 @@ export function initializeServices(): void {
     _autoplayService,
   );
 
-  const _libraryScanner = new LibraryScanner(_logService);
-  _catalogSyncService = new CatalogSyncService(_libraryScanner, _logService);
+  _catalogSyncService = new MpdCatalogSyncService(
+    _mpdConnectionManager,
+    _logService,
+  );
 
   _coverSyncService = new CoverSyncServiceImpl(_logService);
+  const libraryStatsService = new LibraryStatsServiceImpl(_logService);
   _catalogSyncOrchestrator = new CatalogSyncOrchestratorImpl(
     _coverSyncService,
     _catalogSyncService,
+    libraryStatsService,
   );
 
-  const libraryStatsService = new LibraryStatsServiceImpl(_logService);
   _storageService = new StorageServiceImpl(
-    _mpdConnectionManager,
     _catalogSyncOrchestrator,
     libraryStatsService,
   );
