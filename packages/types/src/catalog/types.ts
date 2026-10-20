@@ -7,6 +7,20 @@ import {
   DBPlaylist,
   DBTrackWithRelations,
 } from "../db/types";
+import type { MPDTrack } from "../mpd/types";
+
+export type CatalogTrack = MPDTrack & {
+  storageSourceId?: number | null;
+};
+
+export type LibrarySyncPhase = "scan-started" | "mpd" | "tracks" | "covers";
+
+export type LibrarySyncProgress = {
+  phase: LibrarySyncPhase;
+  current: number;
+  total: number;
+  track: { title: string; artist: string; album: string } | null;
+};
 
 export type CoverProgress = {
   current: number;

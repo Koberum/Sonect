@@ -9,10 +9,12 @@ import {
   genresDb,
   syncMetadataDb,
   playlistsDb,
+  storageDb,
   db,
   upsertTrack,
   tracks,
 } from "@repo/db";
+import type { CatalogTrack } from "@repo/types";
 
 import { eq } from "drizzle-orm";
 
@@ -74,9 +76,26 @@ describe("catalogSyncDb (trophy integration)", () => {
     expect(playlistsDb.getTracks(pid)).to.have.length(0);
   });
 
-  it("applyIncremental stamps scanner_version and last_sync", () => {
-    catalogSyncDb.applyIncremental({ upserts: [], deletions: [] });
-    expect(catalogSyncDb.getScannerVersion()).to.equal("1");
+  it("persists storageSourceId and stamps MPD sync markers", () => {
+    const sourceId = storageDb.create({
+      name: "Lib",
+      path: "/libraries/lib",
+      enabled: true,
+    });
+    const res = catalogSyncDb.applyIncremental({
+      upserts: [
+        mkTrack("lib/a.mp3", { storageSourceId: sourceId }) as CatalogTrack,
+      ],
+      deletions: [],
+      mpdDbUpdate: "12345",
+      mpdSongs: 1,
+    });
+    expect(res.synced).to.equal(1);
+    expect(tracksDb.getByFile("lib/a.mp3")?.storage_source_id).to.equal(
+      sourceId,
+    );
+    expect(syncMetadataDb.get("mpd_db_update")).to.equal("12345");
+    expect(syncMetadataDb.get("mpd_songs")).to.equal("1");
     expect(syncMetadataDb.get("last_sync")).to.be.a("string");
   });
 

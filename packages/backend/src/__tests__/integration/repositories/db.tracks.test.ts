@@ -8,8 +8,10 @@ import {
   findOrCreateArtist,
   findOrCreateAlbum,
   findOrCreateGenre,
+  storageDb,
   tracks,
 } from "@repo/db";
+import type { CatalogTrack } from "@repo/types";
 
 import { eq } from "drizzle-orm";
 
@@ -598,6 +600,43 @@ describe("tracksDb (trophy integration)", () => {
         mpdTrack({ file: "a/gb2.mp3", genre: "Jazz", title: "J2" }),
       );
       expect(tracksDb.getTracksByGenre("Jazz", 1)).to.have.length(1);
+    });
+  });
+
+  describe("sync snapshot and source attribution", () => {
+    it("getSyncSnapshot includes attribution and relations", () => {
+      const sourceId = storageDb.create({
+        name: "Lib",
+        path: "/libraries/lib",
+        enabled: true,
+      });
+      upsertTrack(db(), {
+        ...mpdTrack({
+          file: "lib/a.mp3",
+          title: "A",
+          artist: "ArtistA",
+          album: "AlbumA",
+          genre: "Rock",
+        }),
+        storageSourceId: sourceId,
+      } as CatalogTrack);
+      db()
+        .update(tracks)
+        .set({ storage_source_id: sourceId })
+        .where(eq(tracks.file, "lib/a.mp3"))
+        .run();
+
+      const snap = tracksDb
+        .getSyncSnapshot()
+        .find((row) => row.file === "lib/a.mp3");
+      expect(snap).to.include({
+        title: "A",
+        artist_name: "ArtistA",
+        album_title: "AlbumA",
+        genre: "Rock",
+        storage_source_id: sourceId,
+      });
+      expect(tracksDb.countByStorageSource(sourceId)).to.equal(1);
     });
   });
 });
