@@ -83,11 +83,16 @@ export const catalogSyncDb = {
       }
 
       stampMetadata(tx, "last_sync", new Date().toISOString());
-      if (input.mpdDbUpdate !== undefined) {
-        stampMetadata(tx, "mpd_db_update", input.mpdDbUpdate);
-      }
-      if (input.mpdSongs !== undefined) {
-        stampMetadata(tx, "mpd_songs", String(input.mpdSongs));
+      // A per-track failure means the applied catalog is not the one MPD
+      // reported; leave the MPD markers untouched so the next sync retries
+      // instead of taking the "unchanged" shortcut.
+      if (errors === 0) {
+        if (input.mpdDbUpdate !== undefined) {
+          stampMetadata(tx, "mpd_db_update", input.mpdDbUpdate);
+        }
+        if (input.mpdSongs !== undefined) {
+          stampMetadata(tx, "mpd_songs", String(input.mpdSongs));
+        }
       }
 
       return { synced, deleted, errors };

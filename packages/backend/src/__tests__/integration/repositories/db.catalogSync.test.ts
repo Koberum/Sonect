@@ -99,6 +99,28 @@ describe("catalogSyncDb (trophy integration)", () => {
     expect(syncMetadataDb.get("last_sync")).to.be.a("string");
   });
 
+  it("does not stamp MPD markers when a track fails", () => {
+    const stub = sinon.stub(console, "error");
+    const invalid = {
+      ...(mkTrack("a/invalid-marker.mp3", {
+        artist: "MarkerArtist",
+      }) as unknown as Record<string, unknown>),
+      file: null,
+    } as unknown as import("@repo/types").MPDTrack;
+
+    const res = catalogSyncDb.applyIncremental({
+      upserts: [invalid],
+      deletions: [],
+      mpdDbUpdate: "999",
+      mpdSongs: 1,
+    });
+
+    expect(res.errors).to.equal(1);
+    expect(syncMetadataDb.get("mpd_db_update")).to.be.undefined;
+    expect(syncMetadataDb.get("mpd_songs")).to.be.undefined;
+    expect(stub.calledOnce).to.be.true;
+  });
+
   it("applyIncremental rolls back orphan lookup rows for a rejected track (savepoint)", () => {
     const stub = sinon.stub(console, "error");
     const valid = mkTrack("a/valid-inc.mp3", {

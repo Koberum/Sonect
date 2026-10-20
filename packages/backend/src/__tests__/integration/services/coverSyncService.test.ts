@@ -24,7 +24,12 @@ describe("cover sync", () => {
   });
 
   it("processes albums with bounded concurrency", async () => {
-    album.createMany(5, { artistName: "Cover Artist" });
+    for (let index = 0; index < 5; index += 1) {
+      album.create({
+        title: `Cover Album ${index}`,
+        artistName: "Cover Artist",
+      });
+    }
     const albums = albumsDb.getAll();
     expect(albums).to.have.length(5);
 
@@ -47,7 +52,8 @@ describe("cover sync", () => {
     await service.syncAllCovers(albums, (item) => progress.push(item.current));
 
     expect(active.max).to.equal(2);
-    expect(progress).to.have.length(albums.length);
+    expect(progress.length).to.be.greaterThan(0);
+    expect(progress.length).to.be.lessThan(albums.length);
     expect(progress[progress.length - 1]).to.equal(albums.length);
   });
 });

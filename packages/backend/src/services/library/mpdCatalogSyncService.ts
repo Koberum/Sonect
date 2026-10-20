@@ -1,20 +1,9 @@
 import path from "path";
-import {
-  albumsDb,
-  catalogSyncDb,
-  storageDb,
-  syncMetadataDb,
-  tracksDb,
-} from "@repo/db";
-import type {
-  Album,
-  CatalogTrack,
-  LibrarySyncProgress,
-} from "@repo/types/catalog";
+import { catalogSyncDb, storageDb, syncMetadataDb, tracksDb } from "@repo/db";
+import type { CatalogTrack, LibrarySyncProgress } from "@repo/types/catalog";
 import type { MPDTrack } from "@repo/types/mpd";
 import type { MpdConnectionManager } from "@services/mpd/mpdConnectionManager";
 import type { LogService } from "@services/utils/logService";
-import { computeSourceStatsAsync } from "@services/storage/storageStats";
 import { parseKeyValue, parseMPDTracks } from "../../utils/mpd";
 
 export type CatalogSyncOptions = { force?: boolean };
@@ -37,8 +26,9 @@ export interface CatalogSyncService {
 type MpdStats = {
   songs: number;
   dbUpdate: string;
-  dbPlaytime: number;
 };
+
+class MpdPageMismatchError extends Error {}
 
 type SourcePrefix = {
   id: number;
@@ -166,7 +156,30 @@ export class MpdCatalogSyncService implements CatalogSyncService {
       };
     }
 
-    const mpdTracks = await this.fetchAllTracks(stats.songs, onProgress);
+    const count = parseKeyValue(
+      await this.mpd.executeCommand("count", [ALL_FILES_FILTER]),
+    );
+    const total = Number.parseInt(count.songs ?? "", 10);
+    if (Number.isNaN(total)) {
+      throw new Error("MPD count did not report a song total; nothing applied");
+    }
+    if (total !== stats.songs) {
+      throw new Error(
+        "MPD database changed before the catalog read; nothing applied",
+      );
+    }
+
+    const mpdTracks = await this.fetchAllTracks(total, onProgress);
+    const afterStats = await this.getStats();
+    if (
+      afterStats.dbUpdate !== stats.dbUpdate ||
+      afterStats.songs !== stats.songs
+    ) {
+      throw new Error(
+        "MPD database changed during the catalog read; nothing applied",
+      );
+    }
+
     const musicDir = getMusicDir();
     const sources = this.getSourcePrefixes(musicDir);
     const attributed: CatalogTrack[] = mpdTracks.map((track) => ({
@@ -176,14 +189,13 @@ export class MpdCatalogSyncService implements CatalogSyncService {
 
     const snapshot = tracksDb.getSyncSnapshot();
     const snapshotByFile = new Map(snapshot.map((row) => [row.file, row]));
-    const albums = new Map(albumsDb.getAll().map((album) => [album.id, album]));
     const upserts: CatalogTrack[] = [];
     const changedSourceIds = new Set<number>();
 
     for (let index = 0; index < attributed.length; index += 1) {
       const next = attributed[index];
       const existing = snapshotByFile.get(next.file);
-      if (!existing || this.trackChanged(existing, next, albums)) {
+      if (!existing || this.trackChanged(existing, next)) {
         upserts.push(next);
         if (existing?.storage_source_id) {
           changedSourceIds.add(existing.storage_source_id);
@@ -198,7 +210,7 @@ export class MpdCatalogSyncService implements CatalogSyncService {
         {
           phase: "tracks",
           current: index + 1,
-          total: stats.songs,
+          total,
           track: trackProgress(next),
         },
         index === 0 || index === attributed.length - 1,
@@ -221,7 +233,7 @@ export class MpdCatalogSyncService implements CatalogSyncService {
     }
 
     if (attributed.length === 0 && snapshot.length > 0) {
-      await this.assertNotAccidentallyEmpty();
+      this.assertNotAccidentallyEmpty();
     }
 
     if (
@@ -249,9 +261,9 @@ export class MpdCatalogSyncService implements CatalogSyncService {
       onProgress,
       {
         phase: "tracks",
-        current: stats.songs,
-        total: stats.songs,
-        track: null,
+        current: total,
+        total,
+        track: trackProgress(attributed[attributed.length - 1] ?? null),
       },
       true,
     );
@@ -289,10 +301,13 @@ export class MpdCatalogSyncService implements CatalogSyncService {
 
   private async getStats(): Promise<MpdStats> {
     const raw = parseKeyValue(await this.mpd.executeCommand("stats"));
+    const songs = Number.parseInt(raw.songs ?? "", 10);
+    if (Number.isNaN(songs)) {
+      throw new Error("MPD stats did not report a song total; nothing applied");
+    }
     return {
-      songs: Number.parseInt(raw.songs ?? "0", 10) || 0,
+      songs,
       dbUpdate: raw.db_update ?? "",
-      dbPlaytime: Number.parseInt(raw.db_playtime ?? "0", 10) || 0,
     };
   }
 
@@ -316,6 +331,13 @@ export class MpdCatalogSyncService implements CatalogSyncService {
       try {
         tracks = await this.fetchPaged(total, onProgress);
       } catch (err) {
+        if (err instanceof MpdPageMismatchError) {
+          this.log.pushLog(
+            "warn",
+            `MPD paged read did not add up; retrying (${err.message})`,
+          );
+          continue;
+        }
         this.log.pushLog(
           "warn",
           "MPD find failed; falling back to listallinfo",
@@ -352,8 +374,10 @@ export class MpdCatalogSyncService implements CatalogSyncService {
         `${start}:${end}`,
       ]);
       const page = parseMPDTracks(raw);
-      if (page.length === 0) {
-        throw new Error(`MPD returned an empty page for ${start}:${end}`);
+      if (page.length !== end - start) {
+        throw new MpdPageMismatchError(
+          `expected ${end - start} records for ${start}:${end}, got ${page.length}`,
+        );
       }
 
       for (const track of page) byFile.set(track.file, track);
@@ -368,6 +392,12 @@ export class MpdCatalogSyncService implements CatalogSyncService {
           track: trackProgress(last),
         },
         byFile.size >= total,
+      );
+    }
+
+    if (byFile.size !== total) {
+      throw new MpdPageMismatchError(
+        `expected ${total} unique records, got ${byFile.size}`,
       );
     }
 
@@ -418,23 +448,14 @@ export class MpdCatalogSyncService implements CatalogSyncService {
     return best?.id ?? null;
   }
 
-  private trackChanged(
-    existing: Snapshot,
-    next: CatalogTrack,
-    albums: Map<number, Album>,
-  ): boolean {
-    const existingAlbum =
-      existing.album_id === null ? undefined : albums.get(existing.album_id);
-    const nextAlbumArtist = next.albumArtist ?? next.artist ?? null;
-    const albumArtistChanged =
-      next.album !== undefined &&
-      (existingAlbum?.artist_name ?? null) !== nextAlbumArtist;
-
+  private trackChanged(existing: Snapshot, next: CatalogTrack): boolean {
+    // Album identity is title-only and shared by every track with that title,
+    // so album artist cannot be compared here: two same-title albums with
+    // different artists would rewrite the shared row on every force scan.
     return (
       existing.title !== (next.title || "Unknown") ||
       (existing.artist_name ?? null) !== (next.artist ?? null) ||
       (existing.album_title ?? null) !== (next.album ?? null) ||
-      albumArtistChanged ||
       (existing.genre ?? null) !== (next.genre ?? null) ||
       (existing.track_number ?? null) !== toInteger(next.track) ||
       (existing.disc_number ?? null) !== toInteger(next.disc) ||
@@ -444,25 +465,14 @@ export class MpdCatalogSyncService implements CatalogSyncService {
     );
   }
 
-  private async assertNotAccidentallyEmpty(): Promise<void> {
-    // The catalog mirrors all of MPD, not only enabled storage sources, so a
-    // disabled-but-registered library still protects its rows.
-    for (const source of storageDb.getAll()) {
-      let stats: Awaited<ReturnType<typeof computeSourceStatsAsync>>;
-      try {
-        stats = await computeSourceStatsAsync(source.path);
-      } catch (err) {
-        throw new Error(
-          `MPD returned no songs and library "${source.name}" could not be read; keeping catalog`,
-          { cause: err },
-        );
-      }
-      if (stats.file_count > 0) {
-        throw new Error(
-          `MPD returned no songs but library "${source.name}" still contains ${stats.file_count} audio files; keeping catalog`,
-        );
-      }
-    }
+  private assertNotAccidentallyEmpty(): void {
+    // A failed bind mount is often a readable empty directory, so a zero-song
+    // MPD reply is indistinguishable from "the user deleted everything".
+    // Never auto-empty the catalog; this protects play counts and playlist
+    // membership. Removing a library row is the explicit way to drop its data.
+    throw new Error(
+      "MPD returned no songs while the catalog is not empty; keeping catalog",
+    );
   }
 
   private emitProgress(

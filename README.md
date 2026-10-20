@@ -267,13 +267,14 @@ the mounts detected under the music directory.
 
 Sonect **mirrors MPD's database**: the catalog is rebuilt from what MPD has
 indexed under `MUSIC_DIR`, so every song MPD sees appears in Sonect. The first
-sync is a full read; later syncs are incremental and skip the catalog fetch
-entirely when MPD reports that its database has not changed. Existing play
+sync is a full read; the internal unchanged shortcut is used by non-forced
+syncs. Manual **Scan** and library edits always re-read MPD. Existing play
 counts and playlists survive. Each library source shows **file count, folder
 count, and total music-file size**; the file count is the catalog count for that
-library, while folders and size come from a lightweight filesystem walk and are
-stored on the library row so they are not recomputed on every sync.
-`MUSIC_EXTENSIONS` controls which audio extensions that stats walk counts.
+library, while folders and size come from a lightweight filesystem walk. Stats
+are refreshed for libraries whose tracks changed; a forced scan with no catalog
+changes refreshes all sources. `MUSIC_EXTENSIONS` controls which audio
+extensions that stats walk counts.
 
 **Network shares with legacy filenames.** Linux and MPD treat filenames as
 UTF-8. Folders whose names were written by old Windows/SMB clients in a legacy

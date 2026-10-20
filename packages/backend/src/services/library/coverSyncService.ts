@@ -38,6 +38,8 @@ export interface CoverSyncService {
 }
 
 export class CoverSyncServiceImpl implements CoverSyncService {
+  private lastProgressAt = 0;
+
   constructor(
     private readonly logService: LogService,
     private readonly concurrency = 4,
@@ -51,6 +53,7 @@ export class CoverSyncServiceImpl implements CoverSyncService {
     const total = albums.length;
     if (total === 0) return;
 
+    this.lastProgressAt = 0;
     const queue = [...albums];
     let done = 0;
 
@@ -62,6 +65,9 @@ export class CoverSyncServiceImpl implements CoverSyncService {
         await this.syncOne(album);
 
         done++;
+        const now = Date.now();
+        if (now - this.lastProgressAt < 100 && done < total) continue;
+        this.lastProgressAt = now;
         const artistName = album.artist_id
           ? (artistsDb.getById(album.artist_id)?.name ?? "")
           : "";

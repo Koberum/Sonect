@@ -51,9 +51,11 @@ export function StatusBar() {
   const phaseLabel =
     phase === "mpd"
       ? t("sync.updatingMpd")
-      : phase === "covers"
-        ? t("sync.syncingCovers")
-        : t("sync.syncingTracks");
+      : phase === "scan-started"
+        ? t("sync.scanningMpd")
+        : phase === "covers"
+          ? t("sync.syncingCovers")
+          : t("sync.syncingTracks");
 
   const trackLabel = syncProgress.track
     ? [
