@@ -118,7 +118,9 @@ export function initializeServices(): void {
     _catalogSyncOrchestrator,
   );
 
-  _systemService = new SystemServiceImpl(_mpdConnectionManager);
+  _systemService = new SystemServiceImpl(_mpdConnectionManager, {
+    logService: _logService,
+  });
 
   _playlistService = new PlaylistServiceImpl(_mpdConnectionManager);
 

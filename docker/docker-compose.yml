@@ -9,10 +9,10 @@
 #     - /host/path/to/music:/libraries/music:ro
 #     - sonect-data:/app/data
 #
-# Audio output is NOT enabled by default. On a host with a sound card (e.g. a
-# Raspberry Pi with a DAC) also use the overlay:
-#
-#   docker compose -f docker-compose.yml -f audio.yml up -d
+# Audio output is enabled by default. /dev/snd is bind-mounted live, so cards
+# and USB DACs plugged in after container start are visible without a restart.
+# The device cgroup rule allows ALSA character devices (major 116). On a host
+# without sound hardware these settings are harmless.
 #
 # Copy `.env.example` to `.env` and adjust it first.
 
@@ -30,6 +30,11 @@ services:
     volumes:
       - /host/path/to/music:/libraries/music:ro
       - sonect-data:/app/data
+      - /dev/snd:/dev/snd
+    device_cgroup_rules:
+      - "c 116:* rwm"
+    group_add:
+      - audio
     ports:
       - "${SONECT_PORT:-3000}:3000"
 

@@ -7,6 +7,7 @@ import {
   getAudioExtensions,
   walk,
   type SourceFile,
+  type WalkSkip,
 } from "@services/storage/storageStats";
 import { mapAudioMetadata } from "@services/library/audioMetadata";
 
@@ -33,11 +34,22 @@ type WalkedSource = {
   files: SourceFile[];
   dirCount: number;
   totalSize: number;
+  skipped: WalkSkip[];
 };
 
 function isUnderPrefix(file: string, prefix: string): boolean {
   if (prefix === "" || prefix === ".") return true;
   return file === prefix || file.startsWith(prefix + path.sep);
+}
+
+/** Replace control characters so a raw name cannot break the one-line log. */
+function sanitizeForLog(value: string): string {
+  let out = "";
+  for (const ch of value) {
+    const code = ch.codePointAt(0) ?? 0;
+    out += code <= 0x1f || (code >= 0x7f && code <= 0x9f) ? "?" : ch;
+  }
+  return out;
 }
 
 export class LibraryScanner {
@@ -60,8 +72,9 @@ export class LibraryScanner {
     for (const source of sources) {
       let files: SourceFile[];
       let dirCount: number;
+      let skipped: WalkSkip[];
       try {
-        ({ files, dirCount } = walk(source.path, extensions));
+        ({ files, dirCount, skipped } = walk(source.path, extensions));
       } catch (err) {
         this.logService.pushLog(
           "warn",
@@ -69,6 +82,10 @@ export class LibraryScanner {
           { error: err instanceof Error ? err.message : err },
         );
         continue;
+      }
+
+      if (skipped.length > 0) {
+        this.logSkips(source.name, skipped, musicDir);
       }
 
       let totalSize = 0;
@@ -80,6 +97,7 @@ export class LibraryScanner {
         files,
         dirCount,
         totalSize,
+        skipped,
       });
       totalFiles += files.length;
     }
@@ -198,6 +216,40 @@ export class LibraryScanner {
     return result;
   }
 
+  /**
+   * Report subtrees the walk had to skip. A non-UTF-8 name means the share's
+   * filename charset needs fixing upstream; until then the entry cannot be
+   * addressed by path, so it is reported (with the raw latin-1 name) and left
+   * out of the catalog and stats.
+   */
+  private logSkips(
+    sourceName: string,
+    skipped: WalkSkip[],
+    musicDir: string,
+  ): void {
+    const MAX_DETAILED = 5;
+    for (const skip of skipped.slice(0, MAX_DETAILED)) {
+      const rel = path.relative(musicDir, skip.path) || ".";
+      // Control characters in a raw name would break the one-line console log.
+      const sample =
+        skip.sample === undefined ? undefined : sanitizeForLog(skip.sample);
+      const detail =
+        skip.reason === "encoding"
+          ? `non-UTF-8 name(s)${sample === undefined ? "" : ` (raw: "${sample}")`}`
+          : `unreadable${skip.code === undefined ? "" : ` (${skip.code})`}`;
+      this.logService.pushLog(
+        "warn",
+        `Scanner skipped "${rel}": ${detail}; keeping its catalog rows and excluding it from stats`,
+      );
+    }
+    if (skipped.length > MAX_DETAILED) {
+      this.logService.pushLog(
+        "warn",
+        `Scanner skipped ${skipped.length - MAX_DETAILED} more locations under "${sourceName}"; keeping their catalog rows`,
+      );
+    }
+  }
+
   private buildDeletions(
     musicDir: string,
     walked: WalkedSource[],
@@ -206,6 +258,11 @@ export class LibraryScanner {
     const dbFiles = tracksDb.getFiles();
     const underWalked = (file: string): boolean =>
       walked.some((source) => isUnderPrefix(file, source.prefix));
+    const skippedPrefixes = walked.flatMap((source) =>
+      source.skipped.map((skip) => path.relative(musicDir, skip.path)),
+    );
+    const underSkipped = (file: string): boolean =>
+      skippedPrefixes.some((prefix) => isUnderPrefix(file, prefix));
 
     // First run: legacy/MPD-sourced rows cannot be attributed to a source
     // prefix by being live, so clean up conservatively. Delete a row only when
@@ -224,10 +281,14 @@ export class LibraryScanner {
       return dbFiles.filter(
         (file) =>
           !liveFiles.has(file) &&
+          !underSkipped(file) &&
           (underWalked(file) || !underAnyRegistered(file)),
       );
     }
 
-    return dbFiles.filter((file) => underWalked(file) && !liveFiles.has(file));
+    return dbFiles.filter(
+      (file) =>
+        underWalked(file) && !liveFiles.has(file) && !underSkipped(file),
+    );
   }
 }

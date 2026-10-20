@@ -23,7 +23,11 @@ export const systemQueries = {
     queryOptions({
       queryKey: qk.system.audioDevices(),
       queryFn: ({ signal }) => getAudioDevices(signal),
-      staleTime: 5 * 60_000,
+      // Devices can appear/disappear at runtime (USB DAC hotplug), so keep
+      // this list fresh while the audio settings tab is open.
+      staleTime: 0,
+      refetchInterval: 15_000,
+      refetchOnWindowFocus: true,
     }),
 
   audioStatus: () =>

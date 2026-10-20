@@ -4,6 +4,7 @@ import { storageDb } from "@repo/db";
 import {
   computeSourceStats,
   computeSourceStatsAsync,
+  decodeEntryName,
   getAudioExtensions,
   type SourceStats,
 } from "./storageStats";
@@ -29,8 +30,9 @@ function getMusicDir(): string {
 /**
  * Budget-aware twin of `computeSourceStats`: walks the same tree but stops as
  * soon as more than `maxFiles` audio files are counted, in which case it
- * returns `undefined` so the caller can skip stats. Unreadable directories
- * throw (the caller decides whether to omit stats for that entry).
+ * returns `undefined` so the caller can skip stats. Only an unreadable root
+ * throws; unreadable subdirectories and entries with non-UTF-8 names are
+ * skipped so suggestions still get stats for the readable subset.
  */
 export function computeSourceStatsWithinBudget(
   root: string,
@@ -42,23 +44,35 @@ export function computeSourceStatsWithinBudget(
   let totalSize = 0;
   let exceeded = false;
 
-  const visit = (dir: string): void => {
+  const visit = (dir: string, isRoot: boolean): void => {
     if (exceeded) return;
-    let entries: fs.Dirent[];
+    let entries: fs.Dirent<Buffer>[];
     try {
-      entries = fs.readdirSync(dir, { withFileTypes: true });
-    } catch {
-      throw new Error(`Cannot read directory: ${dir}`);
+      entries = fs.readdirSync(dir, {
+        withFileTypes: true,
+        encoding: "buffer",
+      });
+    } catch (err) {
+      if (isRoot) {
+        const code = (err as NodeJS.ErrnoException).code;
+        throw new Error(
+          `Cannot read directory: ${dir}${code === undefined ? "" : ` (${code})`}`,
+          { cause: err },
+        );
+      }
+      return;
     }
     for (const entry of entries) {
       if (exceeded) return;
-      const full = path.join(dir, entry.name);
+      const name = decodeEntryName(entry.name);
+      if (name === undefined) continue;
+      const full = path.join(dir, name);
       if (entry.isSymbolicLink()) continue;
       if (entry.isDirectory()) {
         dirCount++;
-        visit(full);
+        visit(full, false);
       } else if (entry.isFile()) {
-        const ext = path.extname(entry.name).slice(1).toLowerCase();
+        const ext = path.extname(name).slice(1).toLowerCase();
         if (!exts.has(ext)) continue;
         fileCount++;
         if (fileCount > maxFiles) {
@@ -74,7 +88,7 @@ export function computeSourceStatsWithinBudget(
     }
   };
 
-  visit(root);
+  visit(root, true);
   if (exceeded) return undefined;
   return { file_count: fileCount, dir_count: dirCount, total_size: totalSize };
 }

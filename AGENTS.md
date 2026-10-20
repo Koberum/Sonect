@@ -89,9 +89,9 @@ Sonect ships as a **single container image**, `ghcr.io/koberum/sonect`, bundling
 MPD (Music Player Daemon) and the Node backend (API + WebSocket + built SPA on
 port 3000) under **s6-overlay**, which supervises both as longruns
 (`mpd` and `node`). There is no systemd/native installer — Docker is the only
-production path. `docker/docker-compose.yml` defines the one `sonect` service;
-`docker/audio.yml` is an optional overlay that grants access to host audio
-hardware.
+production path. `docker/docker-compose.yml` defines the one `sonect` service
+and includes audio access by default (live `/dev/snd` bind mount + ALSA device
+cgroup rule); there is no separate audio overlay.
 
 ```
 sonect (single image, ENTRYPOINT /init)
@@ -100,8 +100,9 @@ sonect (single image, ENTRYPOINT /init)
     node longrun → node /app/bundle.cjs (API + WS + SPA)
   env: MPD_HOST=127.0.0.1, MPD_PORT=6600, MUSIC_DIR=/libraries, PORT=3000
   volumes: libraries(ro), sonect-data(rw, mounted at /app/data)
-  audio overlay (audio.yml): devices(/dev/snd), group_add(audio),
-                             /proc/asound:ro  (NO privileged: true)
+  audio access (built into docker-compose.yml): /dev/snd bind mount (live),
+      device_cgroup_rules(c 116:* rwm), group_add(audio)
+      (NO privileged: true, no /proc/asound mount)
 ```
 
 - ` /player` is the single playback API (requires `X-Session-Id`). Legacy `/mpd`
@@ -120,10 +121,17 @@ sonect (single image, ENTRYPOINT /init)
   `s6-svc -r /run/service/mpd`; in dev (no s6) it falls back to `SIGHUP`
   (`pkill -HUP mpd`). There is no `inotifywait` watcher and no separate MPD
   entrypoint.
-- **Audio devices** are enumerated by reading `/proc/asound/cards` and
-  `/proc/asound/pcm` (`systemService.detectAudioDevices`) — no `aplay`/`lsusb`
-  required. Containers therefore need the `audio.yml` overlay to expose
-  `/dev/snd` and a read-only `/proc/asound`.
+- **Audio devices** are enumerated from `/sys/class/sound`
+  (`systemService.detectAudioDevices`): playback PCMs are `pcmC<N>D<M>p`, the
+  card id comes from `card<N>/id`, and USB metadata is resolved from
+  `card<N>/device` (`uevent`, then parent/resolved `idVendor`/`idProduct`/
+  `manufacturer`/`product`). `/proc/asound` is only an enrichment and fallback
+  for bare metal or unusual environments. Device IDs are stable
+  `hw:CARD=<id>,DEV=<n>`, so card-index changes across reboots/hotplug do not
+  break playback; a numeric `hw:<index>,<dev>` is used only when no usable card
+  id exists. Containers therefore need the live `/dev/snd` bind mount and
+  `device_cgroup_rules: c 116:* rwm` from `docker/docker-compose.yml` — not a
+  `/proc/asound` mount.
 
 ### Build pipeline
 
@@ -207,7 +215,7 @@ sonect (single image, ENTRYPOINT /init)
 - **asyncHandler** (`middleware/asyncHandler.ts`) wraps all async controllers; it **returns the promise chain** so tests can `await` it.
 - **errorHandler** (`middleware/errorHandler.ts`) is registered in `app.ts` as the last middleware. Controllers throw `NotFoundError`/`ValidationError` for centralized handling.
 - **autoplayService** (`services/mpd/autoplayService.ts`) is always active for both MPD and browser sessions. A manual track selection queues that track through the end of its album, without wrapping to earlier tracks. Smart batches then add complete albums in this order: same artist → same genre → similar genres → (genre-less only) library-wide, ranking each tier by the sum of its tracks' `play_count` (title order breaks ties). Similar genres are resolved via `services/mpd/genreSimilarity.ts`: a curated map for common tags (e.g. `techno → tech house, minimal, house…`) with token/substring fallback for arbitrary MPD `Genre` tags (`Vaporwave → Vapor House` via `genresDb.getAll()` substring match). Ranking stays anchored to the manually selected track as playback advances. A batch stops only after reaching at least 25 tracks, so albums are never split; if the genre pool is sparse the batch may be short and will stay genre-coherent rather than drifting to unrelated genres. For MPD, the connection manager refills below five remaining tracks and prevents overlapping fills; used albums are committed only after MPD accepts them and are not repeated until the cycle is exhausted, and the next cycle preserves albums still in the MPD queue. For browser, each `SessionPlayer` owns its own `AutoplayService` instance (via `SessionRegistry`) — `playTrack` appends an initial batch beyond the album slice, and `advance`/`tick` refills when <5 tracks remain with the same ranking and commit semantics. There is no autoplay toggle API.
-- **CatalogSyncService** (`services/library/catalogSyncService.ts`) owns library sync — Sonect scans the filesystem itself; MPD is not the catalog source. It is invoked via `CatalogSyncOrchestrator.scanLibrary()`, and delegates to `LibraryScanner` (`services/library/libraryScanner.ts`). The scanner walks every enabled registered `storage_sources` path, **skips unchanged files by `(mtime, size)`** against the existing row, and parses only changed/new files with `music-metadata` (falling back to filename-based indexing when a file is unreadable). Deletion is **scoped per successfully-walked source prefix**: the first run (when the `scanner_version` marker is absent) drops legacy/MPD-sourced rows not seen in any walked source, while later runs delete only rows under a walked prefix that were not observed. All upserts/deletes run in one transaction via `catalogSyncDb.applyIncremental()` (per-track savepoints; constraint failures reported and skipped; any other error rolls back to the previous catalog). Unchanged tracks are left untouched, so `play_count`/`last_played` survive. Per-source `file_count`/`dir_count`/`total_size` are written with `storageDb.updateStats()` at the end of the walk. MPD `update` is decoupled and fire-and-forget — the scanner, not MPD, drives the catalog.
+- **CatalogSyncService** (`services/library/catalogSyncService.ts`) owns library sync — Sonect scans the filesystem itself; MPD is not the catalog source. It is invoked via `CatalogSyncOrchestrator.scanLibrary()`, and delegates to `LibraryScanner` (`services/library/libraryScanner.ts`). The scanner walks every enabled registered `storage_sources` path, **skips unchanged files by `(mtime, size)`** against the existing row, and parses only changed/new files with `music-metadata` (falling back to filename-based indexing when a file is unreadable). Deletion is **scoped per successfully-walked source prefix**: the first run (when the `scanner_version` marker is absent) drops legacy/MPD-sourced rows not seen in any walked source, while later runs delete only rows under a walked prefix that were not observed; rows under a **skipped subtree** (an unreadable directory, or an entry whose name is not valid UTF-8) are never deleted, on either run. All upserts/deletes run in one transaction via `catalogSyncDb.applyIncremental()` (per-track savepoints; constraint failures reported and skipped; any other error rolls back to the previous catalog). Unchanged tracks are left untouched, so `play_count`/`last_played` survive. Per-source `file_count`/`dir_count`/`total_size` are written with `storageDb.updateStats()` at the end of the walk. MPD `update` is decoupled and fire-and-forget — the scanner, not MPD, drives the catalog.
 - The backend exposes its build version through `getSystemStatus()` →
   `/system/status[].version`. It reads `/app/.version` (written only by the
   release image via the `SONECT_VERSION` build-arg), defaulting to `"dev"`.
@@ -489,8 +497,17 @@ Per-file progress during library sync now comes from Sonect's own scanner: as
 `sync-progress` WS message. MPD's log file is no longer read for sync progress
 (the former `mpdLogReader.ts` path was removed); MPD `update` is fire-and-forget.
 
-**If a source is unreadable**, the scanner skips it (keeping its catalog rows and
-previous stats) and continues with the remaining sources.
+**If a source root is unreadable**, the scanner skips the whole source (keeping
+its catalog rows and previous stats) and continues with the remaining sources.
+Inside a readable source, an unreadable subdirectory or an entry whose name is
+not valid UTF-8 (Node decodes it lossily to `U+FFFD`, so it can no longer be
+addressed by path) is skipped individually: the walk continues, a capped
+warning names the path (with the errno, or the raw latin-1 name), every catalog
+row under the skipped path is protected from deletion, and per-source stats
+reflect the walked subset only. `storageStats.walk()` returns these `skipped`
+paths; the sync, async, and budget walks all share this tolerance — only a root
+failure throws. Fixing such names is a share-level concern (mount `iocharset`,
+NAS charset, or renaming through a UTF-8 client); Sonect never renames files.
 
 ## What NOT to do
 

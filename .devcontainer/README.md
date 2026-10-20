@@ -100,6 +100,6 @@ Since this container uses the same OS (Debian Bookworm) as Raspberry Pi OS, you 
 
 ## Notes
 
-- The container runs with `privileged: true` for reliable ALSA access in dev (the production image instead uses the `audio.yml` overlay with `/dev/snd`, the `audio` group and `/proc/asound:ro`)
+- The container runs with `privileged: true` for reliable ALSA access in dev (the production compose instead uses a live `/dev/snd` bind mount, an ALSA device cgroup rule and the `audio` group)
 - The `remoteUser` is `root` (matching the production longruns; the `node` user also exists with passwordless sudo)
 - All pnpm commands work across the entire monorepo

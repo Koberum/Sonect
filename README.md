@@ -115,7 +115,6 @@ bind mounts; Sonect never mounts anything itself or runs privileged commands.
 ```bash
 mkdir -p sonect && cd sonect
 curl -fsSL https://raw.githubusercontent.com/Koberum/Sonect/main/docker/docker-compose.yml -o docker-compose.yml
-curl -fsSL https://raw.githubusercontent.com/Koberum/Sonect/main/docker/audio.yml -o audio.yml
 curl -fsSL https://raw.githubusercontent.com/Koberum/Sonect/main/docker/.env.example -o .env
 
 # Add one bind mount per music folder under /libraries/<name> (read-only)
@@ -124,19 +123,27 @@ curl -fsSL https://raw.githubusercontent.com/Koberum/Sonect/main/docker/.env.exa
 #     - /mnt/music:/libraries/music:ro
 #     - sonect-data:/app/data
 
-# On a host with a sound card / USB DAC, also apply the audio overlay:
-docker compose -f docker-compose.yml -f audio.yml up -d
+docker compose up -d
 ```
 
 The UI is served on port `3000`. Then register the music folders from
 Settings → Libraries (folders detected under `/libraries` are suggested
 automatically and added with a single click; per-library statistics are shown
-inline). The `-f audio.yml` overlay is only needed on hosts with a sound
-card / USB DAC — it grants `/dev/snd`, the `audio` group and a read-only
-`/proc/asound` so Sonect can enumerate and play through the devices. The image
-reports container health via a `HEALTHCHECK` on `GET /system/health` (visible
-in `docker ps`); s6-overlay restarts the MPD/node services internally if they
-crash.
+inline). Audio access is included in the standard compose file: it bind-mounts
+`/dev/snd` live (a USB DAC plugged in after container start is visible without
+recreating the container), allows ALSA character devices through the device
+cgroup, and adds the `audio` group. Sonect enumerates cards from
+`/sys/class/sound`, so no `/proc/asound` mount or `privileged` mode is needed.
+On a host without sound hardware these settings are harmless. If MPD does not
+reopen a re-plugged DAC automatically, re-apply the output in Settings → Audio.
+The image reports container health via a `HEALTHCHECK` on `GET /system/health`
+(visible in `docker ps`); s6-overlay restarts the MPD/node services internally if
+they crash.
+
+If no cards appear, compare `aplay -l` on the host with
+`docker exec sonect aplay -l` inside the container; both should list the same
+playback devices. Sonect uses ALSA directly, so a host PulseAudio/PipeWire
+server holding the DAC exclusively must release it first.
 
 ---
 
@@ -259,6 +266,16 @@ scan: it is **incremental**, skipping files whose `(mtime, size)` are unchanged
 and re-parsing only changed or new files, so existing play counts survive.
 MPD's `update` runs fire-and-forget and is not the source of the catalog.
 `MUSIC_EXTENSIONS` controls which audio extensions are counted as music files.
+
+**Network shares with legacy filenames.** Linux and MPD treat filenames as
+UTF-8. Folders whose names were written by old Windows/SMB clients in a legacy
+codepage (Latin-1/CP1252) contain bytes that are not valid UTF-8 and cannot be
+addressed by path. One such folder never breaks the library: the scan skips it,
+logs a warning naming the folder (including the raw bytes), keeps every catalog
+row under it from being deleted, and indexes the rest. The skipped files stay
+out of the catalog until the names are fixed at the source — remount the share
+with the correct charset (`iocharset=`) or rename the folders through a client
+that displays them correctly.
 
 Sonect does not manage host Wi-Fi connections. `GET /system/network/status`
 returns whether the server has a non-loopback network address and whether the
