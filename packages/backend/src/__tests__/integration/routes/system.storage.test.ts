@@ -9,7 +9,7 @@ import { errorHandler } from "@middleware/errorHandler";
 import systemRoutes from "@routes/systemRoutes";
 import { computeSourceStatsWithinBudget } from "@services/storage/storageService.js";
 import { createTestDb } from "@tests/helpers/db.js";
-import { storageDb } from "@repo/db";
+import { db, storageDb, upsertTrack } from "@repo/db";
 import {
   initializeServices,
   isServicesInitialized,
@@ -110,14 +110,20 @@ describe("system storage routes", () => {
     });
   });
 
-  it("POST /system/storage/sources/:id/refresh-stats recomputes stats", async () => {
+  it("POST /system/storage/sources/:id/refresh-stats uses the catalog file count", async () => {
     const sourcePath = path.join(tmpDir, "Refresh");
     fs.mkdirSync(sourcePath, { recursive: true });
     writeAudio(path.join(sourcePath, "one.mp3"), "12345");
+    writeAudio(path.join(sourcePath, "two.mp3"), "123");
     const id = storageDb.create({
       name: "Refresh",
       path: sourcePath,
       enabled: true,
+    });
+    upsertTrack(db(), {
+      file: "Refresh/one.mp3",
+      title: "One",
+      storageSourceId: id,
     });
 
     const res = await request(makeApp()).post(
@@ -125,7 +131,7 @@ describe("system storage routes", () => {
     );
     expect(res.status).to.equal(200);
     expect(res.body.file_count).to.equal(1);
-    expect(res.body.total_size).to.equal(5);
+    expect(res.body.total_size).to.equal(8);
     expect(storageDb.getById(id)?.file_count).to.equal(1);
   });
 

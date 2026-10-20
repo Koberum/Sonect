@@ -168,7 +168,7 @@ export const getStorageStatsHandler = asyncHandler(
 export const refreshStorageStatsHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = systemSchemas.idParam.parse(req.params);
-    const source = getStorageService().refreshStats(id);
+    const source = await getStorageService().refreshStats(id);
     if (!source) throw new NotFoundError(`Storage source ${id}`);
     res.json(source);
   },

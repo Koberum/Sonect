@@ -27,6 +27,7 @@ import {
   StorageServiceImpl,
   type StorageService,
 } from "./storage/storageService.js";
+import { LibraryStatsServiceImpl } from "./storage/libraryStatsService.js";
 import {
   SystemServiceImpl,
   type SystemServiceInterface,
@@ -113,9 +114,11 @@ export function initializeServices(): void {
     _catalogSyncService,
   );
 
+  const libraryStatsService = new LibraryStatsServiceImpl(_logService);
   _storageService = new StorageServiceImpl(
     _mpdConnectionManager,
     _catalogSyncOrchestrator,
+    libraryStatsService,
   );
 
   _systemService = new SystemServiceImpl(_mpdConnectionManager, {
