@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.3](https://github.com/Koberum/Sonect/compare/sonect-v0.1.2...sonect-v0.1.3) (2026-10-20)
+
+
+### Features
+
+* live detect audio devices ([9fa670c](https://github.com/Koberum/Sonect/commit/9fa670c4c05b4994f3304d70d6e5b4425f505729))
+
+
+### Bug Fixes
+
+* **library:** keep scanning when paths can't be read or addressed ([4455cdf](https://github.com/Koberum/Sonect/commit/4455cdff35bcb5716be77740b1d80de6fe96a781))
+* **library:** sanitize raw names in skip warnings ([b1635f4](https://github.com/Koberum/Sonect/commit/b1635f4f8fee04a91b99d31b40e843a83d45185f))
+
 ## [0.1.2](https://github.com/Koberum/Sonect/compare/sonect-v0.1.1...sonect-v0.1.2) (2026-10-17)
 
 
