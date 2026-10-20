@@ -115,19 +115,18 @@ bind mounts; Sonect never mounts anything itself or runs privileged commands.
 ```bash
 mkdir -p sonect && cd sonect
 curl -fsSL https://raw.githubusercontent.com/Koberum/Sonect/main/docker/docker-compose.yml -o docker-compose.yml
-curl -fsSL https://raw.githubusercontent.com/Koberum/Sonect/main/docker/.env.example -o .env
 
-# Add one bind mount per music folder under /libraries/<name> (read-only)
-# in docker-compose.yml, e.g.:
+# Point the music bind mount at the host folder that contains your libraries
+# (read-only) in docker-compose.yml, e.g.:
 #   volumes:
-#     - /mnt/music:/libraries/music:ro
+#     - /mnt/music:/libraries:ro
 #     - sonect-data:/app/data
 
 docker compose up -d
 ```
 
-The UI is served on port `3000`. Then register the music folders from
-Settings → Libraries (folders detected under `/libraries` are suggested
+The UI is served on port `3000`. Then register your library subfolders from
+Settings → Libraries (each first-level folder under `/libraries` is detected
 automatically and added with a single click; per-library statistics are shown
 inline). Audio access is included in the standard compose file: it bind-mounts
 `/dev/snd` live (a USB DAC plugged in after container start is visible without
@@ -235,18 +234,20 @@ Configure via `packages/backend/.env`:
 
 ### Library sources
 
-Storage is provided by the **host**: mount each music folder into the single
-`sonect` container under `/libraries/<name>` (read-only) and register the
-container path in the Sonect UI (Settings → Libraries). In the Docker compose
-file that means adding one bind mount per library folder:
+Storage is provided by the **host**: mount your music folder into the single
+`sonect` container at `/libraries` (read-only) and register the first-level
+subfolders in the Sonect UI (Settings → Libraries). In the Docker compose file:
 
 ```yaml
 services:
   sonect:
     volumes:
-      - /host/path/to/music:/libraries/music:ro
+      - /host/path/to/music:/libraries:ro
       - sonect-data:/app/data
 ```
+
+If your libraries live in separate host folders, mount each one under
+`/libraries/<name>` instead.
 
 `MUSIC_DIR` is MPD's single `music_directory` (`/libraries` in docker), which is
 why every library must live under it — MPD can only index one tree. A library
