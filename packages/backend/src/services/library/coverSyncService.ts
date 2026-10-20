@@ -38,45 +38,62 @@ export interface CoverSyncService {
 }
 
 export class CoverSyncServiceImpl implements CoverSyncService {
-  constructor(private readonly logService: LogService) {}
+  constructor(
+    private readonly logService: LogService,
+    private readonly concurrency = 4,
+  ) {}
 
   async syncAllCovers(
     albums: Album[],
     onProgress?: (progress: CoverProgress) => void,
   ): Promise<void> {
     this.ensureCoversDir();
-    let done = 0;
     const total = albums.length;
+    if (total === 0) return;
 
-    for (const album of albums) {
-      const artistName = album.artist_id
-        ? (artistsDb.getById(album.artist_id)?.name ?? "")
-        : "";
+    const queue = [...albums];
+    let done = 0;
 
-      if (
-        !album.cover_path ||
-        !fs.existsSync(path.join(COVERS_DIR, album.cover_path)) ||
-        path.extname(album.cover_path).toLowerCase() !== ".webp"
-      ) {
-        try {
-          const result = await this.findAndSaveCover(album);
-          if (result) {
-            albumsDb.updateCoverPath(album.id, result);
-          }
-        } catch (err) {
-          this.logService.pushLog(
-            "error",
-            `Error extracting cover for album "${album.title}": ${err instanceof Error ? err.message : String(err)}`,
-          );
-        }
+    const worker = async (): Promise<void> => {
+      for (;;) {
+        const album = queue.shift();
+        if (!album) return;
+
+        await this.syncOne(album);
+
+        done++;
+        const artistName = album.artist_id
+          ? (artistsDb.getById(album.artist_id)?.name ?? "")
+          : "";
+        onProgress?.({
+          current: done,
+          total,
+          album: { id: album.id, title: album.title, artist: artistName },
+        });
       }
+    };
 
-      done++;
-      onProgress?.({
-        current: done,
-        total,
-        album: { id: album.id, title: album.title, artist: artistName },
-      });
+    const workerCount = Math.max(1, Math.min(this.concurrency, total));
+    await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  }
+
+  private async syncOne(album: Album): Promise<void> {
+    if (
+      !album.cover_path ||
+      !fs.existsSync(path.join(COVERS_DIR, album.cover_path)) ||
+      path.extname(album.cover_path).toLowerCase() !== ".webp"
+    ) {
+      try {
+        const result = await this.findAndSaveCover(album);
+        if (result) {
+          albumsDb.updateCoverPath(album.id, result);
+        }
+      } catch (err) {
+        this.logService.pushLog(
+          "error",
+          `Error extracting cover for album "${album.title}": ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     }
   }
 
