@@ -179,6 +179,14 @@ playback control and a polling client for status updates. The in-memory cache
 is refreshed every 2 seconds during play (10 s during pause/stop) and
 immediately after user-initiated commands. Browser sessions run entirely in-memory (SessionPlayer) without MPD.
 
+With `LOG_LEVEL=debug`, Sonect logs MPD command responses (including command
+lists) in the backend console. Polling is intentionally quieter: MPD status
+errors are logged only when they appear, change, or clear, and are also exposed
+as `error` in the `player-status` WebSocket payload and in the player UI. If
+MPD accepts `play` but immediately pauses, check this field and MPD's `outputs`
+command; a disabled output reports `All audio outputs are disabled` and must be
+enabled in MPD or reconfigured from Settings → Audio.
+
 The database is native SQLite through Node's built-in `node:sqlite` module,
 accessed via a synchronous Drizzle repository layer in `@repo/db` — no WASM
 SQLite build ships in the image. Node.js **24** is required (the `node:sqlite`
@@ -229,7 +237,7 @@ Configure via `packages/backend/.env`:
 | `COVER_QUALITY`    | `80`                                                                     | WebP quality for covers                                                        |
 | `WAVEFORMS_DIR`    | `/app/data/waveforms` (docker) / `<COVERS_DIR>/../waveforms`             | Where waveform JSON caches are saved (`SHA1(file).json`)                       |
 | `DB_PATH`          | `/app/data/music.db` (docker) / `/db/music.db` (dev)                     | SQLite database path (docker: under the `sonect-data` volume)                  |
-| `LOG_LEVEL`        | `info`                                                                   | Console log level; `debug` logs every found/updated/removed track during scans |
+| `LOG_LEVEL`        | `info`                                                                   | Console log level; `debug` also logs MPD command responses and catalog details |
 | `MPD_CONFIG_PATH`  | `/app/data/mpd-audio.conf` (docker) / `/opt/sonect/data/...`             | MPD config drop-in (`audio_output` + advanced settings)                        |
 | `MPD_LOG_PATH`     | —                                                                        | Legacy; **no longer read** — sync progress comes from the MPD protocol         |
 | `DNS_CHECK_HOST`   | `example.com`                                                            | Host resolved to verify DNS connectivity                                       |

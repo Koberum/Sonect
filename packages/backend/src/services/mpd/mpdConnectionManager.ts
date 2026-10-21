@@ -4,7 +4,12 @@ import mpd from "mpd";
 import type { PlaybackStatus, PlaybackState } from "@repo/types";
 import type { CatalogService } from "@services/library/catalogService";
 import type { LogService } from "@services/utils/logService";
-import { parseKeyValue, hashFile } from "../../utils/mpd.js";
+import {
+  extractMpdStatusError,
+  formatMpdResponse,
+  parseKeyValue,
+  hashFile,
+} from "../../utils/mpd.js";
 import { TrackWithRelations } from "@repo/types/catalog";
 
 const { cmd } = mpd;
@@ -31,6 +36,7 @@ function createDefaultStatus(): PlaybackStatus {
     random: false,
     single: false,
     consume: false,
+    error: null,
     queueLength: 0,
   };
 }
@@ -64,6 +70,7 @@ export class MpdConnectionManager extends EventEmitter {
   private _pollResolve: ((value: string) => void) | null = null;
   private _pollReject: ((err: Error) => void) | null = null;
   private _pollPending = false;
+  private _lastStatusError: string | null = null;
 
   get connected(): boolean {
     return this._cmdConnected;
@@ -78,18 +85,36 @@ export class MpdConnectionManager extends EventEmitter {
   }
 
   async executeCommand(command: string, args: string[] = []): Promise<string> {
-    this.logService.pushLog("info", `MPD cmd: ${command} ${args.join(" ")}`);
+    const commandLabel = formatMpdCommand(command, args);
+    this.logService.pushLog("debug", `[MPD] command: ${commandLabel}`);
 
     if (!this._cmdConnected || !this.cmdClient) {
-      throw new Error("MPD connection not available");
+      const error = new Error("MPD connection not available");
+      this.logService.pushLog(
+        "error",
+        `[MPD] command unavailable: ${commandLabel}`,
+      );
+      throw error;
     }
 
     return new Promise((resolve, reject) => {
       this.cmdClient!.sendCommand(
         cmd(command, args),
         (err: unknown, msg: string) => {
-          if (err) reject(err instanceof Error ? err : new Error(String(err)));
-          else resolve(msg);
+          if (err) {
+            const error = err instanceof Error ? err : new Error(String(err));
+            this.logService.pushLog(
+              "error",
+              `[MPD] command failed: ${commandLabel}: ${error.message}`,
+            );
+            reject(error);
+          } else {
+            this.logService.pushLog(
+              "debug",
+              `[MPD] response: ${commandLabel} -> ${formatMpdResponse(msg)}`,
+            );
+            resolve(msg);
+          }
         },
       );
     });
@@ -98,8 +123,21 @@ export class MpdConnectionManager extends EventEmitter {
   async executeCommandList(
     commands: { command: string; args?: string[] }[],
   ): Promise<string> {
+    const commandLabel = commands.map((item) =>
+      formatMpdCommand(item.command, item.args ?? []),
+    );
+    this.logService.pushLog(
+      "debug",
+      `[MPD] command list (${commands.length}): ${commandLabel.join("; ")}`,
+    );
+
     if (!this._cmdConnected || !this.cmdClient) {
-      throw new Error("MPD connection not available");
+      const error = new Error("MPD connection not available");
+      this.logService.pushLog(
+        "error",
+        `[MPD] command list unavailable (${commands.length} commands)`,
+      );
+      throw error;
     }
 
     const lines = [
@@ -110,8 +148,20 @@ export class MpdConnectionManager extends EventEmitter {
 
     return new Promise((resolve, reject) => {
       this.cmdClient!.sendCommand(lines, (err: unknown, msg: string) => {
-        if (err) reject(err instanceof Error ? err : new Error(String(err)));
-        else resolve(msg);
+        if (err) {
+          const error = err instanceof Error ? err : new Error(String(err));
+          this.logService.pushLog(
+            "error",
+            `[MPD] command list failed: ${error.message}`,
+          );
+          reject(error);
+        } else {
+          this.logService.pushLog(
+            "debug",
+            `[MPD] response (command list): ${formatMpdResponse(msg)}`,
+          );
+          resolve(msg);
+        }
       });
     });
   }
@@ -311,6 +361,16 @@ export class MpdConnectionManager extends EventEmitter {
 
       const rawStatus = await this.executeOnPollClient("status");
       const status = parseKeyValue(rawStatus);
+      const statusError = extractMpdStatusError(rawStatus) ?? null;
+
+      if (statusError !== this._lastStatusError) {
+        if (statusError) {
+          this.logService.pushLog("warn", `[MPD] status error: ${statusError}`);
+        } else if (this._lastStatusError) {
+          this.logService.pushLog("info", "[MPD] status error cleared");
+        }
+        this._lastStatusError = statusError;
+      }
 
       let resolvedTrack: TrackWithRelations | undefined;
       const currentSongId = parseInt(status.songid, 10);
@@ -366,6 +426,7 @@ export class MpdConnectionManager extends EventEmitter {
         random: status.random === "1",
         single: status.single === "1",
         consume: status.consume === "1",
+        error: statusError,
         track: resolvedTrack ?? undefined,
         queueLength: playlistLength,
       };
@@ -426,6 +487,7 @@ export class MpdConnectionManager extends EventEmitter {
         this._pollResolve = null;
         this._pollPending = false;
         reject?.(new Error(str.trim()));
+        this.logService.pushLog("error", `[MPD] poll response: ${str.trim()}`);
       } else {
         const resolve = this._pollResolve;
         this._pollReject = null;
@@ -501,4 +563,8 @@ export class MpdConnectionManager extends EventEmitter {
       this.connectPoll();
     }, this._pollReconnectDelay);
   }
+}
+
+function formatMpdCommand(command: string, args: string[]): string {
+  return [command, ...args.map((arg) => JSON.stringify(arg))].join(" ");
 }

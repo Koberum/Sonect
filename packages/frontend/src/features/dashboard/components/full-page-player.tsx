@@ -22,6 +22,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { playerQueries } from "@/features/player/queries";
 import { qk } from "@/lib/queryKeys";
 import PlayStatus from "./play-status";
+import { PlaybackErrorNotice } from "./playback-error";
 
 interface FullPagePlayerProps {
   displayElapsed: number;
@@ -71,6 +72,11 @@ export function FullPagePlayer({
           {t("player.title")}
         </h2>
       </div>
+
+      <PlaybackErrorNotice
+        error={playbackStatus.error}
+        className="mx-6 rounded-lg"
+      />
 
       <div className="flex justify-center px-6">
         <img

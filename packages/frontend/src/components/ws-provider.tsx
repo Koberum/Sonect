@@ -174,6 +174,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
               random: pd.random,
               single: pd.single,
               consume: pd.consume,
+              error: pd.error ?? null,
               queueLength: pd.queueLength ?? 0,
               activeDeviceId: pd.activeDeviceId ?? null,
               activeDeviceName: pd.activeDeviceName ?? null,

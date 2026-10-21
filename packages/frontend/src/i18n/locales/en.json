@@ -74,6 +74,7 @@
     "remoteDevice": "Other browser",
     "outputModeError": "Failed to switch output mode",
     "tapToPlay": "Tap to play",
+    "mpdError": "MPD playback error: {{error}}",
     "mpdLocked": "MPD locked",
     "outputModeLocked": "MPD output locked by another session"
   },

@@ -1,5 +1,14 @@
 import { expect } from "chai";
-import { parseKeyValue, hashFile, parseMPDTracks } from "../../../utils/mpd.js";
+import {
+  extractMpdStatusError,
+  formatMpdResponse,
+  parseKeyValue,
+  hashFile,
+  parseMPDTracks,
+} from "../../../utils/mpd.js";
+import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager.js";
+import type { CatalogService } from "@services/library/catalogService.js";
+import type { LogService } from "@services/utils/logService.js";
 
 // Layer 1: Pure functions — no DB, no mocks, cheap & fast
 describe("parseKeyValue (pure unit)", () => {
@@ -85,5 +94,97 @@ describe("hashFile (pure unit)", () => {
   it("returns non-negative integer", () => {
     expect(hashFile("test/file.flac")).to.be.a("number");
     expect(hashFile("test/file.flac")).to.be.greaterThanOrEqual(0);
+  });
+});
+
+describe("MPD diagnostics", () => {
+  it("formats multiline responses without flooding one log entry", () => {
+    expect(formatMpdResponse("state: play\nelapsed: 1.2\nOK")).to.equal(
+      "state: play\\nelapsed: 1.2\\nOK",
+    );
+    expect(formatMpdResponse("123456", 5)).to.equal("12345...");
+  });
+
+  it("extracts a non-empty status error", () => {
+    expect(
+      extractMpdStatusError("state: pause\nerror: Device failed\nOK"),
+    ).to.equal("Device failed");
+    expect(extractMpdStatusError("state: play\nOK")).to.equal(undefined);
+  });
+
+  it("logs the response returned by a command at debug level", async () => {
+    const entries: Array<{ level: string; message: string }> = [];
+    const logService = {
+      pushLog(level: string, message: string): void {
+        entries.push({ level, message });
+      },
+      setBroadcaster(): void {},
+    } as unknown as LogService;
+    const manager = new MpdConnectionManager(
+      { resolveTrack: () => undefined } as unknown as CatalogService,
+      logService,
+    );
+    const internals = manager as unknown as {
+      cmdClient: {
+        sendCommand: (
+          command: string,
+          cb: (err: unknown, message: string) => void,
+        ) => void;
+      };
+      _cmdConnected: boolean;
+    };
+    internals._cmdConnected = true;
+    internals.cmdClient = {
+      sendCommand: (_command, callback) => callback(null, "state: play\nOK"),
+    };
+
+    await manager.executeCommand("play");
+
+    expect(entries).to.deep.equal([
+      { level: "debug", message: "[MPD] command: play" },
+      { level: "debug", message: "[MPD] response: play -> state: play\\nOK" },
+    ]);
+  });
+
+  it("caches MPD status errors and logs only their transitions", async () => {
+    const entries: Array<{ level: string; message: string }> = [];
+    const manager = new MpdConnectionManager(
+      { resolveTrack: () => undefined } as unknown as CatalogService,
+      {
+        pushLog(level: string, message: string): void {
+          entries.push({ level, message });
+        },
+        setBroadcaster(): void {},
+      } as unknown as LogService,
+    );
+    const internals = manager as unknown as {
+      _pollConnected: boolean;
+      pollSocket: object;
+      executeOnPollClient: (command: string) => Promise<string>;
+      refreshFullCache: () => Promise<void>;
+    };
+    internals._pollConnected = true;
+    internals.pollSocket = {};
+    let withError = true;
+    internals.executeOnPollClient = async () =>
+      withError
+        ? "state: stop\nerror: All audio outputs are disabled\nOK"
+        : "state: stop\nOK";
+
+    await internals.refreshFullCache();
+    await internals.refreshFullCache();
+    expect(manager.getCachedStatus().error).to.equal(
+      "All audio outputs are disabled",
+    );
+    expect(
+      entries.filter((entry) => entry.message.includes("status error")).length,
+    ).to.equal(1);
+
+    withError = false;
+    await internals.refreshFullCache();
+    expect(manager.getCachedStatus().error).to.equal(null);
+    expect(
+      entries.some((entry) => entry.message === "[MPD] status error cleared"),
+    ).to.equal(true);
   });
 });

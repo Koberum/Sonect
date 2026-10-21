@@ -11,6 +11,18 @@ export function parseKeyValue(msg: string): Record<string, string> {
   return data;
 }
 
+export function formatMpdResponse(raw: string, maxLength = 500): string {
+  const normalized = raw.trimEnd().replace(/\r?\n/g, "\\n");
+  return normalized.length > maxLength
+    ? `${normalized.slice(0, maxLength)}...`
+    : normalized;
+}
+
+export function extractMpdStatusError(raw: string): string | undefined {
+  const error = parseKeyValue(raw).error?.trim();
+  return error || undefined;
+}
+
 export function hashFile(file: string): number {
   let hash = 0;
   for (let i = 0; i < file.length; i++) {
