@@ -82,6 +82,8 @@ After making changes:
 | `LOG_LEVEL`        | `info`                                                          | Console log level (`debug`/`info`/`warn`/`error`)                                   |
 | `MPD_LOG_PATH`     | —                                                               | Legacy; not read by Sonect (sync progress comes from the MPD protocol, not the log) |
 | `DNS_CHECK_HOST`   | `example.com`                                                   | Host resolved to verify DNS connectivity                                            |
+| `CORS_ORIGIN`      | — (empty → same-origin only)                                    | Comma-separated exact origins allowed to make credentialed cross-origin requests    |
+| `COOKIE_SECURE`    | — (false)                                                       | Set to `true` when Sonect is served over HTTPS so the session cookie is `Secure`    |
 
 ## Production deployment (Docker)
 
@@ -105,8 +107,10 @@ sonect (single image, ENTRYPOINT /init)
       (NO privileged: true, no /proc/asound mount)
 ```
 
-- ` /player` is the single playback API (requires `X-Session-Id`). Legacy `/mpd`
-  routes were removed; `/session` remains only for legacy backend tests.
+- `/player` is the single playback API. Requests require the `sonect_session`
+  auth cookie (`authenticate` + `requireAuth`) and take the queue owner from
+  `req.auth.profileId`; legacy `/mpd` routes were removed and `/session` remains
+  only for legacy backend tests.
 - **Storage is host-provided.** Music folders are bind-mounted into the single
   container under `/libraries/<name>`. The backend never mounts anything and
   never runs privileged commands; a library source is just a registered path
@@ -212,7 +216,7 @@ sonect (single image, ENTRYPOINT /init)
 - Controllers (input validation / response shaping) live in `packages/backend/src/controllers/`.
 - **MpdConnectionManager** (`services/mpd/mpdConnectionManager.ts`) is a singleton that manages **two** TCP connections to MPD: a command client (`cmdClient`) and a polling client (`pollSocket`). The **cmdClient** uses the `mpd` npm package (v1.3.0) for command execution. The **pollSocket** uses raw TCP (`net` module) to send `status` commands directly — this avoids the `mpd` package's `idle`-based callback queue which caused silent polling failures. Polling happens on a timer: every 2s during `play`, every 10s during `pause`/`stop`. The in-memory `PlaybackStatus` cache is maintained and `stateChanged` events are emitted to subscribers on each poll. A `refreshNow()` method is also exposed for immediate cache refresh after user-initiated commands. When MPD disconnects, each connection auto-reconnects with exponential backoff (1s–30s). At `LOG_LEVEL=debug`, command and command-list responses are logged with bounded, single-line raw previews; poll `status.error` values are logged only on transitions and copied to `PlaybackStatus.error`.
 - `playerService.ts` reads the cached status synchronously via `mpdConnectionManager.getCachedStatus()`. It delegates commands to `mpdConnectionManager.executeCommand()` / `executeCommandList()` and fires `mpdConnectionManager.refreshNow()` (fire-and-forget with `.catch`) after each command for prompt feedback; if a poll is already in flight the refresh is skipped and the next tick applies. Note: `getQueue()` is an exception — it runs an async MPD query (`playlistinfo`).
-- `player.ws.ts` sends the cached status to new WebSocket clients immediately on connect (wrapped in `{ type: "player-status", ... }` envelope), then forwards subsequent `stateChanged` events from the polling loop. All WS messages follow a standard format with a `type` field: `"player-status"`, `"sync-progress"`, `"sync-complete"`, `"sync-error"`, or `"log"`.
+- `player.ws.ts` authenticates the handshake with the session cookie, sends the authenticated profile's status immediately on connect (wrapped in `{ type: "player-status", ... }` envelope), then forwards that profile's `stateChanged` events from the player router. All WS messages follow a standard format with a `type` field: `"player-status"`, `"sync-progress"`, `"sync-complete"`, `"sync-error"`, or `"log"`.
 - The `mpd` npm package (v1.3.0) is bundled into the backend output; it is only used for the `cmdClient`. The `pollSocket` uses raw TCP to avoid idle-protocol callback desync.
 - Use `process.env` variables for configuration; never hard-code hosts, ports, or paths.
 - **Zod validation** is applied directly in controller functions via `schema.parse(req.body)` / `schema.parse(req.params)`. Schemas are defined in `@repo/types` (`packages/types/src/schemas/types.ts`, re-exported from `packages/types/src/schemas/index.ts`). `ZodError` propagates to `errorHandler` which returns a 400 response with `flatten().fieldErrors` under `details`.
@@ -225,13 +229,14 @@ sonect (single image, ENTRYPOINT /init)
   `/app/.version` (written only by the release image via the `SONECT_VERSION`
   build-arg), defaulting to `"dev"`. Sources: `services/utils/appVersion.ts`.
 - Host network management is intentionally not part of Sonect. Network status is
-  exposed via `GET /system/health` (aggregated) and legacy `GET /system/network/status`,
-  both returning `{ connected, dnsReachable }`. `connected` checks for a non-loopback
-  IPv4 or IPv6 address, while `dnsReachable` resolves `DNS_CHECK_HOST` (default
-  `example.com`) with a 3s timeout. The frontend polls **health** every **30s**
-  (60s during library sync) for both backend liveness and network indicator —
-  deduplicated via shared `qk.system.health()` key — and shows one localized
-  indicator in the desktop top bar; it does not expose Wi-Fi scan/connect controls.
+  exposed via the public `GET /system/health` (aggregated) and the admin-only
+  legacy `GET /system/network/status`, both returning `{ connected, dnsReachable }`.
+  `connected` checks for a non-loopback IPv4 or IPv6 address, while
+  `dnsReachable` resolves `DNS_CHECK_HOST` (default `example.com`) with a 3s
+  timeout. The frontend polls **health** every **30s** (60s during library sync)
+  for both backend liveness and network indicator — deduplicated via shared
+  `qk.system.health()` key — and shows one localized indicator in the desktop
+  top bar; it does not expose Wi-Fi scan/connect controls.
 
 ### Frontend
 
@@ -306,7 +311,8 @@ sonect (single image, ENTRYPOINT /init)
 - **Queries** live in the focused repository modules under
   `packages/db/src/repositories/` (`artists`, `albums`, `tracks`, `catalogSync`,
   `genres`, `playlists`, `syncMetadata`, `stats`, `storage`, `setup`,
-  `profiles`). Put new queries there; the old `models.ts` no longer exists.
+  `authSessions`, `profiles`). Put new queries there; the old `models.ts` no
+  longer exists.
 - **Raw SQL must stay inside `@repo/db`** and use Drizzle's typed `sql`
   template (or parameterized `prepare()` calls) — never string-concatenate
   values into SQL outside the package. Keep queries simple and indexed.
@@ -351,21 +357,88 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 ### WebSocket architecture
 
 - WebSocket server shares the same HTTP port as Express (via `ws` package upgrade).
-- On client connect: server immediately sends current cached playback status.
-- Subsequent updates pushed via `stateChanged` events from the polling loop.
-- All connected clients receive the same broadcast via `broadcast.ts` (`ws/broadcast.ts`), a utility that iterates `wss.clients` and sends JSON to all open connections.
+- The handshake requires the `sonect_session` cookie. A missing or invalid token
+  closes the socket with **4401**; a `?sessionId=` query that disagrees with the
+  authenticated profile closes it with **4403**.
+- On client connect: server immediately sends the authenticated profile's
+  player status.
+- Subsequent updates are pushed from `PlayerRouter`'s `stateChanged` events for
+  that profile.
+- Library sync/log events still go through `broadcast.ts` (`ws/broadcast.ts`) to
+  all connected clients; playback status is per-profile and never global.
 - All WS messages follow a standard format with a `type` field: `"player-status"`, `"sync-progress"`, `"sync-complete"`, `"sync-error"`, or `"log"`.
+
+### Authentication and roles
+
+- **Data model.** `profiles` has `password_hash`, `role` (`admin` | `user`,
+  default `user`) and `password_updated_at`. `auth_sessions` stores only the
+  SHA-256 hash of an opaque 32-byte base64url token, with `profile_id` FK
+  `ON DELETE CASCADE`, `created_at`, `expires_at` (30 days, absolute — not
+  sliding), `last_used_at` (touched at most every 5 minutes), and
+  `user_agent`/`device_id`. Expired rows are pruned at startup.
+- **No default profile.** `ensureDefault()` and the default-profile bootstrap are
+  gone. The first administrator is created through `POST /auth/bootstrap`
+  (`{name,password}`; 409 once an admin exists), which also sets the session
+  cookie. The frontend wizard runs `admin → storage → audio → sync`; the admin
+  step appears only while `/auth/state` reports `bootstrapRequired`. Backend
+  `getSetupProgress()` still reports only `storage`/`audio`/`sync`; the admin
+  step is not a `setup_progress` row.
+- **Service.** `AuthServiceImpl` (`services/auth/authService.ts`) issues 30-day
+  sessions, validates them through `authSessionsDb.findValid`, and supports
+  login, logout, switch, self-service password change, and admin reset.
+  Passwords use scrypt (`N=16384, r=8, p=1`, 64-byte key) with a valid-format
+  check on verification. `LoginThrottle` blocks a profile for 15 minutes after
+  5 failed attempts within a 15-minute window and returns 429 with `Retry-After`.
+- **Middleware.** `authenticate` (`middleware/auth.ts`) resolves the cookie and
+  populates `req.auth`; `requireAuth` returns 401 without a session;
+  `requireAdmin` returns 403 for non-admins. `req.auth.profileId` is the only
+  trusted identity. `X-Session-Id` is optional and never trusted — if present
+  and different from `req.auth.profileId`, `sessionIdMiddleware` rejects it with
+  403; `X-Device-Id` remains the output-target hint.
+- **Routes.** Public: `GET /auth/state`, `GET /auth/profiles`,
+  `POST /auth/bootstrap` (only while no admin exists), `POST /auth/login`, and
+  `GET /system/health`. Authenticated: `/auth/logout|switch|password`,
+  `/catalog/*` (except scan), `/playlists/*`, `/player/*`, `/session/*`,
+  `/dashboard`, `/covers`, `/stream`, `/waveforms`. Admin-only: every other
+  `/system/*` route, all of `/profiles/*`, and `POST /catalog/scan`.
+- **Roles.** Admins own libraries, audio output, sync/scan, debug/setup, and
+  profile management. Users can browse and listen, use the global playlists,
+  and change their own password. The UI hides Settings and the sidebar library
+  refresh for users; the API enforces the same split. The last admin cannot be
+  demoted or deleted (409).
+- **Cookie.** `sonect_session`: httpOnly, SameSite=Lax, Path=/, 30-day absolute
+  `maxAge`, and `Secure` only when `COOKIE_SECURE=true`. CORS uses an exact
+  origin allowlist from `CORS_ORIGIN` (comma-separated; empty means same-origin
+  only); credentialed requests from another origin need both
+  `credentials: "include"` and a matching allowlist entry. `frontend/lib/api.ts` sends credentials and emits
+  `sonect:unauthorized` on 401.
+- **Sessions and role changes.** Login/switch issue a new cookie; logout deletes
+  that token only. A user changing their own password deletes the profile's
+  other sessions (the current one stays valid). An admin reset deletes all of the
+  target profile's sessions; deleting a profile cascades its sessions.
+- **Profile switching.** Requires the destination profile's password. The
+  current token is deleted and the old cookie replaced; if the previous profile
+  has no active sessions left, its MPD lock is released.
+- **MPD lock.** Still keyed by profile id, not device. Logout/switch release it
+  when the profile has no active sessions; admin password reset and profile
+  delete release it immediately.
+- **Frontend identity.** `AuthProvider`/`useAuth` are the only identity source;
+  `AuthGuard` redirects unauthenticated users to `/login` and forces `/setup`
+  while bootstrap is required; `AdminGuard` protects `/settings`.
+  `lib/selectedProfile.ts`, `lib/session.ts`, and
+  `ProfileProvider`/`ProfileGuard`/`useProfile` were removed.
+  `components/ws-provider.tsx` builds the socket from the authenticated profile.
 
 ### Unified per-session playback (`/player`)
 
-` /player` is the **single** playback API (`routes/unifiedPlayerRoutes.ts`, controllers in `controllers/unifiedPlayerController.ts`). Every request requires `X-Session-Id` (`middleware/sessionId.ts` → 400 if missing) + optional `X-Device-Id` (per-browser random id from `lib/deviceId.ts` stored in `localStorage['sonect.deviceId']`) and always appends `?sessionId=&deviceId=` on the WS URL. There is **no frontend fork** between browser/MPD — `features/player/api.ts` calls only `/player/*`; the backend decides per session.
+`/player` is the **single** playback API (`routes/unifiedPlayerRoutes.ts`, controllers in `controllers/unifiedPlayerController.ts`). Every request requires the `sonect_session` cookie (`requireAuth` → 401) and passes through `sessionIdMiddleware`, which sets `req.sessionId = req.auth.profileId` and `req.deviceId` from the optional `X-Device-Id` header (`localStorage['sonect.deviceId']`). An `X-Session-Id` header is accepted only when it matches the authenticated profile (403 otherwise) and is never the identity source. The WS URL carries `?sessionId=&deviceId=`. There is **no frontend fork** between browser/MPD — `features/player/api.ts` calls only `/player/*`; the backend decides per session.
 
-- **Session identity** — `lib/selectedProfile.ts` returns `profile.id` as `X-Session-Id` (legacy `lib/session.ts` delegates). `lib/deviceId.ts` generates a per-browser random id `localStorage['sonect.deviceId']` sent as `X-Device-Id`/`?deviceId=`. Profile = queue owner; device = output target.
-- **PlayerRouter** (`services/player/playerRouter.ts`) — `Map<sessionId, {mode, engine, activeDeviceId, volume}>` singleton. `mode` is per-profile (`browser` default, `mpd` requires lock). `engine` is `SessionPlayer` wrapper or `MpdAdapter`. `activeDeviceId` is per-profile for `browser` mode (which browser device renders audio); `mpd` mode has `null`. Browser `PUT /player/output-mode {mode:'browser'}` with `X-Device-Id` hands off same `file+elapsed+state` to new device (no engine recreation), emits `stateChanged`. `setVolume` is stored per-profile for browser (remote volumes affect shared state) vs delegated to MPD. `getStatus()` merges `engine.getStatus()` + `volume` + `activeDeviceId` + `mode`.
+- **Session identity** — the authenticated profile (`req.auth.profileId`) is the queue owner. `AuthProvider`/`useAuth` supplies it; `lib/deviceId.ts` generates a per-browser random id sent as `X-Device-Id`/`?deviceId=`. Profile = queue owner; device = output target.
+- **PlayerRouter** (`services/player/playerRouter.ts`) — `Map<profileId, {mode, engine, activeDeviceId, volume}>` singleton. `mode` is per-profile (`browser` default, `mpd` requires lock). `engine` is `SessionPlayer` wrapper or `MpdAdapter`. `activeDeviceId` is per-profile for `browser` mode (which browser device renders audio); `mpd` mode has `null`. Browser `PUT /player/output-mode {mode:'browser'}` with `X-Device-Id` hands off same `file+elapsed+state` to new device (no engine recreation), emits `stateChanged`. `setVolume` is stored per-profile for browser (remote volumes affect shared state) vs delegated to MPD. `getStatus()` merges `engine.getStatus()` + `volume` + `activeDeviceId` + `mode`.
 - **Browser engine (shared per-profile)** — `SessionPlayer` (`services/session/sessionPlayer.ts`) per `SessionRegistry` (`services/session/sessionRegistry.ts` 30m idle sweep): single queue/clock per profile, auto-advance, `playTrack` queues through end of album then appends a smart autoplay batch, `pause`/`resume` control the clock. First `play` from a browser device auto-claims `activeDeviceId` if `null` (`setActiveDeviceIfUnclaimed`). Subsequent remote controls (play/pause/seek/volume) from passive devices mutate shared state but keep `activeDeviceId`. `random/repeat` are no-ops. Each `SessionPlayer` owns its own `AutoplayService` instance (no global singleton) with refill when <5 tracks remain.
-- **MPD engine (shared, single-owner)** — `MpdAdapter` wraps `PlayerServiceImpl` + `MpdConnectionManager`. Shared global queue/daemon. `resume` uses explicit `pause 0`. Lock via `MpdConfigService.tryAcquireMpd(sessionId)` (`services/mpd/mpdConfigService.ts`); `PUT /player/output-mode {mode:'mpd'}` returns 423 if another session owns MPD. `mpd→browser` handoff sets `activeDeviceId` to requesting device.
-- **WebSocket** — `ws/player.ws.ts` resolves `PlayerRouter.getStatus(q)` + `on("stateChanged")` for that profile and sends `{type:'player-status', ...status, activeDeviceId, mode}`. `PlaybackStatus.error` carries the current MPD status error when present, and the player renders it as a localized warning. Legacy path without `sessionId` remains MPD-only. Frontend `components/ws-provider.tsx` appends `&deviceId=` and updates `activeDeviceId` in `PlaybackContext`; `features/dashboard/components/music-player.tsx` only calls `browserAudio.play()` when `outputMode==='browser' && (activeDeviceId===null || activeDeviceId===myDeviceId)`.
-- **Legacy routes** — `/mpd` was removed. `/session` remains only for backend integration tests (not used by frontend). Vite proxy forwards `/player` (`frontend/vite.config.ts`).
+- **MPD engine (shared, single-owner)** — `MpdAdapter` wraps `PlayerServiceImpl` + `MpdConnectionManager`. Shared global queue/daemon. `resume` uses explicit `pause 0`. Lock via `MpdConfigService.tryAcquireMpd(profileId)` (`services/mpd/mpdConfigService.ts`); `PUT /player/output-mode {mode:'mpd'}` returns 423 if another profile owns MPD. `mpd→browser` handoff sets `activeDeviceId` to requesting device.
+- **WebSocket** — `ws/player.ws.ts` authenticates the handshake cookie (4401 if missing/invalid, 4403 if `?sessionId=` mismatches) and resolves `PlayerRouter.getStatus(profileId)` + `on("stateChanged")` for that profile, sending `{type:'player-status', ...status, activeDeviceId, mode}`. `PlaybackStatus.error` carries the current MPD status error when present, and the player renders it as a localized warning. The legacy unauthenticated MPD-only path is gone. Frontend `components/ws-provider.tsx` appends `&sessionId=&deviceId=` from `useAuth` and updates `activeDeviceId` in `PlaybackContext`; `features/dashboard/components/music-player.tsx` only calls `browserAudio.play()` when `outputMode==='browser' && (activeDeviceId===null || activeDeviceId===myDeviceId)`.
+- **Legacy routes** — `/mpd` was removed. `/session` remains only for backend integration tests (not used by frontend). Vite proxies `/player` and `/auth` (`frontend/vite.config.ts`).
 - **Autoplay in sessions** — browser sessions now reuse the same smart-autoplay batches as MPD but per-profile (one `AutoplayService` per `SessionPlayer`); MPD still uses the singleton via `factory.ts` + `MpdConnectionManager` callback.
 
 ### Cover art pipeline
@@ -382,12 +455,24 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 
 ### First-run setup wizard
 
-- Route: `/setup`, guarded by `SetupGuard` (`components/setup-guard.tsx`), which wraps the routed page content in `MainLayout`. The first guard check in each browser-tab session calls `GET /system/setup/progress`, caches the backend `complete` result in `sessionStorage["setup-complete"]`, and redirects to `/setup` when it is false. Later checks in that tab use the cached backend result.
+- Route: `/setup` (`pages/SetupWizard.tsx`), wrapped by `AuthGuard`. `SetupGuard`
+  (`components/setup-guard.tsx`) sits inside `MainLayout` around the routed page
+  content: only admins are checked, and the first check in each browser-tab
+  session calls `GET /system/setup/progress`, caches the backend `complete`
+  result in `sessionStorage["setup-complete"]`, and redirects to `/setup` when it
+  is false. Later checks in that tab use the cached backend result. Regular
+  users skip setup entirely and go straight to the app.
+- **Admin step first.** With no administrator in `profiles`, `/auth/state`
+  reports `bootstrapRequired`, `AuthGuard` forces `/setup`, and the wizard's
+  first step creates the admin through `POST /auth/bootstrap` (name + password,
+  ≥ 8 characters), which also sets the session cookie. There is no default
+  profile; `ensureDefault()` has been removed. Skip is hidden until an admin
+  exists.
 - The gate is **not** "all steps done": setup is considered complete only when a permanent done flag is set. The flag is a pseudo-step `complete` in the `setup_progress` table and is written by the explicit `POST /system/setup/complete` endpoint (the only intended writer), used by both Skip and Finish; the endpoint accepts any non-empty step name, so the invariant is by convention, not enforced. Updating an individual step or creating a storage source does not set it. `isSetupComplete()` does **not** consider existing storage sources — the stored `complete` flag is the single source of truth.
-- `getSetupProgress()` (`services/setupService.ts`) reports steps in order `["storage", "audio", "sync"]`; the `storage` step's `completed` flag is **derived** from `storageDb.getAll().length > 0` (not stored), while `audio`/`sync` flags come from `setup_progress` rows.
-- Frontend wizard steps: Welcome → Storage → Audio → Sync. An incomplete setup currently starts at Welcome.
+- `getSetupProgress()` (`services/system/setupService.ts`) reports steps in order `["storage", "audio", "sync"]`; the `storage` step's `completed` flag is **derived** from `storageDb.getAll().length > 0` (not stored), while `audio`/`sync` flags come from `setup_progress` rows. The admin step is not part of this list.
+- Frontend wizard steps: Admin (only while `bootstrapRequired`) → Storage → Audio → Sync; a returning admin starts at Storage.
 - The Storage step shares components with Settings → Libraries: detected (unregistered) folders render as one-click **Add** rows (`DetectedLibraryRow`), an "Or add manually" form covers manual paths, and the success dialog shows the created library with `LibraryStats`. When at least one library is already registered the footer also shows **Continue**, so a re-run (after a setup reset) can never get stuck; with zero libraries, create remains required.
-- Skip is persisted by the backend, so it applies to normal and private/incognito browser sessions. `sessionStorage["setup-complete"]` is only a per-tab cache of a confirmed backend result, not a local skip flag. `POST /system/setup/reset` (also exposed as the "Reset setup wizard" button in Settings → Debug) clears every `setup_progress` flag, invalidates the current tab's cache, and reloads without touching `storage_sources`. A reset performed by another tab is observed when a new tab session starts.
+- Skip is persisted by the backend, so it applies to normal and private/incognito browser sessions. `sessionStorage["setup-complete"]` is only a per-tab cache of a confirmed backend result, not a local skip flag. `POST /system/setup/reset` (admin-only; also exposed as the "Reset setup wizard" button in Settings → Debug) clears every `setup_progress` flag, invalidates the current tab's cache, and reloads without touching `storage_sources` or profiles. A reset performed by another tab is observed when a new tab session starts.
 
 ### MPD config handling
 

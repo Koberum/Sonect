@@ -1561,7 +1561,10 @@
                     <tr>
                       <td>POST</td>
                       <td>/player/play</td>
-                      <td>Play a track (requires <code>X-Session-Id</code>)</td>
+                      <td>
+                        Play a track (requires the
+                        <code>sonect_session</code> session cookie)
+                      </td>
                     </tr>
                     <tr>
                       <td>POST</td>
@@ -1581,7 +1584,12 @@
                     <tr>
                       <td>WS</td>
                       <td>ws://host:3000/ws?sessionId=&amp;deviceId=</td>
-                      <td>Live playback state</td>
+                      <td>
+                        Live playback state (requires the
+                        <code>sonect_session</code> cookie;
+                        unauthenticated/mismatched upgrades close with
+                        4401/4403)
+                      </td>
                     </tr>
                   </tbody>
                 </table>
