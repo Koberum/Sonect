@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.1.4](https://github.com/Koberum/Sonect/compare/sonect-v0.1.3...sonect-v0.1.4) (2026-10-24)
+
+
+### Features
+
+* **db:** attribute tracks to storage sources and stamp MPD sync markers ([bc70dd9](https://github.com/Koberum/Sonect/commit/bc70dd9ce933a62120db4c90b56ccfee7425c0ff))
+* **library:** orchestrate MPD catalog, covers, and stats ([8994882](https://github.com/Koberum/Sonect/commit/899488226d5fd35b248f3e005e4be1034829fa09))
+* **library:** sync catalog from MPD's database ([27e6b7b](https://github.com/Koberum/Sonect/commit/27e6b7b502a4e88c94f1fa21eb069549dafea914))
+* **mpd:** parse find/listallinfo track records ([cba4db1](https://github.com/Koberum/Sonect/commit/cba4db1c6f0bcb912062498be3398d4754ee238f))
+* show playback error, debug mpd logs ([115e208](https://github.com/Koberum/Sonect/commit/115e2085d8a5a6a3f40781fd64ddcda8dfdbb1ca))
+* **storage:** persist per-library stats with catalog file counts ([947f95b](https://github.com/Koberum/Sonect/commit/947f95b8931ce2fc38ab5d96d4ab815f6f5f102c))
+* **ui:** show MPD catalog sync progress and track names ([6b07ce4](https://github.com/Koberum/Sonect/commit/6b07ce43f4d1c22e201d2139d4952be28b42e408))
+
+
+### Bug Fixes
+
+* **library:** harden MPD catalog sync against empty and shifting databases ([4b4d445](https://github.com/Koberum/Sonect/commit/4b4d445e7b85d23daf199167227a2b44da136fbf))
+* normalize docker library path ([7310b4e](https://github.com/Koberum/Sonect/commit/7310b4e8b1de64e35b0320f1045aadcee2023fef))
+
+
+### Performance Improvements
+
+* **library:** extract covers with a bounded worker pool ([de4956d](https://github.com/Koberum/Sonect/commit/de4956dfb42f487ce64c20dc14c6c697fc9ddec9))
+
 ## [0.1.3](https://github.com/Koberum/Sonect/compare/sonect-v0.1.2...sonect-v0.1.3) (2026-10-20)
 
 
