@@ -54,6 +54,7 @@ import {
   ProfileServiceImpl,
   type ProfileService,
 } from "./profile/profileService.js";
+import { AuthServiceImpl, type AuthService } from "./auth/authService.js";
 
 let _initialized = false;
 let _logService: LogService;
@@ -75,6 +76,7 @@ let _networkService: NetworkService;
 let _sessionRegistry: SessionRegistry;
 let _playerRouter: PlayerRouter;
 let _profileService: ProfileService;
+let _authService: AuthService;
 
 function assertInitialized(): void {
   if (!_initialized) {
@@ -134,6 +136,7 @@ export function initializeServices(): void {
   _setupService = new SetupServiceImpl();
   _networkService = new NetworkServiceImpl();
   _profileService = new ProfileServiceImpl();
+  _authService = new AuthServiceImpl();
 
   _sessionRegistry = new SessionRegistry(_logService);
   setGlobalSessionRegistry(_sessionRegistry);
@@ -227,6 +230,11 @@ export function getNetworkService(): NetworkService {
 export function getProfileService(): ProfileService {
   assertInitialized();
   return _profileService;
+}
+
+export function getAuthService(): AuthService {
+  assertInitialized();
+  return _authService;
 }
 
 export function isServicesInitialized(): boolean {
