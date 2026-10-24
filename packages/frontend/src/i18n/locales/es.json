@@ -273,6 +273,8 @@
       "mpdStopped": "MPD está detenido",
       "environment": "Entorno",
       "environmentDescription": "Valores de configuración de compilación y tiempo de ejecución.",
+      "version": "Versión",
+      "versionUnavailable": "No disponible",
       "hardware": {
         "loading": "Cargando estadísticas del sistema...",
         "cpu": "CPU",

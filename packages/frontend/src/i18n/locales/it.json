@@ -273,6 +273,8 @@
       "mpdStopped": "MPD è fermo",
       "environment": "Ambiente",
       "environmentDescription": "Valori di configurazione build e runtime.",
+      "version": "Versione",
+      "versionUnavailable": "Non disponibile",
       "hardware": {
         "loading": "Caricamento statistiche hardware...",
         "cpu": "CPU",

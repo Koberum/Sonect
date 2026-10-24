@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import {
   Card,
@@ -22,6 +23,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { getMpdStatus, resetSetup } from "@/features/system/api";
+import { systemQueries } from "@/features/system/queries";
+import { Skeleton } from "@/components/ui/skeleton";
 import { HardwareMonitor } from "@/components/hardware-monitor";
 
 export function DebugTab() {
@@ -33,6 +36,10 @@ export function DebugTab() {
   const [mpdChecking, setMpdChecking] = useState(false);
   const [resetSetupDialogOpen, setResetSetupDialogOpen] = useState(false);
   const [resettingSetup, setResettingSetup] = useState(false);
+  const { data: version, isPending: versionPending } = useQuery({
+    ...systemQueries.health(),
+    select: (health) => health.version,
+  });
 
   const checkMpdStatus = async () => {
     setMpdChecking(true);
@@ -115,6 +122,22 @@ export function DebugTab() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-3 flex items-center justify-between gap-3 text-sm">
+            <span className="text-muted-foreground">
+              {t("settings.debug.version")}
+            </span>
+            {versionPending ? (
+              <Skeleton className="h-5 w-16" />
+            ) : (
+              <Badge variant="secondary">
+                {version
+                  ? version === "dev"
+                    ? version
+                    : `v${version}`
+                  : t("settings.debug.versionUnavailable")}
+              </Badge>
+            )}
+          </div>
           <pre className="bg-muted max-h-32 overflow-auto rounded-md p-3 text-xs">
             {JSON.stringify(
               {

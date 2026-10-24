@@ -363,6 +363,12 @@ image and pushes it to GitHub Container Registry:
 
 Tags: `latest` and the release version.
 
+The Release PR also updates `packages/frontend/package.json` via
+release-please `extra-files`, so the frontend package version always matches
+the release. The running server version is stamped into `/app/.version` from
+`SONECT_VERSION`, exposed by `GET /system/health`, and shown in
+**Settings → Debug**.
+
 The image is published by the release workflow itself (it calls the Docker
 build as a reusable workflow), so no manual step is needed. To (re)publish
 the image for an existing version — for example to backfill a release that

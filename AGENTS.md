@@ -174,8 +174,12 @@ sonect (single image, ENTRYPOINT /init)
   (re)publish images for an existing release.
 - **Version**: the running version comes from `/app/.version` written into the
   app image by the release build (Docker `SONECT_VERSION` build-arg, leading
-  `v` stripped) and is exposed via `GET /system/status` → `version`
-  (fallback `"dev"` when absent).
+  `v` stripped) and is exposed via `GET /system/status` and
+  `GET /system/health` → `version` (fallback `"dev"` when absent). The
+  release-please root package uses `extra-files` (`$.version` in
+  `packages/frontend/package.json`) so the frontend package version always
+  matches the release; Settings → Debug displays `HealthResponse.version` from
+  the `systemQueries.health()` query (via `select`).
 - **Startup**: `node bundle.cjs` — no tsx, no vite, no compilation at runtime.
 
 ## Key conventions
@@ -217,9 +221,9 @@ sonect (single image, ENTRYPOINT /init)
 - **autoplayService** (`services/mpd/autoplayService.ts`) is always active for both MPD and browser sessions. A manual track selection queues that track through the end of its album, without wrapping to earlier tracks. Smart batches then add complete albums in this order: same artist → same genre → similar genres → (genre-less only) library-wide, ranking each tier by the sum of its tracks' `play_count` (title order breaks ties). Similar genres are resolved via `services/mpd/genreSimilarity.ts`: a curated map for common tags (e.g. `techno → tech house, minimal, house…`) with token/substring fallback for arbitrary MPD `Genre` tags (`Vaporwave → Vapor House` via `genresDb.getAll()` substring match). Ranking stays anchored to the manually selected track as playback advances. A batch stops only after reaching at least 25 tracks, so albums are never split; if the genre pool is sparse the batch may be short and will stay genre-coherent rather than drifting to unrelated genres. For MPD, the connection manager refills below five remaining tracks and prevents overlapping fills; used albums are committed only after MPD accepts them and are not repeated until the cycle is exhausted, and the next cycle preserves albums still in the MPD queue. For browser, each `SessionPlayer` owns its own `AutoplayService` instance (via `SessionRegistry`) — `playTrack` appends an initial batch beyond the album slice, and `advance`/`tick` refills when <5 tracks remain with the same ranking and commit semantics. There is no autoplay toggle API.
 - **MpdCatalogSyncService** (`services/library/mpdCatalogSyncService.ts`) owns library sync — **MPD is the catalog source**. It is invoked via `CatalogSyncOrchestrator.scanLibrary({force?})`. Each sync: triggers MPD `update` and polls `status.updating_db` until it finishes; reads MPD `stats` (`songs`, `db_update`) and skips the fetch when the stored markers and `tracksDb.count()` still match (unless `force`); pages MPD with `count "(file != '')"` + `find "(file != '')" window START:END`; parses the records; attributes each file to the most specific registered `storage_sources` path (longest prefix, stored as `tracks.storage_source_id`); diffs against `tracksDb.getSyncSnapshot()` in memory; and applies only new/changed/deleted rows in one transaction via `catalogSyncDb.applyIncremental()` (per-track savepoints; constraint failures reported and skipped; any other error rolls back the previous catalog). Unchanged tracks are untouched, so `play_count`/`last_played` survive. A failed read applies nothing. If MPD reports zero songs while a registered library still contains audio files, the sync aborts and keeps the catalog. `MUSIC_DIR` is MPD's single `music_directory`; every MPD song is mirrored, including folders not registered as a Sonect library (unregistered tracks still show with `storage_source_id = NULL`). MPD `update` is no longer fire-and-forget from storage changes — the sync owns it.
 - The backend exposes its build version through `getSystemStatus()` →
-  `/system/status[].version`. It reads `/app/.version` (written only by the
-  release image via the `SONECT_VERSION` build-arg), defaulting to `"dev"`.
-  Sources: `services/utils/appVersion.ts`.
+  `/system/status[].version` and `/system/health` → `version`. It reads
+  `/app/.version` (written only by the release image via the `SONECT_VERSION`
+  build-arg), defaulting to `"dev"`. Sources: `services/utils/appVersion.ts`.
 - Host network management is intentionally not part of Sonect. Network status is
   exposed via `GET /system/health` (aggregated) and legacy `GET /system/network/status`,
   both returning `{ connected, dnsReachable }`. `connected` checks for a non-loopback
