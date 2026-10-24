@@ -1,15 +1,28 @@
-import { profilesDb, LastProfileError } from "@repo/db";
-import { toProfile } from "@repo/types";
-import type { DBProfile, Profile } from "@repo/types";
+import { profilesDb, authSessionsDb, LastAdminError } from "@repo/db";
+import { toProfile, toPublicProfile } from "@repo/types";
+import type {
+  DBProfile,
+  Profile,
+  ProfileRole,
+  PublicProfile,
+} from "@repo/types";
 import { ConflictError } from "@middleware/errorHandler.js";
+import { hashPassword } from "@services/auth/password.js";
 
 export interface ProfileService {
   getAllProfiles(): Profile[];
-  createProfile(name: string, avatarColor?: string): Profile;
+  getPublicProfiles(): PublicProfile[];
+  createProfile(input: {
+    name: string;
+    avatarColor?: string;
+    password: string;
+    role?: ProfileRole;
+  }): Promise<Profile>;
   updateProfile(
     id: string,
-    data: { name?: string; avatarColor?: string },
+    data: { name?: string; avatarColor?: string; role?: ProfileRole },
   ): Profile | undefined;
+  resetProfilePassword(id: string, password: string): Promise<boolean>;
   deleteProfile(id: string): boolean;
 }
 
@@ -39,13 +52,30 @@ export class ProfileServiceImpl implements ProfileService {
     return profilesDb.getAll().map((p) => this.mapProfile(p));
   }
 
-  public createProfile(name: string, avatarColor?: string): Profile {
+  public getPublicProfiles(): PublicProfile[] {
+    return profilesDb.getAll().map(toPublicProfile);
+  }
+
+  public async createProfile(input: {
+    name: string;
+    avatarColor?: string;
+    password: string;
+    role?: ProfileRole;
+  }): Promise<Profile> {
+    const passwordHash = await hashPassword(input.password);
     let id: string;
     try {
-      id = profilesDb.create(name, avatarColor);
+      id = profilesDb.create({
+        name: input.name,
+        avatarColor: input.avatarColor,
+        passwordHash,
+        role: input.role,
+      });
     } catch (err) {
       if (this.isUniqueConstraintError(err)) {
-        throw new ConflictError(`Profile name "${name}" is already taken`);
+        throw new ConflictError(
+          `Profile name "${input.name}" is already taken`,
+        );
       }
       throw err;
     }
@@ -56,16 +86,17 @@ export class ProfileServiceImpl implements ProfileService {
 
   public updateProfile(
     id: string,
-    data: { name?: string; avatarColor?: string },
+    data: { name?: string; avatarColor?: string; role?: ProfileRole },
   ): Profile | undefined {
     const existing = profilesDb.getById(id);
     if (!existing) return undefined;
 
     try {
-      if (data.name !== undefined) profilesDb.rename(id, data.name);
-      if (data.avatarColor !== undefined)
-        profilesDb.setColor(id, data.avatarColor);
+      profilesDb.update(id, data);
     } catch (err) {
+      if (err instanceof LastAdminError) {
+        throw new ConflictError(err.message);
+      }
       if (this.isUniqueConstraintError(err)) {
         throw new ConflictError(`Profile name "${data.name}" is already taken`);
       }
@@ -77,18 +108,25 @@ export class ProfileServiceImpl implements ProfileService {
     return this.mapProfile(profile);
   }
 
+  public async resetProfilePassword(
+    id: string,
+    password: string,
+  ): Promise<boolean> {
+    const existing = profilesDb.getById(id);
+    if (!existing) return false;
+    profilesDb.setPassword(id, await hashPassword(password));
+    authSessionsDb.deleteByProfile(id);
+    return true;
+  }
+
   public deleteProfile(id: string): boolean {
     const existing = profilesDb.getById(id);
     if (!existing) return false;
 
-    if (profilesDb.getAll().length <= 1) {
-      throw new ConflictError("Cannot delete the last remaining profile");
-    }
-
     try {
       profilesDb.delete(id);
     } catch (err) {
-      if (err instanceof LastProfileError) {
+      if (err instanceof LastAdminError) {
         throw new ConflictError(err.message);
       }
       throw err;

@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
+import { ForbiddenError, UnauthorizedError } from "./errorHandler";
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -14,15 +15,21 @@ declare global {
 
 export function sessionIdMiddleware(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction,
 ): void {
-  const id = req.header("X-Session-Id");
-  if (!id || id.trim() === "") {
-    res.status(400).json({ error: "X-Session-Id header is required" });
+  if (!req.auth) {
+    next(new UnauthorizedError());
     return;
   }
-  req.sessionId = id.trim();
+  const headerSessionId = req.header("X-Session-Id")?.trim();
+  if (headerSessionId && headerSessionId !== req.auth.profileId) {
+    next(
+      new ForbiddenError("Session does not match the authenticated profile"),
+    );
+    return;
+  }
+  req.sessionId = req.auth.profileId;
   const did = req.header("X-Device-Id")?.trim() ?? null;
   req.deviceId = did && did.length > 0 ? did : null;
   const dName = req.header("X-Device-Name")?.trim() ?? null;
