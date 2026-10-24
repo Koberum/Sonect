@@ -1,5 +1,4 @@
 import { apiFetch } from "@/lib/api";
-import { sessionHeaders } from "@/lib/session";
 import type { NetworkStatus, OutputMode } from "@repo/types";
 import type { DashboardData } from "@repo/types/catalog";
 
@@ -196,7 +195,7 @@ export function getOutputMode(signal?: AbortSignal): Promise<{
   mpdOwner?: string | null;
   activeDeviceId?: string | null;
 }> {
-  return apiFetch("/player/output-mode", { headers: sessionHeaders(), signal });
+  return apiFetch("/player/output-mode", { signal });
 }
 
 export function getDashboard(signal?: AbortSignal): Promise<DashboardData> {

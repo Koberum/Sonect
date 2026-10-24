@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
-import { getProfileSessionId } from "@/lib/selectedProfile";
-import { useProfile } from "@/features/profiles/profile-context";
+import { useAuth } from "@/features/auth/auth-context";
 import { usePlaybackContext, type SyncProgress } from "./playback-context";
 import { defaultPlayerState } from "@/lib/playbackState";
 import type { PlaybackStatus } from "@repo/types";
@@ -41,14 +40,16 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const wsRef = useRef<WebSocket | null>(null);
   const trackIdRef = useRef<number | null>(null);
 
-  const { profile } = useProfile();
-  const profileId = profile?.id ?? getProfileSessionId();
+  const { profile } = useAuth();
+  const profileId = profile?.id ?? "";
 
   const wsUrl: string =
     import.meta.env.VITE_WEBSOCKET_URL ||
     `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`;
 
   useEffect(() => {
+    if (!profileId) return;
+
     const {
       setPlaybackStatus,
       setTrackPlayed,
@@ -109,7 +110,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const sid = profileId || getProfileSessionId();
+      const sid = profileId;
       const did = getDeviceId();
       const dName = getDeviceName();
       const dType = getDeviceType();
@@ -203,11 +204,15 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }
       };
 
-      nextWs.onclose = () => {
+      nextWs.onclose = (event) => {
         if (ws !== nextWs) return;
         if (wsRef.current === nextWs) wsRef.current = null;
         if (cancelled) return;
         setWsConnected(false);
+        if (event.code === 4401 || event.code === 4403) {
+          window.dispatchEvent(new Event("sonect:unauthorized"));
+          return;
+        }
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempt), 30000);
         reconnectAttempt++;
         reconnectTimer = setTimeout(() => {

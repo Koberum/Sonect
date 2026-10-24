@@ -295,6 +295,49 @@
       "resetSetupError": "No se pudo restablecer el asistente de configuración"
     }
   },
+  "auth": {
+    "loginTitle": "¿Quién escucha?",
+    "chooseProfile": "Elige un perfil para iniciar sesión",
+    "password": "Contraseña",
+    "enterPasswordFor": "Introduce la contraseña de {{name}}",
+    "signIn": "Iniciar sesión",
+    "signingIn": "Iniciando sesión...",
+    "invalidCredentials": "Contraseña incorrecta",
+    "tooManyAttempts": "Demasiados intentos. Vuelve a intentarlo en {{seconds}} s.",
+    "backToProfiles": "Volver a los perfiles",
+    "noProfiles": "Todavía no hay perfiles",
+    "logout": "Cerrar sesión",
+    "switchTitle": "Cambiar de perfil",
+    "switchDescription": "Introduce la contraseña de {{name}}",
+    "switch": "Cambiar",
+    "switching": "Cambiando...",
+    "changePassword": "Cambiar contraseña",
+    "currentPassword": "Contraseña actual",
+    "newPassword": "Nueva contraseña",
+    "confirmPassword": "Confirmar nueva contraseña",
+    "passwordsDoNotMatch": "Las contraseñas no coinciden",
+    "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
+    "passwordChanged": "Contraseña cambiada",
+    "changePasswordError": "No se pudo cambiar la contraseña",
+    "role": "Rol",
+    "roleAdmin": "Administrador",
+    "roleUser": "Usuario",
+    "resetPassword": "Restablecer contraseña",
+    "resetPasswordTitle": "Restablecer contraseña",
+    "resetPasswordDescription": "Establece una nueva contraseña para {{name}}. Sus sesiones activas se cerrarán.",
+    "resetPasswordDone": "Contraseña restablecida",
+    "resetPasswordError": "No se pudo restablecer la contraseña",
+    "bootstrapTitle": "Crear el administrador",
+    "bootstrapDescription": "Configura el primer perfil de administrador de esta instancia de Sonect.",
+    "bootstrapName": "Nombre del administrador",
+    "bootstrapPassword": "Contraseña",
+    "bootstrapConfirm": "Confirmar contraseña",
+    "bootstrapSubmit": "Crear administrador",
+    "bootstrapCreating": "Creando...",
+    "bootstrapError": "No se pudo crear el administrador",
+    "lastAdmin": "El último administrador no se puede eliminar ni degradar",
+    "sessionsInvalidated": "Las sesiones activas se cerraron"
+  },
   "profile": {
     "title": "¿Quién está escuchando?",
     "change": "Cambiar perfil",
@@ -303,11 +346,11 @@
     "create": "Crear perfil",
     "addProfile": "Agregar perfil",
     "createTitle": "Crear perfil",
-    "createDescription": "Elige un nombre y un color para tu nuevo perfil",
+    "createDescription": "Elige un nombre, un color, una contraseña y un rol para el nuevo perfil",
     "namePlaceholder": "Nombre del perfil",
     "rename": "Renombrar",
     "editTitle": "Editar perfil",
-    "editDescription": "Actualiza el nombre y el color de este perfil",
+    "editDescription": "Actualiza el nombre, el color y el rol de este perfil, o restablece su contraseña",
     "save": "Guardar",
     "color": "Color",
     "delete": "Eliminar",
@@ -324,10 +367,8 @@
   },
   "setup": {
     "welcome": {
-      "description": "Bienvenido a Sonect, tu reproductor de música autoalojado.",
       "language": "Idioma",
       "theme": "Tema",
-      "getStarted": "Comenzar",
       "skipWizard": "Omitir asistente"
     },
     "storage": {
@@ -348,7 +389,6 @@
       "finish": "Finalizar configuración"
     },
     "stepNames": {
-      "welcome": "Bienvenida",
       "storage": "Almacenamiento",
       "audio": "Audio",
       "sync": "Sincronización"

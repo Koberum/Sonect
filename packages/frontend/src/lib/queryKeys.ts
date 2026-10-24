@@ -40,4 +40,8 @@ export const qk = {
   profiles: {
     list: () => ["profiles", "list"] as const,
   },
+  auth: {
+    state: () => ["auth", "state"] as const,
+    profiles: () => ["auth", "profiles"] as const,
+  },
 };

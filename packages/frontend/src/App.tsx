@@ -2,7 +2,10 @@ import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import MainLayout from "./layout/MainLayout";
 import { ThemeProvider } from "./components/theme-provider";
-import { ProfileProvider } from "./features/profiles/profile-context";
+import { AuthProvider } from "./features/auth/auth-context";
+import { AuthGuard } from "./features/auth/auth-guard";
+import { AdminGuard } from "./features/auth/admin-guard";
+import { LoginPage } from "./features/auth/login-page";
 import { PlaybackProvider } from "./components/playback-context";
 import { WebSocketProvider } from "./components/ws-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -48,14 +51,36 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <ProfileProvider>
+        <AuthProvider>
           <PlaybackProvider>
             <WebSocketProvider>
               <TooltipProvider>
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
-                    <Route path="/setup" element={<SetupWizard />} />
-                    <Route path="/" element={<MainLayout />}>
+                    <Route
+                      path="/login"
+                      element={
+                        <AuthGuard>
+                          <LoginPage />
+                        </AuthGuard>
+                      }
+                    />
+                    <Route
+                      path="/setup"
+                      element={
+                        <AuthGuard>
+                          <SetupWizard />
+                        </AuthGuard>
+                      }
+                    />
+                    <Route
+                      path="/"
+                      element={
+                        <AuthGuard>
+                          <MainLayout />
+                        </AuthGuard>
+                      }
+                    >
                       <Route index element={<Dashboard />} />
                       <Route path="albums" element={<Albums />} />
                       <Route path="albums/:id" element={<AlbumPage />} />
@@ -72,14 +97,21 @@ export default function App() {
                         path="playlists/:id"
                         element={<PlaylistDetail />}
                       />
-                      <Route path="settings" element={<Settings />} />
+                      <Route
+                        path="settings"
+                        element={
+                          <AdminGuard>
+                            <Settings />
+                          </AdminGuard>
+                        }
+                      />
                     </Route>
                   </Routes>
                 </Suspense>
               </TooltipProvider>
             </WebSocketProvider>
           </PlaybackProvider>
-        </ProfileProvider>
+        </AuthProvider>
       </ThemeProvider>
       {import.meta.env.DEV && (
         <Suspense fallback={null}>

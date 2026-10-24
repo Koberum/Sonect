@@ -25,7 +25,7 @@ import { useBrowserAudio } from "@/lib/useBrowserAudio";
 import { OutputSelector } from "./output-selector";
 import { useQuery } from "@tanstack/react-query";
 import { systemQueries } from "@/features/system/queries";
-import { getClientSessionId } from "@/lib/session";
+import { useAuth } from "@/features/auth/auth-context";
 import type { TrackWithRelations } from "@repo/types/catalog";
 import { useTranslation } from "react-i18next";
 import { Play } from "lucide-react";
@@ -55,9 +55,10 @@ export default function MusicPlayer() {
   const browserAudio = useBrowserAudio();
   const prevTrackFileRef = useRef<string | null>(null);
   const { t } = useTranslation();
+  const { profile } = useAuth();
   const { data: outputModeData } = useQuery(systemQueries.outputMode());
   const mpdOwner = outputModeData?.mpdOwner ?? null;
-  const mySid = getClientSessionId();
+  const mySid = profile?.id ?? "";
   const isMpdLockedForMe =
     !!mpdOwner && mpdOwner !== mySid && outputMode !== "mpd";
 

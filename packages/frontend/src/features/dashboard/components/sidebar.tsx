@@ -35,6 +35,7 @@ import {
   playlistMutations,
 } from "@/features/playlists/queries";
 import { scanLibrary } from "@/features/catalog/api";
+import { useAuth } from "@/features/auth/auth-context";
 
 export interface SidebarProps {
   className?: string;
@@ -43,6 +44,7 @@ export interface SidebarProps {
 
 export function Sidebar({ className, toggleSidebar }: SidebarProps) {
   const { t } = useTranslation();
+  const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const { data: playlists = [] } = useQuery(playlistQueries.list());
   const createMut = useMutation(playlistMutations.create());
@@ -103,26 +105,28 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
             <h2 className="text-lg font-semibold tracking-tight">
               {t("sidebar.library")}
             </h2>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={handleRefreshLibrary}
-                  disabled={isRefreshing}
-                  aria-label={t("sidebar.refreshLibrary")}
-                >
-                  <LoaderCircle
-                    className={isRefreshing ? "animate-spin" : ""}
-                  />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                {isRefreshing
-                  ? t("sidebar.refreshingLibrary")
-                  : t("sidebar.refreshLibrary")}
-              </TooltipContent>
-            </Tooltip>
+            {isAdmin && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={handleRefreshLibrary}
+                    disabled={isRefreshing}
+                    aria-label={t("sidebar.refreshLibrary")}
+                  >
+                    <LoaderCircle
+                      className={isRefreshing ? "animate-spin" : ""}
+                    />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  {isRefreshing
+                    ? t("sidebar.refreshingLibrary")
+                    : t("sidebar.refreshLibrary")}
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
           <div className="space-y-1">
             <Button
@@ -167,21 +171,23 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
             </Button>
           </div>
         </div>
-        <div className="px-3 py-2">
-          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
-            {t("sidebar.settings")}
-          </h2>
-          <div className="space-y-1">
-            <Button
-              onClick={() => handleNavigation("/settings")}
-              variant={isMenuActive("/settings") ? "secondary" : "ghost"}
-              className="w-full justify-start"
-            >
-              <Settings className="mr-2 h-4 w-4" />
+        {isAdmin && (
+          <div className="px-3 py-2">
+            <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
               {t("sidebar.settings")}
-            </Button>
+            </h2>
+            <div className="space-y-1">
+              <Button
+                onClick={() => handleNavigation("/settings")}
+                variant={isMenuActive("/settings") ? "secondary" : "ghost"}
+                className="w-full justify-start"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                {t("sidebar.settings")}
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
         <div className="px-3 py-2">
           <div className="mb-2 flex items-center justify-between px-4">
             <h2 className="text-lg font-semibold tracking-tight">
