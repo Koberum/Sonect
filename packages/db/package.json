@@ -30,7 +30,7 @@
   "dependencies": {
     "@repo/types": "workspace:*",
     "dotenv": "^18.0.7",
-    "drizzle-orm": "1.0.0-rc.4"
+    "drizzle-orm": "1.0.0-rc.5-5935859"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
