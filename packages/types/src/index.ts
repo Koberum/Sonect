@@ -69,5 +69,6 @@ export * from "./catalog";
 export * from "./mpd";
 export * from "./system";
 export * from "./db";
+export * from "./auth";
 export * from "./schemas";
 export * from "./errors";

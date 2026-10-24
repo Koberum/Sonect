@@ -18,4 +18,8 @@ export { statsDb } from "./repositories/stats.js";
 export { storageDb } from "./repositories/storage.js";
 export { setupDb } from "./repositories/setup.js";
 export { genresDb, findOrCreateGenre } from "./repositories/genres.js";
-export { profilesDb, LastProfileError } from "./repositories/profiles.js";
+export { profilesDb, LastAdminError } from "./repositories/profiles.js";
+export {
+  authSessionsDb,
+  type DBAuthSession,
+} from "./repositories/authSessions.js";

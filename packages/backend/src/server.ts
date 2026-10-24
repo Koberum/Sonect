@@ -21,9 +21,9 @@ async function main() {
   // Initialize database
   await initDatabase();
 
-  // Ensure at least one profile exists (Netflix-style picker needs one)
-  const { profilesDb } = await import("@repo/db");
-  profilesDb.ensureDefault();
+  // Prune expired auth sessions
+  const { authSessionsDb } = await import("@repo/db");
+  authSessionsDb.deleteExpired(Date.now());
 
   // Initialize all services in correct dependency order
   initializeServices();

@@ -110,6 +110,30 @@ export const sessionSchemas = {
   }),
 };
 
+const passwordSchema = z
+  .string()
+  .min(8, "password must be at least 8 characters")
+  .max(200, "password is too long");
+
+export const authSchemas = {
+  bootstrap: z.object({
+    name: z.string().trim().min(1, "name is required").max(50),
+    password: passwordSchema,
+  }),
+  login: z.object({
+    profileId: z.string().min(1, "profileId is required").max(200),
+    password: z.string().min(1, "password is required").max(200),
+  }),
+  switchProfile: z.object({
+    profileId: z.string().min(1, "profileId is required").max(200),
+    password: z.string().min(1, "password is required").max(200),
+  }),
+  changePassword: z.object({
+    currentPassword: z.string().min(1, "currentPassword is required").max(200),
+    newPassword: passwordSchema,
+  }),
+};
+
 export const profileSchemas = {
   create: z.object({
     name: z.string().trim().min(1, "name is required").max(50),
@@ -117,6 +141,8 @@ export const profileSchemas = {
       .string()
       .regex(/^#[0-9a-fA-F]{6}$/, "avatarColor must be a hex color")
       .optional(),
+    password: passwordSchema,
+    role: z.enum(["admin", "user"]).optional(),
   }),
   update: z
     .object({
@@ -125,10 +151,16 @@ export const profileSchemas = {
         .string()
         .regex(/^#[0-9a-fA-F]{6}$/, "avatarColor must be a hex color")
         .optional(),
+      role: z.enum(["admin", "user"]).optional(),
     })
-    .refine((v) => v.name !== undefined || v.avatarColor !== undefined, {
-      message: "At least one of name or avatarColor is required",
-    }),
+    .refine(
+      (v) =>
+        v.name !== undefined ||
+        v.avatarColor !== undefined ||
+        v.role !== undefined,
+      { message: "At least one of name, avatarColor or role is required" },
+    ),
+  resetPassword: z.object({ password: passwordSchema }),
   idParam: z.object({ id: z.string().min(1, "id is required") }),
 };
 

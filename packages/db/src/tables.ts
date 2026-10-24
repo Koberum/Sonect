@@ -135,8 +135,30 @@ export const profiles = sqliteTable("profiles", {
   id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
   avatar_color: text("avatar_color").notNull(),
+  password_hash: text("password_hash"),
+  role: text("role").notNull().default("user"),
+  password_updated_at: integer("password_updated_at"),
   created_at: integer("created_at").notNull(),
 });
+
+export const authSessions = sqliteTable(
+  "auth_sessions",
+  {
+    token_hash: text("token_hash").primaryKey(),
+    profile_id: text("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    created_at: integer("created_at").notNull(),
+    expires_at: integer("expires_at").notNull(),
+    last_used_at: integer("last_used_at").notNull(),
+    user_agent: text("user_agent"),
+    device_id: text("device_id"),
+  },
+  (table) => [
+    index("idx_auth_sessions_profile").on(table.profile_id),
+    index("idx_auth_sessions_expires").on(table.expires_at),
+  ],
+);
 
 export const setupProgress = sqliteTable("setup_progress", {
   id: integer("id").primaryKey({ autoIncrement: true }),
