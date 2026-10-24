@@ -31,6 +31,10 @@ no subscriptions, no limits.
 - **MPD-powered playback** — Gapless, battle-tested, supports virtually any
   audio format. Random and repeat have UI controls; `consume` is forced by the
   queue engine and `single` is reflected from MPD status.
+- **MPD-backed catalog** — Sonect mirrors MPD's indexed database instead of
+  scanning tags itself. The first sync is full; later syncs are incremental and
+  skip entirely when MPD reports no changes. Track names stream in the status
+  bar while the catalog is imported.
 - **Live WebSocket state** — Playback changes reflect instantly across every
   open tab. MPD status is polled (2 s during play, 10 s during pause/stop) and
   pushed to all connected clients over WebSocket; browser sessions tick locally
@@ -115,19 +119,18 @@ bind mounts; Sonect never mounts anything itself or runs privileged commands.
 ```bash
 mkdir -p sonect && cd sonect
 curl -fsSL https://raw.githubusercontent.com/Koberum/Sonect/main/docker/docker-compose.yml -o docker-compose.yml
-curl -fsSL https://raw.githubusercontent.com/Koberum/Sonect/main/docker/.env.example -o .env
 
-# Add one bind mount per music folder under /libraries/<name> (read-only)
-# in docker-compose.yml, e.g.:
+# Point the music bind mount at the host folder that contains your libraries
+# (read-only) in docker-compose.yml, e.g.:
 #   volumes:
-#     - /mnt/music:/libraries/music:ro
+#     - /mnt/music:/libraries:ro
 #     - sonect-data:/app/data
 
 docker compose up -d
 ```
 
-The UI is served on port `3000`. Then register the music folders from
-Settings → Libraries (folders detected under `/libraries` are suggested
+The UI is served on port `3000`. Then register your library subfolders from
+Settings → Libraries (each first-level folder under `/libraries` is detected
 automatically and added with a single click; per-library statistics are shown
 inline). Audio access is included in the standard compose file: it bind-mounts
 `/dev/snd` live (a USB DAC plugged in after container start is visible without
@@ -175,6 +178,14 @@ The backend maintains two TCP connections to MPD: a command client for
 playback control and a polling client for status updates. The in-memory cache
 is refreshed every 2 seconds during play (10 s during pause/stop) and
 immediately after user-initiated commands. Browser sessions run entirely in-memory (SessionPlayer) without MPD.
+
+With `LOG_LEVEL=debug`, Sonect logs MPD command responses (including command
+lists) in the backend console. Polling is intentionally quieter: MPD status
+errors are logged only when they appear, change, or clear, and are also exposed
+as `error` in the `player-status` WebSocket payload and in the player UI. If
+MPD accepts `play` but immediately pauses, check this field and MPD's `outputs`
+command; a disabled output reports `All audio outputs are disabled` and must be
+enabled in MPD or reconfigured from Settings → Audio.
 
 The database is native SQLite through Node's built-in `node:sqlite` module,
 accessed via a synchronous Drizzle repository layer in `@repo/db` — no WASM
@@ -226,27 +237,29 @@ Configure via `packages/backend/.env`:
 | `COVER_QUALITY`    | `80`                                                                     | WebP quality for covers                                                        |
 | `WAVEFORMS_DIR`    | `/app/data/waveforms` (docker) / `<COVERS_DIR>/../waveforms`             | Where waveform JSON caches are saved (`SHA1(file).json`)                       |
 | `DB_PATH`          | `/app/data/music.db` (docker) / `/db/music.db` (dev)                     | SQLite database path (docker: under the `sonect-data` volume)                  |
-| `LOG_LEVEL`        | `info`                                                                   | Console log level; `debug` logs every found/updated/removed track during scans |
+| `LOG_LEVEL`        | `info`                                                                   | Console log level; `debug` also logs MPD command responses and catalog details |
 | `MPD_CONFIG_PATH`  | `/app/data/mpd-audio.conf` (docker) / `/opt/sonect/data/...`             | MPD config drop-in (`audio_output` + advanced settings)                        |
-| `MPD_LOG_PATH`     | —                                                                        | Legacy; **no longer read** — sync progress comes from the scanner              |
+| `MPD_LOG_PATH`     | —                                                                        | Legacy; **no longer read** — sync progress comes from the MPD protocol         |
 | `DNS_CHECK_HOST`   | `example.com`                                                            | Host resolved to verify DNS connectivity                                       |
 | `PORT`             | `3000`                                                                   | Backend HTTP port                                                              |
 | `FRONTEND_DIST`    | `@frontend/dist` (cwd-relative fallback; `/app/frontend/dist` in docker) | Built frontend static files                                                    |
 
 ### Library sources
 
-Storage is provided by the **host**: mount each music folder into the single
-`sonect` container under `/libraries/<name>` (read-only) and register the
-container path in the Sonect UI (Settings → Libraries). In the Docker compose
-file that means adding one bind mount per library folder:
+Storage is provided by the **host**: mount your music folder into the single
+`sonect` container at `/libraries` (read-only) and register the first-level
+subfolders in the Sonect UI (Settings → Libraries). In the Docker compose file:
 
 ```yaml
 services:
   sonect:
     volumes:
-      - /host/path/to/music:/libraries/music:ro
+      - /host/path/to/music:/libraries:ro
       - sonect-data:/app/data
 ```
+
+If your libraries live in separate host folders, mount each one under
+`/libraries/<name>` instead.
 
 `MUSIC_DIR` is MPD's single `music_directory` (`/libraries` in docker), which is
 why every library must live under it — MPD can only index one tree. A library
@@ -260,22 +273,23 @@ exposed the same way. Sonect never runs `mount`/`umount` and requires no
 elevated privileges. Settings → Libraries shows the registered libraries and
 the mounts detected under the music directory.
 
-Each library source shows **file count, folder count, and total music-file
-size**, refreshed at the end of every library scan. Sonect owns the library
-scan: it is **incremental**, skipping files whose `(mtime, size)` are unchanged
-and re-parsing only changed or new files, so existing play counts survive.
-MPD's `update` runs fire-and-forget and is not the source of the catalog.
-`MUSIC_EXTENSIONS` controls which audio extensions are counted as music files.
+Sonect **mirrors MPD's database**: the catalog is rebuilt from what MPD has
+indexed under `MUSIC_DIR`, so every song MPD sees appears in Sonect. The first
+sync is a full read; the internal unchanged shortcut is used by non-forced
+syncs. Manual **Scan** and library edits always re-read MPD. Existing play
+counts and playlists survive. Each library source shows **file count, folder
+count, and total music-file size**; the file count is the catalog count for that
+library, while folders and size come from a lightweight filesystem walk. Stats
+are refreshed for libraries whose tracks changed; a forced scan with no catalog
+changes refreshes all sources. `MUSIC_EXTENSIONS` controls which audio
+extensions that stats walk counts.
 
 **Network shares with legacy filenames.** Linux and MPD treat filenames as
 UTF-8. Folders whose names were written by old Windows/SMB clients in a legacy
-codepage (Latin-1/CP1252) contain bytes that are not valid UTF-8 and cannot be
-addressed by path. One such folder never breaks the library: the scan skips it,
-logs a warning naming the folder (including the raw bytes), keeps every catalog
-row under it from being deleted, and indexes the rest. The skipped files stay
-out of the catalog until the names are fixed at the source — remount the share
-with the correct charset (`iocharset=`) or rename the folders through a client
-that displays them correctly.
+codepage (Latin-1/CP1252) may not be addressable by path. Fix the names at the
+source — remount the share with the correct charset (`iocharset=`) or rename the
+folders through a client that displays them correctly. Sonect never renames
+files; its stats walk skips unreadable entries and reports the readable subset.
 
 Sonect does not manage host Wi-Fi connections. `GET /system/network/status`
 returns whether the server has a non-loopback network address and whether the

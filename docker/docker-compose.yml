@@ -1,24 +1,22 @@
 # Sonect — single-container deployment (MPD + API + web UI in one image).
 #
-# Storage is provided by the host as bind mounts: mount each music folder under
-# /libraries/<name> (read-only) and register the container path in the Sonect
-# UI. Sonect never mounts anything or runs privileged commands. Add one volume
-# line per library folder:
+# Storage is provided by the host as bind mounts: mount the host folder that
+# contains your music libraries at /libraries (read-only) and register each
+# first-level subfolder in the Sonect UI. Sonect never mounts anything or runs
+# privileged commands.
 #
 #   volumes:
-#     - /host/path/to/music:/libraries/music:ro
+#     - /host/path/to/music:/libraries:ro
 #     - sonect-data:/app/data
 #
 # Audio output is enabled by default. /dev/snd is bind-mounted live, so cards
 # and USB DACs plugged in after container start are visible without a restart.
 # The device cgroup rule allows ALSA character devices (major 116). On a host
 # without sound hardware these settings are harmless.
-#
-# Copy `.env.example` to `.env` and adjust it first.
 
 services:
   sonect:
-    image: ghcr.io/koberum/sonect:${SONECT_VERSION:-latest}
+    image: ghcr.io/koberum/sonect:latest
     container_name: sonect
     restart: unless-stopped
     environment:
@@ -28,7 +26,7 @@ services:
       NODE_ENV: production
       PORT: "3000"
     volumes:
-      - /host/path/to/music:/libraries/music:ro
+      - /host/path/to/music:/libraries:ro
       - sonect-data:/app/data
       - /dev/snd:/dev/snd
     device_cgroup_rules:
@@ -36,7 +34,7 @@ services:
     group_add:
       - audio
     ports:
-      - "${SONECT_PORT:-3000}:3000"
+      - "3000:3000"
 
 volumes:
   sonect-data:

@@ -64,6 +64,10 @@ export const tracks = sqliteTable(
     genre_id: integer("genre_id").references(() => genres.id, {
       onDelete: "set null",
     }),
+    storage_source_id: integer("storage_source_id").references(
+      () => storageSources.id,
+      { onDelete: "set null" },
+    ),
     mtime: integer("mtime"),
     size: integer("size"),
     play_count: integer("play_count").default(0),
@@ -77,6 +81,7 @@ export const tracks = sqliteTable(
     index("idx_tracks_album").on(table.album_id),
     index("idx_tracks_file").on(table.file),
     index("idx_tracks_genre").on(table.genre_id),
+    index("idx_tracks_storage_source").on(table.storage_source_id),
   ],
 );
 

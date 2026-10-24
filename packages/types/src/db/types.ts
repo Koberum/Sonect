@@ -17,6 +17,7 @@ export type DBTrack = {
   artist_id?: number;
   album_id?: number;
   genre_id?: number;
+  storage_source_id?: number;
   track_number?: number;
   disc_number?: number;
   duration?: number;

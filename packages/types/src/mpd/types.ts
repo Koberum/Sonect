@@ -14,6 +14,7 @@ export type MPDTrack = {
   date?: string;
   disc?: string;
   duration?: number;
+  lastModified?: string;
   mtime?: number;
   size?: number;
 };

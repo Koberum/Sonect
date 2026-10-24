@@ -1,20 +1,14 @@
 import { eq, sql } from "drizzle-orm";
-import type { MPDTrack } from "@repo/types";
+import type { CatalogTrack } from "@repo/types";
 import { transaction, type DatabaseTransaction } from "../connection.js";
 import { syncMetadata, tracks as tracksTable } from "../tables.js";
 import { upsertTrack } from "./tracks.js";
-import { syncMetadataDb } from "./syncMetadata.js";
 
 export type LibraryIncrementalResult = {
   synced: number;
   deleted: number;
   errors: number;
 };
-
-// Current on-disk scanner format. The presence of the `scanner_version`
-// marker tells LibraryScanner whether a scan is the first run (and so must
-// clean up legacy/unattributed rows conservatively). See buildDeletions().
-const SCANNER_VERSION = "1";
 
 // Upsert-on-conflict stamp for the sync_metadata key/value table.
 function stampMetadata(
@@ -51,13 +45,13 @@ function isTrackConstraintError(error: unknown): boolean {
 }
 
 export const catalogSyncDb = {
-  // Apply only the changed/deleted files reported by the scanner. Everything
-  // runs in one transaction so a failure leaves the catalog untouched; the
-  // `scanner_version` marker is stamped so the scanner can tell later runs
-  // apart from the first one.
+  // Apply only the changed/deleted files reported by the MPD sync. Everything
+  // runs in one transaction so a failure leaves the catalog untouched.
   applyIncremental(input: {
-    upserts: MPDTrack[];
+    upserts: CatalogTrack[];
     deletions: string[];
+    mpdDbUpdate?: string;
+    mpdSongs?: number;
   }): LibraryIncrementalResult {
     return transaction((tx) => {
       let synced = 0;
@@ -89,13 +83,19 @@ export const catalogSyncDb = {
       }
 
       stampMetadata(tx, "last_sync", new Date().toISOString());
-      stampMetadata(tx, "scanner_version", SCANNER_VERSION);
+      // A per-track failure means the applied catalog is not the one MPD
+      // reported; leave the MPD markers untouched so the next sync retries
+      // instead of taking the "unchanged" shortcut.
+      if (errors === 0) {
+        if (input.mpdDbUpdate !== undefined) {
+          stampMetadata(tx, "mpd_db_update", input.mpdDbUpdate);
+        }
+        if (input.mpdSongs !== undefined) {
+          stampMetadata(tx, "mpd_songs", String(input.mpdSongs));
+        }
+      }
 
       return { synced, deleted, errors };
     });
-  },
-
-  getScannerVersion(): string | undefined {
-    return syncMetadataDb.get("scanner_version");
   },
 };

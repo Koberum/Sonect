@@ -128,7 +128,7 @@ export const searchHandler = asyncHandler(
 
 export const scanLibrary = asyncHandler(
   async (_req: Request, res: Response) => {
-    await getCatalogSyncOrchestrator().scanLibrary();
+    await getCatalogSyncOrchestrator().scanLibrary({ force: true });
     res.json({ message: "Library scan completed" });
   },
 );

@@ -67,21 +67,21 @@ After making changes:
 
 ## Environment variables (packages/backend/.env)
 
-| Variable           | Default                                                         | Purpose                                                                                                        |
-| ------------------ | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `MPD_HOST`         | `localhost`                                                     | MPD daemon hostname                                                                                            |
-| `MPD_PORT`         | `6600`                                                          | MPD daemon port                                                                                                |
-| `COVERS_DIR`       | `./data/covers`                                                 | Path where cover WebPs are saved                                                                               |
-| `COVER_SIZE`       | `400`                                                           | Cover resize dimension (px, square fit inside)                                                                 |
-| `COVER_QUALITY`    | `80`                                                            | WebP quality for covers                                                                                        |
-| `MUSIC_DIR`        | `/opt/sonect/music` (code default; `/libraries` in docker)      | Root directory of the music library                                                                            |
-| `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta`  | Audio extensions counted as music files in per-source library stats                                            |
-| `PORT`             | `3000`                                                          | Backend HTTP server port                                                                                       |
-| `FRONTEND_DIST`    | `@frontend/dist` (cwd-relative; `/app/frontend/dist` in docker) | Path to built frontend static files (prod)                                                                     |
-| `WAVEFORMS_DIR`    | `<COVERS_DIR>/../waveforms` or `./data/waveforms`               | Path where waveform JSON caches are saved (SHA1(file).json)                                                    |
-| `LOG_LEVEL`        | `info`                                                          | Console log level (`debug`/`info`/`warn`/`error`); `debug` logs every found/updated/removed track during scans |
-| `MPD_LOG_PATH`     | —                                                               | MPD log file; no longer read by Sonect (sync progress comes from the scanner)                                  |
-| `DNS_CHECK_HOST`   | `example.com`                                                   | Host resolved to verify DNS connectivity                                                                       |
+| Variable           | Default                                                         | Purpose                                                                             |
+| ------------------ | --------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `MPD_HOST`         | `localhost`                                                     | MPD daemon hostname                                                                 |
+| `MPD_PORT`         | `6600`                                                          | MPD daemon port                                                                     |
+| `COVERS_DIR`       | `./data/covers`                                                 | Path where cover WebPs are saved                                                    |
+| `COVER_SIZE`       | `400`                                                           | Cover resize dimension (px, square fit inside)                                      |
+| `COVER_QUALITY`    | `80`                                                            | WebP quality for covers                                                             |
+| `MUSIC_DIR`        | `/opt/sonect/music` (code default; `/libraries` in docker)      | Root directory of the music library                                                 |
+| `MUSIC_EXTENSIONS` | `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta`  | Audio extensions counted as music files in per-source library stats                 |
+| `PORT`             | `3000`                                                          | Backend HTTP server port                                                            |
+| `FRONTEND_DIST`    | `@frontend/dist` (cwd-relative; `/app/frontend/dist` in docker) | Path to built frontend static files (prod)                                          |
+| `WAVEFORMS_DIR`    | `<COVERS_DIR>/../waveforms` or `./data/waveforms`               | Path where waveform JSON caches are saved (SHA1(file).json)                         |
+| `LOG_LEVEL`        | `info`                                                          | Console log level (`debug`/`info`/`warn`/`error`)                                   |
+| `MPD_LOG_PATH`     | —                                                               | Legacy; not read by Sonect (sync progress comes from the MPD protocol, not the log) |
+| `DNS_CHECK_HOST`   | `example.com`                                                   | Host resolved to verify DNS connectivity                                            |
 
 ## Production deployment (Docker)
 
@@ -206,7 +206,7 @@ sonect (single image, ENTRYPOINT /init)
 - Business logic lives in `packages/backend/src/services/`.
 - WebSocket handlers live in `packages/backend/src/ws/`.
 - Controllers (input validation / response shaping) live in `packages/backend/src/controllers/`.
-- **MpdConnectionManager** (`services/mpd/mpdConnectionManager.ts`) is a singleton that manages **two** TCP connections to MPD: a command client (`cmdClient`) and a polling client (`pollSocket`). The **cmdClient** uses the `mpd` npm package (v1.3.0) for command execution. The **pollSocket** uses raw TCP (`net` module) to send `status` commands directly — this avoids the `mpd` package's `idle`-based callback queue which caused silent polling failures. Polling happens on a timer: every 2s during `play`, every 10s during `pause`/`stop`. The in-memory `PlaybackStatus` cache is maintained and `stateChanged` events are emitted to subscribers on each poll. A `refreshNow()` method is also exposed for immediate cache refresh after user-initiated commands. When MPD disconnects, each connection auto-reconnects with exponential backoff (1s–30s).
+- **MpdConnectionManager** (`services/mpd/mpdConnectionManager.ts`) is a singleton that manages **two** TCP connections to MPD: a command client (`cmdClient`) and a polling client (`pollSocket`). The **cmdClient** uses the `mpd` npm package (v1.3.0) for command execution. The **pollSocket** uses raw TCP (`net` module) to send `status` commands directly — this avoids the `mpd` package's `idle`-based callback queue which caused silent polling failures. Polling happens on a timer: every 2s during `play`, every 10s during `pause`/`stop`. The in-memory `PlaybackStatus` cache is maintained and `stateChanged` events are emitted to subscribers on each poll. A `refreshNow()` method is also exposed for immediate cache refresh after user-initiated commands. When MPD disconnects, each connection auto-reconnects with exponential backoff (1s–30s). At `LOG_LEVEL=debug`, command and command-list responses are logged with bounded, single-line raw previews; poll `status.error` values are logged only on transitions and copied to `PlaybackStatus.error`.
 - `playerService.ts` reads the cached status synchronously via `mpdConnectionManager.getCachedStatus()`. It delegates commands to `mpdConnectionManager.executeCommand()` / `executeCommandList()` and fires `mpdConnectionManager.refreshNow()` (fire-and-forget with `.catch`) after each command for prompt feedback; if a poll is already in flight the refresh is skipped and the next tick applies. Note: `getQueue()` is an exception — it runs an async MPD query (`playlistinfo`).
 - `player.ws.ts` sends the cached status to new WebSocket clients immediately on connect (wrapped in `{ type: "player-status", ... }` envelope), then forwards subsequent `stateChanged` events from the polling loop. All WS messages follow a standard format with a `type` field: `"player-status"`, `"sync-progress"`, `"sync-complete"`, `"sync-error"`, or `"log"`.
 - The `mpd` npm package (v1.3.0) is bundled into the backend output; it is only used for the `cmdClient`. The `pollSocket` uses raw TCP to avoid idle-protocol callback desync.
@@ -215,7 +215,7 @@ sonect (single image, ENTRYPOINT /init)
 - **asyncHandler** (`middleware/asyncHandler.ts`) wraps all async controllers; it **returns the promise chain** so tests can `await` it.
 - **errorHandler** (`middleware/errorHandler.ts`) is registered in `app.ts` as the last middleware. Controllers throw `NotFoundError`/`ValidationError` for centralized handling.
 - **autoplayService** (`services/mpd/autoplayService.ts`) is always active for both MPD and browser sessions. A manual track selection queues that track through the end of its album, without wrapping to earlier tracks. Smart batches then add complete albums in this order: same artist → same genre → similar genres → (genre-less only) library-wide, ranking each tier by the sum of its tracks' `play_count` (title order breaks ties). Similar genres are resolved via `services/mpd/genreSimilarity.ts`: a curated map for common tags (e.g. `techno → tech house, minimal, house…`) with token/substring fallback for arbitrary MPD `Genre` tags (`Vaporwave → Vapor House` via `genresDb.getAll()` substring match). Ranking stays anchored to the manually selected track as playback advances. A batch stops only after reaching at least 25 tracks, so albums are never split; if the genre pool is sparse the batch may be short and will stay genre-coherent rather than drifting to unrelated genres. For MPD, the connection manager refills below five remaining tracks and prevents overlapping fills; used albums are committed only after MPD accepts them and are not repeated until the cycle is exhausted, and the next cycle preserves albums still in the MPD queue. For browser, each `SessionPlayer` owns its own `AutoplayService` instance (via `SessionRegistry`) — `playTrack` appends an initial batch beyond the album slice, and `advance`/`tick` refills when <5 tracks remain with the same ranking and commit semantics. There is no autoplay toggle API.
-- **CatalogSyncService** (`services/library/catalogSyncService.ts`) owns library sync — Sonect scans the filesystem itself; MPD is not the catalog source. It is invoked via `CatalogSyncOrchestrator.scanLibrary()`, and delegates to `LibraryScanner` (`services/library/libraryScanner.ts`). The scanner walks every enabled registered `storage_sources` path, **skips unchanged files by `(mtime, size)`** against the existing row, and parses only changed/new files with `music-metadata` (falling back to filename-based indexing when a file is unreadable). Deletion is **scoped per successfully-walked source prefix**: the first run (when the `scanner_version` marker is absent) drops legacy/MPD-sourced rows not seen in any walked source, while later runs delete only rows under a walked prefix that were not observed; rows under a **skipped subtree** (an unreadable directory, or an entry whose name is not valid UTF-8) are never deleted, on either run. All upserts/deletes run in one transaction via `catalogSyncDb.applyIncremental()` (per-track savepoints; constraint failures reported and skipped; any other error rolls back to the previous catalog). Unchanged tracks are left untouched, so `play_count`/`last_played` survive. Per-source `file_count`/`dir_count`/`total_size` are written with `storageDb.updateStats()` at the end of the walk. MPD `update` is decoupled and fire-and-forget — the scanner, not MPD, drives the catalog.
+- **MpdCatalogSyncService** (`services/library/mpdCatalogSyncService.ts`) owns library sync — **MPD is the catalog source**. It is invoked via `CatalogSyncOrchestrator.scanLibrary({force?})`. Each sync: triggers MPD `update` and polls `status.updating_db` until it finishes; reads MPD `stats` (`songs`, `db_update`) and skips the fetch when the stored markers and `tracksDb.count()` still match (unless `force`); pages MPD with `count "(file != '')"` + `find "(file != '')" window START:END`; parses the records; attributes each file to the most specific registered `storage_sources` path (longest prefix, stored as `tracks.storage_source_id`); diffs against `tracksDb.getSyncSnapshot()` in memory; and applies only new/changed/deleted rows in one transaction via `catalogSyncDb.applyIncremental()` (per-track savepoints; constraint failures reported and skipped; any other error rolls back the previous catalog). Unchanged tracks are untouched, so `play_count`/`last_played` survive. A failed read applies nothing. If MPD reports zero songs while a registered library still contains audio files, the sync aborts and keeps the catalog. `MUSIC_DIR` is MPD's single `music_directory`; every MPD song is mirrored, including folders not registered as a Sonect library (unregistered tracks still show with `storage_source_id = NULL`). MPD `update` is no longer fire-and-forget from storage changes — the sync owns it.
 - The backend exposes its build version through `getSystemStatus()` →
   `/system/status[].version`. It reads `/app/.version` (written only by the
   release image via the `SONECT_VERSION` build-arg), defaulting to `"dev"`.
@@ -360,7 +360,7 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 - **PlayerRouter** (`services/player/playerRouter.ts`) — `Map<sessionId, {mode, engine, activeDeviceId, volume}>` singleton. `mode` is per-profile (`browser` default, `mpd` requires lock). `engine` is `SessionPlayer` wrapper or `MpdAdapter`. `activeDeviceId` is per-profile for `browser` mode (which browser device renders audio); `mpd` mode has `null`. Browser `PUT /player/output-mode {mode:'browser'}` with `X-Device-Id` hands off same `file+elapsed+state` to new device (no engine recreation), emits `stateChanged`. `setVolume` is stored per-profile for browser (remote volumes affect shared state) vs delegated to MPD. `getStatus()` merges `engine.getStatus()` + `volume` + `activeDeviceId` + `mode`.
 - **Browser engine (shared per-profile)** — `SessionPlayer` (`services/session/sessionPlayer.ts`) per `SessionRegistry` (`services/session/sessionRegistry.ts` 30m idle sweep): single queue/clock per profile, auto-advance, `playTrack` queues through end of album then appends a smart autoplay batch, `pause`/`resume` control the clock. First `play` from a browser device auto-claims `activeDeviceId` if `null` (`setActiveDeviceIfUnclaimed`). Subsequent remote controls (play/pause/seek/volume) from passive devices mutate shared state but keep `activeDeviceId`. `random/repeat` are no-ops. Each `SessionPlayer` owns its own `AutoplayService` instance (no global singleton) with refill when <5 tracks remain.
 - **MPD engine (shared, single-owner)** — `MpdAdapter` wraps `PlayerServiceImpl` + `MpdConnectionManager`. Shared global queue/daemon. `resume` uses explicit `pause 0`. Lock via `MpdConfigService.tryAcquireMpd(sessionId)` (`services/mpd/mpdConfigService.ts`); `PUT /player/output-mode {mode:'mpd'}` returns 423 if another session owns MPD. `mpd→browser` handoff sets `activeDeviceId` to requesting device.
-- **WebSocket** — `ws/player.ws.ts` resolves `PlayerRouter.getStatus(q)` + `on("stateChanged")` for that profile and sends `{type:'player-status', ...status, activeDeviceId, mode}`. Legacy path without `sessionId` remains MPD-only. Frontend `components/ws-provider.tsx` appends `&deviceId=` and updates `activeDeviceId` in `PlaybackContext`; `features/dashboard/components/music-player.tsx` only calls `browserAudio.play()` when `outputMode==='browser' && (activeDeviceId===null || activeDeviceId===myDeviceId)`.
+- **WebSocket** — `ws/player.ws.ts` resolves `PlayerRouter.getStatus(q)` + `on("stateChanged")` for that profile and sends `{type:'player-status', ...status, activeDeviceId, mode}`. `PlaybackStatus.error` carries the current MPD status error when present, and the player renders it as a localized warning. Legacy path without `sessionId` remains MPD-only. Frontend `components/ws-provider.tsx` appends `&deviceId=` and updates `activeDeviceId` in `PlaybackContext`; `features/dashboard/components/music-player.tsx` only calls `browserAudio.play()` when `outputMode==='browser' && (activeDeviceId===null || activeDeviceId===myDeviceId)`.
 - **Legacy routes** — `/mpd` was removed. `/session` remains only for backend integration tests (not used by frontend). Vite proxy forwards `/player` (`frontend/vite.config.ts`).
 - **Autoplay in sessions** — browser sessions now reuse the same smart-autoplay batches as MPD but per-profile (one `AutoplayService` per `SessionPlayer`); MPD still uses the singleton via `factory.ts` + `MpdConnectionManager` callback.
 
@@ -455,14 +455,14 @@ recursively and can crash MPD with `SIGSEGV`.
 - **`storageService.ts`** exposes `createStorageSource({name, path})`,
   `updateStorageSource(id, {name?, path?})`, `deleteStorageSource(id)`,
   `getStatsForPath(path)` and a read-only `listMounts()` (parses `/proc/mounts`).
-  Creating or deleting a source, or updating its `path`, fires an MPD `update` +
-  `scanLibrary()`; name/enabled-only edits do not rescan. `createStorageSource` is
-  **async**: it computes initial stats with the non-blocking
-  `computeSourceStatsAsync` walk and **persists** them via `storageDb.updateStats`
-  before returning, so a fresh library never reads 0/0/0 while the scanner runs
-  (the scanner walk still overwrites them as the long-term source of truth). The
-  `storage_sources` table has no `type`/`uri`/`mount_path`/`username`/`password`
-  columns.
+  Creating or deleting a source, or updating its `path`, triggers
+  `scanLibrary({ force: true })` (which owns the MPD `update`); name/enabled-only
+  edits do not rescan. `createStorageSource` is **async**: it computes initial
+  stats with the non-blocking `computeSourceStatsAsync` walk and **persists** them
+  via `storageDb.updateStats` before returning, so a fresh library never reads
+  0/0/0 while the first MPD sync runs (the sync then replaces `file_count` with
+  the catalog count). The `storage_sources` table has no
+  `type`/`uri`/`mount_path`/`username`/`password` columns.
 - **Mount suggestions (`getDetectedLibraries`).** `storageService` lists the
   first-level directories under `MUSIC_DIR`, annotates each with `isMount`
   (cross-checked against `listMounts()`) and `registered`, and computes bounded
@@ -483,31 +483,40 @@ recursively and can crash MPD with `SIGSEGV`.
   appears when the budget omitted them). Registered folders never appear in the
   detected section. A collapsible compose-snippet box interpolates the first
   unregistered folder's real path.
-- Per-source stats (`file_count` / `dir_count` / `total_size`) are produced by
-  the scanner walk (`storageStats.walk`/`walkSource`/`computeSourceStats`) at the
-  end of every `scanLibrary()` and saved via `storageDb.updateStats()`.
-  `MUSIC_EXTENSIONS` (comma-separated; default `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta`)
-  selects which audio extensions are counted as music files.
+- Per-source stats are persisted on `storage_sources`:
+  - `file_count` is the **catalog count** for tracks attributed to the source
+    (`tracks.storage_source_id`), so it matches what Sonect actually shows.
+  - `dir_count` / `total_size` come from a **lightweight filesystem walk**
+    (`storageStats.computeSourceStatsAsync`) because MPD exposes neither per
+    directory.
+  - `LibraryStatsService` refreshes only the sources reported as changed by the
+    catalog sync; the first MPD sync and manual refreshes cover all sources.
+- `MUSIC_EXTENSIONS` (comma-separated; default
+  `mp3,flac,ogg,oga,opus,m4a,aac,wav,wma,ape,wv,dsf,dff,mpc,tta`) selects which
+  audio extensions the stats walk counts as music files.
 
 ### Library sync progress
 
-Per-file progress during library sync now comes from Sonect's own scanner: as
-`LibraryScanner` walks each source it emits `tracks`-phase `ScanProgress`
-(`current`/`total`), which `CatalogSyncOrchestrator` broadcasts as a
-`sync-progress` WS message. MPD's log file is no longer read for sync progress
-(the former `mpdLogReader.ts` path was removed); MPD `update` is fire-and-forget.
+`CatalogSyncOrchestrator.scanLibrary()` broadcasts `sync-progress` phases:
 
-**If a source root is unreadable**, the scanner skips the whole source (keeping
-its catalog rows and previous stats) and continues with the remaining sources.
-Inside a readable source, an unreadable subdirectory or an entry whose name is
-not valid UTF-8 (Node decodes it lossily to `U+FFFD`, so it can no longer be
-addressed by path) is skipped individually: the walk continues, a capped
-warning names the path (with the errno, or the raw latin-1 name), every catalog
-row under the skipped path is protected from deletion, and per-source stats
-reflect the walked subset only. `storageStats.walk()` returns these `skipped`
-paths; the sync, async, and budget walks all share this tolerance — only a root
-failure throws. Fixing such names is a share-level concern (mount `iocharset`,
-NAS charset, or renaming through a UTF-8 client); Sonect never renames files.
+1. `scan-started` — request accepted.
+2. `mpd` — MPD `update` is running; the orchestrator polls `status.updating_db`.
+3. `tracks` — MPD records are read in `find` pages and diffed; each message
+   carries `current`/`total` and the current track's `title`/`artist`/`album`
+   (throttled), so the status bar shows song names while importing.
+4. `covers` — album cover backfill, `current`/`total` albums.
+5. `sync-complete` / `sync-error`.
+
+MPD's log file is **not** read for progress (it has no built-in rotation and the
+format is not a stable API); the MPD protocol is the source. If MPD is
+unreachable, the sync fails before any catalog write and the previous library is
+kept. If MPD reports zero songs while a registered library still contains audio
+files, the sync aborts and keeps the catalog (guards against an unmounted
+share).
+
+Non-UTF-8 share names remain a share-level concern: fix the mount charset or
+rename through a UTF-8 client. The stats walk skips unreadable/non-UTF-8 entries
+and reports the walked subset; Sonect never renames files.
 
 ## What NOT to do
 
@@ -517,6 +526,7 @@ NAS charset, or renaming through a UTF-8 client); Sonect never renames files.
 - Do not commit `node_modules`, `dist/`, or `.env` files.
 - Do not modify `pnpm-lock.yaml` manually.
 - Do not add console.log debug statements in production paths.
+- Do not tail `mpd.log` (or add log rotation) for sync progress — use the MPD protocol.
 - Do not ship a feature without updating the documentation. When implementing a new feature or making architectural changes, you must update `AGENTS.md` (for agent-facing architecture/patterns) and `README.md` (for user-facing config, env vars, or setup) as part of the implementation.
 
 <!-- headroom:rtk-instructions -->

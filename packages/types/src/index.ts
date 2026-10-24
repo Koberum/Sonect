@@ -31,6 +31,7 @@ export type PlaybackStatus = {
   random: boolean;
   single: boolean;
   consume: boolean;
+  error?: string | null;
   track?: TrackWithRelations;
   queueLength: number;
   activeDeviceId?: string | null;

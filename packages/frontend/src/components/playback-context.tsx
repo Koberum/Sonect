@@ -1,21 +1,15 @@
 // MusicContext.tsx
 import type { PlaybackStatus, OutputMode } from "@repo/types";
-import type { TrackWithRelations } from "@repo/types/catalog";
+import type {
+  LibrarySyncProgress,
+  TrackWithRelations,
+} from "@repo/types/catalog";
 import { createContext, useContext, useEffect, useState } from "react";
 import { getOutputMode } from "@/features/player/api";
 import { getDeviceId, getDeviceName, getDeviceType } from "@/lib/deviceId";
 import { defaultPlayerState } from "@/lib/playbackState";
 
-export type SyncProgress = {
-  current: number;
-  total: number;
-  phase?: "scan-started" | "mpd" | "tracks" | "covers";
-  track: {
-    title: string;
-    artist: string;
-    album: string;
-  } | null;
-};
+export type SyncProgress = LibrarySyncProgress;
 
 type PlaybackContextType = {
   trackPlayed: TrackWithRelations | null;

@@ -74,6 +74,7 @@
     "remoteDevice": "Otro navegador",
     "outputModeError": "Error al cambiar el modo de salida",
     "tapToPlay": "Toca para reproducir",
+    "mpdError": "Error de reproducción MPD: {{error}}",
     "mpdLocked": "MPD bloqueado",
     "outputModeLocked": "Salida MPD bloqueada por otra sesión"
   },
@@ -86,6 +87,7 @@
     "syncingCovers": "Sincronizando carátulas...",
     "syncingTracks": "Sincronizando pistas...",
     "scanningMpd": "Escaneando...",
+    "updatingMpd": "Actualizando MPD...",
     "complete": "Sincronización completa"
   },
   "language": {

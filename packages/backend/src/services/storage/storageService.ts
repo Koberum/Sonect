@@ -2,7 +2,6 @@ import fs from "fs";
 import path from "path";
 import { storageDb } from "@repo/db";
 import {
-  computeSourceStats,
   computeSourceStatsAsync,
   decodeEntryName,
   getAudioExtensions,
@@ -10,8 +9,8 @@ import {
 } from "./storageStats";
 import { ValidationError } from "@middleware/errorHandler";
 import { DetectedLibrary, StorageSource } from "@repo/types";
-import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager";
 import type { CatalogSyncOrchestrator } from "@services/library/catalogSyncOrchestrator";
+import type { LibraryStatsService } from "./libraryStatsService";
 
 /**
  * Suggestions are best-effort: a huge library must never block the request, so
@@ -113,7 +112,7 @@ export interface StorageService {
   deleteStorageSource(id: number): boolean;
   listMounts(): MountInfo[];
   getDetectedLibraries(): DetectedLibrary[];
-  refreshStats(id: number): StorageSource | undefined;
+  refreshStats(id: number): Promise<StorageSource | undefined>;
   getStatsForPath(input: string): Promise<SourceStats>;
 }
 
@@ -132,8 +131,8 @@ export class StorageServiceImpl implements StorageService {
   private detectedStatsCache = new Map<string, SourceStats>();
 
   constructor(
-    private mpdConnectionManager: MpdConnectionManager,
     private catalogSyncOrchestrator: CatalogSyncOrchestrator,
+    private libraryStatsService: LibraryStatsService,
   ) {}
 
   public async getStorageSourcesHandler(): Promise<StorageSource[]> {
@@ -158,12 +157,10 @@ export class StorageServiceImpl implements StorageService {
       enabled: data.enabled ?? true,
     });
 
-    this.triggerScan();
-
     // Compute initial stats eagerly (async walk — a sync walk would freeze MPD
     // polling and HTTP on large folders) and persist them, so the new row shows
-    // real values instead of 0/0/0 until the scanner finishes. The scanner walk
-    // remains the long-term source of truth.
+    // real values instead of 0/0/0 until the scan finishes. The scan then
+    // replaces file_count with the catalog count.
     try {
       const stats = await computeSourceStatsAsync(fullPath);
       storageDb.updateStats(id, stats);
@@ -175,6 +172,8 @@ export class StorageServiceImpl implements StorageService {
         err instanceof Error ? err.message : err,
       );
     }
+
+    this.triggerScan();
 
     return storageDb.getById(id) as StorageSource | undefined;
   }
@@ -347,12 +346,11 @@ export class StorageServiceImpl implements StorageService {
   /**
    * Recompute on-disk stats for a registered source and persist them.
    */
-  public refreshStats(id: number): StorageSource | undefined {
+  public async refreshStats(id: number): Promise<StorageSource | undefined> {
     const source = storageDb.getById(id);
     if (!source) return undefined;
-    let stats: SourceStats;
     try {
-      stats = computeSourceStats(source.path);
+      return await this.libraryStatsService.refreshOne(id);
     } catch {
       // Foreseeable (unmounted share, permissions): surface a 400 rather than
       // an opaque 500 and leave the stored stats untouched.
@@ -360,14 +358,11 @@ export class StorageServiceImpl implements StorageService {
         path: source.path,
       });
     }
-    storageDb.updateStats(id, stats);
-    return storageDb.getById(id) as StorageSource | undefined;
   }
 
   private triggerScan(): void {
-    this.mpdConnectionManager.executeCommand("update").catch(() => {});
     this.catalogSyncOrchestrator
-      .scanLibrary()
+      .scanLibrary({ force: true })
       .catch((err) => console.error("[Storage] Library scan failed:", err));
   }
 

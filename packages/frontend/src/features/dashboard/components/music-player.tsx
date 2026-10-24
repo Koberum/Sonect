@@ -33,6 +33,7 @@ import { toast } from "sonner";
 import { ApiError } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { qk } from "@/lib/queryKeys";
+import { PlaybackErrorNotice } from "./playback-error";
 
 export default function MusicPlayer() {
   const {
@@ -193,6 +194,7 @@ export default function MusicPlayer() {
       <div
         className={`bg-card border-border fixed right-0 bottom-0 left-0 z-50 border border-b-0 pb-[env(safe-area-inset-bottom)] transition-all duration-300 ease-in-out`}
       >
+        <PlaybackErrorNotice error={playbackStatus.error} />
         <div className="absolute top-0 left-0 z-10 block w-full md:hidden">
           <PlaybackProgressBar
             elapsed={displayElapsed}

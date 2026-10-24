@@ -32,7 +32,7 @@ export function StatusBar() {
     return (
       <div className="bg-background flex h-[44px] w-[270px] shrink-0 items-center justify-start overflow-hidden px-4">
         <div className="flex w-full min-w-0 items-center gap-2 py-1">
-          <Check className="text-success h-4 w-4 shrink-0" />
+          <Check className="text-success size-4 shrink-0" />
           <span className="min-w-0 truncate text-xs font-medium md:text-sm">
             {t("sync.complete")}
           </span>
@@ -50,15 +50,27 @@ export function StatusBar() {
 
   const phaseLabel =
     phase === "mpd"
-      ? t("sync.scanningMpd")
-      : phase === "covers"
-        ? t("sync.syncingCovers")
-        : t("sync.syncingTracks");
+      ? t("sync.updatingMpd")
+      : phase === "scan-started"
+        ? t("sync.scanningMpd")
+        : phase === "covers"
+          ? t("sync.syncingCovers")
+          : t("sync.syncingTracks");
+
+  const trackLabel = syncProgress.track
+    ? [
+        syncProgress.track.title,
+        syncProgress.track.artist,
+        syncProgress.track.album,
+      ]
+        .filter(Boolean)
+        .join(" — ")
+    : "\u00A0";
 
   return (
     <div className="bg-background flex h-[44px] w-[350px] shrink-0 items-center justify-start overflow-hidden px-4">
       <div className="flex w-full min-w-0 items-center gap-2 py-1">
-        <RefreshCw className="h-4 w-4 shrink-0 animate-spin" />
+        <RefreshCw className="size-4 shrink-0 animate-spin" />
         <div className="flex min-w-0 flex-1 flex-col gap-0.5 overflow-hidden">
           <div className="flex min-w-0 items-center gap-2 overflow-hidden text-xs font-medium md:text-sm">
             <span className="min-w-0 truncate">{phaseLabel}</span>
@@ -69,9 +81,7 @@ export function StatusBar() {
             )}
           </div>
           <div className="text-muted-foreground h-4 w-full min-w-0 truncate text-xs leading-4">
-            {syncProgress.track
-              ? `${syncProgress.track.title} \u2014 ${syncProgress.track.artist} \u00B7 ${syncProgress.track.album}`
-              : "\u00A0"}
+            {trackLabel}
           </div>
         </div>
       </div>

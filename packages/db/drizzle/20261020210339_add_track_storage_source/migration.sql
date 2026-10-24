@@ -1,0 +1,2 @@
+ALTER TABLE `tracks` ADD `storage_source_id` integer REFERENCES storage_sources(id) ON DELETE SET NULL;--> statement-breakpoint
+CREATE INDEX `idx_tracks_storage_source` ON `tracks` (`storage_source_id`);

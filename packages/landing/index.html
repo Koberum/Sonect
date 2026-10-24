@@ -957,7 +957,7 @@
                   <span class="term-prompt">$</span
                   ><span class="term-cmd">
                     docker run -d --name sonect -p 3000:3000 -v
-                    /path/to/music:/libraries/music:ro -v sonect-data:/app/data
+                    /path/to/music:/libraries:ro -v sonect-data:/app/data
                     ghcr.io/koberum/sonect:latest</span
                   ><span class="cursor" aria-hidden="true"></span>
                 </div>
@@ -1239,9 +1239,7 @@
                   <span class="hl-str">-p 3000:3000</span>
                 </div>
                 <div>
-                  <span class="hl-str"
-                    >-v /path/to/music:/libraries/music:ro</span
-                  >
+                  <span class="hl-str">-v /path/to/music:/libraries:ro</span>
                   <span class="hl-str">-v sonect-data:/app/data</span>
                 </div>
                 <div>
@@ -1353,8 +1351,8 @@
                     Docker image:
                     <code style="font-size: 0.78rem"
                       >docker run -d -p 3000:3000 -v
-                      /path/to/music:/libraries/music:ro -v
-                      sonect-data:/app/data ghcr.io/koberum/sonect:latest</code
+                      /path/to/music:/libraries:ro -v sonect-data:/app/data
+                      ghcr.io/koberum/sonect:latest</code
                     >
                   </li>
                   <li>

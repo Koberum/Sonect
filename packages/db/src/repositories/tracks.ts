@@ -13,7 +13,7 @@ import {
   or,
   sql,
 } from "drizzle-orm";
-import type { DBTrack, MPDTrack, DBTrackWithRelations } from "@repo/types";
+import type { CatalogTrack, DBTrack, DBTrackWithRelations } from "@repo/types";
 import { db } from "../connection.js";
 import { albums, artists, genres, tracks } from "../tables.js";
 import { normalizeRowId, type QueryExecutor } from "./rowId.js";
@@ -40,21 +40,38 @@ const joinedOnArtistAndAlbum = () =>
 // Parse helpers kept byte-compatible with the previous storage layer: MPD can
 // report "3/10" track positions and "2024-05-01" dates, and unparseable values
 // were always passed through as parseInt produced them.
-function trackNumberOf(track: MPDTrack): number | null {
+function trackNumberOf(track: CatalogTrack): number | null {
   return track.track ? parseInt(track.track.toString().split("/")[0]) : null;
 }
 
-function discNumberOf(track: MPDTrack): number | null {
+function discNumberOf(track: CatalogTrack): number | null {
   return track.disc ? parseInt(track.disc.toString()) : null;
 }
 
-function yearOf(track: MPDTrack): number | undefined {
+function yearOf(track: CatalogTrack): number | undefined {
   return track.date ? parseInt(track.date.split("-")[0]) : undefined;
 }
 
+export type SyncTrackSnapshot = {
+  file: string;
+  title: string;
+  artist_name: string | null;
+  album_id: number | null;
+  album_title: string | null;
+  genre: string | null;
+  track_number: number | null;
+  disc_number: number | null;
+  duration: number | null;
+  date: string | null;
+  storage_source_id: number | null;
+};
+
 // Single definition used by tracksDb and by the transactional catalog apply:
 // playback statistics are never touched here, only metadata.
-export function upsertTrack(executor: QueryExecutor, track: MPDTrack): number {
+export function upsertTrack(
+  executor: QueryExecutor,
+  track: CatalogTrack,
+): number {
   const genreId =
     track.genre && track.genre.trim() !== ""
       ? findOrCreateGenre(executor, track.genre)
@@ -93,6 +110,7 @@ export function upsertTrack(executor: QueryExecutor, track: MPDTrack): number {
         disc_number: discNumberOf(track),
         duration: track.duration ?? null,
         date: track.date ?? null,
+        storage_source_id: track.storageSourceId ?? null,
         mtime: track.mtime ?? null,
         size: track.size ?? null,
         updated_at: sql`CURRENT_TIMESTAMP`,
@@ -114,6 +132,7 @@ export function upsertTrack(executor: QueryExecutor, track: MPDTrack): number {
       disc_number: discNumberOf(track),
       duration: track.duration ?? null,
       date: track.date ?? null,
+      storage_source_id: track.storageSourceId ?? null,
       mtime: track.mtime ?? null,
       size: track.size ?? null,
     })
@@ -273,6 +292,37 @@ export const tracksDb = {
       .from(tracks)
       .all()
       .map((row) => row.file);
+  },
+
+  getSyncSnapshot(): SyncTrackSnapshot[] {
+    return db()
+      .select({
+        file: tracks.file,
+        title: tracks.title,
+        artist_name: artists.name,
+        album_id: tracks.album_id,
+        album_title: albums.title,
+        genre: genres.name,
+        track_number: tracks.track_number,
+        disc_number: tracks.disc_number,
+        duration: tracks.duration,
+        date: tracks.date,
+        storage_source_id: tracks.storage_source_id,
+      })
+      .from(tracks)
+      .leftJoin(artists, eq(tracks.artist_id, artists.id))
+      .leftJoin(albums, eq(tracks.album_id, albums.id))
+      .leftJoin(genres, eq(tracks.genre_id, genres.id))
+      .all() as SyncTrackSnapshot[];
+  },
+
+  countByStorageSource(id: number): number {
+    const row = db()
+      .select({ value: count() })
+      .from(tracks)
+      .where(eq(tracks.storage_source_id, id))
+      .get();
+    return row?.value ?? 0;
   },
 
   getByArtistAlbumTitle(
