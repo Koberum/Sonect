@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireAdmin, requireAuth } from "@middleware/auth";
 import {
   getAlbums,
   getAlbumById,
@@ -19,6 +20,8 @@ import {
 
 const router = Router();
 
+router.use(requireAuth);
+
 router.get("/stats", getLibraryStatsHandler);
 router.get("/search", searchHandler);
 router.get("/artists", getArtists);
@@ -33,6 +36,6 @@ router.get("/recently-added", getRecentlyAdded);
 router.get("/genres", getGenres);
 router.get("/genres/:genre/albums", getAlbumsByGenre);
 router.get("/genres/:genre/tracks", getTracksByGenre);
-router.post("/scan", scanLibrary);
+router.post("/scan", requireAdmin, scanLibrary);
 
 export default router;

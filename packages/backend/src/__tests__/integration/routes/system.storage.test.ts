@@ -6,9 +6,11 @@ import path from "path";
 import express from "express";
 import request from "supertest";
 import { errorHandler } from "@middleware/errorHandler";
+import { authenticate } from "@middleware/auth";
 import systemRoutes from "@routes/systemRoutes";
 import { computeSourceStatsWithinBudget } from "@services/storage/storageService.js";
 import { createTestDb } from "@tests/helpers/db.js";
+import { createTestSession } from "@tests/helpers/auth.js";
 import { db, storageDb, upsertTrack } from "@repo/db";
 import {
   initializeServices,
@@ -22,10 +24,12 @@ describe("system storage routes", () => {
   let close: () => void;
   let sandbox: sinon.SinonSandbox;
   let tmpDir: string;
+  let cookie: string;
 
   function makeApp() {
     const app = express();
     app.use(express.json());
+    app.use(authenticate);
     app.use("/system", systemRoutes);
     app.use(errorHandler);
     return app;
@@ -40,8 +44,9 @@ describe("system storage routes", () => {
     if (!isServicesInitialized()) initializeServices();
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     ({ close } = createTestDb());
+    ({ cookie } = await createTestSession());
     sandbox = sinon.createSandbox();
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "sonect-detected-"));
     process.env.MUSIC_DIR = tmpDir;
@@ -82,7 +87,9 @@ describe("system storage routes", () => {
       return (originalReadFileSync as (...a: unknown[]) => unknown)(p, ...args);
     }) as typeof fs.readFileSync);
 
-    const res = await request(makeApp()).get("/system/storage/detected");
+    const res = await request(makeApp())
+      .get("/system/storage/detected")
+      .set("Cookie", cookie);
     expect(res.status).to.equal(200);
 
     const libs = res.body as Array<{
@@ -126,9 +133,9 @@ describe("system storage routes", () => {
       storageSourceId: id,
     });
 
-    const res = await request(makeApp()).post(
-      `/system/storage/sources/${id}/refresh-stats`,
-    );
+    const res = await request(makeApp())
+      .post(`/system/storage/sources/${id}/refresh-stats`)
+      .set("Cookie", cookie);
     expect(res.status).to.equal(200);
     expect(res.body.file_count).to.equal(1);
     expect(res.body.total_size).to.equal(8);
@@ -136,9 +143,9 @@ describe("system storage routes", () => {
   });
 
   it("POST /system/storage/sources/:id/refresh-stats 404s for unknown id", async () => {
-    const res = await request(makeApp()).post(
-      "/system/storage/sources/99999/refresh-stats",
-    );
+    const res = await request(makeApp())
+      .post("/system/storage/sources/99999/refresh-stats")
+      .set("Cookie", cookie);
     expect(res.status).to.equal(404);
   });
 
@@ -150,9 +157,9 @@ describe("system storage routes", () => {
       enabled: true,
     });
 
-    const res = await request(makeApp()).post(
-      `/system/storage/sources/${id}/refresh-stats`,
-    );
+    const res = await request(makeApp())
+      .post(`/system/storage/sources/${id}/refresh-stats`)
+      .set("Cookie", cookie);
     expect(res.status).to.equal(400);
     expect(res.body.error).to.include("Cannot read library path");
     // Stats must not be touched on failure.
@@ -167,6 +174,7 @@ describe("system storage routes", () => {
 
       const res = await request(makeApp())
         .get("/system/storage/stats")
+        .set("Cookie", cookie)
         .query({ path: libPath });
       expect(res.status).to.equal(200);
       expect(res.body).to.deep.equal({
@@ -177,13 +185,16 @@ describe("system storage routes", () => {
     });
 
     it("400s when the path query parameter is missing", async () => {
-      const res = await request(makeApp()).get("/system/storage/stats");
+      const res = await request(makeApp())
+        .get("/system/storage/stats")
+        .set("Cookie", cookie);
       expect(res.status).to.equal(400);
     });
 
     it("400s for a path outside MUSIC_DIR", async () => {
       const res = await request(makeApp())
         .get("/system/storage/stats")
+        .set("Cookie", cookie)
         .query({ path: "/etc" });
       expect(res.status).to.equal(400);
     });
@@ -193,6 +204,7 @@ describe("system storage routes", () => {
       fs.mkdirSync(path.join(libPath, "sub"), { recursive: true });
       const res = await request(makeApp())
         .get("/system/storage/stats")
+        .set("Cookie", cookie)
         .query({ path: path.join(libPath, "sub") });
       expect(res.status).to.equal(400);
     });
@@ -200,6 +212,7 @@ describe("system storage routes", () => {
     it("400s for a non-existent folder", async () => {
       const res = await request(makeApp())
         .get("/system/storage/stats")
+        .set("Cookie", cookie)
         .query({ path: path.join(tmpDir, "ghost") });
       expect(res.status).to.equal(400);
     });
@@ -213,6 +226,7 @@ describe("system storage routes", () => {
 
       const res = await request(makeApp())
         .get("/system/storage/stats")
+        .set("Cookie", cookie)
         .query({ path: libPath });
       expect(res.status).to.equal(400);
       expect(res.body.error).to.include("Cannot read library path");
@@ -226,6 +240,7 @@ describe("system storage routes", () => {
       try {
         const res = await request(makeApp())
           .get("/system/storage/stats")
+          .set("Cookie", cookie)
           .query({ path: path.join(tmpDir, "linked") });
         expect(res.status).to.equal(400);
       } finally {
@@ -239,6 +254,7 @@ describe("system storage routes", () => {
 
       const statsRes = await request(makeApp())
         .get("/system/storage/stats")
+        .set("Cookie", cookie)
         .query({ path: libPath });
       expect(statsRes.status).to.equal(200);
 
@@ -248,7 +264,9 @@ describe("system storage routes", () => {
       };
       sandbox.stub(service, "computeBoundedStats").returns(undefined);
 
-      const res = await request(makeApp()).get("/system/storage/detected");
+      const res = await request(makeApp())
+        .get("/system/storage/detected")
+        .set("Cookie", cookie);
       const lib = (res.body as Array<{ name: string; stats?: unknown }>).find(
         (l) => l.name === "BigLib",
       );
@@ -269,6 +287,7 @@ describe("system storage routes", () => {
 
     const res = await request(makeApp())
       .post("/system/storage/sources")
+      .set("Cookie", cookie)
       .send({ name: "NewLib", path: libPath });
     expect(res.status).to.equal(201);
     expect(res.body.file_count).to.equal(1);

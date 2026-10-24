@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireAuth } from "@middleware/auth";
 import {
   getAllPlaylistsHandler,
   getPlaylistHandler,
@@ -11,6 +12,8 @@ import {
 } from "../controllers/playlistController";
 
 const router = Router();
+
+router.use(requireAuth);
 
 router.get("/", getAllPlaylistsHandler);
 router.get("/:id", getPlaylistHandler);

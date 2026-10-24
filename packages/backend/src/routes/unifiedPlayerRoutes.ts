@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireAuth } from "@middleware/auth";
 import { sessionIdMiddleware } from "@middleware/sessionId";
 import {
   unifiedGetStatusHandler,
@@ -21,7 +22,7 @@ import {
 } from "../controllers/unifiedPlayerController.js";
 
 const router = Router();
-router.use(sessionIdMiddleware);
+router.use(requireAuth, sessionIdMiddleware);
 
 router.get("/status", unifiedGetStatusHandler);
 router.get("/queue", unifiedGetQueueHandler);

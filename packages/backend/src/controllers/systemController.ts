@@ -11,6 +11,7 @@ import {
 import {
   LockedError,
   NotFoundError,
+  UnauthorizedError,
   ValidationError,
 } from "../middleware/errorHandler";
 
@@ -58,17 +59,16 @@ export const getOutputModeHandler = asyncHandler(
 export const setOutputModeHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { mode } = systemSchemas.outputMode.parse(req.body);
-    const sessionId = req.header("X-Session-Id")?.trim();
+    const profileId = req.auth?.profileId;
+    if (!profileId) throw new UnauthorizedError();
     const svc = getMpdConfigService();
-    if (sessionId) {
-      if (mode === "mpd") {
-        const acquired = svc.tryAcquireMpd(sessionId);
-        if (!acquired.success) {
-          throw new LockedError("MPD output locked by another session");
-        }
-      } else if (mode === "browser") {
-        svc.releaseMpd(sessionId);
+    if (mode === "mpd") {
+      const acquired = svc.tryAcquireMpd(profileId);
+      if (!acquired.success) {
+        throw new LockedError("MPD output locked by another session");
       }
+    } else if (mode === "browser") {
+      svc.releaseMpd(profileId);
     }
     const result = svc.setOutputMode(mode);
     res.json(result);

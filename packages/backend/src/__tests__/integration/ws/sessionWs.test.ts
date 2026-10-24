@@ -2,11 +2,13 @@ import { expect } from "chai";
 import { createServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { setupPlayerWebSocket } from "../../../ws/player.ws.js";
+import { closeProfileSockets } from "../../../ws/socketRegistry.js";
 import {
   SessionRegistry,
   registryOverrideForTests,
 } from "@services/session/sessionRegistry";
 import { createTestDb } from "@tests/helpers/db.js";
+import { createTestSession } from "@tests/helpers/auth.js";
 import { artist } from "@tests/factories/artist.js";
 import { album } from "@tests/factories/album.js";
 import { track } from "@tests/factories/track.js";
@@ -22,33 +24,34 @@ describe("session-scoped WS", () => {
   let server: ReturnType<typeof createServer>;
   let wss: WebSocketServer;
   let baseUrl: string;
+  let cookie: string;
+  let profileId: string;
 
   before(() => {
-    // The no-sessionId fall-through path reads the global MPD cache through
-    // the service factory (getMpdConnectionManager / getCatalogSyncOrchestrator).
-    // This isolated env never initializes the factory otherwise, so the socket
-    // would error instead of opening. Mirrors e2e/catalog.test.ts.
     if (!isServicesInitialized()) initializeServices();
   });
 
-  beforeEach((done) => {
+  beforeEach(async () => {
     ({ close } = createTestDb());
+    ({ id: profileId, cookie } = await createTestSession());
     registry = new SessionRegistry({} as LogService);
     registryOverrideForTests(registry);
 
     const a = artist.create({ name: "WsArtist" }, 1);
     const al = album.create({ title: "WsAlbum", artistName: a.name }, 1);
     const t = track.create({ artist: a.name, album: al.title, title: "W" }, 2);
-    registry.getOrCreateSession("abc").playTrack(t.file);
+    registry.getOrCreateSession(profileId).playTrack(t.file);
 
-    server = createServer();
-    wss = new WebSocketServer({ server });
-    setupPlayerWebSocket(wss);
-    server.listen(0, () => {
-      baseUrl = `ws://localhost:${
-        (server.address() as { port: number }).port
-      }/ws`;
-      done();
+    await new Promise<void>((resolve) => {
+      server = createServer();
+      wss = new WebSocketServer({ server });
+      setupPlayerWebSocket(wss);
+      server.listen(0, () => {
+        baseUrl = `ws://localhost:${
+          (server.address() as { port: number }).port
+        }/ws`;
+        resolve();
+      });
     });
   });
 
@@ -60,8 +63,10 @@ describe("session-scoped WS", () => {
     close();
   });
 
-  it("delivers player-status scoped to the session on connect", (done) => {
-    const ws = new WebSocket(`${baseUrl}?sessionId=abc`);
+  it("delivers player-status scoped to the authenticated session", (done) => {
+    const ws = new WebSocket(`${baseUrl}?sessionId=${profileId}`, {
+      headers: { Cookie: cookie },
+    });
     ws.on("message", (data) => {
       const msg = JSON.parse(data.toString()) as Record<string, unknown>;
       expect(msg.type).to.equal("player-status");
@@ -72,13 +77,60 @@ describe("session-scoped WS", () => {
     ws.on("error", done);
   });
 
-  it("does not deliver the session status to a socket without sessionId (falls through to MPD path)", (done) => {
-    const ws = new WebSocket(baseUrl);
-    // no session -> no immediate session status; the global MPD path sends
-    // its own status asynchronously; just assert the socket stays open.
-    ws.on("open", () => {
+  it("uses the authenticated profile id when sessionId is omitted", (done) => {
+    const ws = new WebSocket(baseUrl, { headers: { Cookie: cookie } });
+    ws.on("message", (data) => {
+      const msg = JSON.parse(data.toString()) as Record<string, unknown>;
+      expect(msg.type).to.equal("player-status");
+      expect(msg.state).to.equal("play");
       ws.close();
       done();
+    });
+    ws.on("error", done);
+  });
+
+  it("closes with 4401 when no session cookie is sent", (done) => {
+    const ws = new WebSocket(baseUrl);
+    ws.on("close", (code) => {
+      try {
+        expect(code).to.equal(4401);
+        done();
+      } catch (err) {
+        done(err as Error);
+      }
+    });
+    ws.on("error", done);
+  });
+
+  it("closes with 4401 when the profile's sessions are revoked", (done) => {
+    const ws = new WebSocket(`${baseUrl}?sessionId=${profileId}`, {
+      headers: { Cookie: cookie },
+    });
+    ws.on("message", () => {
+      closeProfileSockets(profileId);
+    });
+    ws.on("close", (code) => {
+      try {
+        expect(code).to.equal(4401);
+        done();
+      } catch (err) {
+        done(err as Error);
+      }
+    });
+    ws.on("error", done);
+  });
+
+  it("closes with 4403 when the query sessionId mismatches the profile", (done) => {
+    const ws = new WebSocket(`${baseUrl}?sessionId=someone-else`, {
+      headers: { Cookie: cookie },
+    });
+    ws.on("close", (code) => {
+      try {
+        expect(code).to.equal(4403);
+        done();
+      } catch (err) {
+        done(err as Error);
+      }
     });
     ws.on("error", done);
   });
