@@ -11,6 +11,7 @@ export interface PlayerService {
   playTrack(file?: string): Promise<PlayTrackResponse>;
   pauseTrack(): Promise<PlayTrackResponse>;
   queueFiles(files: string[]): Promise<void>;
+  playFiles(files: string[], startAt?: number): Promise<void>;
   getQueue(): Promise<QueuedTrack[]>;
   nextTrack(): Promise<void>;
   previousTrack(): Promise<void>;
@@ -114,6 +115,28 @@ export class PlayerServiceImpl implements PlayerService {
     await this.mpdConnectionManager.executeCommandList(commands);
   }
 
+  public async playFiles(files: string[], startAt = 0): Promise<void> {
+    const known = files
+      .map((file) => tracksDb.getByFile(file))
+      .filter((track): track is NonNullable<typeof track> => Boolean(track));
+    if (known.length === 0) return;
+
+    const startIndex = Math.min(Math.max(0, startAt), known.length - 1);
+    const knownFiles = known.map((track) => track.file);
+    const commands: { command: string; args?: string[] }[] = [
+      { command: "clear" },
+      ...knownFiles.map((file) => ({ command: "add", args: [file] })),
+      { command: "consume", args: ["0"] },
+      { command: "play", args: [String(startIndex)] },
+    ];
+
+    this.autoplayService.resetSession(knownFiles[startIndex], knownFiles);
+    await this.mpdConnectionManager.executeCommandList(commands);
+    this.mpdConnectionManager.refreshNow().catch((err) => {
+      console.error("[Player] refreshNow failed after playFiles:", err);
+    });
+  }
+
   public async getQueue(): Promise<QueuedTrack[]> {
     const raw = await this.mpdConnectionManager.executeCommand("playlistinfo");
     return this.parseQueueResponse(raw);
@@ -142,9 +165,11 @@ export class PlayerServiceImpl implements PlayerService {
       const album = kv.Album
         ? albumsDb.getByTitleAndArtist(kv.Album, kv.Artist || "")
         : undefined;
+      const dbTrack = kv.file ? tracksDb.getByFile(kv.file) : undefined;
 
       return {
         id: kv.file ? hashFile(kv.file) : 0,
+        trackId: dbTrack?.id ?? null,
         file: kv.file || "",
         title: kv.Title || "Unknown",
         artist_name: kv.Artist || "Unknown",

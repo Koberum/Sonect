@@ -68,6 +68,12 @@ export type SearchResults = {
   tracks: TrackWithRelations[];
 };
 
+export interface LikedTracksPage {
+  items: TrackWithRelations[];
+  total: number;
+  totalDuration: number;
+}
+
 export interface LibraryStats {
   totalTracks: number;
   totalArtists: number;

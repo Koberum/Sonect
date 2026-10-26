@@ -11,6 +11,7 @@ import sessionRoutes from "@routes/sessionRoutes";
 import unifiedPlayerRoutes from "@routes/unifiedPlayerRoutes";
 import profileRoutes from "@routes/profileRoutes";
 import authRoutes from "@routes/authRoutes";
+import likedRoutes from "@routes/likedRoutes";
 import { errorHandler } from "@middleware/errorHandler";
 import { requestLogger } from "@middleware/requestLogger";
 import { authenticate, requireAuth } from "@middleware/auth";
@@ -30,6 +31,7 @@ const apiPaths = [
   "/session",
   "/profiles",
   "/auth",
+  "/likes",
 ];
 
 function configuredCorsOrigins(): string[] {
@@ -101,6 +103,7 @@ app.use("/system", systemRoutes);
 app.use("/dashboard", dashboardRouter);
 app.use("/session", sessionRoutes);
 app.use("/profiles", profileRoutes);
+app.use("/likes", likedRoutes);
 
 // In production, serve the built frontend from the same process
 const frontendDist =
@@ -119,7 +122,8 @@ if (process.env.NODE_ENV === "production" && fs.existsSync(frontendDist)) {
       req.path.startsWith("/dashboard") ||
       req.path.startsWith("/session") ||
       req.path.startsWith("/profiles") ||
-      req.path.startsWith("/auth")
+      req.path.startsWith("/auth") ||
+      req.path.startsWith("/likes")
     ) {
       return next();
     }

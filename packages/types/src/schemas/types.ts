@@ -55,6 +55,31 @@ export const playlistSchemas = {
   }),
 };
 
+export const likedSchemas = {
+  trackIdParam: z.object({
+    trackId: z.coerce
+      .number()
+      .int("trackId must be an integer")
+      .positive("trackId must be positive"),
+  }),
+  listQuery: z.object({
+    limit: z.coerce
+      .number()
+      .int("limit must be an integer")
+      .min(1, "limit must be >= 1")
+      .max(200, "limit must be <= 200")
+      .optional(),
+    offset: z.coerce
+      .number()
+      .int("offset must be an integer")
+      .min(0, "offset must be >= 0")
+      .optional(),
+  }),
+  play: z.object({
+    shuffle: z.boolean().optional(),
+  }),
+};
+
 export const systemSchemas = {
   audioConfigure: z.object({
     card: z.string().min(1, "card identifier is required"),

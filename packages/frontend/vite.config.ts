@@ -24,6 +24,7 @@ export default defineConfig({
       "/session": "http://localhost:3000",
       "/profiles": "http://localhost:3000",
       "/auth": "http://localhost:3000",
+      "/likes": "http://localhost:3000",
       "/ws": {
         target: "ws://localhost:3000",
         ws: true,

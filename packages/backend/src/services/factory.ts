@@ -40,6 +40,7 @@ import {
   SuggestionService,
   type SuggestionServiceInterface,
 } from "./library/suggestionService.js";
+import { LikedServiceImpl, type LikedService } from "./library/likedService.js";
 import { SetupServiceImpl, type SetupService } from "./system/setupService.js";
 import {
   NetworkServiceImpl,
@@ -71,6 +72,7 @@ let _systemService: SystemServiceInterface;
 let _playTrackingService: PlayTrackingService;
 let _playlistService: PlaylistService;
 let _suggestionService: SuggestionServiceInterface;
+let _likedService: LikedService;
 let _setupService: SetupService;
 let _networkService: NetworkService;
 let _sessionRegistry: SessionRegistry;
@@ -133,6 +135,7 @@ export function initializeServices(): void {
   _playTrackingService = new PlayTrackingService(_mpdConnectionManager);
 
   _suggestionService = new SuggestionService();
+  _likedService = new LikedServiceImpl();
   _setupService = new SetupServiceImpl();
   _networkService = new NetworkServiceImpl();
   _profileService = new ProfileServiceImpl();
@@ -215,6 +218,11 @@ export function getPlaylistService(): PlaylistService {
 export function getSuggestionService(): SuggestionServiceInterface {
   assertInitialized();
   return _suggestionService;
+}
+
+export function getLikedService(): LikedService {
+  assertInitialized();
+  return _likedService;
 }
 
 export function getSetupService(): SetupService {

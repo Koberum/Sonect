@@ -237,6 +237,44 @@ export class SessionPlayer extends EventEmitter {
     this.emit("stateChanged");
   }
 
+  playFiles(files: string[], startAt = 0): void {
+    const known: Track[] = [];
+    for (const file of files) {
+      const dbTrack = tracksDb.getByFile(file);
+      if (dbTrack) known.push(dbTrack);
+    }
+
+    if (known.length === 0) {
+      this.queueInternal = [];
+      this.indexInternal = -1;
+      this.position = 0;
+      this.stateInternal = "stop";
+      this.stopClock();
+      this.emit("stateChanged");
+      return;
+    }
+
+    const startIndex = Math.min(Math.max(0, startAt), known.length - 1);
+    const knownFiles = known.map((track) => track.file);
+    this.queueInternal = known.map((track) => this.buildEntry(track));
+    this.indexInternal = startIndex;
+    this.position = 0;
+    this.stateInternal = "play";
+    this.startClock();
+    this.autoplayService.resetSession(knownFiles[startIndex], knownFiles);
+
+    this.log(
+      "debug",
+      `[Session ${this.sessionId.slice(0, 8)}][browser] playFiles count=${known.length} start=${startIndex}`,
+      {
+        sessionId: this.sessionId.slice(0, 8),
+        count: known.length,
+        startIndex,
+      },
+    );
+    this.emit("stateChanged");
+  }
+
   pause(): void {
     if (this.state !== "play") return;
     this.stateInternal = "pause";

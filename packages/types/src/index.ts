@@ -42,6 +42,7 @@ export type PlaybackStatus = {
 
 export type QueuedTrack = {
   id: number;
+  trackId: number | null;
   file: string;
   title: string;
   artist_name: string;

@@ -131,6 +131,7 @@ export class PlayerRouter extends EventEmitter {
         const q = this.p.getQueue();
         return q.map((e, idx) => ({
           id: e.id,
+          trackId: e.id,
           file: e.file,
           title: e.title,
           artist_name: e.artist_name,
@@ -143,6 +144,9 @@ export class PlayerRouter extends EventEmitter {
       }
       async addToQueue(file: string): Promise<void> {
         this.p.addToQueue(file);
+      }
+      async playFiles(files: string[], startAt = 0): Promise<void> {
+        this.p.playFiles(files, startAt);
       }
       async removeFromQueue(pos: number): Promise<void> {
         this.p.removeFromQueue(pos);

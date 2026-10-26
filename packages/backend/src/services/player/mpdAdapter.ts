@@ -14,6 +14,7 @@ export interface PlaybackEngine extends EventEmitter {
   seek(position: number): Promise<void>;
   getQueue(): Promise<QueuedTrack[]>;
   addToQueue(file: string): Promise<void>;
+  playFiles(files: string[], startAt?: number): Promise<void>;
   removeFromQueue(pos: number): Promise<void>;
   moveQueueItem(from: number, to: number): Promise<void>;
   setVolume(volume: number): Promise<void>;
@@ -208,6 +209,10 @@ export class MpdAdapter extends EventEmitter implements PlaybackEngine {
 
   async addToQueue(file: string): Promise<void> {
     await this.playerService.addToQueue(file);
+  }
+
+  async playFiles(files: string[], startAt = 0): Promise<void> {
+    await this.playerService.playFiles(files, startAt);
   }
 
   async removeFromQueue(pos: number): Promise<void> {
