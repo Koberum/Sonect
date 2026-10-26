@@ -26,6 +26,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { AddToPlaylistMenu } from "@/features/dashboard/components/add-to-playlist-menu";
+import { LikeButton } from "@/features/liked/components/like-button";
 import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
 
@@ -104,7 +105,7 @@ export default function GenreDetail() {
                   {t("tracks.album")}
                 </TableHead>
                 <TableHead className="w-20">{t("album.duration")}</TableHead>
-                <TableHead className="w-10"></TableHead>
+                <TableHead className="w-20"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -165,18 +166,21 @@ export default function GenreDetail() {
                         {formatTime(track.duration ?? 0)}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addToQueue(track.file);
-                          }}
-                          aria-label={t("album.addToQueue")}
-                        >
-                          <ListPlus />
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <LikeButton trackId={track.id} />
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addToQueue(track.file);
+                            }}
+                            aria-label={t("album.addToQueue")}
+                          >
+                            <ListPlus />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   </ContextMenuTrigger>

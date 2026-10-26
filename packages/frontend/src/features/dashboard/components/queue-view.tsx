@@ -10,6 +10,7 @@ import {
 import { ListMusic, X, Play } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTranslation } from "react-i18next";
+import { LikeButton } from "@/features/liked/components/like-button";
 import PlayStatus from "@/features/dashboard/components/play-status";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { playerQueries } from "@/features/player/queries";
@@ -122,6 +123,7 @@ export function QueueView({ currentTrackFile }: QueueViewProps) {
                   <span className="text-muted-foreground shrink-0 text-xs">
                     {formatTime(track.duration)}
                   </span>
+                  <LikeButton trackId={track.trackId} />
                   <Button
                     variant="ghost"
                     size="icon-sm"

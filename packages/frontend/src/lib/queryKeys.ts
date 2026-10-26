@@ -11,8 +11,6 @@ export const qk = {
     artistsInfinite: () => ["catalog", "artists", "infinite"] as const,
     artist: (id: string) => ["catalog", "artist", id] as const,
     genres: () => ["catalog", "genres"] as const,
-    tracksInfinite: (sort: string) =>
-      ["catalog", "tracks", "infinite", sort] as const,
     tracksByAlbum: (albumId: string) =>
       ["catalog", "tracksByAlbum", albumId] as const,
     tracksByGenre: (genre: string) =>
@@ -23,6 +21,10 @@ export const qk = {
   playlists: {
     list: () => ["playlists", "list"] as const,
     detail: (id: number) => ["playlists", "detail", id] as const,
+  },
+  liked: {
+    ids: (profileId: string) => ["liked", "ids", profileId] as const,
+    list: (profileId: string) => ["liked", "list", profileId] as const,
   },
   player: {
     queue: () => ["player", "queue"] as const,

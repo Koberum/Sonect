@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "./layout/MainLayout";
 import { ThemeProvider } from "./components/theme-provider";
 import { AuthProvider } from "./features/auth/auth-context";
@@ -21,7 +21,7 @@ const Devtools = lazy(() =>
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const AlbumPage = lazy(() => import("./pages/AlbumTracks"));
 const Albums = lazy(() => import("./pages/Albums"));
-const Tracks = lazy(() => import("./pages/Tracks"));
+const LikedSongs = lazy(() => import("./pages/LikedSongs"));
 const Genres = lazy(() => import("./pages/Genres"));
 const GenreDetail = lazy(() => import("./pages/GenreDetail"));
 const Artists = lazy(() =>
@@ -84,7 +84,11 @@ export default function App() {
                       <Route index element={<Dashboard />} />
                       <Route path="albums" element={<Albums />} />
                       <Route path="albums/:id" element={<AlbumPage />} />
-                      <Route path="tracks" element={<Tracks />} />
+                      <Route path="liked" element={<LikedSongs />} />
+                      <Route
+                        path="tracks"
+                        element={<Navigate to="/liked" replace />}
+                      />
                       <Route path="genres" element={<Genres />} />
                       <Route path="genres/:genre" element={<GenreDetail />} />
                       <Route path="artists" element={<Artists />} />

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "react-responsive";
 import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
+import { LikeButton } from "@/features/liked/components/like-button";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 type SectionType = "artists" | "albums" | "tracks";
@@ -135,6 +136,7 @@ export function SearchCommand() {
         e.preventDefault();
         setSelectedIndex((prev) => Math.max(prev - 1, 0));
       } else if (e.key === "Enter" && totalItems > 0) {
+        if ((e.target as HTMLElement | null)?.closest("button")) return;
         e.preventDefault();
         activateItem(flatItems[selectedIndex]);
       } else if (e.key === "Escape") {
@@ -248,6 +250,7 @@ export function SearchCommand() {
                           {track.artist_name}
                         </p>
                       </div>
+                      <LikeButton trackId={track.id} />
                       <Button
                         variant="ghost"
                         size="xs"

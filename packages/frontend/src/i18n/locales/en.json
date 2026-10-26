@@ -156,6 +156,22 @@
     "album": "Album",
     "noTracks": "No tracks found"
   },
+  "liked": {
+    "title": "Liked Songs",
+    "description": "Songs you've liked",
+    "count_one": "{{count}} song",
+    "count_other": "{{count}} songs",
+    "like": "Like",
+    "unlike": "Remove from Liked Songs",
+    "playAll": "Play all",
+    "shuffle": "Shuffle",
+    "emptyTitle": "No liked songs yet",
+    "emptyDescription": "Tap the heart on any song to add it here.",
+    "browse": "Browse albums",
+    "loadError": "Could not load your liked songs.",
+    "playError": "Could not start playback.",
+    "updateError": "Could not update this like."
+  },
   "genres": {
     "title": "Genres",
     "description": "Browse music by genre",

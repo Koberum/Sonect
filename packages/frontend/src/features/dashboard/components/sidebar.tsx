@@ -8,7 +8,7 @@ import {
   ListMusic,
   Plus,
   Library,
-  Music,
+  Heart,
   Disc3,
   LoaderCircle,
   AudioLines,
@@ -34,6 +34,7 @@ import {
   playlistQueries,
   playlistMutations,
 } from "@/features/playlists/queries";
+import { likedQueries } from "@/features/liked/queries";
 import { scanLibrary } from "@/features/catalog/api";
 import { useAuth } from "@/features/auth/auth-context";
 
@@ -44,9 +45,10 @@ export interface SidebarProps {
 
 export function Sidebar({ className, toggleSidebar }: SidebarProps) {
   const { t } = useTranslation();
-  const { isAdmin } = useAuth();
+  const { isAdmin, profile } = useAuth();
   const navigate = useNavigate();
   const { data: playlists = [] } = useQuery(playlistQueries.list());
+  const { data: likedIds = [] } = useQuery(likedQueries.ids(profile?.id ?? ""));
   const createMut = useMutation(playlistMutations.create());
   const [newName, setNewName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -138,12 +140,17 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
               {t("albums.title")}
             </Button>
             <Button
-              onClick={() => handleNavigation("/tracks")}
-              variant={isMenuActive("/tracks") ? "secondary" : "ghost"}
+              onClick={() => handleNavigation("/liked")}
+              variant={isMenuActive("/liked") ? "secondary" : "ghost"}
               className="w-full justify-start"
             >
-              <Music className="mr-2 h-4 w-4" />
-              {t("tracks.title")}
+              <Heart className="mr-2 h-4 w-4" />
+              {t("liked.title")}
+              {likedIds.length > 0 && (
+                <span className="text-muted-foreground ml-auto text-xs">
+                  {likedIds.length}
+                </span>
+              )}
             </Button>
             <Button
               onClick={() => handleNavigation("/genres")}

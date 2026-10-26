@@ -22,16 +22,6 @@ export function getTracksByArtist(
   return apiFetch(`/catalog/artists/${artistId}/tracks`, { signal });
 }
 
-export function getAllTracks(
-  params?: { sort?: string; limit?: number; offset?: number },
-  signal?: AbortSignal,
-): Promise<{ items: TrackWithRelations[]; total: number }> {
-  return apiFetch("/catalog/tracks", {
-    params: params as Record<string, string | number | boolean | undefined>,
-    signal,
-  });
-}
-
 export function getArtists(
   params?: { limit?: number; offset?: number },
   signal?: AbortSignal,

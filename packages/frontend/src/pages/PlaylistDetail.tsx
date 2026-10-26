@@ -61,6 +61,7 @@ import {
   playlistQueries,
   playlistMutations,
 } from "@/features/playlists/queries";
+import { LikeButton } from "@/features/liked/components/like-button";
 
 export default function PlaylistDetail() {
   const { t } = useTranslation();
@@ -320,7 +321,7 @@ export default function PlaylistDetail() {
                 {t("tracks.artist")}
               </TableHead>
               <TableHead>{t("album.duration")}</TableHead>
-              <TableHead className="w-10"></TableHead>
+              <TableHead className="w-20"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -363,25 +364,28 @@ export default function PlaylistDetail() {
                       {formatTime(track.duration ?? 0)}
                     </TableCell>
                     <TableCell>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemoveTrack(track.pt_id);
-                            }}
-                            aria-label={t("playlist.removeTrack")}
-                          >
-                            <X />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {t("playlist.removeTrack")}
-                        </TooltipContent>
-                      </Tooltip>
+                      <div className="flex items-center justify-end gap-1">
+                        <LikeButton trackId={track.id} />
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveTrack(track.pt_id);
+                              }}
+                              aria-label={t("playlist.removeTrack")}
+                            >
+                              <X />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {t("playlist.removeTrack")}
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                     </TableCell>
                   </TableRow>
                 </ContextMenuTrigger>

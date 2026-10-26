@@ -7,7 +7,6 @@ import {
   getAlbumsByGenre,
   getArtistById,
   getArtists,
-  getAllTracks,
   getGenres,
   getLibraryStats,
   getTracksByAlbum,
@@ -17,7 +16,6 @@ import {
 
 const PAGE_SIZE_ALBUMS = 50;
 const PAGE_SIZE_ARTISTS = 50;
-const PAGE_SIZE_TRACKS = 100;
 
 export const catalogQueries = {
   albumsInfinite: (sort: string) =>
@@ -47,22 +45,6 @@ export const catalogQueries = {
       initialPageParam: 0,
       getNextPageParam: (last, allPages) => {
         if (last.items.length < PAGE_SIZE_ARTISTS) return undefined;
-        return allPages.reduce((acc, p) => acc + p.items.length, 0);
-      },
-      staleTime: 60_000,
-    }),
-
-  tracksInfinite: (sort: string) =>
-    infiniteQueryOptions({
-      queryKey: qk.catalog.tracksInfinite(sort),
-      queryFn: ({ pageParam, signal }) =>
-        getAllTracks(
-          { sort, limit: PAGE_SIZE_TRACKS, offset: pageParam as number },
-          signal,
-        ),
-      initialPageParam: 0,
-      getNextPageParam: (last, allPages) => {
-        if (last.items.length < PAGE_SIZE_TRACKS) return undefined;
         return allPages.reduce((acc, p) => acc + p.items.length, 0);
       },
       staleTime: 60_000,

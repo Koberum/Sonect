@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
+import { LikeButton } from "@/features/liked/components/like-button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { systemQueries } from "@/features/system/queries";
 import { qk } from "@/lib/queryKeys";
@@ -102,7 +103,7 @@ export default function Dashboard() {
                   className="bg-card flex w-44 shrink-0 cursor-pointer flex-col gap-2 rounded-lg p-3"
                   onClick={() => track.file && play(track)}
                 >
-                  <div className="bg-muted aspect-square w-full overflow-hidden rounded-md">
+                  <div className="bg-muted relative aspect-square w-full overflow-hidden rounded-md">
                     {track.cover_path && (
                       <img
                         src={`/covers/${track.cover_path}`}
@@ -113,6 +114,10 @@ export default function Dashboard() {
                         }}
                       />
                     )}
+                    <LikeButton
+                      trackId={track.id}
+                      className="bg-background/80 absolute top-1 right-1"
+                    />
                   </div>
                   <div className="space-y-1 truncate">
                     <p className="truncate text-sm leading-none font-medium">
@@ -143,7 +148,7 @@ export default function Dashboard() {
                   className="bg-card flex w-44 flex-shrink-0 cursor-pointer flex-col gap-2 rounded-lg p-3"
                   onClick={() => track.file && play(track)}
                 >
-                  <div className="bg-muted aspect-square w-full overflow-hidden rounded-md">
+                  <div className="bg-muted relative aspect-square w-full overflow-hidden rounded-md">
                     {track.cover_path && (
                       <img
                         src={`/covers/${track.cover_path}`}
@@ -154,6 +159,10 @@ export default function Dashboard() {
                         }}
                       />
                     )}
+                    <LikeButton
+                      trackId={track.id}
+                      className="bg-background/80 absolute top-1 right-1"
+                    />
                   </div>
                   <div className="space-y-1 truncate">
                     <p className="truncate text-sm leading-none font-medium">
@@ -184,7 +193,7 @@ export default function Dashboard() {
                   className="bg-card flex w-44 flex-shrink-0 cursor-pointer flex-col gap-2 rounded-lg p-3"
                   onClick={() => track.file && play(track)}
                 >
-                  <div className="bg-muted aspect-square w-full overflow-hidden rounded-md">
+                  <div className="bg-muted relative aspect-square w-full overflow-hidden rounded-md">
                     {track.cover_path && (
                       <img
                         src={`/covers/${track.cover_path}`}
@@ -195,6 +204,10 @@ export default function Dashboard() {
                         }}
                       />
                     )}
+                    <LikeButton
+                      trackId={track.id}
+                      className="bg-background/80 absolute top-1 right-1"
+                    />
                   </div>
                   <div className="space-y-1 truncate">
                     <p className="truncate text-sm leading-none font-medium">

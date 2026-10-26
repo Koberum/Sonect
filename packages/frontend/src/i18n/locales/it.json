@@ -156,6 +156,22 @@
     "album": "Album",
     "noTracks": "Nessun brano trovato"
   },
+  "liked": {
+    "title": "Brani che ti piacciono",
+    "description": "I brani che ti piacciono",
+    "count_one": "{{count}} brano",
+    "count_other": "{{count}} brani",
+    "like": "Mi piace",
+    "unlike": "Rimuovi dai brani che ti piacciono",
+    "playAll": "Riproduci tutto",
+    "shuffle": "Casuale",
+    "emptyTitle": "Nessun brano che ti piace",
+    "emptyDescription": "Tocca il cuore su un brano per aggiungerlo qui.",
+    "browse": "Sfoglia gli album",
+    "loadError": "Impossibile caricare i brani che ti piacciono.",
+    "playError": "Impossibile avviare la riproduzione.",
+    "updateError": "Impossibile aggiornare il mi piace."
+  },
   "genres": {
     "title": "Generi",
     "description": "Sfoglia la musica per genere",

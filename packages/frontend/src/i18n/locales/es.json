@@ -156,6 +156,22 @@
     "album": "Álbum",
     "noTracks": "No se encontraron pistas"
   },
+  "liked": {
+    "title": "Canciones que te gustan",
+    "description": "Las canciones que te gustan",
+    "count_one": "{{count}} canción",
+    "count_other": "{{count}} canciones",
+    "like": "Me gusta",
+    "unlike": "Quitar de Canciones que te gustan",
+    "playAll": "Reproducir todo",
+    "shuffle": "Aleatorio",
+    "emptyTitle": "Aún no hay canciones que te gusten",
+    "emptyDescription": "Toca el corazón en cualquier canción para añadirla aquí.",
+    "browse": "Explorar álbumes",
+    "loadError": "No se pudieron cargar tus canciones favoritas.",
+    "playError": "No se pudo iniciar la reproducción.",
+    "updateError": "No se pudo actualizar este me gusta."
+  },
   "genres": {
     "title": "Géneros",
     "description": "Explora música por género",
