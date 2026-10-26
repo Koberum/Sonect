@@ -441,6 +441,15 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 - **Legacy routes** — `/mpd` was removed. `/session` remains only for backend integration tests (not used by frontend). Vite proxies `/player` and `/auth` (`frontend/vite.config.ts`).
 - **Autoplay in sessions** — browser sessions now reuse the same smart-autoplay batches as MPD but per-profile (one `AutoplayService` per `SessionPlayer`); MPD still uses the singleton via `factory.ts` + `MpdConnectionManager` callback.
 
+### Liked songs
+
+- **Per profile, not global.** `liked_tracks` (`profile_id`, `track_id`, `liked_at`) has a unique `(profile_id, track_id)` constraint and cascades on profile/track delete. `likedDb` (`packages/db/src/repositories/liked.ts`) owns `add`/`remove`/`list`/`ids`/`files`/`summary`/`isLiked`.
+- **API** (`routes/likedRoutes.ts`, `controllers/likedController.ts`, `services/library/likedService.ts`): `GET /likes` (`items,total,totalDuration`), `GET /likes/ids`, `PUT /likes/:trackId`, `DELETE /likes/:trackId`, `POST /likes/play` (`{shuffle?}`). All require the session cookie; `PUT` returns 404 for unknown tracks and is idempotent. `/likes` must stay in `app.ts` (auth paths + SPA fallback) and the Vite proxy. The frontend page stays at `/liked`; the API prefix is `/likes` to avoid the direct-navigation collision.
+- **Hearts are always visible**, not hover/context-menu actions. The shared `features/liked/components/like-button.tsx` uses the per-profile ids query, optimistic add/remove, and rollback + toast on failure. It appears on album/genre/playlist rows, search results, queue rows, full-page now-playing, dashboard track cards, and the Liked Songs page.
+- **Liked Songs page** (`pages/LikedSongs.tsx`, `/liked`) is an infinite list ordered newest-like-first with Play All/Shuffle. Playback uses `POST /likes/play`, which resolves liked files server-side and calls `playFiles(files, startAt)` on the active engine (`SessionPlayer.playFiles` / `PlayerServiceImpl.playFiles`). This replaces the removed flat Tracks page; `/tracks` redirects to `/liked` and backend `GET /catalog/tracks` remains for internal use.
+- **Queue hearts** rely on `QueuedTrack.trackId` (the DB id); `QueuedTrack.id` is a file hash in MPD mode. Do not use `id` for likes.
+- **Query keys** are profile-scoped (`qk.liked.ids(profileId)`, `qk.liked.list(profileId)`) so switching profiles cannot leak another profile's likes.
+
 ### Cover art pipeline
 
 1. `coverSyncService.ts` (`services/library/coverSyncService.ts`) handles cover extraction using `music-metadata` for embedded art.

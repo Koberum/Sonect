@@ -43,6 +43,10 @@ no subscriptions, no limits.
   open tab. MPD status is polled (2 s during play, 10 s during pause/stop) and
   pushed to all connected clients over WebSocket; browser sessions tick locally
   and broadcast through the same channel.
+- **Liked Songs, per profile** — A visible heart on every track surface (album,
+  genre, playlist, search, queue, now playing) adds a song to the signed-in
+  profile's Liked Songs. Liked Songs has Play All and Shuffle and is scoped per
+  household member; the old flat Tracks page is gone.
 - **Always-on smart queue** — Playback continues from the selected track to
   the end of its album, then queues complete albums from the same artist, the
   same genre, and similar genres (curated map + token fallback for arbitrary
@@ -241,8 +245,8 @@ volume always contains a complete database file.
 
 ## API Overview
 
-All `/player`, `/catalog`, `/playlists`, `/dashboard`, `/covers`, `/stream`, and
-`/waveforms` routes require the `sonect_session` cookie. `/system/health`,
+All `/player`, `/catalog`, `/playlists`, `/likes`, `/dashboard`, `/covers`,
+`/stream`, and `/waveforms` routes require the `sonect_session` cookie. `/system/health`,
 `/auth/state`, `/auth/profiles`, `/auth/login`, and `/auth/bootstrap` (while no
 admin exists) are public; the remaining `/system/*` routes, `/profiles/*`, and
 `POST /catalog/scan` are admin-only.
@@ -271,6 +275,11 @@ admin exists) are public; the remaining `/system/*` routes, `/profiles/*`, and
 | GET    | `/player/queue`                          | Queue for this profile (browser: shared per profile, MPD: shared global)                                                                                                                            |
 | PUT    | `/player/output-mode`                    | Switch `browser`↔`mpd` (per-profile, `mpd` locked → 423 if busy; `browser` with `X-Device-Id` hands off to that browser)                                                                            |
 | PATCH  | `/player/volume`                         | Set volume (per-profile; browser stored in-memory and broadcast to active device)                                                                                                                   |
+| GET    | `/likes`                                 | List the current profile's liked tracks (`items,total,totalDuration`, `limit`/`offset`)                                                                                                             |
+| GET    | `/likes/ids`                             | Track IDs liked by the current profile                                                                                                                                                              |
+| PUT    | `/likes/:trackId`                        | Like a track (idempotent; 404 for unknown tracks)                                                                                                                                                   |
+| DELETE | `/likes/:trackId`                        | Unlike a track                                                                                                                                                                                      |
+| POST   | `/likes/play`                            | Play every liked track (`{shuffle?}`) on the active engine                                                                                                                                          |
 | GET    | `/waveforms/:trackId`                    | Get waveform peaks for a track (`{samples,duration,version}`)                                                                                                                                       |
 | GET    | `/system/health`                         | Public: liveness, version, MPD status, network status                                                                                                                                               |
 | GET    | `/system/network/status`                 | Read network/DNS status (admin-only)                                                                                                                                                                |
