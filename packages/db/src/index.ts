@@ -13,6 +13,11 @@ export { albumsDb, findOrCreateAlbum } from "./repositories/albums.js";
 export { tracksDb, upsertTrack } from "./repositories/tracks.js";
 export { catalogSyncDb } from "./repositories/catalogSync.js";
 export { playlistsDb } from "./repositories/playlists.js";
+export {
+  likedDb,
+  type LikedListOptions,
+  type LikedSummary,
+} from "./repositories/liked.js";
 export { syncMetadataDb } from "./repositories/syncMetadata.js";
 export { statsDb } from "./repositories/stats.js";
 export { storageDb } from "./repositories/storage.js";

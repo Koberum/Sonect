@@ -166,3 +166,25 @@ export const setupProgress = sqliteTable("setup_progress", {
   completed: integer("completed").default(0),
   completed_at: text("completed_at"),
 });
+
+export const likedTracks = sqliteTable(
+  "liked_tracks",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    profile_id: text("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    track_id: integer("track_id")
+      .notNull()
+      .references(() => tracks.id, { onDelete: "cascade" }),
+    liked_at: integer("liked_at").notNull(),
+  },
+  (table) => [
+    unique("liked_tracks_profile_track_unique").on(
+      table.profile_id,
+      table.track_id,
+    ),
+    index("idx_liked_tracks_profile").on(table.profile_id, table.liked_at),
+    index("idx_liked_tracks_track").on(table.track_id),
+  ],
+);

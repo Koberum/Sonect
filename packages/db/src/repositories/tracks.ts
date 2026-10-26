@@ -21,7 +21,7 @@ import { findOrCreateArtist } from "./artists.js";
 import { findOrCreateAlbum } from "./albums.js";
 import { findOrCreateGenre } from "./genres.js";
 
-const dBTrackWithRelations = {
+export const dBTrackWithRelations = {
   ...getColumns(tracks),
   artist_name: artists.name,
   album_title: albums.title,
