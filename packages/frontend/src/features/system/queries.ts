@@ -79,10 +79,11 @@ export const systemQueries = {
       staleTime: 60_000,
     }),
 
-  dashboard: () =>
+  dashboard: (profileId: string) =>
     queryOptions({
-      queryKey: qk.dashboard(),
+      queryKey: qk.dashboard(profileId),
       queryFn: ({ signal }) => getDashboard(signal),
+      enabled: Boolean(profileId),
       staleTime: 30_000,
     }),
 };

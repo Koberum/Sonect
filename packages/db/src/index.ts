@@ -7,6 +7,7 @@ export {
   genres,
   playlists,
   playlistTracks,
+  playHistory,
 } from "./tables.js";
 export { artistsDb, findOrCreateArtist } from "./repositories/artists.js";
 export { albumsDb, findOrCreateAlbum } from "./repositories/albums.js";
@@ -18,6 +19,7 @@ export {
   type LikedListOptions,
   type LikedSummary,
 } from "./repositories/liked.js";
+export { playHistoryDb } from "./repositories/playHistory.js";
 export { syncMetadataDb } from "./repositories/syncMetadata.js";
 export { statsDb } from "./repositories/stats.js";
 export { storageDb } from "./repositories/storage.js";

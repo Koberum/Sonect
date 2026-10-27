@@ -247,6 +247,25 @@ export const tracksDb = {
       .all() as DBTrackWithRelations[];
   },
 
+  getRandomWithRelations(limit: number): DBTrackWithRelations[] {
+    return joinedOnArtistAndAlbum()
+      .orderBy(sql`random()`)
+      .limit(limit)
+      .all() as DBTrackWithRelations[];
+  },
+
+  getMostCommonGenre(): string | null {
+    const row = db()
+      .select({ genre: genres.name, total: sql<number>`count(*)` })
+      .from(tracks)
+      .innerJoin(genres, eq(tracks.genre_id, genres.id))
+      .groupBy(genres.id, genres.name)
+      .orderBy(desc(sql`count(*)`))
+      .limit(1)
+      .get();
+    return row?.genre ?? null;
+  },
+
   getByGenreWithRelations(genre: string): DBTrackWithRelations[] {
     return joinedOnArtistAndAlbum()
       .where(sql`${genres.name} = ${genre} COLLATE NOCASE`)

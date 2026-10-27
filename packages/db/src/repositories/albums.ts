@@ -18,7 +18,7 @@ import { albums, artists, genres, tracks } from "../tables.js";
 import { normalizeRowId, type QueryExecutor } from "./rowId.js";
 import { findOrCreateGenre } from "./genres.js";
 
-const albumWithArtist = {
+export const albumWithArtist = {
   ...getColumns(albums),
   // Coalesced so the API keeps the Track convention ("" when unknown) and
   // the type stays an honest string even for artistless albums.

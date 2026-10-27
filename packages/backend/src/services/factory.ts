@@ -132,8 +132,6 @@ export function initializeServices(): void {
 
   _playlistService = new PlaylistServiceImpl(_mpdConnectionManager);
 
-  _playTrackingService = new PlayTrackingService(_mpdConnectionManager);
-
   _suggestionService = new SuggestionService();
   _likedService = new LikedServiceImpl();
   _setupService = new SetupServiceImpl();
@@ -152,6 +150,7 @@ export function initializeServices(): void {
     _logService,
   );
   setGlobalPlayerRouter(_playerRouter);
+  _playTrackingService = new PlayTrackingService(_playerRouter);
 
   _mpdConnectionManager.setAutoplayCallback(async (currentFile: string) => {
     const sessionId = _autoplayService.sessionId;

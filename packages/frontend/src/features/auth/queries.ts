@@ -29,6 +29,7 @@ export const authQueries = {
 };
 
 export function clearProfileScopedQueries(): void {
+  queryClient.removeQueries({ queryKey: qk.dashboardRoot() });
   queryClient.removeQueries({ queryKey: qk.player.queue() });
   queryClient.removeQueries({ queryKey: qk.system.outputMode() });
 }

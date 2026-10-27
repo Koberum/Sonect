@@ -47,6 +47,11 @@ no subscriptions, no limits.
   genre, playlist, search, queue, now playing) adds a song to the signed-in
   profile's Liked Songs. Liked Songs has Play All and Shuffle and is scoped per
   household member; the old flat Tracks page is gone.
+- **Dashboard per profile** — Recently played albums, artists, and tracks, top
+  tracks, suggestions, and the genre mix are all personal. Listening history is
+  recorded separately per household member (MPD plays count for the profile
+  holding the MPD lock); profiles without history get generic library
+  suggestions. Past global listen counts are not retroactively attributed.
 - **Always-on smart queue** — Playback continues from the selected track to
   the end of its album, then queues complete albums from the same artist, the
   same genre, and similar genres (curated map + token fallback for arbitrary
@@ -280,6 +285,7 @@ admin exists) are public; the remaining `/system/*` routes, `/profiles/*`, and
 | PUT    | `/likes/:trackId`                        | Like a track (idempotent; 404 for unknown tracks)                                                                                                                                                   |
 | DELETE | `/likes/:trackId`                        | Unlike a track                                                                                                                                                                                      |
 | POST   | `/likes/play`                            | Play every liked track (`{shuffle?}`) on the active engine                                                                                                                                          |
+| GET    | `/dashboard`                             | Per-profile dashboard data (recent albums/artists/tracks, top, suggestions, mix)                                                                                                                    |
 | GET    | `/waveforms/:trackId`                    | Get waveform peaks for a track (`{samples,duration,version}`)                                                                                                                                       |
 | GET    | `/system/health`                         | Public: liveness, version, MPD status, network status                                                                                                                                               |
 | GET    | `/system/network/status`                 | Read network/DNS status (admin-only)                                                                                                                                                                |

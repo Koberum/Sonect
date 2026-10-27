@@ -11,6 +11,7 @@ export class SessionPlayer extends EventEmitter {
   private position = 0;
   private stateInternal: "play" | "pause" | "stop" = "stop";
   private lastActiveAtInternal = Date.now();
+  private lastTrackId: number | null = null;
   private tickTimer: ReturnType<typeof setInterval> | null = null;
   private readonly autoplayService: AutoplayService;
   private _autofillInProgress = false;
@@ -55,6 +56,18 @@ export class SessionPlayer extends EventEmitter {
     }
   }
 
+  private emitStateChanged(): void {
+    const trackId = this.queueInternal[this.indexInternal]?.id ?? null;
+    if (trackId !== this.lastTrackId) {
+      this.lastTrackId = trackId;
+      if (trackId !== null) {
+        const track = tracksDb.getById(trackId);
+        if (track) this.emit("trackChanged", track);
+      }
+    }
+    this.emit("stateChanged");
+  }
+
   private startClock(): void {
     if (this.tickTimer !== null) return;
     this.tickTimer = setInterval(() => this.tick(), 1000);
@@ -78,7 +91,7 @@ export class SessionPlayer extends EventEmitter {
     } else {
       this.maybeRefill();
     }
-    this.emit("stateChanged");
+    this.emitStateChanged();
   }
 
   private maybeRefill(): void {
@@ -234,7 +247,7 @@ export class SessionPlayer extends EventEmitter {
         queueLength: this.queueInternal.length,
       },
     );
-    this.emit("stateChanged");
+    this.emitStateChanged();
   }
 
   playFiles(files: string[], startAt = 0): void {
@@ -250,7 +263,7 @@ export class SessionPlayer extends EventEmitter {
       this.position = 0;
       this.stateInternal = "stop";
       this.stopClock();
-      this.emit("stateChanged");
+      this.emitStateChanged();
       return;
     }
 
@@ -272,7 +285,7 @@ export class SessionPlayer extends EventEmitter {
         startIndex,
       },
     );
-    this.emit("stateChanged");
+    this.emitStateChanged();
   }
 
   pause(): void {
@@ -287,7 +300,7 @@ export class SessionPlayer extends EventEmitter {
         position: this.position,
       },
     );
-    this.emit("stateChanged");
+    this.emitStateChanged();
   }
 
   resume(): void {
@@ -313,7 +326,7 @@ export class SessionPlayer extends EventEmitter {
         queueLength: this.queueInternal.length,
       },
     );
-    this.emit("stateChanged");
+    this.emitStateChanged();
   }
 
   next(): void {
@@ -341,12 +354,12 @@ export class SessionPlayer extends EventEmitter {
     );
     if (this.stateInternal === "stop") {
       // Queue end reached: emit so WS consumers observe the final stop.
-      this.emit("stateChanged");
+      this.emitStateChanged();
       return;
     }
     this.stateInternal = "play";
     this.startClock();
-    this.emit("stateChanged");
+    this.emitStateChanged();
   }
 
   previous(): void {
@@ -367,7 +380,7 @@ export class SessionPlayer extends EventEmitter {
         to: this.indexInternal,
       },
     );
-    this.emit("stateChanged");
+    this.emitStateChanged();
   }
 
   seek(position: number): void {
@@ -393,7 +406,7 @@ export class SessionPlayer extends EventEmitter {
         clamped,
       },
     );
-    this.emit("stateChanged");
+    this.emitStateChanged();
   }
 
   playPosition(pos: number): void {
@@ -413,7 +426,7 @@ export class SessionPlayer extends EventEmitter {
         file: this.queueInternal[this.indexInternal]?.file,
       },
     );
-    this.emit("stateChanged");
+    this.emitStateChanged();
   }
 
   addToQueue(file: string): void {
@@ -429,7 +442,7 @@ export class SessionPlayer extends EventEmitter {
           queueLength: this.queueInternal.length,
         },
       );
-      this.emit("stateChanged");
+      this.emitStateChanged();
     } else {
       this.log(
         "warn",
@@ -464,7 +477,7 @@ export class SessionPlayer extends EventEmitter {
     } else if (this.indexInternal > removing) {
       this.indexInternal -= 1;
     }
-    this.emit("stateChanged");
+    this.emitStateChanged();
   }
 
   moveQueueItem(from: number, to: number): void {
@@ -495,6 +508,6 @@ export class SessionPlayer extends EventEmitter {
       // Moving an item backward shifts the playing item forward one.
       this.indexInternal += 1;
     }
-    this.emit("stateChanged");
+    this.emitStateChanged();
   }
 }

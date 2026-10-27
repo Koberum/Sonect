@@ -61,9 +61,15 @@ export class PlayerRouter extends EventEmitter {
   ): void {
     const prev = this.forwarders.get(sessionId);
     if (prev) prev();
-    const handler = () => this.emit(`session:${sessionId}:stateChanged`);
-    engine.on("stateChanged", handler);
-    this.forwarders.set(sessionId, () => engine.off("stateChanged", handler));
+    const onState = () => this.emit(`session:${sessionId}:stateChanged`);
+    const onTrack = (track: unknown) =>
+      this.emit("trackChanged", { sessionId, track });
+    engine.on("stateChanged", onState);
+    engine.on("trackChanged", onTrack);
+    this.forwarders.set(sessionId, () => {
+      engine.off("stateChanged", onState);
+      engine.off("trackChanged", onTrack);
+    });
   }
 
   private detachForwarder(sessionId: string): void {
@@ -105,6 +111,7 @@ export class PlayerRouter extends EventEmitter {
       constructor(private p: SessionPlayer) {
         super();
         this.p.on("stateChanged", () => this.emit("stateChanged"));
+        this.p.on("trackChanged", (track) => this.emit("trackChanged", track));
       }
       getStatus(): PlaybackStatus {
         return this.p.getStatus();

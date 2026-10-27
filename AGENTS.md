@@ -310,9 +310,9 @@ sonect (single image, ENTRYPOINT /init)
   from the bundle anchor and crashes with `ENOENT` otherwise).
 - **Queries** live in the focused repository modules under
   `packages/db/src/repositories/` (`artists`, `albums`, `tracks`, `catalogSync`,
-  `genres`, `playlists`, `syncMetadata`, `stats`, `storage`, `setup`,
-  `authSessions`, `profiles`). Put new queries there; the old `models.ts` no
-  longer exists.
+  `genres`, `playlists`, `playHistory`, `syncMetadata`, `stats`, `storage`,
+  `setup`, `authSessions`, `profiles`). Put new queries there; the old
+  `models.ts` no longer exists.
 - **Raw SQL must stay inside `@repo/db`** and use Drizzle's typed `sql`
   template (or parameterized `prepare()` calls) — never string-concatenate
   values into SQL outside the package. Keep queries simple and indexed.
@@ -449,6 +449,33 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 - **Liked Songs page** (`pages/LikedSongs.tsx`, `/liked`) is an infinite list ordered newest-like-first with Play All/Shuffle. Playback uses `POST /likes/play`, which resolves liked files server-side and calls `playFiles(files, startAt)` on the active engine (`SessionPlayer.playFiles` / `PlayerServiceImpl.playFiles`). This replaces the removed flat Tracks page; `/tracks` redirects to `/liked` and backend `GET /catalog/tracks` remains for internal use.
 - **Queue hearts** rely on `QueuedTrack.trackId` (the DB id); `QueuedTrack.id` is a file hash in MPD mode. Do not use `id` for likes.
 - **Query keys** are profile-scoped (`qk.liked.ids(profileId)`, `qk.liked.list(profileId)`) so switching profiles cannot leak another profile's likes.
+
+### Dashboard and play history (per profile)
+
+- **`play_history` is the dashboard source of truth.** It stores one row per
+  track start: `profile_id`, `track_id`, `played_at` (epoch ms), both FKs
+  `ON DELETE CASCADE`, indexed by `(profile_id, played_at)` and
+  `(profile_id, track_id)`. `playHistoryDb`
+  (`packages/db/src/repositories/playHistory.ts`) owns the per-profile
+  aggregates: recent tracks/albums/artists, top tracks/genres/artists, top
+  genre, and discovery (`< 3` plays for that profile).
+- **Recording.** `PlayerRouter` emits `trackChanged {sessionId, track}` for both
+  engines: `SessionPlayer` emits on real queue-track changes (not every tick),
+  and `MpdAdapter` forwards the MPD manager's `trackChanged`. `PlayTrackingService`
+  receives the router event, writes `play_history` for `sessionId` (the
+  authenticated profile), and still updates the global `tracks.play_count` /
+  `albums.last_played` that autoplay ranking uses. Debounce is 5s per
+  profile+track. MPD plays are attributed to the profile that holds the MPD
+  lock; browser plays to their profile's `SessionPlayer`.
+- **API.** `GET /dashboard` requires auth and passes `req.auth.profileId` to
+  `SuggestionService.getDashboard(profileId, excludeAlbumId?)`. All sections
+  (recent albums/artists/tracks, top tracks, suggestions, genre mix) are
+  profile-scoped. With no history, recent/top are empty; suggestions fall back
+  to random library tracks and the mix to the library's most-populated genre.
+- **Frontend cache** uses `qk.dashboard(profileId)`; login/profile switch
+  removes the dashboard cache. Never key dashboard data globally.
+- Existing pre-`play_history` global play counts are **not** attributed to a
+  profile; per-profile dashboards start empty and fill from the next plays.
 
 ### Cover art pipeline
 

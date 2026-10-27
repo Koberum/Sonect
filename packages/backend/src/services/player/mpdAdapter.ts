@@ -29,6 +29,7 @@ export interface PlaybackEngine extends EventEmitter {
  */
 export class MpdAdapter extends EventEmitter implements PlaybackEngine {
   private statusForwarder: (() => void) | null = null;
+  private trackForwarder: ((track: unknown) => void) | null = null;
 
   constructor(
     private readonly playerService: PlayerServiceImpl,
@@ -40,7 +41,11 @@ export class MpdAdapter extends EventEmitter implements PlaybackEngine {
     this.statusForwarder = () => {
       this.emit("stateChanged");
     };
+    this.trackForwarder = (track) => {
+      this.emit("trackChanged", track);
+    };
     this.mpdConnectionManager.on("stateChanged", this.statusForwarder);
+    this.mpdConnectionManager.on("trackChanged", this.trackForwarder);
   }
 
   private fmtSid(): string {
@@ -51,6 +56,10 @@ export class MpdAdapter extends EventEmitter implements PlaybackEngine {
     if (this.statusForwarder) {
       this.mpdConnectionManager.off("stateChanged", this.statusForwarder);
       this.statusForwarder = null;
+    }
+    if (this.trackForwarder) {
+      this.mpdConnectionManager.off("trackChanged", this.trackForwarder);
+      this.trackForwarder = null;
     }
   }
 

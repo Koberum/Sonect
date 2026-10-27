@@ -39,12 +39,11 @@ async function main() {
   getLogService().setBroadcaster(broadcast);
   setupPlayerWebSocket(wss);
 
+  // Track play tracking (before MPD so the first status changes are observed)
+  getPlayTrackingService().start();
+
   // MPD connection manager (idle loop, state cache, command queue)
   getMpdConnectionManager().start();
-
-  // Track play tracking
-  const playTracking = getPlayTrackingService();
-  playTracking.start();
 }
 
 // Graceful shutdown — server.ts is the sole owner of process termination.

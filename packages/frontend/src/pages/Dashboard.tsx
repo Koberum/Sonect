@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/features/auth/auth-context";
 import { usePlaybackContext } from "@/components/playback-context";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -18,18 +19,20 @@ export default function Dashboard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { playbackStatus } = usePlaybackContext();
+  const { profile } = useAuth();
+  const profileId = profile?.id ?? "";
   const { play } = usePlayTrack();
   const qc = useQueryClient();
 
-  const { data, isPending } = useQuery(systemQueries.dashboard());
+  const { data, isPending } = useQuery(systemQueries.dashboard(profileId));
 
   useEffect(() => {
-    if (!playbackStatus.track?.id) return;
+    if (!playbackStatus.track?.id || !profileId) return;
     void qc.invalidateQueries({
-      queryKey: qk.dashboard(),
+      queryKey: qk.dashboard(profileId),
       refetchType: "none",
     });
-  }, [playbackStatus.track?.id, qc]);
+  }, [playbackStatus.track?.id, profileId, qc]);
 
   if (isPending && !data) {
     return (

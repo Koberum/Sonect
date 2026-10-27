@@ -167,6 +167,30 @@ export const setupProgress = sqliteTable("setup_progress", {
   completed_at: text("completed_at"),
 });
 
+export const playHistory = sqliteTable(
+  "play_history",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    profile_id: text("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    track_id: integer("track_id")
+      .notNull()
+      .references(() => tracks.id, { onDelete: "cascade" }),
+    played_at: integer("played_at").notNull(),
+  },
+  (table) => [
+    index("idx_play_history_profile_played").on(
+      table.profile_id,
+      table.played_at,
+    ),
+    index("idx_play_history_profile_track").on(
+      table.profile_id,
+      table.track_id,
+    ),
+  ],
+);
+
 export const likedTracks = sqliteTable(
   "liked_tracks",
   {
