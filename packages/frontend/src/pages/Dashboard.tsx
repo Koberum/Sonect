@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { usePlaybackContext } from "@/components/playback-context";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
 import { ScrollBar, ScrollArea } from "@/components/ui/scroll-area";
@@ -19,18 +19,15 @@ export default function Dashboard() {
   const { playbackStatus } = usePlaybackContext();
   const { play } = usePlayTrack();
   const qc = useQueryClient();
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data, isPending } = useQuery(systemQueries.dashboard());
 
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      qc.invalidateQueries({ queryKey: qk.dashboard() });
-    }, 2000);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
+    if (!playbackStatus.track?.id) return;
+    void qc.invalidateQueries({
+      queryKey: qk.dashboard(),
+      refetchType: "none",
+    });
   }, [playbackStatus.track?.id, qc]);
 
   if (isPending && !data) {
