@@ -157,7 +157,7 @@
     "noTracks": "Nessun brano trovato"
   },
   "liked": {
-    "title": "Brani che ti piacciono",
+    "title": "Preferiti",
     "description": "I brani che ti piacciono",
     "count_one": "{{count}} brano",
     "count_other": "{{count}} brani",
