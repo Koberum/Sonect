@@ -3,6 +3,7 @@ import { usePlaybackContext } from "@/components/playback-context";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
+import { ArtistArtwork } from "@/features/dashboard/components/artist-artwork";
 import { ScrollBar, ScrollArea } from "@/components/ui/scroll-area";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,10 +34,7 @@ export default function Dashboard() {
   if (isPending && !data) {
     return (
       <div>
-        <PageHeader
-          title={t("dashboard.title")}
-          description={t("dashboard.loading")}
-        />
+        <PageHeader title={t("dashboard.title")} />
         <div className="space-y-8">
           {Array.from({ length: 3 }).map((_, section) => (
             <div key={section} className="space-y-2">
@@ -58,19 +56,16 @@ export default function Dashboard() {
 
   return (
     <div>
-      <PageHeader
-        title={t("dashboard.title")}
-        description={t("dashboard.loading")}
-      />
+      <PageHeader title={t("dashboard.title")} />
 
-      {data?.continueListening && data.continueListening.length > 0 && (
+      {data?.recentlyPlayedAlbums && data.recentlyPlayedAlbums.length > 0 && (
         <div className="mb-8">
           <h2 className="text-muted-foreground mb-2 text-sm font-medium tracking-wider uppercase">
-            {t("dashboard.continueListening")}
+            {t("dashboard.recentlyPlayedAlbums")}
           </h2>
           <ScrollArea type="always" className="w-full">
             <div className="flex gap-4 pb-4">
-              {data.continueListening.map((album) => (
+              {data.recentlyPlayedAlbums.map((album) => (
                 <AlbumArtwork
                   key={album.id}
                   album={album}
@@ -79,6 +74,30 @@ export default function Dashboard() {
                   width={150}
                   height={150}
                   onClick={() => navigate(`/albums/${album.id}`)}
+                />
+              ))}
+            </div>
+            <ScrollBar orientation="horizontal" className="hidden" />
+          </ScrollArea>
+        </div>
+      )}
+
+      {data?.recentlyPlayedArtists && data.recentlyPlayedArtists.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-muted-foreground mb-2 text-sm font-medium tracking-wider uppercase">
+            {t("dashboard.recentlyPlayedArtists")}
+          </h2>
+          <ScrollArea type="always" className="w-full">
+            <div className="flex gap-4 pb-4">
+              {data.recentlyPlayedArtists.map((artist) => (
+                <ArtistArtwork
+                  key={artist.id}
+                  artist={artist}
+                  aspectRatio="square"
+                  className="w-36 shrink-0 sm:w-40"
+                  width={150}
+                  height={150}
+                  onClick={() => navigate(`/artists/${artist.id}/albums`)}
                 />
               ))}
             </div>

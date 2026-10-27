@@ -1,15 +1,15 @@
 {
   "dashboard": {
     "title": "Ascolta Ora",
-    "continueListening": "Riproduci di Recente",
+    "recentlyPlayedAlbums": "Ultimi album ascoltati",
+    "recentlyPlayedArtists": "Ultimi artisti ascoltati",
     "recentlyPlayed": "Riprodotti di Recente",
     "topTracks": "Brani Top",
     "suggestedForYou": "Suggeriti per Te",
     "genreQuickMix": "Il tuo Mix {{genre}}",
     "playMix": "Riproduci Mix",
     "trackCount": "{{count}} brani",
-    "trackCount_one": "{{count}} brano",
-    "loading": "Caricamento della dashboard..."
+    "trackCount_one": "{{count}} brano"
   },
   "sidebar": {
     "discover": "Scopri",

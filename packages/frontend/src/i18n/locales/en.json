@@ -1,15 +1,15 @@
 {
   "dashboard": {
     "title": "Listen Now",
-    "continueListening": "Continue Listening",
+    "recentlyPlayedAlbums": "Recently Played Albums",
+    "recentlyPlayedArtists": "Recently Played Artists",
     "recentlyPlayed": "Recently Played",
     "topTracks": "Top Tracks",
     "suggestedForYou": "Suggested for You",
     "genreQuickMix": "Your {{genre}} Mix",
     "playMix": "Play Mix",
     "trackCount": "{{count}} tracks",
-    "trackCount_one": "{{count}} track",
-    "loading": "Loading your dashboard..."
+    "trackCount_one": "{{count}} track"
   },
   "sidebar": {
     "discover": "Discover",

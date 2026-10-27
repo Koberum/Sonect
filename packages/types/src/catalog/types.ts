@@ -52,7 +52,8 @@ export type PlaylistWithTracks = Playlist & {
 };
 
 export interface DashboardData {
-  continueListening: Album[];
+  recentlyPlayedAlbums: Album[];
+  recentlyPlayedArtists: Artist[];
   recentlyPlayed: TrackWithRelations[];
   topTracks: TrackWithRelations[];
   suggestedTracks: TrackWithRelations[];

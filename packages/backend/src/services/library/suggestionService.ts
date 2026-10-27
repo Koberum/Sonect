@@ -1,5 +1,5 @@
-import { albumsDb, tracksDb } from "@repo/db";
-import type { DashboardData, Album, Track } from "@repo/types/catalog";
+import { albumsDb, artistsDb, tracksDb } from "@repo/db";
+import type { DashboardData, Album, Artist, Track } from "@repo/types/catalog";
 
 export interface SuggestionServiceInterface {
   getDashboard(currentAlbumId?: number): DashboardData;
@@ -7,14 +7,16 @@ export interface SuggestionServiceInterface {
 
 export class SuggestionService implements SuggestionServiceInterface {
   getDashboard(currentAlbumId?: number): DashboardData {
-    const continueListening = this._getContinueListening(currentAlbumId);
+    const recentlyPlayedAlbums = this._getRecentlyPlayedAlbums(currentAlbumId);
+    const recentlyPlayedArtists = this._getRecentlyPlayedArtists();
     const recentlyPlayed = this._getRecentlyPlayed();
     const topTracks = this._getTopTracks();
     const suggestedTracks = this._getSuggestedTracks();
     const genreQuickMix = this._getGenreQuickMix();
 
     return {
-      continueListening,
+      recentlyPlayedAlbums,
+      recentlyPlayedArtists,
       recentlyPlayed,
       topTracks,
       suggestedTracks,
@@ -22,9 +24,16 @@ export class SuggestionService implements SuggestionServiceInterface {
     };
   }
 
-  private _getContinueListening(excludeAlbumId?: number): Album[] {
+  private _getRecentlyPlayedAlbums(excludeAlbumId?: number): Album[] {
     const albums = albumsDb.getRecentAlbums(10, excludeAlbumId);
     return albums as Album[];
+  }
+
+  private _getRecentlyPlayedArtists(limit = 10): Artist[] {
+    return artistsDb.getRecentlyPlayed(limit).map((artist) => ({
+      ...artist,
+      coverPreviews: albumsDb.getCoverPreviews(artist.id, 4),
+    }));
   }
 
   private _getRecentlyPlayed(): Track[] {

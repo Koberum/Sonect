@@ -1,7 +1,16 @@
-import { asc, count, eq, like, sql } from "drizzle-orm";
+import {
+  asc,
+  count,
+  desc,
+  eq,
+  getColumns,
+  isNotNull,
+  like,
+  sql,
+} from "drizzle-orm";
 import type { DBArtist } from "@repo/types";
 import { db } from "../connection.js";
-import { artists } from "../tables.js";
+import { artists, tracks } from "../tables.js";
 import { normalizeRowId, type QueryExecutor } from "./rowId.js";
 
 // Shared with tracks.ts so an upsert inside a transaction resolves artists on
@@ -48,6 +57,18 @@ export const artistsDb = {
   getById(id: number): DBArtist | undefined {
     return db().select().from(artists).where(eq(artists.id, id)).get() as
       DBArtist | undefined;
+  },
+
+  getRecentlyPlayed(limit: number): DBArtist[] {
+    return db()
+      .select(getColumns(artists))
+      .from(artists)
+      .innerJoin(tracks, eq(tracks.artist_id, artists.id))
+      .where(isNotNull(tracks.last_played))
+      .groupBy(artists.id)
+      .orderBy(desc(sql`max(${tracks.last_played})`))
+      .limit(limit)
+      .all() as DBArtist[];
   },
 
   search(query: string, limit = 20): DBArtist[] {

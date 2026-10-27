@@ -1,15 +1,15 @@
 {
   "dashboard": {
     "title": "Escuchar Ahora",
-    "continueListening": "Continuar Escuchando",
+    "recentlyPlayedAlbums": "Álbumes Reproducidos Recientemente",
+    "recentlyPlayedArtists": "Artistas Reproducidos Recientemente",
     "recentlyPlayed": "Reproducido Recientemente",
     "topTracks": "Canciones Más Escuchadas",
     "suggestedForYou": "Sugerido para Ti",
     "genreQuickMix": "Tu Mix de {{genre}}",
     "playMix": "Reproducir Mix",
     "trackCount": "{{count}} pistas",
-    "trackCount_one": "{{count}} pista",
-    "loading": "Cargando tu panel..."
+    "trackCount_one": "{{count}} pista"
   },
   "sidebar": {
     "discover": "Descubrir",

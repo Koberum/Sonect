@@ -25,23 +25,54 @@ describe("SuggestionService (trophy integration)", () => {
   describe("getDashboard", () => {
     it("returns empty/ null when DB empty", () => {
       const data = suggestion.getDashboard();
-      expect(data.continueListening).to.deep.equal([]);
+      expect(data.recentlyPlayedAlbums).to.deep.equal([]);
+      expect(data.recentlyPlayedArtists).to.deep.equal([]);
       expect(data.recentlyPlayed).to.deep.equal([]);
       expect(data.topTracks).to.deep.equal([]);
       expect(data.suggestedTracks).to.deep.equal([]);
       expect(data.genreQuickMix).to.be.null;
     });
 
-    it("continueListening respects excludeAlbumId", () => {
+    it("recentlyPlayedAlbums respects excludeAlbumId", () => {
       const al1 = album.create({ title: "RecAl1" }, 1);
       const al2 = album.create({ title: "RecAl2" }, 2);
       albumsDb.updateLastPlayed(al1.id);
       albumsDb.updateLastPlayed(al2.id);
       const dataAll = suggestion.getDashboard();
-      expect(dataAll.continueListening.map((a) => a.id)).to.include(al1.id);
+      expect(dataAll.recentlyPlayedAlbums.map((a) => a.id)).to.include(al1.id);
       const dataEx = suggestion.getDashboard(al1.id);
-      expect(dataEx.continueListening.map((a) => a.id)).to.not.include(al1.id);
-      expect(dataEx.continueListening.map((a) => a.id)).to.include(al2.id);
+      expect(dataEx.recentlyPlayedAlbums.map((a) => a.id)).to.not.include(
+        al1.id,
+      );
+      expect(dataEx.recentlyPlayedAlbums.map((a) => a.id)).to.include(al2.id);
+    });
+
+    it("recentlyPlayedArtists ordered by latest track play", () => {
+      track.create(
+        {
+          title: "ArtistA1",
+          artist: "Artist A",
+          last_played: "2026-01-01 10:00:00",
+        },
+        50,
+      );
+      track.create(
+        {
+          title: "ArtistB1",
+          artist: "Artist B",
+          last_played: "2026-01-02 10:00:00",
+        },
+        51,
+      );
+      track.create({ title: "ArtistC1", artist: "Artist C" }, 52);
+
+      const data = suggestion.getDashboard();
+
+      expect(data.recentlyPlayedArtists.map((a) => a.name)).to.deep.equal([
+        "Artist B",
+        "Artist A",
+      ]);
+      expect(data.recentlyPlayedArtists[0].coverPreviews).to.be.an("array");
     });
 
     it("recentlyPlayed returns tracks ordered by last_played", () => {

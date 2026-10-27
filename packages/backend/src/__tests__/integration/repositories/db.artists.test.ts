@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { createTestDb } from "@tests/helpers/db.js";
 import { artistsDb, db, findOrCreateArtist, artists } from "@repo/db";
+import { track } from "@tests/factories/index.js";
 
 describe("artistsDb (trophy integration)", () => {
   let close: () => void;
@@ -89,6 +90,41 @@ describe("artistsDb (trophy integration)", () => {
       expect(artistsDb.search("beat").map((a) => a.name)).to.deep.equal([
         "Alpha beat",
         "Zebra beat",
+      ]);
+    });
+  });
+
+  describe("getRecentlyPlayed", () => {
+    it("returns [] when no track has been played", () => {
+      findOrCreateArtist(db(), "Unplayed");
+      expect(artistsDb.getRecentlyPlayed(10)).to.deep.equal([]);
+    });
+
+    it("orders by latest track play and respects limit", () => {
+      track.create(
+        {
+          title: "Old track",
+          artist: "Old Artist",
+          last_played: "2026-01-01 00:00:00",
+        },
+        1,
+      );
+      track.create(
+        {
+          title: "New track",
+          artist: "New Artist",
+          last_played: "2026-01-02 00:00:00",
+        },
+        2,
+      );
+      track.create({ title: "Never played", artist: "Unplayed Artist" }, 3);
+
+      expect(artistsDb.getRecentlyPlayed(10).map((a) => a.name)).to.deep.equal([
+        "New Artist",
+        "Old Artist",
+      ]);
+      expect(artistsDb.getRecentlyPlayed(1).map((a) => a.name)).to.deep.equal([
+        "New Artist",
       ]);
     });
   });
