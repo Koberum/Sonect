@@ -88,7 +88,7 @@ export function ProfileSwitcher() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="outline"
+            variant="ghost"
             aria-label={t("profile.switch")}
             className="h-8 gap-2 px-2"
           >
