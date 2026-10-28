@@ -1,152 +1,142 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { PlayerReport } from "@repo/types";
+import {
+  BrowserAudioEngine,
+  type BrowserAudioEngineCallbacks,
+  type BrowserAudioState,
+} from "./browserAudioEngine";
 
-export type BrowserAudioState =
-  "idle" | "loading" | "playing" | "paused" | "ended" | "error";
+export type { BrowserAudioState };
+
+interface UseBrowserAudioOptions {
+  onReport?: (report: PlayerReport) => void;
+  onError?: (message: string) => void;
+}
 
 interface UseBrowserAudioReturn {
   play: () => void;
   pause: () => void;
   seek: (time: number) => void;
   setVolume: (vol: number) => void;
+  startTrack: (
+    trackId: number,
+    src: string,
+    startAt?: number,
+    commandSeq?: number,
+  ) => void;
+  preloadTrack: (trackId: number, src: string) => void;
   state: BrowserAudioState;
   currentTime: number;
   duration: number;
   volume: number;
-  loadTrack: (src: string, startTime?: number) => void;
+  error: string | null;
   autoplayBlocked: boolean;
 }
 
-export function useBrowserAudio(): UseBrowserAudioReturn {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const pendingSeekRef = useRef<number | null>(null);
-  const pendingPlayRef = useRef(false);
-  const autoplayBlockedRef = useRef(false);
+export function useBrowserAudio(
+  options: UseBrowserAudioOptions = {},
+): UseBrowserAudioReturn {
+  const engineRef = useRef<BrowserAudioEngine | null>(null);
+  const optionsRef = useRef(options);
   const [state, setState] = useState<BrowserAudioState>("idle");
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolumeState] = useState(100);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const audio = new Audio();
-    audio.preload = "metadata";
-    audioRef.current = audio;
+    optionsRef.current = options;
+  });
 
-    const onPlay = () => setState("playing");
-    const onPause = () => setState("paused");
-    const onEnded = () => setState("ended");
-    const onError = () => setState("error");
-    const onLoadedMetadata = () => {
-      setDuration(audio.duration);
-      setState("loading");
-      if (pendingSeekRef.current !== null) {
-        audio.currentTime = pendingSeekRef.current;
-        pendingSeekRef.current = null;
-      }
+  useEffect(() => {
+    const callbacks: BrowserAudioEngineCallbacks = {
+      onStateChange: setState,
+      onProgress: (time, total) => {
+        setCurrentTime(time);
+        setDuration(total);
+      },
+      onReport: (report) => optionsRef.current.onReport?.(report),
+      onError: (message) => {
+        setError(message);
+        optionsRef.current.onError?.(message);
+      },
+      onAutoplayBlocked: setAutoplayBlocked,
     };
-    const onCanPlay = () => {
-      if (!audio.paused) setState("playing");
-      if (pendingPlayRef.current) {
-        pendingPlayRef.current = false;
-        audio.play().catch((err: unknown) => {
-          if ((err as DOMException)?.name === "NotAllowedError") {
-            autoplayBlockedRef.current = true;
-            setAutoplayBlocked(true);
-          }
-        });
-      }
-    };
-    const onTimeUpdate = () => setCurrentTime(audio.currentTime);
-
-    audio.addEventListener("play", onPlay);
-    audio.addEventListener("pause", onPause);
-    audio.addEventListener("ended", onEnded);
-    audio.addEventListener("error", onError);
-    audio.addEventListener("loadedmetadata", onLoadedMetadata);
-    audio.addEventListener("canplay", onCanPlay);
-    audio.addEventListener("timeupdate", onTimeUpdate);
-
+    const engine = new BrowserAudioEngine(callbacks);
+    engineRef.current = engine;
     return () => {
-      audio.pause();
-      audio.removeEventListener("play", onPlay);
-      audio.removeEventListener("pause", onPause);
-      audio.removeEventListener("ended", onEnded);
-      audio.removeEventListener("error", onError);
-      audio.removeEventListener("loadedmetadata", onLoadedMetadata);
-      audio.removeEventListener("canplay", onCanPlay);
-      audio.removeEventListener("timeupdate", onTimeUpdate);
-      audioRef.current = null;
+      engine.destroy();
+      engineRef.current = null;
     };
   }, []);
 
   useEffect(() => {
+    if (!autoplayBlocked) return;
     const handler = () => {
-      if (!autoplayBlockedRef.current) return;
-      autoplayBlockedRef.current = false;
-      setAutoplayBlocked(false);
-      audioRef.current?.play().catch(() => {});
+      engineRef.current?.play();
     };
     document.addEventListener("pointerdown", handler);
     return () => document.removeEventListener("pointerdown", handler);
-  }, []);
-
-  const loadTrack = useCallback((src: string, startTime?: number) => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    setState("loading");
-    audio.src = src;
-    if (startTime !== undefined) {
-      pendingSeekRef.current = startTime;
-    }
-    audio.load();
-  }, []);
+  }, [autoplayBlocked]);
 
   const play = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    // If audio not ready, defer until canplay
-    if (audio.readyState < 2) {
-      pendingPlayRef.current = true;
-      return;
-    }
-    audio.play().catch((err: unknown) => {
-      if ((err as DOMException)?.name === "NotAllowedError") {
-        autoplayBlockedRef.current = true;
-        setAutoplayBlocked(true);
-      }
-    });
+    engineRef.current?.play();
   }, []);
 
   const pause = useCallback(() => {
-    pendingPlayRef.current = false;
-    audioRef.current?.pause();
+    engineRef.current?.pause();
   }, []);
 
   const seek = useCallback((time: number) => {
-    const audio = audioRef.current;
-    if (audio) {
-      audio.currentTime = time;
-    }
+    engineRef.current?.seek(time);
   }, []);
 
   const setVolume = useCallback((vol: number) => {
-    const audio = audioRef.current;
-    if (audio) {
-      audio.volume = Math.max(0, Math.min(1, vol / 100));
-    }
     setVolumeState(vol);
+    engineRef.current?.setVolume(vol);
   }, []);
 
-  return {
-    play,
-    pause,
-    seek,
-    setVolume,
-    state,
-    currentTime,
-    duration,
-    volume,
-    loadTrack,
-    autoplayBlocked,
-  };
+  const startTrack = useCallback(
+    (trackId: number, src: string, startAt = 0, commandSeq?: number) => {
+      setError(null);
+      engineRef.current?.startTrack(trackId, src, startAt, commandSeq);
+    },
+    [],
+  );
+
+  const preloadTrack = useCallback((trackId: number, src: string) => {
+    engineRef.current?.preloadTrack(trackId, src);
+  }, []);
+
+  return useMemo(
+    () => ({
+      play,
+      pause,
+      seek,
+      setVolume,
+      startTrack,
+      preloadTrack,
+      state,
+      currentTime,
+      duration,
+      volume,
+      error,
+      autoplayBlocked,
+    }),
+    [
+      play,
+      pause,
+      seek,
+      setVolume,
+      startTrack,
+      preloadTrack,
+      state,
+      currentTime,
+      duration,
+      volume,
+      error,
+      autoplayBlocked,
+    ],
+  );
 }

@@ -72,7 +72,9 @@ no subscriptions, no limits.
 - **Session-based browser playback** — `browser` output mode streams through a
   backend session engine independent of MPD, so playback state follows the
   signed-in profile rather than the shared MPD daemon — each profile keeps its
-  own queue and output device.
+  own queue and output device. Audio is streamed progressively (HTTP Range),
+  the next track is preloaded, and the browser is the source of truth for
+  timing, so progress never runs ahead of the audio while buffering.
 - **Single-container deploy** — one `sonect` Docker image (amd64/arm64) bundling
   MPD and the app under s6-overlay, with a compose file. Audio output and library
   folders are bind-mounted from the host — no privileged commands, no systemd.
@@ -219,7 +221,7 @@ Browser ──HTTP──► Express (session cookie; /player per authenticated p
         ──WS───► WebSocket (cookie handshake; ?sessionId=&deviceId=) ───────────────────────────────┘
                                                                                     └─► MPD engine: shared MPD daemon (locked to one profile)
 
-Browser queue is shared per profile (profile = authenticated account; the `sessionId` query must match it); MPD queue is shared but MPD output is single-owner (PUT /player/output-mode {mpd} → 423 if busy). Browser output is per-device via X-Device-Id (stored in localStorage['sonect.deviceId']); only activeDeviceId renders audio, other browsers with same profile remote-control. PUT /player/output-mode {browser} with X-Device-Id hands off same track/position to new device.
+Browser queue is shared per profile (profile = authenticated account; the `sessionId` query must match it); MPD queue is shared but MPD output is single-owner (PUT /player/output-mode {mpd} → 423 if busy). Browser output is per-device via X-Device-Id (stored in localStorage['sonect.deviceId']); only activeDeviceId renders audio, other browsers with same profile remote-control. The active browser reports real playback facts (`player-report` over WS: playing/paused/waiting/ended/advance + elapsed) and the backend mirrors them — there is no server-side clock in browser mode. MPD mode remains MPD-authoritative and needs no browser. PUT /player/output-mode {browser} with X-Device-Id hands off same track/position to new device.
 Frontend uses only /player/* — there is no frontend fork between browser/MPD.
 ```
 
@@ -281,7 +283,7 @@ admin exists) are public; the remaining `/system/*` routes, `/profiles/*`, and
 | GET    | `/player/queue`                          | Queue for this profile (browser: shared per profile, MPD: shared global)                                                                                                                            |
 | PUT    | `/player/output-mode`                    | Switch `browser`↔`mpd` (per-profile, `mpd` locked → 423 if busy; `browser` with `X-Device-Id` hands off to that browser)                                                                            |
 | PATCH  | `/player/volume`                         | Set volume (per-profile; browser stored in-memory and broadcast to active device)                                                                                                                   |
-| GET    | `/stream/:trackId`                       | Stream an audio track by database ID (supports HTTP Range)                                                                                                                                         |
+| GET    | `/stream/:trackId`                       | Stream an audio track by database ID (progressive HTTP Range incl. suffix, HEAD, ETag/Last-Modified)                                                                                               |
 | GET    | `/likes`                                 | List the current profile's liked tracks (`items,total,totalDuration`, `limit`/`offset`)                                                                                                             |
 | GET    | `/likes/ids`                             | Track IDs liked by the current profile                                                                                                                                                              |
 | PUT    | `/likes/:trackId`                        | Like a track (idempotent; 404 for unknown tracks)                                                                                                                                                   |
@@ -294,7 +296,7 @@ admin exists) are public; the remaining `/system/*` routes, `/profiles/*`, and
 | GET    | `/system/setup/progress`                 | Read setup progress (admin-only)                                                                                                                                                                    |
 | POST   | `/system/setup/complete`                 | Complete or skip setup (admin-only)                                                                                                                                                                 |
 | POST   | `/system/setup/reset`                    | Reset the setup wizard (admin-only)                                                                                                                                                                 |
-| GET    | `ws://host:3000/ws?sessionId=&deviceId=` | WebSocket playback state — handshake requires the session cookie; `?sessionId=` must match it (4403 otherwise); `deviceId` identifies the browser; `player-status` includes `activeDeviceId`+`mode` |
+| GET    | `ws://host:3000/ws?sessionId=&deviceId=` | WebSocket playback state — handshake requires the session cookie; `?sessionId=` must match it (4403 otherwise); `deviceId` identifies the browser; `player-status` includes `activeDeviceId`+`mode`; the active device sends `player-report` facts |
 
 ### Environment variables
 

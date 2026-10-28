@@ -22,6 +22,7 @@ import {
 import { usePlaybackContext } from "@/components/playback-context";
 import VolumeControls from "./volume-controls";
 import { useBrowserAudio } from "@/lib/useBrowserAudio";
+import { usePlayerSocket } from "@/components/ws-provider";
 import { OutputSelector } from "./output-selector";
 import { useQuery } from "@tanstack/react-query";
 import { systemQueries } from "@/features/system/queries";
@@ -49,12 +50,17 @@ export default function MusicPlayer() {
   } = usePlaybackContext();
 
   const lastAnchorRef = useRef({ time: 0, elapsed: 0 });
-  const [displayElapsed, setDisplayElapsed] = useState(0);
+  const lastSeekSeqRef = useRef(0);
+  const [interpolatedElapsed, setInterpolatedElapsed] = useState(0);
   const [playerSheetOpen, setPlayerSheetOpen] = useState(false);
   const isMobile = useMediaQuery({ maxWidth: 768 });
-  const browserAudio = useBrowserAudio();
-  const prevTrackFileRef = useRef<string | null>(null);
   const { t } = useTranslation();
+  const { sendReport } = usePlayerSocket();
+  const browserAudio = useBrowserAudio({
+    onReport: sendReport,
+    onError: () => toast.error(t("player.playbackError")),
+  });
+  const { startTrack, play, pause, seek, preloadTrack } = browserAudio;
   const { profile } = useAuth();
   const { data: outputModeData } = useQuery(systemQueries.outputMode());
   const mpdOwner = outputModeData?.mpdOwner ?? null;
@@ -62,58 +68,67 @@ export default function MusicPlayer() {
   const isMpdLockedForMe =
     !!mpdOwner && mpdOwner !== mySid && outputMode !== "mpd";
 
-  useEffect(() => {
-    prevTrackFileRef.current = null;
-  }, []);
-
   // Browser audio sync - only active browser device renders audio
   const isActiveBrowser =
     outputMode === "browser" &&
     (!activeDeviceId || activeDeviceId === myDeviceId);
 
+  // Browser mode: mirror the server's queue/state into the local engine. The
+  // engine owns timing, so the UI only follows `currentTime`, never a clock.
   useEffect(() => {
     if (!isActiveBrowser) {
-      browserAudio.pause();
+      pause();
       return;
     }
 
     const track = playbackStatus.track;
-    if (track?.file && track.id) {
-      const streamUrl = `/stream/${track.id}`;
-      if (track.file !== prevTrackFileRef.current) {
-        prevTrackFileRef.current = track.file;
-        browserAudio.loadTrack(streamUrl, playbackStatus.elapsed || 0);
-      }
+    if (track?.id) {
+      startTrack(
+        track.id,
+        `/stream/${track.id}`,
+        playbackStatus.elapsed || 0,
+        playbackStatus.seekSeq ?? 0,
+      );
     }
 
     if (playbackStatus.state === "play") {
-      browserAudio.play();
-      if (playbackStatus.elapsed !== undefined) {
-        const diff = Math.abs(
-          browserAudio.currentTime - playbackStatus.elapsed,
-        );
-        if (diff > 3) {
-          browserAudio.seek(playbackStatus.elapsed);
-        }
-      }
+      play();
     } else {
-      browserAudio.pause();
+      pause();
     }
-  }, [playbackStatus, outputMode, browserAudio, isActiveBrowser]);
+  }, [playbackStatus, isActiveBrowser, startTrack, play, pause]);
 
-  // Ensure browser audio stops immediately when switching away from active browser output
+  // A remote seek (other device) bumps seekSeq. Local reports never do, so the
+  // active browser does not fight its own position.
   useEffect(() => {
-    if (!isActiveBrowser) {
-      browserAudio.pause();
-      // Reset prev file so returning to browser reloads at new seek
-      if (
-        outputMode !== "browser" ||
-        (activeDeviceId && activeDeviceId !== myDeviceId)
-      ) {
-        prevTrackFileRef.current = null;
-      }
+    if (!isActiveBrowser || playbackStatus.state === "stop") return;
+    const seq = playbackStatus.seekSeq ?? 0;
+    if (seq === lastSeekSeqRef.current) return;
+    lastSeekSeqRef.current = seq;
+    seek(playbackStatus.elapsed);
+  }, [
+    isActiveBrowser,
+    playbackStatus.seekSeq,
+    playbackStatus.elapsed,
+    playbackStatus.state,
+    seek,
+  ]);
+
+  // Preload the upcoming track on the standby deck so the transition is
+  // instant and the backend can expose nextTrackId ahead of time.
+  useEffect(() => {
+    if (!isActiveBrowser) return;
+    const nextId = playbackStatus.nextTrackId;
+    const currentId = playbackStatus.track?.id;
+    if (nextId && nextId !== currentId) {
+      preloadTrack(nextId, `/stream/${nextId}`);
     }
-  }, [outputMode, browserAudio, isActiveBrowser, activeDeviceId, myDeviceId]);
+  }, [
+    isActiveBrowser,
+    playbackStatus.nextTrackId,
+    playbackStatus.track?.id,
+    preloadTrack,
+  ]);
 
   // Track change detection
   useEffect(() => {
@@ -155,8 +170,11 @@ export default function MusicPlayer() {
   const doToggle = (fn: () => Promise<void>) => fn();
 
   useEffect(() => {
-    if (playbackStatus.state !== "play") {
-      setDisplayElapsed(playbackStatus.elapsed);
+    // The active browser reads the real audio clock; only passive/MPD devices
+    // need to interpolate between server updates.
+    if (isActiveBrowser) return;
+    if (playbackStatus.state !== "play" || playbackStatus.buffering) {
+      setInterpolatedElapsed(playbackStatus.elapsed);
       return;
     }
 
@@ -164,18 +182,22 @@ export default function MusicPlayer() {
       time: Date.now(),
       elapsed: playbackStatus.elapsed,
     };
-    setDisplayElapsed(playbackStatus.elapsed);
+    setInterpolatedElapsed(playbackStatus.elapsed);
 
     const id = setInterval(() => {
       const now = Date.now();
       const delta = (now - lastAnchorRef.current.time) / 1000;
       lastAnchorRef.current.time = now;
       lastAnchorRef.current.elapsed += delta;
-      setDisplayElapsed(lastAnchorRef.current.elapsed);
+      setInterpolatedElapsed(lastAnchorRef.current.elapsed);
     }, 250);
 
     return () => clearInterval(id);
-  }, [playbackStatus]);
+  }, [playbackStatus, isActiveBrowser]);
+
+  const displayElapsed = isActiveBrowser
+    ? browserAudio.currentTime
+    : interpolatedElapsed;
 
   return (
     <>

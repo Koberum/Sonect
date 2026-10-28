@@ -27,6 +27,22 @@ export const playerSchemas = {
   toggle: z.object({
     enabled: z.boolean({ error: "enabled is required" }),
   }),
+  report: z
+    .object({
+      state: z.enum(["play", "pause", "stop"]).optional(),
+      elapsed: z.number().finite().min(0).optional(),
+      event: z
+        .enum(["playing", "paused", "ended", "advance", "waiting"])
+        .optional(),
+      trackId: z.number().int().positive().optional(),
+    })
+    .refine(
+      (value) =>
+        value.state !== undefined ||
+        value.elapsed !== undefined ||
+        value.event !== undefined,
+      { message: "report must contain state, elapsed or event" },
+    ),
 };
 
 export const playlistSchemas = {

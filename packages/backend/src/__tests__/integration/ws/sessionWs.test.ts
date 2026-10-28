@@ -89,6 +89,34 @@ describe("session-scoped WS", () => {
     ws.on("error", done);
   });
 
+  it("mirrors playback reports from the active browser device", (done) => {
+    const ws = new WebSocket(
+      `${baseUrl}?sessionId=${profileId}&deviceId=dev-1&deviceName=Test&deviceType=desktop`,
+      { headers: { Cookie: cookie } },
+    );
+    let sent = false;
+    ws.on("message", (data) => {
+      const msg = JSON.parse(data.toString()) as Record<string, unknown>;
+      if (!sent) {
+        sent = true;
+        ws.send(
+          JSON.stringify({
+            type: "player-report",
+            state: "play",
+            elapsed: 5,
+          }),
+        );
+        return;
+      }
+      expect(msg.type).to.equal("player-status");
+      expect(msg.elapsed).to.equal(5);
+      expect(msg.activeDeviceId).to.equal("dev-1");
+      ws.close();
+      done();
+    });
+    ws.on("error", done);
+  });
+
   it("closes with 4401 when no session cookie is sent", (done) => {
     const ws = new WebSocket(baseUrl);
     ws.on("close", (code) => {

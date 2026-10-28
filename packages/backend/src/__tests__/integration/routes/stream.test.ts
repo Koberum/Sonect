@@ -98,6 +98,112 @@ describe("stream routes", () => {
     expect(res.headers["content-length"]).to.equal("3");
   });
 
+  it("supports suffix range requests", async () => {
+    const file = "Artist/Album/suffix.flac";
+    const absolute = path.join(tmpDir, file);
+    fs.mkdirSync(path.dirname(absolute), { recursive: true });
+    fs.writeFileSync(absolute, "abcdef");
+    const t = track.create({ title: "Suffix", file }, 4);
+
+    const res = await request(makeApp())
+      .get(`/stream/${t.id}`)
+      .set("Cookie", cookie)
+      .set("Range", "bytes=-3");
+
+    expect(res.status).to.equal(206);
+    expect(res.headers["content-range"]).to.equal("bytes 3-5/6");
+    expect(res.headers["content-length"]).to.equal("3");
+  });
+
+  it("supports open-ended range requests", async () => {
+    const file = "Artist/Album/open.flac";
+    const absolute = path.join(tmpDir, file);
+    fs.mkdirSync(path.dirname(absolute), { recursive: true });
+    fs.writeFileSync(absolute, "abcdef");
+    const t = track.create({ title: "Open", file }, 5);
+
+    const res = await request(makeApp())
+      .get(`/stream/${t.id}`)
+      .set("Cookie", cookie)
+      .set("Range", "bytes=3-");
+
+    expect(res.status).to.equal(206);
+    expect(res.headers["content-range"]).to.equal("bytes 3-5/6");
+    expect(res.headers["content-length"]).to.equal("3");
+  });
+
+  it("rejects unsatisfiable and malformed ranges", async () => {
+    const file = "Artist/Album/bad-range.flac";
+    const absolute = path.join(tmpDir, file);
+    fs.mkdirSync(path.dirname(absolute), { recursive: true });
+    fs.writeFileSync(absolute, "abcdef");
+    const t = track.create({ title: "BadRange", file }, 6);
+    const app = makeApp();
+
+    const unsatisfiable = await request(app)
+      .get(`/stream/${t.id}`)
+      .set("Cookie", cookie)
+      .set("Range", "bytes=99-100");
+    expect(unsatisfiable.status).to.equal(416);
+    expect(unsatisfiable.headers["content-range"]).to.equal("bytes */6");
+
+    const malformed = await request(app)
+      .get(`/stream/${t.id}`)
+      .set("Cookie", cookie)
+      .set("Range", "bytes=abc");
+    expect(malformed.status).to.equal(416);
+  });
+
+  it("answers HEAD without streaming a body", async () => {
+    const file = "Artist/Album/head.flac";
+    const absolute = path.join(tmpDir, file);
+    fs.mkdirSync(path.dirname(absolute), { recursive: true });
+    fs.writeFileSync(absolute, "abcdef");
+    const t = track.create({ title: "Head", file }, 7);
+
+    const res = await request(makeApp())
+      .head(`/stream/${t.id}`)
+      .set("Cookie", cookie);
+
+    expect(res.status).to.equal(200);
+    expect(res.headers["content-length"]).to.equal("6");
+    expect(res.headers["accept-ranges"]).to.equal("bytes");
+  });
+
+  it("sets validators and private caching headers", async () => {
+    const file = "Artist/Album/cache.flac";
+    const absolute = path.join(tmpDir, file);
+    fs.mkdirSync(path.dirname(absolute), { recursive: true });
+    fs.writeFileSync(absolute, "abcdef");
+    const t = track.create({ title: "Cache", file }, 8);
+
+    const res = await request(makeApp())
+      .get(`/stream/${t.id}`)
+      .set("Cookie", cookie);
+
+    expect(res.status).to.equal(200);
+    expect(res.headers.etag).to.be.a("string");
+    expect(res.headers["last-modified"]).to.be.a("string");
+    expect(res.headers["cache-control"]).to.equal("private, max-age=3600");
+  });
+
+  it("ignores Range when If-Range does not match", async () => {
+    const file = "Artist/Album/if-range.flac";
+    const absolute = path.join(tmpDir, file);
+    fs.mkdirSync(path.dirname(absolute), { recursive: true });
+    fs.writeFileSync(absolute, "abcdef");
+    const t = track.create({ title: "IfRange", file }, 9);
+
+    const res = await request(makeApp())
+      .get(`/stream/${t.id}`)
+      .set("Cookie", cookie)
+      .set("Range", "bytes=0-2")
+      .set("If-Range", '"stale"');
+
+    expect(res.status).to.equal(200);
+    expect(res.headers["content-length"]).to.equal("6");
+  });
+
   it("does not serve files outside MUSIC_DIR", async () => {
     const t = track.create({ title: "Escape", file: "../escape.flac" }, 3);
     const res = await request(makeApp())

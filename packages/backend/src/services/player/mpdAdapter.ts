@@ -1,4 +1,4 @@
-import type { PlaybackStatus, QueuedTrack } from "@repo/types";
+import type { PlaybackStatus, PlayerReport, QueuedTrack } from "@repo/types";
 import { PlayerServiceImpl } from "./playerService.js";
 import { MpdConnectionManager } from "../mpd/mpdConnectionManager.js";
 import type { LogService } from "../utils/logService.js";
@@ -21,6 +21,7 @@ export interface PlaybackEngine extends EventEmitter {
   playPosition(pos: number): Promise<void>;
   enableRandom(enabled: boolean): Promise<void>;
   enableRepeat(enabled: boolean): Promise<void>;
+  reportPlayback(report: PlayerReport): void;
 }
 
 /**
@@ -247,4 +248,9 @@ export class MpdAdapter extends EventEmitter implements PlaybackEngine {
   async enableRepeat(enabled: boolean): Promise<void> {
     await this.playerService.enableRepeat(enabled);
   }
+
+  /**
+   * MPD is authoritative in MPD mode; browser reports are irrelevant here.
+   */
+  reportPlayback(_report: PlayerReport): void {}
 }

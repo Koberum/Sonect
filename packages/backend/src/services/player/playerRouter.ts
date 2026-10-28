@@ -9,7 +9,12 @@ import { SessionPlayer } from "../session/sessionPlayer.js";
 import { MpdAdapter, type PlaybackEngine } from "./mpdAdapter.js";
 import type { PlayerServiceImpl } from "./playerService.js";
 import type { MpdConnectionManager } from "../mpd/mpdConnectionManager.js";
-import type { OutputMode, PlaybackStatus, QueuedTrack } from "@repo/types";
+import type {
+  OutputMode,
+  PlaybackStatus,
+  PlayerReport,
+  QueuedTrack,
+} from "@repo/types";
 
 type SessionRecord = {
   mode: OutputMode;
@@ -167,6 +172,9 @@ export class PlayerRouter extends EventEmitter {
       async playPosition(pos: number): Promise<void> {
         this.p.playPosition(pos);
       }
+      reportPlayback(report: PlayerReport): void {
+        this.p.reportPlayback(report);
+      }
     })(s);
     return adapter;
   }
@@ -211,6 +219,63 @@ export class PlayerRouter extends EventEmitter {
         { sessionId: fmtSid(sessionId), deviceId: deviceId.slice(0, 8) },
       );
     }
+  }
+
+  /**
+   * Mirrors a factual report from the active browser device. Reports from
+   * other devices (or in MPD mode) are ignored so timing cannot be hijacked.
+   */
+  reportPlayback(
+    sessionId: string,
+    deviceId: string | null,
+    report: PlayerReport,
+    deviceName: string | null = null,
+    deviceType: string | null = null,
+  ): boolean {
+    if (!deviceId) return false;
+    const rec = this.ensureRecord(sessionId);
+    if (rec.mode !== "browser") return false;
+    if (rec.activeDeviceId === null) {
+      // Claim silently: the report that follows emits stateChanged with the
+      // claim included, so we avoid an intermediate status without the report.
+      rec.activeDeviceId = deviceId;
+      rec.activeDeviceName = deviceName;
+      rec.activeDeviceType = deviceType;
+      this.logService?.pushLog?.(
+        "info",
+        `[Session ${fmtSid(sessionId)}][browser] claimed by device ${deviceId.slice(0, 8)}`,
+        { sessionId: fmtSid(sessionId), deviceId: deviceId.slice(0, 8) },
+      );
+    }
+    if (rec.activeDeviceId !== deviceId) return false;
+    rec.engine.reportPlayback(report);
+    return true;
+  }
+
+  /**
+   * Called when the device that owned browser playback disconnects. Clearing
+   * the claim lets another tab take over instead of staying stuck as "active".
+   */
+  releaseActiveDevice(sessionId: string, deviceId: string | null): void {
+    if (!deviceId) return;
+    const rec = this.records.get(sessionId);
+    if (!rec || rec.mode !== "browser" || rec.activeDeviceId !== deviceId) {
+      return;
+    }
+    rec.activeDeviceId = null;
+    rec.activeDeviceName = null;
+    rec.activeDeviceType = null;
+    try {
+      void rec.engine.pause();
+    } catch {
+      // engine may already be torn down
+    }
+    this.emit(`session:${sessionId}:stateChanged`);
+    this.logService?.pushLog?.(
+      "debug",
+      `[Session ${fmtSid(sessionId)}][browser] released active device ${deviceId.slice(0, 8)}`,
+      { sessionId: fmtSid(sessionId), deviceId: deviceId.slice(0, 8) },
+    );
   }
 
   getMpdOwner(): string | null {

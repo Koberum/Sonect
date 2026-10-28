@@ -38,6 +38,21 @@ export type PlaybackStatus = {
   activeDeviceName?: string | null;
   activeDeviceType?: string | null;
   mode?: OutputMode;
+  nextTrackId?: number | null;
+  buffering?: boolean;
+  seekSeq?: number;
+};
+
+/**
+ * Playback facts reported by the active browser engine. The browser is the
+ * source of truth for timing in browser mode, so the backend mirrors these
+ * values instead of running its own clock.
+ */
+export type PlayerReport = {
+  state?: PlaybackState;
+  elapsed?: number;
+  event?: "playing" | "paused" | "ended" | "advance" | "waiting";
+  trackId?: number;
 };
 
 export type QueuedTrack = {

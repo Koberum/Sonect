@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import sinon from "sinon";
 import { createTestDb } from "@tests/helpers/db.js";
 import { artist } from "@tests/factories/artist.js";
 import { album } from "@tests/factories/album.js";
@@ -45,52 +46,156 @@ describe("SessionPlayer", () => {
     expect(s.elapsed).to.equal(0);
   });
 
-  it("advances position with a 1s tick and auto-advances at duration boundary", () => {
-    const a = artist.create({ name: "TickArtist" }, 10);
-    const al = album.create({ title: "TickAlbum", artistName: a.name }, 10);
+  function seedAlbum(name: string, seed: number, duration = 4) {
+    const a = artist.create({ name }, seed);
+    const al = album.create(
+      { title: `${name}Album`, artistName: a.name },
+      seed,
+    );
     const t1 = track.create(
       {
         artist: a.name,
         album: al.title,
         title: "X",
-        duration: 4,
+        duration,
         track: 1,
         disc: "1",
       },
-      211,
+      seed + 1,
     );
-    track.create(
+    const t2 = track.create(
       {
         artist: a.name,
         album: al.title,
         title: "Y",
-        duration: 4,
+        duration,
         track: 2,
         disc: "1",
       },
-      212,
+      seed + 2,
     );
-    track.create(
+    const t3 = track.create(
       {
         artist: a.name,
         album: al.title,
         title: "Z",
-        duration: 4,
+        duration,
         track: 3,
         disc: "1",
       },
-      213,
+      seed + 3,
     );
+    return { t1, t2, t3 };
+  }
 
-    p = new SessionPlayer("S-2", {} as LogService);
+  it("does not advance on its own without playback reports", () => {
+    const { t1 } = seedAlbum("TickArtist", 10);
+    const clock = sinon.useFakeTimers();
+    try {
+      p = new SessionPlayer("S-2", {} as LogService);
+      p.playTrack(t1.file);
+      p.reportPlayback({ state: "play", elapsed: 2 });
+
+      clock.tick(5000);
+
+      const st = p.getStatus();
+      expect(st.elapsed).to.equal(2);
+      expect(st.track?.title).to.equal("X");
+    } finally {
+      clock.restore();
+    }
+  });
+
+  it("mirrors reported elapsed, buffering and playing", () => {
+    const { t1 } = seedAlbum("ReportArtist", 20);
+    p = new SessionPlayer("S-2b", {} as LogService);
     p.playTrack(t1.file);
-    // elapse 3 ticks
-    for (let i = 0; i < 3; i++) p.tick(); // manual hook exposed for tests + tick timer
-    expect(p.getStatus().elapsed).to.equal(3);
-    p.tick(); // 4th tick crosses the 4s duration -> advance() resets to next track
+
+    p.reportPlayback({ state: "play", elapsed: 2 });
+    let st = p.getStatus();
+    expect(st.state).to.equal("play");
+    expect(st.elapsed).to.equal(2);
+    expect(st.buffering).to.equal(false);
+
+    p.reportPlayback({ event: "waiting" });
+    st = p.getStatus();
+    expect(st.buffering).to.equal(true);
+    expect(st.elapsed).to.equal(2);
+
+    p.reportPlayback({ event: "playing", elapsed: 3 });
+    st = p.getStatus();
+    expect(st.buffering).to.equal(false);
+    expect(st.elapsed).to.equal(3);
+  });
+
+  it("exposes the next track and advances when the browser reports ended", () => {
+    const { t1, t2, t3 } = seedAlbum("EndArtist", 30);
+    p = new SessionPlayer("S-2c", {} as LogService);
+    p.playTrack(t1.file);
+
+    expect(p.getStatus().nextTrackId).to.equal(t2.id);
+    p.reportPlayback({ event: "ended", elapsed: 4 });
+
     const st = p.getStatus();
-    expect(st.elapsed).to.equal(0); // advanced to next track
     expect(st.track?.title).to.equal("Y");
+    expect(st.elapsed).to.equal(0);
+    expect(st.nextTrackId).to.equal(t3.id);
+  });
+
+  it("advances on an explicit advance event (crossfade handoff)", () => {
+    const { t1, t2 } = seedAlbum("AdvanceArtist", 40);
+    p = new SessionPlayer("S-2d", {} as LogService);
+    p.playTrack(t1.file);
+
+    p.reportPlayback({ event: "advance", trackId: t2.id });
+
+    const st = p.getStatus();
+    expect(st.track?.id).to.equal(t2.id);
+    expect(st.elapsed).to.equal(0);
+  });
+
+  it("bumps seekSeq on a seek but not on playback reports", () => {
+    const { t1 } = seedAlbum("SeekSeqArtist", 45, 30);
+    p = new SessionPlayer("S-2g", {} as LogService);
+    p.playTrack(t1.file);
+
+    const initial = p.getStatus().seekSeq;
+    p.reportPlayback({ state: "play", elapsed: 7 });
+    expect(p.getStatus().seekSeq).to.equal(initial);
+
+    p.seek(11);
+    expect(p.getStatus().seekSeq).to.equal((initial ?? 0) + 1);
+    expect(p.getStatus().elapsed).to.equal(11);
+  });
+
+  it("stops when the browser reports the end of the queue", () => {
+    const a = artist.create({ name: "SoloEnd" }, 50);
+    const al = album.create({ title: "SoloEndAlbum", artistName: a.name }, 50);
+    const t1 = track.create(
+      { artist: a.name, album: al.title, title: "Only", duration: 5 },
+      51,
+    );
+    p = new SessionPlayer("S-2e", {} as LogService);
+    p.playTrack(t1.file);
+
+    p.reportPlayback({ event: "ended", elapsed: 5 });
+
+    const st = p.getStatus();
+    expect(st.state).to.equal("stop");
+    expect(st.queueLength).to.equal(1);
+    expect(st.track).to.be.undefined;
+  });
+
+  it("ignores reports for a stale track", () => {
+    const { t1, t2 } = seedAlbum("StaleArtist", 60);
+    p = new SessionPlayer("S-2f", {} as LogService);
+    p.playTrack(t1.file);
+
+    p.reportPlayback({ state: "play", elapsed: 3, trackId: t2.id });
+
+    const st = p.getStatus();
+    expect(st.track?.id).to.equal(t1.id);
+    expect(st.elapsed).to.equal(0);
   });
 
   it("pause/resume/next/previous/seek", () => {

@@ -77,6 +77,7 @@
     "outputModeError": "Failed to switch output mode",
     "tapToPlay": "Tap to play",
     "mpdError": "MPD playback error: {{error}}",
+    "playbackError": "Unable to play this track",
     "mpdLocked": "MPD locked",
     "outputModeLocked": "MPD output locked by another session"
   },

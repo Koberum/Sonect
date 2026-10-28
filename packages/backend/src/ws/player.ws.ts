@@ -1,5 +1,6 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { IncomingMessage } from "http";
+import { playerSchemas } from "@repo/types";
 import {
   getAuthService,
   getCatalogSyncOrchestrator,
@@ -50,6 +51,8 @@ export function setupPlayerWebSocket(wss: WebSocketServer) {
     }
     registerProfileSocket(sid, ws);
     const did = params.get("deviceId") ?? params.get("device-id");
+    const dName = params.get("deviceName");
+    const dType = params.get("deviceType");
     const fmtSid = sid.slice(0, 8);
     const fmtDid = did ? did.slice(0, 8) : "none";
     const ip = (req.socket.remoteAddress ?? "unknown").replace("::ffff:", "");
@@ -72,10 +75,32 @@ export function setupPlayerWebSocket(wss: WebSocketServer) {
         sendJson(ws, { type: "player-status", ...router.getStatus(sid) });
       sendStatus();
       const off = router.onStateChanged(sid, sendStatus);
+
+      // Browser mode: the active device reports its real playback facts.
+      ws.on("message", (data) => {
+        let payload: unknown;
+        try {
+          payload = JSON.parse(data.toString());
+        } catch {
+          return;
+        }
+        if (
+          typeof payload !== "object" ||
+          payload === null ||
+          (payload as { type?: unknown }).type !== "player-report"
+        ) {
+          return;
+        }
+        const report = playerSchemas.report.safeParse(payload);
+        if (!report.success) return;
+        router.reportPlayback(sid, did, report.data, dName, dType);
+      });
+
       ws.on("close", () => {
         safeLog("debug", `[WS][Session ${fmtSid}] disconnected`, {
           sessionId: fmtSid,
         });
+        router.releaseActiveDevice(sid, did);
         unregisterProfileSocket(sid, ws);
         off();
       });
