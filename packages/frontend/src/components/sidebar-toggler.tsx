@@ -13,7 +13,7 @@ export default function SidebarToggler({
 
   return (
     <Button
-      variant="ghost"
+      variant="bare"
       size="icon"
       onClick={() => toggleSidebar(!isOpen)}
       aria-label={t("sidebar.toggleSidebar")}

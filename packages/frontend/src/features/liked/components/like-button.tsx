@@ -22,7 +22,7 @@ function LikeButtonInner({
   return (
     <Button
       type="button"
-      variant="ghost"
+      variant="bare"
       size="icon-sm"
       aria-label={liked ? t("liked.unlike") : t("liked.like")}
       aria-pressed={liked}

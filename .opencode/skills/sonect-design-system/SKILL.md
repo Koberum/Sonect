@@ -65,11 +65,15 @@ Every row-level action button (add to queue, remove, refresh stats, edit,
 delete, queue controls) uses:
 
 ```tsx
-<Button variant="ghost" size="icon-sm" aria-label={t(...)} disabled={pending}>
+<Button variant="bare" size="icon-sm" aria-label={t(...)} disabled={pending}>
   <Icon />
 </Button>
 ```
 
+- **Icon-only buttons use `variant="bare"`** — no background or border at rest,
+  and no hover background. Only the icon changes color/opacity on hover
+  (`text-muted-foreground` → `text-foreground`, or an active/destructive color).
+  Text buttons keep `ghost` (which still highlights its surface).
 - `size="icon-sm"` — never `icon-xs` in one page and `icon-sm` in another.
 - `aria-label` is mandatory for icon-only buttons; add a `Tooltip` when the icon
   is not self-evident.
@@ -141,8 +145,8 @@ Button usage map:
 | ------------------------------- | ------------------------------------------------------------------------------------------------- |
 | Primary page/card action        | `default` (optionally `size="sm"` inline)                                                         |
 | Secondary action, Cancel        | `outline`                                                                                         |
-| Row-level icon action           | `ghost size="icon-sm"`                                                                            |
-| Table/queue inline icon actions | `ghost size="icon-sm"`                                                                            |
+| Row-level icon action           | `bare size="icon-sm"`                                                                             |
+| Table/queue inline icon actions | `bare size="icon-sm"`                                                                             |
 | Dangerous confirm               | `variant="destructive"` (in `AlertDialogAction` use `buttonVariants({ variant: "destructive" })`) |
 | Text-only tertiary              | `link` or `ghost` with label                                                                      |
 
@@ -163,7 +167,7 @@ it.json**. No hardcoded English in components, including validation messages.
 
 - [ ] Only semantic tokens (no palette literals except the two exceptions)
 - [ ] Icons are `size-4` / `size-5` / `size-8` per the scale
-- [ ] Row actions are ghost `icon-sm` with `aria-label`
+- [ ] Icon-only actions are `bare icon-sm` with `aria-label` (no hover background)
 - [ ] Loading uses Skeleton (lists) or in-button Loader2
 - [ ] Empty state uses `EmptyState`; error state offers Retry
 - [ ] Spacing follows the rhythm (`gap-4`, `space-y-6`, rows `p-3`)

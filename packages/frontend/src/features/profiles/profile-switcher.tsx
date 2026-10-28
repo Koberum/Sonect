@@ -150,7 +150,7 @@ export function ProfileSwitcher() {
                 {isAdmin && (
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="bare"
                     size="icon-sm"
                     aria-label={`${t("profile.editTitle")}: ${candidate.name}`}
                     onClick={(event) => {

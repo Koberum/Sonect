@@ -35,9 +35,8 @@ export function PlaybackControls({
   showAllControls,
 }: PlaybackControls): React.ReactElement {
   const btnBase =
-    "text-muted-foreground hover:text-foreground hover:bg-transparent dark:hover:bg-transparent transition-colors p-1";
-  const btnActive =
-    "text-primary hover:text-primary hover:bg-transparent dark:hover:bg-transparent";
+    "text-muted-foreground hover:text-foreground transition-colors p-1";
+  const btnActive = "text-primary hover:text-primary";
   const showAlways = showAllControls ? "" : "hidden md:block";
 
   const handleMain = () => {
@@ -50,7 +49,7 @@ export function PlaybackControls({
     <div className={className}>
       <div className="flex items-center gap-2">
         <Button
-          variant="ghost"
+          variant="bare"
           size="icon-sm"
           className={`${showAlways} ${playbackStatus.random ? btnActive : btnBase}`}
           onClick={() => {
@@ -61,7 +60,7 @@ export function PlaybackControls({
         </Button>
 
         <Button
-          variant="ghost"
+          variant="bare"
           size="icon-sm"
           className={`${showAlways} ${btnBase}`}
           onClick={previousTrack}
@@ -83,7 +82,7 @@ export function PlaybackControls({
         </Button>
 
         <Button
-          variant="ghost"
+          variant="bare"
           size="icon-sm"
           className={`${showAlways} ${btnBase}`}
           onClick={nextTrack}
@@ -92,7 +91,7 @@ export function PlaybackControls({
         </Button>
 
         <Button
-          variant="ghost"
+          variant="bare"
           size="icon-sm"
           className={`${showAlways} ${playbackStatus.repeat ? btnActive : btnBase}`}
           onClick={() => {

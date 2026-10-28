@@ -64,7 +64,7 @@ export default function VolumeControls({
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          variant="ghost"
+          variant="bare"
           size="icon"
           className="text-muted-foreground hover:text-foreground"
         >
@@ -88,7 +88,7 @@ export default function VolumeControls({
   ) : (
     <div className="flex items-center gap-1">
       <Button
-        variant="ghost"
+        variant="bare"
         size="icon"
         className="text-muted-foreground hover:text-foreground"
         onClick={handleMute}

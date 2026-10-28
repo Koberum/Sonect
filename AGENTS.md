@@ -241,7 +241,7 @@ sonect (single image, ENTRYPOINT /init)
 ### Frontend
 
 - Components follow the shadcn/ui pattern: primitive Radix UI components wrapped in `packages/frontend/src/components/`.
-- **Design system** — every UI change must follow the `sonect-design-system` skill (semantic tokens only, three-size icon scale, ghost `icon-sm` row actions, Skeleton loading, `EmptyState` for every empty list, spacing/radius rhythm). Shared components: `EmptyState`, `PageHeader` (the only page `h1`), `LibraryStats`. The official `shadcn` and Anthropic `frontend-design` skills are installed under `.opencode/skills/`.
+- **Design system** — every UI change must follow the `sonect-design-system` skill (semantic tokens only, three-size icon scale, `bare` `icon-sm` actions for icon-only buttons (no hover background; only the icon highlights), Skeleton loading, `EmptyState` for every empty list, spacing/radius rhythm). Shared components: `EmptyState`, `PageHeader` (the only page `h1`), `LibraryStats`. The official `shadcn` and Anthropic `frontend-design` skills are installed under `.opencode/skills/`.
 - Pages live in `packages/frontend/src/pages/`.
 - Feature-specific logic (hooks, context, api, queries) lives in `packages/frontend/src/features/`.
 - The `music-player.tsx` component interpolates elapsed time locally via `setInterval` (250ms ticks) during `state === "play"`. The elapsed anchor is reset on each WebSocket message from the server, keeping the progress bar smooth between MPD polls.

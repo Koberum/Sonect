@@ -21,7 +21,7 @@ export function SettingsButton() {
       <TooltipTrigger asChild>
         <Button
           type="button"
-          variant="ghost"
+          variant="bare"
           aria-label={t("settings.title")}
           className="text-muted-foreground size-11 border-0 bg-transparent p-0"
           onClick={() => navigate("/settings")}

@@ -110,7 +110,7 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="ghost"
+                    variant="bare"
                     size="icon-sm"
                     onClick={handleRefreshLibrary}
                     disabled={isRefreshing}
@@ -187,7 +187,7 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
                 <TooltipTrigger asChild>
                   <DialogTrigger asChild>
                     <Button
-                      variant="ghost"
+                      variant="bare"
                       size="icon-sm"
                       aria-label={t("playlist.new")}
                     >

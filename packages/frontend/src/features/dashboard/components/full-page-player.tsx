@@ -200,7 +200,7 @@ export function FullPagePlayer({
                   </span>
                   <LikeButton trackId={track.trackId} />
                   <Button
-                    variant="ghost"
+                    variant="bare"
                     size="icon-sm"
                     className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
                     onClick={(e) => handleRemove(e, track.pos)}

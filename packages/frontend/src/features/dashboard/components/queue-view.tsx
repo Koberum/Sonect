@@ -54,7 +54,7 @@ export function QueueView({ currentTrackFile }: QueueViewProps) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          variant="ghost"
+          variant="bare"
           size="icon"
           className="text-muted-foreground hover:text-foreground"
         >
@@ -125,7 +125,7 @@ export function QueueView({ currentTrackFile }: QueueViewProps) {
                   </span>
                   <LikeButton trackId={track.trackId} />
                   <Button
-                    variant="ghost"
+                    variant="bare"
                     size="icon-sm"
                     className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
                     onClick={(e) => handleRemove(e, track.pos)}

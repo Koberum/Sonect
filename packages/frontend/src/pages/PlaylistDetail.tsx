@@ -220,7 +220,7 @@ export default function PlaylistDetail() {
                 <TooltipTrigger asChild>
                   <SheetTrigger asChild>
                     <Button
-                      variant="ghost"
+                      variant="bare"
                       size="icon-sm"
                       aria-label={t("playlist.edit")}
                     >
@@ -270,7 +270,7 @@ export default function PlaylistDetail() {
                 <TooltipTrigger asChild>
                   <AlertDialogTrigger asChild>
                     <Button
-                      variant="ghost"
+                      variant="bare"
                       size="icon-sm"
                       className="text-destructive hover:text-destructive"
                       aria-label={t("playlist.delete")}
@@ -369,7 +369,7 @@ export default function PlaylistDetail() {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              variant="ghost"
+                              variant="bare"
                               size="icon-sm"
                               className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
                               onClick={(e) => {
