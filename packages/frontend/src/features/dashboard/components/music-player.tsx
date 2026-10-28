@@ -78,8 +78,8 @@ export default function MusicPlayer() {
     }
 
     const track = playbackStatus.track;
-    if (track?.file) {
-      const streamUrl = `/stream/${track.file}`;
+    if (track?.file && track.id) {
+      const streamUrl = `/stream/${track.id}`;
       if (track.file !== prevTrackFileRef.current) {
         prevTrackFileRef.current = track.file;
         browserAudio.loadTrack(streamUrl, playbackStatus.elapsed || 0);

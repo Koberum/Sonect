@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import path from "path";
 import fs from "fs";
+import { tracksDb } from "@repo/db";
 
 const MIME_TYPES: Record<string, string> = {
   ".mp3": "audio/mpeg",
@@ -22,22 +23,38 @@ function getMusicDir(): string {
   return process.env.MUSIC_DIR || "/music";
 }
 
+function resolveTrackPath(filepath: string): string | null {
+  const musicDir = path.resolve(getMusicDir());
+  const safePath = path.resolve(musicDir, filepath);
+  const relative = path.relative(musicDir, safePath);
+  if (
+    relative === ".." ||
+    relative.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relative)
+  ) {
+    return null;
+  }
+  return safePath;
+}
+
 export async function streamHandler(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const raw = req.params.filepath;
-  const filepath = Array.isArray(raw)
-    ? raw.join("/")
-    : (raw as string | undefined);
-  if (!filepath) {
-    res.status(400).json({ error: "No file specified" });
+  const rawId = req.params.trackId;
+  if (typeof rawId !== "string" || !/^\d+$/.test(rawId)) {
+    res.status(400).json({ error: "Invalid track id" });
     return;
   }
 
-  const musicDir = getMusicDir();
-  const safePath = path.resolve(musicDir, filepath);
-  if (!safePath.startsWith(musicDir)) {
+  const track = tracksDb.getById(Number(rawId));
+  if (!track) {
+    res.status(404).json({ error: "Track not found" });
+    return;
+  }
+
+  const safePath = resolveTrackPath(track.file);
+  if (!safePath) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }

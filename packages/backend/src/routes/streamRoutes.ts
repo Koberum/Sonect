@@ -5,5 +5,5 @@ import { asyncHandler } from "../middleware/asyncHandler";
 
 const router = Router();
 router.use(requireAuth);
-router.get("/{*filepath}", asyncHandler(streamHandler));
+router.get("/:trackId", asyncHandler(streamHandler));
 export default router;
