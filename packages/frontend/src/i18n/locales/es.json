@@ -36,6 +36,7 @@
   "album": {
     "loading": "Cargando álbum...",
     "title": "Título",
+    "artist": "Artista",
     "duration": "Duración",
     "trackNumber": "#",
     "addToQueue": "Agregar a cola",

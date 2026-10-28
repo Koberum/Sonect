@@ -49,6 +49,20 @@ export default function AlbumPage() {
   return (
     <>
       <PageHeader
+        media={
+          album ? (
+            <img
+              src={getCoverPath(album.cover_path)}
+              alt={album.title}
+              className="size-24 rounded-lg object-cover shadow-sm sm:size-32 lg:size-40"
+              onError={(e) => {
+                e.currentTarget.src = "/default_cover.png";
+              }}
+            />
+          ) : (
+            <Skeleton className="size-24 rounded-lg sm:size-32 lg:size-40" />
+          )
+        }
         title={album?.title || t("album.loading")}
         description={
           album?.artist_name && album?.artist_id ? (
@@ -80,8 +94,10 @@ export default function AlbumPage() {
                   <TableHead className="hidden w-12 lg:table-cell">
                     {t("album.trackNumber")}
                   </TableHead>
-                  <TableHead className="w-20"></TableHead>
                   <TableHead>{t("album.title")}</TableHead>
+                  <TableHead className="w-28 sm:w-40">
+                    {t("album.artist")}
+                  </TableHead>
                   <TableHead className="w-20">{t("album.duration")}</TableHead>
                   <TableHead className="w-20"></TableHead>
                 </TableRow>
@@ -111,23 +127,23 @@ export default function AlbumPage() {
                             </>
                           )}
                         </TableCell>
-                        <TableCell className="relative font-medium">
-                          <img
-                            className="size-10 rounded-sm object-cover"
-                            src={getCoverPath(track.cover_path)}
-                            alt={track.title}
-                          />
-                        </TableCell>
-
-                        <TableCell>
+                        <TableCell className="font-medium">
                           {track.title}
-                          <p className="text-muted-foreground text-sm">
-                            {album?.artist_name}
-                            {track.artist_name &&
-                            track.artist_name !== album?.artist_name
-                              ? `, ${track.artist_name}`
-                              : ""}
-                          </p>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground w-28 sm:w-40">
+                          <span className="block truncate">
+                            {track.artist_id ? (
+                              <Link
+                                to={`/artists/${track.artist_id}/albums`}
+                                className="hover:underline"
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                {track.artist_name || album?.artist_name || "-"}
+                              </Link>
+                            ) : (
+                              track.artist_name || album?.artist_name || "-"
+                            )}
+                          </span>
                         </TableCell>
                         <TableCell className="text-right">
                           {formatTime(track.duration ?? 0)}
