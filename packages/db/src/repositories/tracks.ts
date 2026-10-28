@@ -15,7 +15,7 @@ import {
 } from "drizzle-orm";
 import type { CatalogTrack, DBTrack, DBTrackWithRelations } from "@repo/types";
 import { db } from "../connection.js";
-import { albums, artists, genres, tracks } from "../tables.js";
+import { albums, artists, genres, storageSources, tracks } from "../tables.js";
 import { normalizeRowId, type QueryExecutor } from "./rowId.js";
 import { findOrCreateArtist } from "./artists.js";
 import { findOrCreateAlbum } from "./albums.js";
@@ -399,7 +399,19 @@ export const tracksDb = {
   },
 
   getByAlbumWithRelations(albumId: number): DBTrackWithRelations[] {
-    return joinedOnArtistAndAlbum()
+    return db()
+      .select({
+        ...dBTrackWithRelations,
+        storage_source_name: storageSources.name,
+      })
+      .from(tracks)
+      .innerJoin(artists, eq(tracks.artist_id, artists.id))
+      .innerJoin(albums, eq(tracks.album_id, albums.id))
+      .leftJoin(genres, eq(tracks.genre_id, genres.id))
+      .leftJoin(
+        storageSources,
+        eq(tracks.storage_source_id, storageSources.id),
+      )
       .where(eq(tracks.album_id, albumId))
       .orderBy(
         asc(tracks.disc_number),

@@ -136,7 +136,7 @@ text-muted-foreground` for dashboard-style sections).
 | Component      | Location                              | Contract                                                                                                                |
 | -------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `EmptyState`   | `components/ui/empty-state.tsx`       | `{ icon: LucideIcon; title: string; description?: string; action?: ReactNode }`                                         |
-| `PageHeader`   | `components/ui/page-header.tsx`       | `{ title: ReactNode; description?: ReactNode; actions?: ReactNode; media?: ReactNode }` — page `h1` left, optional media beside it, action buttons right             |
+| `PageHeader`   | `components/ui/page-header.tsx`       | `{ title: ReactNode; description?: ReactNode; actions?: ReactNode; media?: ReactNode; meta?: ReactNode }` — page `h1` left, optional media beside it, metadata below, action buttons right             |
 | `LibraryStats` | `features/settings/library-stats.tsx` | `{ stats?: { file_count?: number; dir_count?: number; total_size?: number } \| null }` — "N files · N folders · 1.2 GB" |
 
 Button usage map:

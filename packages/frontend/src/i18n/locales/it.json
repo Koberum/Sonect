@@ -37,6 +37,8 @@
     "loading": "Caricamento album...",
     "title": "Titolo",
     "artist": "Artista",
+    "trackCount_one": "{{count}} brano",
+    "trackCount_other": "{{count}} brani",
     "duration": "Durata",
     "trackNumber": "#",
     "addToQueue": "Aggiungi alla coda",

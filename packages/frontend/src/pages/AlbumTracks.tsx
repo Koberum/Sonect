@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import PlayStatus from "@/features/dashboard/components/play-status";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -12,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PlayIcon, ListPlus } from "lucide-react";
+import { PlayIcon, ListPlus, Library } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { PageHeader } from "@/components/ui/page-header";
@@ -27,12 +28,17 @@ import {
 import { AddToPlaylistMenu } from "@/features/dashboard/components/add-to-playlist-menu";
 import { LikeButton } from "@/features/liked/components/like-button";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
 import type { TrackWithRelations } from "@repo/types/catalog";
+import {
+  deriveAlbumMetadata,
+  formatAlbumDuration,
+} from "@/features/catalog/album-metadata";
 
 export default function AlbumPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams();
   const { data: album, isPending: albumPending } = useQuery({
     ...catalogQueries.album(id ?? ""),
@@ -43,6 +49,26 @@ export default function AlbumPage() {
     enabled: !!id,
   });
   const isPending = albumPending || tracksPending;
+
+  const metadata = useMemo(
+    () => deriveAlbumMetadata(album, tracks),
+    [album, tracks],
+  );
+  const durationLabel = formatAlbumDuration(
+    metadata.totalDuration,
+    i18n.language,
+  );
+  const metaParts = [
+    metadata.year ? String(metadata.year) : null,
+    metadata.trackCount > 0
+      ? t("album.trackCount", { count: metadata.trackCount })
+      : null,
+    durationLabel,
+  ].filter((part): part is string => Boolean(part));
+  const hasBadges =
+    Boolean(metadata.genre) ||
+    metadata.formats.length > 0 ||
+    metadata.sourceNames.length > 0;
 
   const { trackPlayed } = usePlaybackContext();
   const { play, addToQueue } = usePlayTrack();
@@ -64,6 +90,42 @@ export default function AlbumPage() {
           )
         }
         title={album?.title || t("album.loading")}
+        meta={
+          isPending ? (
+            <Skeleton className="h-5 w-56" />
+          ) : metaParts.length > 0 || hasBadges ? (
+            <div className="space-y-2">
+              {metaParts.length > 0 && (
+                <p className="text-muted-foreground text-sm">
+                  {metaParts.join(" · ")}
+                </p>
+              )}
+              {hasBadges && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {metadata.genre && (
+                    <Link
+                      to={`/genres/${encodeURIComponent(metadata.genre)}`}
+                      className="focus-visible:ring-ring rounded-md focus-visible:ring-2 focus-visible:outline-none"
+                    >
+                      <Badge variant="secondary">{metadata.genre}</Badge>
+                    </Link>
+                  )}
+                  {metadata.formats.map((format) => (
+                    <Badge key={format} variant="outline">
+                      {format}
+                    </Badge>
+                  ))}
+                  {metadata.sourceNames.map((name) => (
+                    <Badge key={name} variant="outline" className="gap-1">
+                      <Library className="size-4" aria-hidden="true" />
+                      {name}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : undefined
+        }
         description={
           album?.artist_name && album?.artist_id ? (
             <Link

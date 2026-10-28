@@ -35,6 +35,7 @@ export type DBTrackWithRelations = DBTrack & {
   album_title?: string;
   cover_path?: string;
   genre?: string;
+  storage_source_name?: string | null;
 };
 
 export type DBArtist = {

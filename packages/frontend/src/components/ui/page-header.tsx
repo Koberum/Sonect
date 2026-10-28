@@ -6,6 +6,7 @@ export interface PageHeaderProps {
   description?: ReactNode;
   actions?: ReactNode;
   media?: ReactNode;
+  meta?: ReactNode;
   className?: string;
 }
 
@@ -14,6 +15,7 @@ export function PageHeader({
   description,
   actions,
   media,
+  meta,
   className,
 }: PageHeaderProps) {
   return (
@@ -30,6 +32,7 @@ export function PageHeader({
           {description ? (
             <p className="text-muted-foreground mt-1 text-sm">{description}</p>
           ) : null}
+          {meta ? <div className="mt-2">{meta}</div> : null}
         </div>
       </div>
       {actions ? (

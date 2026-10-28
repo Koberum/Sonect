@@ -37,6 +37,8 @@
     "loading": "Cargando álbum...",
     "title": "Título",
     "artist": "Artista",
+    "trackCount_one": "{{count}} pista",
+    "trackCount_other": "{{count}} pistas",
     "duration": "Duración",
     "trackNumber": "#",
     "addToQueue": "Agregar a cola",
