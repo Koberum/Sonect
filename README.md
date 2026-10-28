@@ -52,6 +52,7 @@ no subscriptions, no limits.
   recorded separately per household member (MPD plays count for the profile
   holding the MPD lock); profiles without history get generic library
   suggestions. Past global listen counts are not retroactively attributed.
+- **Recent searches** — opening the search palette with an empty field shows the last 5 searches for the signed-in profile; clicking one runs it again. Stored only in the browser tab (`sessionStorage`), never on the server, and saved when you activate a result.
 - **Always-on smart queue** — Playback continues from the selected track to
   the end of its album, then queues complete albums from the same artist, the
   same genre, and similar genres (curated map + token fallback for arbitrary
