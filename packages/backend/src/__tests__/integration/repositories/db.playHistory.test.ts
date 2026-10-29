@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { createTestDb } from "@tests/helpers/db.js";
 import { playHistoryDb, profilesDb } from "@repo/db";
-import { track } from "@tests/factories/index.js";
+import { album, artist, track } from "@tests/factories/index.js";
 
 describe("playHistoryDb (trophy integration)", () => {
   let close: () => void;
@@ -36,19 +36,42 @@ describe("playHistoryDb (trophy integration)", () => {
     playHistoryDb.record(profileB, t2.id, 2000);
     playHistoryDb.record(profileA, t2.id, 3000);
 
-    expect(playHistoryDb.recentTracks(profileA, 10).map((t) => t.id)).to.deep.equal([
-      t2.id,
-      t1.id,
-    ]);
-    expect(playHistoryDb.recentTracks(profileB, 10).map((t) => t.id)).to.deep.equal(
-      [t2.id],
-    );
+    expect(
+      playHistoryDb.recentTracks(profileA, 10).map((t) => t.id),
+    ).to.deep.equal([t2.id, t1.id]);
+    expect(
+      playHistoryDb.recentTracks(profileB, 10).map((t) => t.id),
+    ).to.deep.equal([t2.id]);
     expect(
       playHistoryDb.recentAlbums(profileA, 10).map((a) => a.title),
     ).to.deep.equal(["Album B", "Album A"]);
     expect(
       playHistoryDb.recentArtists(profileA, 10).map((a) => a.name),
     ).to.deep.equal(["Artist B", "Artist A"]);
+  });
+
+  it("recentArtists excludes artists without albums", () => {
+    const owner = artist.create({ name: "Album Owner" }, 20);
+    album.create({ title: "Shared Album", artistName: owner.name }, 20);
+    const guest = track.create(
+      {
+        title: "Collab",
+        artist: "Guest Artist",
+        albumArtist: owner.name,
+        album: "Shared Album",
+      },
+      21,
+    );
+    const own = track.create(
+      { title: "Owner Song", artist: owner.name, album: "Shared Album" },
+      22,
+    );
+    playHistoryDb.record(profileA, guest.id, 1000);
+    playHistoryDb.record(profileA, own.id, 2000);
+
+    expect(
+      playHistoryDb.recentArtists(profileA, 10).map((a) => a.name),
+    ).to.deep.equal(["Album Owner"]);
   });
 
   it("orders top tracks/genres/artists by the profile's play counts", () => {
@@ -60,10 +83,13 @@ describe("playHistoryDb (trophy integration)", () => {
     playHistoryDb.record(profileB, jazz.id, 4000);
     playHistoryDb.record(profileB, jazz.id, 5000);
 
-    expect(playHistoryDb.topTracks(profileA, 10).map((t) => t.title)).to.deep.equal(
-      ["Rock", "Jazz"],
-    );
-    expect(playHistoryDb.topGenres(profileA, 3)).to.deep.equal(["Rock", "Jazz"]);
+    expect(
+      playHistoryDb.topTracks(profileA, 10).map((t) => t.title),
+    ).to.deep.equal(["Rock", "Jazz"]);
+    expect(playHistoryDb.topGenres(profileA, 3)).to.deep.equal([
+      "Rock",
+      "Jazz",
+    ]);
     expect(playHistoryDb.topGenre(profileB)).to.equal("Jazz");
     expect(playHistoryDb.topArtists(profileA, 3)[0]).to.include({
       name: "R",
@@ -76,7 +102,10 @@ describe("playHistoryDb (trophy integration)", () => {
       { title: "Played", genre: "Rock", artist: "R" },
       6,
     );
-    const fresh = track.create({ title: "Fresh", genre: "Rock", artist: "R" }, 7);
+    const fresh = track.create(
+      { title: "Fresh", genre: "Rock", artist: "R" },
+      7,
+    );
     for (const at of [1000, 2000, 3000]) {
       playHistoryDb.record(profileA, played.id, at);
     }

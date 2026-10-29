@@ -53,9 +53,10 @@ no subscriptions, no limits.
   holding the MPD lock); profiles without history get generic library
   suggestions. Past global listen counts are not retroactively attributed.
 - **Recent searches** — opening the search palette with an empty field shows the last 5 searches for the signed-in profile; clicking one runs it again. Stored only in the browser tab (`sessionStorage`), never on the server, and saved when you activate a result.
-- **Artists with albums only** — the Artists page and search results list only
-  artists who own at least one album, so collaboration credits and other
-  album-less artists never lead to an empty page.
+- **Artists with albums only** — the Artists page, search results, and the
+  dashboard's recently played artists list only artists who own at least one
+  album, so collaboration credits and other album-less artists never lead to an
+  empty page.
 - **Always-on smart queue** — Playback continues from the selected track to
   the end of its album, then queues complete albums from the same artist, the
   same genre, and similar genres (curated map + token fallback for arbitrary

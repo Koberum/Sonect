@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import sinon from "sinon";
 import { createTestDb } from "@tests/helpers/db.js";
-import { track, album } from "@tests/factories/index.js";
+import { track, album, artist } from "@tests/factories/index.js";
 import { SuggestionService } from "@services/library/suggestionService.js";
 import { playHistoryDb, profilesDb } from "@repo/db";
 
@@ -108,6 +108,24 @@ describe("SuggestionService (trophy integration)", () => {
         "Artist A",
       ]);
       expect(data.recentlyPlayedArtists[0].coverPreviews).to.be.an("array");
+    });
+
+    it("recentlyPlayedArtists excludes artists without albums", () => {
+      const owner = artist.create({ name: "Album Owner" }, 80);
+      album.create({ title: "Shared Album", artistName: owner.name }, 80);
+      const guest = track.create(
+        {
+          title: "Guest Song",
+          artist: "Guest Artist",
+          albumArtist: owner.name,
+          album: "Shared Album",
+        },
+        81,
+      );
+      playHistoryDb.record(profileId, guest.id, 1000);
+
+      const data = suggestion.getDashboard(profileId);
+      expect(data.recentlyPlayedArtists).to.deep.equal([]);
     });
 
     it("recentlyPlayed returns tracks ordered by latest play", () => {

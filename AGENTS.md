@@ -240,7 +240,7 @@ sonect (single image, ENTRYPOINT /init)
   for both backend liveness and network indicator — deduplicated via shared
   `qk.system.health()` key — and shows one localized indicator in the desktop
   top bar; it does not expose Wi-Fi scan/connect controls.
-- **Catalog listings only include artists that own an album.** `CatalogServiceImpl.getAllArtists`/`getArtistCount` call `artistsDb.getAll`/`count` with `{ withAlbumsOnly: true }`, and `searchTracks` does the same for `artistsDb.search`. Artists created only as track artists (collaboration credits) are hidden so no result opens an empty artist page; the repository methods default to unfiltered for lookups/maintenance.
+- **Catalog listings only include artists that own an album.** `CatalogServiceImpl.getAllArtists`/`getArtistCount` call `artistsDb.getAll`/`count` with `{ withAlbumsOnly: true }`, and `searchTracks` does the same for `artistsDb.search`. Artists created only as track artists (collaboration credits) are hidden so no result opens an empty artist page; the repository methods default to unfiltered for lookups/maintenance. `playHistoryDb.recentArtists` applies the same `artistsWithAlbums()` predicate, so the dashboard's recently played artists never include album-less artists either.
 
 ### Frontend
 

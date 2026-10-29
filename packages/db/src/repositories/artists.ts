@@ -31,10 +31,10 @@ export function findOrCreateArtist(
 }
 
 // Artists created only as track artists (e.g. collaboration credits) have no
-// album of their own and would open an empty artist page. Catalog listings and
-// search opt into this filter; the repository default stays unfiltered for
-// lookups and maintenance.
-function hasAlbums() {
+// album of their own and would open an empty artist page. Catalog listings,
+// search, and the dashboard's recent artists opt into this filter; the
+// repository default stays unfiltered for lookups and maintenance.
+export function artistsWithAlbums() {
   return inArray(
     artists.id,
     db()
@@ -60,7 +60,7 @@ export const artistsDb = {
       .orderBy(asc(artists.name))
       .$dynamic();
     if (withAlbumsOnly) {
-      query = query.where(hasAlbums());
+      query = query.where(artistsWithAlbums());
     }
     if (limit !== undefined) {
       query = query.limit(limit);
@@ -74,7 +74,7 @@ export const artistsDb = {
   count({ withAlbumsOnly = false }: { withAlbumsOnly?: boolean } = {}): number {
     let query = db().select({ value: count() }).from(artists).$dynamic();
     if (withAlbumsOnly) {
-      query = query.where(hasAlbums());
+      query = query.where(artistsWithAlbums());
     }
     const row = query.get();
     return row?.value ?? 0;
@@ -93,7 +93,7 @@ export const artistsDb = {
     const pattern = `%${query}%`;
     const conditions = [like(artists.name, pattern)];
     if (withAlbumsOnly) {
-      conditions.push(hasAlbums());
+      conditions.push(artistsWithAlbums());
     }
     return db()
       .select()

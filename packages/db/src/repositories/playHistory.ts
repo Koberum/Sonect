@@ -14,6 +14,7 @@ import type { Album, DBArtist, DBTrackWithRelations } from "@repo/types";
 import { db } from "../connection.js";
 import { albums, artists, genres, playHistory, tracks } from "../tables.js";
 import { albumWithArtist } from "./albums.js";
+import { artistsWithAlbums } from "./artists.js";
 import { dBTrackWithRelations } from "./tracks.js";
 
 export const playHistoryDb = {
@@ -93,7 +94,7 @@ export const playHistoryDb = {
       .from(playHistory)
       .innerJoin(tracks, eq(tracks.id, playHistory.track_id))
       .innerJoin(artists, eq(artists.id, tracks.artist_id))
-      .where(eq(playHistory.profile_id, profileId))
+      .where(and(eq(playHistory.profile_id, profileId), artistsWithAlbums()))
       .groupBy(artists.id)
       .orderBy(desc(sql`max(${playHistory.played_at})`))
       .limit(limit)
