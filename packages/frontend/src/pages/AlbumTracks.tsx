@@ -75,6 +75,7 @@ export default function AlbumPage() {
   return (
     <>
       <PageHeader
+        metaAlign="end"
         media={
           album ? (
             <img
