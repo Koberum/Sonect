@@ -60,7 +60,8 @@ export default function MusicPlayer() {
     onReport: sendReport,
     onError: () => toast.error(t("player.playbackError")),
   });
-  const { startTrack, play, pause, seek, preloadTrack } = browserAudio;
+  const { startTrack, play, pause, seek, preloadTrack, setCrossfade } =
+    browserAudio;
   const { profile } = useAuth();
   const { data: outputModeData } = useQuery(systemQueries.outputMode());
   const mpdOwner = outputModeData?.mpdOwner ?? null;
@@ -113,6 +114,10 @@ export default function MusicPlayer() {
     playbackStatus.state,
     seek,
   ]);
+
+  useEffect(() => {
+    setCrossfade(playbackStatus.crossfade ?? 0);
+  }, [playbackStatus.crossfade, setCrossfade]);
 
   // Preload the upcoming track on the standby deck so the transition is
   // instant and the backend can expose nextTrackId ahead of time.

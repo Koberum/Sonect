@@ -212,6 +212,7 @@
     "description": "Configure your system",
     "tabs": {
       "audio": "Audio",
+      "playback": "Playback",
       "libraries": "Libraries",
       "appearance": "Appearance",
       "debug": "Debug"
@@ -227,6 +228,19 @@
       "configured": "Audio output configured",
       "configureError": "Failed to configure audio",
       "loadError": "Failed to load audio devices"
+    },
+    "playback": {
+      "title": "Playback",
+      "description": "Crossfade between tracks for this profile.",
+      "crossfadeLabel": "Crossfade",
+      "seconds": "{{seconds}} s",
+      "hint": "Overlap the end of one track with the start of the next. Set to 0 to disable.",
+      "mpdHint": "For MPD, the value applies while this profile owns the MPD output. MPD can only crossfade tracks with the same audio format.",
+      "save": "Save",
+      "saving": "Saving...",
+      "saved": "Playback settings saved",
+      "saveError": "Failed to save playback settings",
+      "loadError": "Failed to load playback settings"
     },
     "storage": {
       "title": "Storage",

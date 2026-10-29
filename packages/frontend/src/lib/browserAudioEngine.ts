@@ -11,25 +11,47 @@ export type BrowserAudioEngineCallbacks = {
   onAutoplayBlocked?: (blocked: boolean) => void;
 };
 
+type DeckNodes = {
+  source: MediaElementAudioSourceNode;
+  gain: GainNode;
+};
+
 type Deck = {
   audio: HTMLAudioElement;
   trackId: number | null;
   src: string | null;
   pendingSeek: number | null;
+  nodes: DeckNodes | null;
 };
 
 const REPORT_INTERVAL_MS = 1000;
+const MAX_CROSSFADE_SECONDS = 30;
 
 function createDeck(): Deck {
   const audio = new Audio();
   // Only fetch metadata until playback actually starts; the standby deck is
   // switched to `auto` when preloading the next track.
   audio.preload = "metadata";
-  return { audio, trackId: null, src: null, pendingSeek: null };
+  return {
+    audio,
+    trackId: null,
+    src: null,
+    pendingSeek: null,
+    nodes: null,
+  };
 }
 
 function isFiniteDuration(value: number): boolean {
   return Number.isFinite(value) && value > 0;
+}
+
+function getAudioContextConstructor(): typeof AudioContext | null {
+  if (typeof window === "undefined") return null;
+  const target = window as unknown as {
+    AudioContext?: typeof AudioContext;
+    webkitAudioContext?: typeof AudioContext;
+  };
+  return target.AudioContext ?? target.webkitAudioContext ?? null;
 }
 
 /**
@@ -39,6 +61,9 @@ function isFiniteDuration(value: number): boolean {
  * keeps two audio elements: the active one that is playing and a standby one
  * used to preload the next track. The UI reads `currentTime` from the active
  * element, and reports are sent to the backend so other devices can follow.
+ *
+ * When a crossfade is configured, both decks are routed through Web Audio
+ * gain nodes so the end of one track can overlap the start of the next.
  */
 export class BrowserAudioEngine {
   private active: Deck;
@@ -47,6 +72,12 @@ export class BrowserAudioEngine {
   private currentTimeValue = 0;
   private durationValue = 0;
   private volumeValue = 100;
+  private crossfadeSeconds = 0;
+  private crossfading = false;
+  private crossfadeTimer: ReturnType<typeof setTimeout> | null = null;
+  private pendingPreload: { trackId: number; src: string } | null = null;
+  private audioContext: AudioContext | null = null;
+  private masterGain: GainNode | null = null;
   private pendingPlay = false;
   private autoplayBlockedValue = false;
   private lastReportAt = 0;
@@ -89,6 +120,13 @@ export class BrowserAudioEngine {
     return this.active.trackId;
   }
 
+  setCrossfade(seconds: number): void {
+    this.crossfadeSeconds = Math.max(
+      0,
+      Math.min(MAX_CROSSFADE_SECONDS, seconds),
+    );
+  }
+
   /**
    * Loads a track (if needed) and seeks it to `startAt`. If the standby deck
    * already has that track preloaded, it is promoted instead of refetching.
@@ -114,6 +152,7 @@ export class BrowserAudioEngine {
     if (this.lastEndedTrackId === trackId) this.lastEndedTrackId = null;
     if (this.active.trackId === trackId) return;
 
+    this.cancelCrossfade();
     if (this.standby.trackId === trackId) {
       this.promoteStandby(startAt);
       return;
@@ -129,17 +168,24 @@ export class BrowserAudioEngine {
     if (this.destroyed) return;
     if (this.active.trackId === trackId) return;
     if (this.standby.trackId === trackId && this.standby.src === src) return;
+    if (this.crossfading) {
+      // The standby is still fading out; preload after the crossfade finishes.
+      this.pendingPreload = { trackId, src };
+      return;
+    }
     this.loadDeck(this.standby, trackId, src, 0, false);
   }
 
   play(): void {
     if (this.destroyed) return;
+    this.ensureAudioGraph();
     this.pendingPlay = true;
     this.playActive();
   }
 
   pause(): void {
     if (this.destroyed) return;
+    this.cancelCrossfade();
     this.pendingPlay = false;
     const wasActive =
       !this.active.audio.paused ||
@@ -159,6 +205,7 @@ export class BrowserAudioEngine {
 
   seek(time: number): void {
     if (this.destroyed) return;
+    this.cancelCrossfade();
     this.seekDeck(this.active, time);
     this.report({
       state: this.stateValue === "paused" ? "pause" : "play",
@@ -171,18 +218,31 @@ export class BrowserAudioEngine {
     const clamped = Math.max(0, Math.min(100, volume));
     this.volumeValue = clamped;
     const value = clamped / 100;
-    this.active.audio.volume = value;
-    this.standby.audio.volume = value;
+    if (this.masterGain && this.audioContext) {
+      this.masterGain.gain.value = value;
+    } else {
+      this.active.audio.volume = value;
+      this.standby.audio.volume = value;
+    }
   }
 
   destroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;
     this.abort.abort();
+    if (this.crossfadeTimer !== null) {
+      clearTimeout(this.crossfadeTimer);
+      this.crossfadeTimer = null;
+    }
     for (const deck of [this.active, this.standby]) {
       deck.audio.pause();
       deck.audio.removeAttribute("src");
       deck.audio.load();
+    }
+    if (this.audioContext) {
+      void this.audioContext.close().catch(() => {});
+      this.audioContext = null;
+      this.masterGain = null;
     }
   }
 
@@ -240,6 +300,7 @@ export class BrowserAudioEngine {
           trackId: this.active.trackId ?? undefined,
         });
         this.lastReportAt = Date.now();
+        this.maybeStartCrossfade();
       },
       { signal },
     );
@@ -260,6 +321,8 @@ export class BrowserAudioEngine {
         if (!this.isActive(deck)) return;
         this.currentTimeValue = audio.currentTime;
         this.emitProgress();
+        this.maybeStartCrossfade();
+        if (this.crossfading) return;
         if (
           this.stateValue === "playing" &&
           Date.now() - this.lastReportAt >= REPORT_INTERVAL_MS
@@ -279,6 +342,7 @@ export class BrowserAudioEngine {
       "ended",
       () => {
         if (!this.isActive(deck)) return;
+        if (this.crossfading) return;
         this.handleEnded();
       },
       { signal },
@@ -290,15 +354,6 @@ export class BrowserAudioEngine {
         if (!this.isActive(deck)) return;
         this.setState("error");
         this.callbacks.onError?.("Unable to play this track");
-      },
-      { signal },
-    );
-
-    audio.addEventListener(
-      "volumechange",
-      () => {
-        if (!this.isActive(deck)) return;
-        this.volumeValue = Math.round(audio.volume * 100);
       },
       { signal },
     );
@@ -350,6 +405,104 @@ export class BrowserAudioEngine {
     this.playActive();
   }
 
+  private maybeStartCrossfade(): void {
+    if (this.crossfading || this.crossfadeSeconds <= 0) return;
+    if (this.stateValue !== "playing") return;
+    const duration = this.active.audio.duration;
+    if (!isFiniteDuration(duration)) return;
+    const remaining = duration - this.currentTimeValue;
+    if (remaining > this.crossfadeSeconds || remaining <= 0) return;
+    const incoming = this.standby;
+    if (
+      incoming.trackId === null ||
+      incoming.audio.readyState < 2 ||
+      incoming.audio.error
+    ) {
+      return;
+    }
+    this.beginCrossfade(remaining);
+  }
+
+  private beginCrossfade(remaining: number): void {
+    if (!this.ensureAudioGraph() || !this.audioContext) return;
+    const outgoing = this.active;
+    const incoming = this.standby;
+    const fade = Math.max(0.05, Math.min(this.crossfadeSeconds, remaining));
+
+    incoming.audio.play().catch(() => {
+      // If the next deck cannot start, keep the current one playing; the
+      // regular ended handler will pick up the transition.
+    });
+
+    this.active = incoming;
+    this.standby = outgoing;
+    this.crossfading = true;
+    this.lastEndedTrackId = outgoing.trackId;
+    this.advanceGuardUntil = Date.now() + 2000;
+    this.currentTimeValue = 0;
+    this.durationValue = isFiniteDuration(incoming.audio.duration)
+      ? incoming.audio.duration
+      : 0;
+    incoming.pendingSeek = null;
+    this.emitProgress();
+
+    const now = this.audioContext.currentTime;
+    const inGain = incoming.nodes?.gain.gain;
+    const outGain = outgoing.nodes?.gain.gain;
+    if (inGain && outGain) {
+      inGain.cancelScheduledValues(now);
+      outGain.cancelScheduledValues(now);
+      inGain.setValueAtTime(0, now);
+      outGain.setValueAtTime(1, now);
+      inGain.linearRampToValueAtTime(1, now + fade);
+      outGain.linearRampToValueAtTime(0, now + fade);
+    }
+
+    this.report({
+      event: "advance",
+      state: "play",
+      elapsed: 0,
+      trackId: incoming.trackId ?? undefined,
+    });
+
+    this.crossfadeTimer = setTimeout(() => this.finishCrossfade(), fade * 1000);
+  }
+
+  private finishCrossfade(): void {
+    if (!this.crossfading) return;
+    this.crossfading = false;
+    this.crossfadeTimer = null;
+    const outgoing = this.standby;
+    outgoing.audio.pause();
+    outgoing.audio.currentTime = 0;
+    if (outgoing.nodes) outgoing.nodes.gain.gain.value = 0;
+    if (this.active.nodes) this.active.nodes.gain.gain.value = 1;
+    this.processPendingPreload();
+  }
+
+  private cancelCrossfade(): void {
+    if (!this.crossfading) return;
+    this.crossfading = false;
+    if (this.crossfadeTimer !== null) {
+      clearTimeout(this.crossfadeTimer);
+      this.crossfadeTimer = null;
+    }
+    const outgoing = this.standby;
+    outgoing.audio.pause();
+    outgoing.audio.currentTime = 0;
+    if (outgoing.nodes) outgoing.nodes.gain.gain.value = 0;
+    if (this.active.nodes) this.active.nodes.gain.gain.value = 1;
+    this.processPendingPreload();
+  }
+
+  private processPendingPreload(): void {
+    const pending = this.pendingPreload;
+    this.pendingPreload = null;
+    if (!pending) return;
+    if (this.active.trackId === pending.trackId) return;
+    this.loadDeck(this.standby, pending.trackId, pending.src, 0, false);
+  }
+
   private promoteStandby(startAt: number): void {
     this.swapDecks();
     this.active.pendingSeek = startAt > 0 ? startAt : null;
@@ -368,6 +521,12 @@ export class BrowserAudioEngine {
     this.standby = previous;
     previous.audio.pause();
     previous.audio.currentTime = 0;
+    this.resetGains();
+  }
+
+  private resetGains(): void {
+    if (this.active.nodes) this.active.nodes.gain.gain.value = 1;
+    if (this.standby.nodes) this.standby.nodes.gain.gain.value = 0;
   }
 
   private loadDeck(
@@ -381,6 +540,11 @@ export class BrowserAudioEngine {
     deck.src = src;
     deck.pendingSeek = startAt > 0 ? startAt : null;
     deck.audio.preload = resetOthers ? "metadata" : "auto";
+    if (deck.nodes) {
+      deck.nodes.gain.gain.value = resetOthers ? 1 : 0;
+    } else {
+      deck.audio.volume = this.volumeValue / 100;
+    }
     deck.audio.src = src;
     deck.audio.load();
 
@@ -407,12 +571,48 @@ export class BrowserAudioEngine {
     }
   }
 
+  private ensureAudioGraph(): boolean {
+    if (this.audioContext) {
+      if (this.audioContext.state === "suspended") {
+        void this.audioContext.resume();
+      }
+      return true;
+    }
+    const Ctor = getAudioContextConstructor();
+    if (!Ctor) return false;
+
+    try {
+      const context = new Ctor();
+      const master = context.createGain();
+      master.gain.value = this.volumeValue / 100;
+      master.connect(context.destination);
+
+      for (const deck of [this.active, this.standby]) {
+        const source = context.createMediaElementSource(deck.audio);
+        const gain = context.createGain();
+        gain.gain.value = deck === this.active ? 1 : 0;
+        source.connect(gain);
+        gain.connect(master);
+        deck.nodes = { source, gain };
+        deck.audio.volume = 1;
+      }
+
+      this.audioContext = context;
+      this.masterGain = master;
+      if (context.state === "suspended") void context.resume();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   private playActive(): void {
     const audio = this.active.audio;
     if (!audio.paused) {
       this.pendingPlay = false;
       return;
     }
+    this.ensureAudioGraph();
     audio.preload = "auto";
     audio.play().then(
       () => {

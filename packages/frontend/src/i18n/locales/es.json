@@ -212,6 +212,7 @@
     "description": "Configura tu sistema",
     "tabs": {
       "audio": "Audio",
+      "playback": "Reproducción",
       "libraries": "Bibliotecas",
       "appearance": "Apariencia",
       "debug": "Depuración"
@@ -227,6 +228,19 @@
       "configured": "Salida de audio configurada",
       "configureError": "Error al configurar audio",
       "loadError": "Error al cargar dispositivos de audio"
+    },
+    "playback": {
+      "title": "Reproducción",
+      "description": "Fundido entre pistas para este perfil.",
+      "crossfadeLabel": "Fundido",
+      "seconds": "{{seconds}} s",
+      "hint": "Superpone el final de una pista con el inicio de la siguiente. Pon 0 para desactivarlo.",
+      "mpdHint": "En MPD, el valor se aplica mientras este perfil tiene la salida MPD. MPD solo puede hacer fundido entre pistas con el mismo formato de audio.",
+      "save": "Guardar",
+      "saving": "Guardando...",
+      "saved": "Ajustes de reproducción guardados",
+      "saveError": "No se pudieron guardar los ajustes de reproducción",
+      "loadError": "No se pudieron cargar los ajustes de reproducción"
     },
     "storage": {
       "title": "Almacenamiento",

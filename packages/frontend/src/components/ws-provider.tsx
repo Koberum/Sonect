@@ -224,6 +224,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
               nextTrackId: pd.nextTrackId ?? null,
               buffering: pd.buffering ?? false,
               seekSeq: pd.seekSeq ?? 0,
+              crossfade: pd.crossfade ?? 0,
             });
             if ("activeDeviceId" in pd) {
               setActiveDeviceId(pd.activeDeviceId ?? null);

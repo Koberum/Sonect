@@ -212,6 +212,7 @@
     "description": "Configura il tuo sistema",
     "tabs": {
       "audio": "Audio",
+      "playback": "Riproduzione",
       "libraries": "Librerie",
       "appearance": "Aspetto",
       "debug": "Debug"
@@ -227,6 +228,19 @@
       "configured": "Uscita audio configurata",
       "configureError": "Impossibile configurare l'audio",
       "loadError": "Impossibile caricare i dispositivi audio"
+    },
+    "playback": {
+      "title": "Riproduzione",
+      "description": "Dissolvenza incrociata tra i brani per questo profilo.",
+      "crossfadeLabel": "Crossfade",
+      "seconds": "{{seconds}} s",
+      "hint": "Sovrappone la fine di un brano all'inizio del successivo. Imposta 0 per disattivare.",
+      "mpdHint": "Con MPD il valore si applica quando questo profilo detiene l'uscita MPD. MPD può fare crossfade solo tra brani con lo stesso formato audio.",
+      "save": "Salva",
+      "saving": "Salvataggio...",
+      "saved": "Impostazioni di riproduzione salvate",
+      "saveError": "Impossibile salvare le impostazioni di riproduzione",
+      "loadError": "Impossibile caricare le impostazioni di riproduzione"
     },
     "storage": {
       "title": "Archiviazione",

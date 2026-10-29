@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api";
-import type { QueuedTrack, OutputMode } from "@repo/types";
+import type { PlaybackSettings, QueuedTrack, OutputMode } from "@repo/types";
 import type { Track } from "@repo/types/catalog";
 
 export function playSong(track: Track): Promise<void> {
@@ -63,6 +63,21 @@ export function setOutputMode(mode: OutputMode): Promise<{
   return apiFetch("/player/output-mode", {
     method: "PUT",
     body: { mode },
+  });
+}
+
+export function getPlaybackSettings(
+  signal?: AbortSignal,
+): Promise<PlaybackSettings> {
+  return apiFetch("/player/settings", { signal });
+}
+
+export function setPlaybackSettings(
+  crossfadeSeconds: number,
+): Promise<PlaybackSettings> {
+  return apiFetch("/player/settings", {
+    method: "PUT",
+    body: { crossfadeSeconds },
   });
 }
 

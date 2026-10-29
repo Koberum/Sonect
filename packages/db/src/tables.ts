@@ -141,6 +141,14 @@ export const profiles = sqliteTable("profiles", {
   created_at: integer("created_at").notNull(),
 });
 
+export const profileSettings = sqliteTable("profile_settings", {
+  profile_id: text("profile_id")
+    .primaryKey()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  crossfade_seconds: integer("crossfade_seconds").notNull().default(0),
+  updated_at: integer("updated_at").notNull(),
+});
+
 export const authSessions = sqliteTable(
   "auth_sessions",
   {

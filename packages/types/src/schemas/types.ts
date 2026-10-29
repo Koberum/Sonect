@@ -27,6 +27,13 @@ export const playerSchemas = {
   toggle: z.object({
     enabled: z.boolean({ error: "enabled is required" }),
   }),
+  settings: z.object({
+    crossfadeSeconds: z
+      .number()
+      .int("crossfadeSeconds must be an integer")
+      .min(0, "crossfadeSeconds must be >= 0")
+      .max(30, "crossfadeSeconds must be <= 30"),
+  }),
   report: z
     .object({
       state: z.enum(["play", "pause", "stop"]).optional(),

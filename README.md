@@ -69,6 +69,11 @@ no subscriptions, no limits.
 - **Audio output setup in the browser** — Pick the ALSA `audio_output` (card,
   name, mixer) from Settings → Audio. The drop-in is written and MPD is
   reloaded automatically — no SSH needed.
+- **Per-profile crossfade** — Settings → Playback lets an administrator set a
+  0–30 s crossfade for the signed-in profile. Browser playback uses Web Audio
+  gain ramps; MPD applies the same value with its native `crossfade` command
+  while the profile owns the MPD output. MPD can only crossfade tracks with the
+  same audio format.
 - **Session-based browser playback** — `browser` output mode streams through a
   backend session engine independent of MPD, so playback state follows the
   signed-in profile rather than the shared MPD daemon — each profile keeps its

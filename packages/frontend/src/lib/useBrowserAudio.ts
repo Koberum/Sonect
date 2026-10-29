@@ -18,6 +18,7 @@ interface UseBrowserAudioReturn {
   pause: () => void;
   seek: (time: number) => void;
   setVolume: (vol: number) => void;
+  setCrossfade: (seconds: number) => void;
   startTrack: (
     trackId: number,
     src: string,
@@ -97,6 +98,10 @@ export function useBrowserAudio(
     engineRef.current?.setVolume(vol);
   }, []);
 
+  const setCrossfade = useCallback((seconds: number) => {
+    engineRef.current?.setCrossfade(seconds);
+  }, []);
+
   const startTrack = useCallback(
     (trackId: number, src: string, startAt = 0, commandSeq?: number) => {
       setError(null);
@@ -115,6 +120,7 @@ export function useBrowserAudio(
       pause,
       seek,
       setVolume,
+      setCrossfade,
       startTrack,
       preloadTrack,
       state,
@@ -129,6 +135,7 @@ export function useBrowserAudio(
       pause,
       seek,
       setVolume,
+      setCrossfade,
       startTrack,
       preloadTrack,
       state,

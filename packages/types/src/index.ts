@@ -41,7 +41,13 @@ export type PlaybackStatus = {
   nextTrackId?: number | null;
   buffering?: boolean;
   seekSeq?: number;
+  crossfade?: number;
 };
+
+export type PlaybackSettings = {
+  crossfadeSeconds: number;
+};
+
 
 /**
  * Playback facts reported by the active browser engine. The browser is the

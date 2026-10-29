@@ -1,4 +1,5 @@
 import { EventEmitter } from "events";
+import { profileSettingsDb } from "@repo/db";
 import type { LogService } from "../utils/logService.js";
 import type { MpdConfigService } from "../mpd/mpdConfigService.js";
 import {
@@ -23,6 +24,7 @@ type SessionRecord = {
   activeDeviceName: string | null;
   activeDeviceType: string | null;
   volume: number;
+  crossfade: number;
 };
 
 function fmtSid(id: string): string {
@@ -96,6 +98,7 @@ export class PlayerRouter extends EventEmitter {
       activeDeviceName: null,
       activeDeviceType: null,
       volume: 100,
+      crossfade: profileSettingsDb.get(sessionId).crossfadeSeconds,
     };
     this.records.set(sessionId, rec);
     this.attachForwarder(sessionId, engine);
@@ -278,6 +281,54 @@ export class PlayerRouter extends EventEmitter {
     );
   }
 
+  /**
+   * Updates the crossfade for a profile and applies it to MPD immediately when
+   * that profile currently owns the MPD output. Browser sessions pick up the
+   * value from the next `player-status`.
+   */
+  setCrossfade(sessionId: string, seconds: number): number {
+    const value = Math.max(0, Math.min(30, Math.round(seconds)));
+    const rec = this.ensureRecord(sessionId);
+    rec.crossfade = value;
+    if (
+      rec.mode === "mpd" &&
+      this.mpdConfigService.getMpdOwner() === sessionId
+    ) {
+      this.applyMpdCrossfade(value);
+    }
+    this.emit(`session:${sessionId}:stateChanged`);
+    this.logService?.pushLog?.(
+      "info",
+      `[Session ${fmtSid(sessionId)}] crossfade set to ${value}s`,
+      { sessionId: fmtSid(sessionId), crossfade: value, mode: rec.mode },
+    );
+    return value;
+  }
+
+  /**
+   * Re-applies the current MPD owner's crossfade after the daemon reconnects
+   * (MPD resets runtime playback options on restart).
+   */
+  onMpdConnected(): void {
+    const owner = this.mpdConfigService.getMpdOwner();
+    if (!owner) return;
+    const rec = this.records.get(owner);
+    if (!rec || rec.mode !== "mpd") return;
+    this.applyMpdCrossfade(rec.crossfade);
+  }
+
+  private applyMpdCrossfade(seconds: number): void {
+    this.mpdConnectionManager
+      .executeCommand("crossfade", [String(seconds)])
+      .catch((err: unknown) => {
+        this.logService?.pushLog?.(
+          "warn",
+          `[MPD] failed to apply crossfade ${seconds}s: ${String(err)}`,
+          { crossfade: seconds, error: String(err) },
+        );
+      });
+  }
+
   getMpdOwner(): string | null {
     return this.mpdConfigService.getMpdOwner();
   }
@@ -400,6 +451,7 @@ export class PlayerRouter extends EventEmitter {
           warning: `MPD locked by ${acquired.owner ?? "another session"}`,
         };
       }
+      this.applyMpdCrossfade(rec.crossfade);
       this.detachForwarder(sessionId);
       rec.engine.removeAllListeners("stateChanged");
       const mpdEngine = this.createMpdEngine(sessionId);
@@ -410,6 +462,7 @@ export class PlayerRouter extends EventEmitter {
         activeDeviceName: null,
         activeDeviceType: null,
         volume: rec.volume ?? 100,
+        crossfade: rec.crossfade,
       });
       this.attachForwarder(sessionId, mpdEngine);
       // Re-play with clear semantics at same seek
@@ -473,6 +526,7 @@ export class PlayerRouter extends EventEmitter {
         activeDeviceName: deviceName ?? null,
         activeDeviceType: deviceType ?? null,
         volume: rec.volume ?? 100,
+        crossfade: rec.crossfade,
       });
       this.attachForwarder(sessionId, browserEngine);
       if (prevFile) {
@@ -531,6 +585,7 @@ export class PlayerRouter extends EventEmitter {
       activeDeviceName: rec.activeDeviceName,
       activeDeviceType: rec.activeDeviceType,
       mode: rec.mode,
+      crossfade: rec.crossfade,
     } as PlaybackStatus;
   }
 

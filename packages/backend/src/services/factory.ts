@@ -150,6 +150,9 @@ export function initializeServices(): void {
     _logService,
   );
   setGlobalPlayerRouter(_playerRouter);
+  _mpdConnectionManager.setConnectedCallback(() => {
+    _playerRouter.onMpdConnected();
+  });
   _playTrackingService = new PlayTrackingService(_playerRouter);
 
   _mpdConnectionManager.setAutoplayCallback(async (currentFile: string) => {

@@ -8,6 +8,7 @@ export {
   playlists,
   playlistTracks,
   playHistory,
+  profileSettings,
 } from "./tables.js";
 export { artistsDb, findOrCreateArtist } from "./repositories/artists.js";
 export { albumsDb, findOrCreateAlbum } from "./repositories/albums.js";
@@ -26,6 +27,12 @@ export { storageDb } from "./repositories/storage.js";
 export { setupDb } from "./repositories/setup.js";
 export { genresDb, findOrCreateGenre } from "./repositories/genres.js";
 export { profilesDb, LastAdminError } from "./repositories/profiles.js";
+export {
+  profileSettingsDb,
+  DEFAULT_CROSSFADE_SECONDS,
+  MAX_CROSSFADE_SECONDS,
+  type ProfilePlaybackSettings,
+} from "./repositories/profileSettings.js";
 export {
   authSessionsDb,
   type DBAuthSession,
