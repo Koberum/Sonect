@@ -241,6 +241,7 @@ sonect (single image, ENTRYPOINT /init)
   `qk.system.health()` key — and shows one localized indicator in the desktop
   top bar; it does not expose Wi-Fi scan/connect controls.
 - **Catalog listings only include artists that own an album.** `CatalogServiceImpl.getAllArtists`/`getArtistCount` call `artistsDb.getAll`/`count` with `{ withAlbumsOnly: true }`, and `searchTracks` does the same for `artistsDb.search`. Artists created only as track artists (collaboration credits) are hidden so no result opens an empty artist page; the repository methods default to unfiltered for lookups/maintenance. `playHistoryDb.recentArtists` applies the same `artistsWithAlbums()` predicate, so the dashboard's recently played artists never include album-less artists either.
+- **Track info endpoint.** `GET /catalog/tracks/:id/info` (authenticated) returns a `TrackInfo` assembled by `services/library/trackInfoService.ts` from the DB only: identity/relations, `file`, absolute path (resolved under `MUSIC_DIR`, `null` if it escapes), size/mtime, storage source, play count, and timestamps. Audio bitrate/codec are **not** parsed or stored. Shared right-click actions live in `features/tracks/components/track-context-menu.tsx` (Play, Play later, Add to playlist, optional Remove) and are used by album, liked, genre, and playlist track tables.
 
 ### Frontend
 

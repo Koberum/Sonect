@@ -104,7 +104,6 @@
   },
   "contextMenu": {
     "addToPlaylist": "Add to Playlist",
-    "addToQueue": "Add to queue",
     "newPlaylist": "New Playlist",
     "play": "Play",
     "playLater": "Play Later"
@@ -142,7 +141,6 @@
     "trackAddError": "Failed to add track",
     "trackRemoved": "Track removed from playlist",
     "trackRemovedError": "Failed to remove track",
-    "trackAddedToQueue": "Track added to queue",
     "removeTrack": "Remove track"
   },
   "albums": {

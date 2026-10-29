@@ -18,19 +18,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
-import { AddToPlaylistMenu } from "@/features/dashboard/components/add-to-playlist-menu";
 import { useAuth } from "@/features/auth/auth-context";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { LikeButton } from "@/features/liked/components/like-button";
 import { likedQueries } from "@/features/liked/queries";
 import { playLiked } from "@/features/liked/api";
+import { TrackContextMenu } from "@/features/tracks/components/track-context-menu";
 import { formatTime, getCoverPath } from "@/lib/utils";
 
 function formatTotalDuration(seconds: number): string {
@@ -47,7 +40,7 @@ export default function LikedSongs() {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const profileId = profile?.id ?? "";
-  const { play, addToQueue } = usePlayTrack();
+  const { play } = usePlayTrack();
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -181,64 +174,47 @@ export default function LikedSongs() {
             </TableHeader>
             <TableBody>
               {tracks.map((track, index) => (
-                <ContextMenu key={track.id}>
-                  <ContextMenuTrigger asChild>
-                    <TableRow
-                      className="group h-12 cursor-pointer"
-                      onClick={() => play(track)}
-                    >
-                      <TableCell className="text-muted-foreground">
-                        {index + 1}
-                      </TableCell>
-                      <TableCell>
-                        <img
-                          src={getCoverPath(track.cover_path)}
-                          alt=""
-                          className="h-8 w-8 rounded-sm object-cover"
-                          onError={(event) => {
-                            event.currentTarget.src = "/default_cover.png";
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        <p className="truncate">{track.title}</p>
-                        <p className="text-muted-foreground truncate text-xs sm:hidden">
-                          {track.artist_name}
-                        </p>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground hidden sm:table-cell">
+                <TrackContextMenu key={track.id} track={track}>
+                  <TableRow
+                    className="group h-12 cursor-pointer"
+                    onClick={() => play(track)}
+                  >
+                    <TableCell className="text-muted-foreground">
+                      {index + 1}
+                    </TableCell>
+                    <TableCell>
+                      <img
+                        src={getCoverPath(track.cover_path)}
+                        alt=""
+                        className="h-8 w-8 rounded-sm object-cover"
+                        onError={(event) => {
+                          event.currentTarget.src = "/default_cover.png";
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      <p className="truncate">{track.title}</p>
+                      <p className="text-muted-foreground truncate text-xs sm:hidden">
                         {track.artist_name}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground hidden lg:table-cell">
-                        {track.album_title || "-"}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground hidden max-w-40 truncate lg:table-cell">
-                        {track.genre || "-"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatTime(track.duration ?? 0)}
-                      </TableCell>
-                      <TableCell>
-                        <LikeButton trackId={track.id} />
-                      </TableCell>
-                    </TableRow>
-                  </ContextMenuTrigger>
-                  <ContextMenuContent className="w-48">
-                    <ContextMenuItem onClick={() => play(track)}>
-                      {t("contextMenu.play")}
-                    </ContextMenuItem>
-                    <ContextMenuItem
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        addToQueue(track.file);
-                      }}
-                    >
-                      {t("contextMenu.playLater")}
-                    </ContextMenuItem>
-                    <ContextMenuSeparator />
-                    <AddToPlaylistMenu trackId={track.id} />
-                  </ContextMenuContent>
-                </ContextMenu>
+                      </p>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden sm:table-cell">
+                      {track.artist_name}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden lg:table-cell">
+                      {track.album_title || "-"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden max-w-40 truncate lg:table-cell">
+                      {track.genre || "-"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatTime(track.duration ?? 0)}
+                    </TableCell>
+                    <TableCell>
+                      <LikeButton trackId={track.id} />
+                    </TableCell>
+                  </TableRow>
+                </TrackContextMenu>
               ))}
             </TableBody>
           </Table>

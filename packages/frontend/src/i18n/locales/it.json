@@ -104,7 +104,6 @@
   },
   "contextMenu": {
     "addToPlaylist": "Aggiungi alla Playlist",
-    "addToQueue": "Aggiungi alla coda",
     "newPlaylist": "Nuova Playlist",
     "play": "Riproduci",
     "playLater": "Riproduci Dopo"
@@ -142,7 +141,6 @@
     "trackAddError": "Impossibile aggiungere il brano",
     "trackRemoved": "Brano rimosso dalla playlist",
     "trackRemovedError": "Impossibile rimuovere il brano",
-    "trackAddedToQueue": "Brano aggiunto alla coda",
     "removeTrack": "Rimuovi brano"
   },
   "albums": {

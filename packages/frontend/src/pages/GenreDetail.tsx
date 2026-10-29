@@ -18,15 +18,8 @@ import {
 import { PlayIcon, ListPlus, Disc3, Music } from "lucide-react";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { usePlaybackContext } from "@/components/playback-context";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
-import { AddToPlaylistMenu } from "@/features/dashboard/components/add-to-playlist-menu";
 import { LikeButton } from "@/features/liked/components/like-button";
+import { TrackContextMenu } from "@/features/tracks/components/track-context-menu";
 import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
 
@@ -110,96 +103,77 @@ export default function GenreDetail() {
             </TableHeader>
             <TableBody>
               {tracks.map((track) => (
-                <ContextMenu key={track.id}>
-                  <ContextMenuTrigger asChild>
-                    <TableRow
-                      className="group h-12 cursor-pointer"
-                      onClick={() => play(track)}
-                    >
-                      <TableCell>
-                        {trackPlayed?.id === track.id ? (
-                          <div className="flex items-end gap-1">
-                            <div
-                              className="bg-primary eq h-1 w-1 rounded"
-                              style={{ animationDelay: "0ms" }}
-                            />
-                            <div
-                              className="bg-primary eq h-2 w-1 rounded"
-                              style={{ animationDelay: "150ms" }}
-                            />
-                            <div
-                              className="bg-primary eq h-3 w-1 rounded"
-                              style={{ animationDelay: "300ms" }}
-                            />
-                          </div>
-                        ) : (
-                          <PlayIcon
-                            width={15}
-                            height={15}
-                            fill="currentColor"
-                            className="opacity-0 transition-opacity group-hover:opacity-100"
+                <TrackContextMenu key={track.id} track={track}>
+                  <TableRow
+                    className="group h-12 cursor-pointer"
+                    onClick={() => play(track)}
+                  >
+                    <TableCell>
+                      {trackPlayed?.id === track.id ? (
+                        <div className="flex items-end gap-1">
+                          <div
+                            className="bg-primary eq h-1 w-1 rounded"
+                            style={{ animationDelay: "0ms" }}
                           />
-                        )}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {track.title}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground hidden md:table-cell">
-                        {track.artist_name}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground hidden lg:table-cell">
-                        {track.album_id ? (
-                          <span
-                            className="cursor-pointer hover:underline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/albums/${track.album_id}`);
-                            }}
-                          >
-                            {track.album_title || "-"}
-                          </span>
-                        ) : (
-                          "-"
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatTime(track.duration ?? 0)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-end gap-1">
-                          <LikeButton trackId={track.id} />
-                          <Button
-                            variant="bare"
-                            size="icon-sm"
-                            className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              addToQueue(track.file);
-                            }}
-                            aria-label={t("album.addToQueue")}
-                          >
-                            <ListPlus />
-                          </Button>
+                          <div
+                            className="bg-primary eq h-2 w-1 rounded"
+                            style={{ animationDelay: "150ms" }}
+                          />
+                          <div
+                            className="bg-primary eq h-3 w-1 rounded"
+                            style={{ animationDelay: "300ms" }}
+                          />
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  </ContextMenuTrigger>
-                  <ContextMenuContent className="w-48">
-                    <ContextMenuItem onClick={() => play(track)}>
-                      {t("contextMenu.play")}
-                    </ContextMenuItem>
-                    <ContextMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        addToQueue(track.file);
-                      }}
-                    >
-                      {t("contextMenu.playLater")}
-                    </ContextMenuItem>
-                    <ContextMenuSeparator />
-                    <AddToPlaylistMenu trackId={track.id} />
-                  </ContextMenuContent>
-                </ContextMenu>
+                      ) : (
+                        <PlayIcon
+                          width={15}
+                          height={15}
+                          fill="currentColor"
+                          className="opacity-0 transition-opacity group-hover:opacity-100"
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell className="font-medium">{track.title}</TableCell>
+                    <TableCell className="text-muted-foreground hidden md:table-cell">
+                      {track.artist_name}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden lg:table-cell">
+                      {track.album_id ? (
+                        <span
+                          className="cursor-pointer hover:underline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/albums/${track.album_id}`);
+                          }}
+                        >
+                          {track.album_title || "-"}
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatTime(track.duration ?? 0)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <LikeButton trackId={track.id} />
+                        <Button
+                          variant="bare"
+                          size="icon-sm"
+                          className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToQueue(track.file);
+                          }}
+                          aria-label={t("album.addToQueue")}
+                        >
+                          <ListPlus />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                </TrackContextMenu>
               ))}
             </TableBody>
           </Table>

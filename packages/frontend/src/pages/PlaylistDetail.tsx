@@ -50,24 +50,19 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   playlistQueries,
   playlistMutations,
 } from "@/features/playlists/queries";
 import { LikeButton } from "@/features/liked/components/like-button";
+import { TrackContextMenu } from "@/features/tracks/components/track-context-menu";
 
 export default function PlaylistDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
-  const { play, addToQueue } = usePlayTrack();
+  const { play } = usePlayTrack();
   const pid = id ? parseInt(id, 10) : 0;
 
   const { data: playlist, isPending } = useQuery({
@@ -125,11 +120,6 @@ export default function PlaylistDetail() {
     } catch {
       toast.error(t("playlist.trackRemovedError"));
     }
-  };
-
-  const handleAddToQueue = async (file: string) => {
-    await addToQueue(file);
-    toast(t("playlist.trackAddedToQueue"));
   };
 
   const handleEdit = async () => {
@@ -326,100 +316,73 @@ export default function PlaylistDetail() {
           </TableHeader>
           <TableBody>
             {playlist.tracks.map((track, idx: number) => (
-              <ContextMenu key={track.pt_id ?? track.id}>
-                <ContextMenuTrigger asChild>
-                  <TableRow
-                    className="group cursor-pointer"
-                    onClick={() => handlePlay(track)}
-                  >
-                    <TableCell className="text-muted-foreground">
-                      <span className="group-hover:hidden">{idx + 1}</span>
-                      <PlayIcon
-                        width={15}
-                        height={15}
-                        fill="currentColor"
-                        className="hidden group-hover:block"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <img
-                        src={getCoverPath(track.cover_path)}
-                        alt=""
-                        className="h-8 w-8 rounded-sm object-cover"
-                        onError={(e) => {
-                          e.currentTarget.src = "/default_cover.png";
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <p className="font-medium">{track.title}</p>
-                      <p className="text-muted-foreground text-xs sm:hidden">
-                        {track.artist_name}
-                      </p>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground hidden sm:table-cell">
+              <TrackContextMenu
+                key={track.pt_id ?? track.id}
+                track={track}
+                onRemove={() => void handleRemoveTrack(track.pt_id)}
+                removeLabel={t("playlist.removeTrack")}
+              >
+                <TableRow
+                  className="group cursor-pointer"
+                  onClick={() => handlePlay(track)}
+                >
+                  <TableCell className="text-muted-foreground">
+                    <span className="group-hover:hidden">{idx + 1}</span>
+                    <PlayIcon
+                      width={15}
+                      height={15}
+                      fill="currentColor"
+                      className="hidden group-hover:block"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <img
+                      src={getCoverPath(track.cover_path)}
+                      alt=""
+                      className="h-8 w-8 rounded-sm object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = "/default_cover.png";
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <p className="font-medium">{track.title}</p>
+                    <p className="text-muted-foreground text-xs sm:hidden">
                       {track.artist_name}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatTime(track.duration ?? 0)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-1">
-                        <LikeButton trackId={track.id} />
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="bare"
-                              size="icon-sm"
-                              className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveTrack(track.pt_id);
-                              }}
-                              aria-label={t("playlist.removeTrack")}
-                            >
-                              <X />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {t("playlist.removeTrack")}
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                </ContextMenuTrigger>
-                <ContextMenuContent>
-                  <ContextMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePlay(track);
-                    }}
-                  >
-                    <Play className="mr-2 h-4 w-4" fill="currentColor" />
-                    {t("contextMenu.play")}
-                  </ContextMenuItem>
-                  <ContextMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAddToQueue(track.file);
-                    }}
-                  >
-                    <ListMusic className="mr-2 h-4 w-4" />
-                    {t("contextMenu.addToQueue")}
-                  </ContextMenuItem>
-                  <ContextMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveTrack(track.pt_id);
-                    }}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <X className="mr-2 h-4 w-4" />
-                    {t("playlist.removeTrack")}
-                  </ContextMenuItem>
-                </ContextMenuContent>
-              </ContextMenu>
+                    </p>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground hidden sm:table-cell">
+                    {track.artist_name}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatTime(track.duration ?? 0)}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-1">
+                      <LikeButton trackId={track.id} />
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="bare"
+                            size="icon-sm"
+                            className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveTrack(track.pt_id);
+                            }}
+                            aria-label={t("playlist.removeTrack")}
+                          >
+                            <X />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {t("playlist.removeTrack")}
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              </TrackContextMenu>
             ))}
           </TableBody>
         </Table>

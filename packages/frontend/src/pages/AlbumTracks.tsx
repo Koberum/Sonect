@@ -18,15 +18,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { PageHeader } from "@/components/ui/page-header";
 import { usePlaybackContext } from "@/components/playback-context";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
-import { AddToPlaylistMenu } from "@/features/dashboard/components/add-to-playlist-menu";
 import { LikeButton } from "@/features/liked/components/like-button";
+import { TrackContextMenu } from "@/features/tracks/components/track-context-menu";
 import { setTrackDragData } from "@/features/playlists/track-drag";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -169,94 +162,77 @@ export default function AlbumPage() {
               </TableHeader>
               <TableBody>
                 {tracks.map((track: TrackWithRelations) => (
-                  <ContextMenu key={track.id}>
-                    <ContextMenuTrigger asChild>
-                      <TableRow
-                        draggable
-                        className={cn(
-                          "group h-12 cursor-pointer",
-                          draggingTrackId === track.id && "opacity-50",
+                  <TrackContextMenu key={track.id} track={track}>
+                    <TableRow
+                      draggable
+                      className={cn(
+                        "group h-12 cursor-pointer",
+                        draggingTrackId === track.id && "opacity-50",
+                      )}
+                      onDragStart={(event) => {
+                        setTrackDragData(event.dataTransfer, track.id);
+                        setDraggingTrackId(track.id);
+                      }}
+                      onDragEnd={() => setDraggingTrackId(null)}
+                      onClick={() => play(track)}
+                    >
+                      <TableCell className="hidden lg:table-cell">
+                        {trackPlayed?.id === track.id ? (
+                          <PlayStatus />
+                        ) : (
+                          <>
+                            <span className="group-hover:hidden">
+                              {track.track_number}
+                            </span>
+                            <PlayIcon
+                              width={15}
+                              height={15}
+                              fill="currentColor"
+                              className="hidden transition-opacity group-hover:block"
+                            />
+                          </>
                         )}
-                        onDragStart={(event) => {
-                          setTrackDragData(event.dataTransfer, track.id);
-                          setDraggingTrackId(track.id);
-                        }}
-                        onDragEnd={() => setDraggingTrackId(null)}
-                        onClick={() => play(track)}
-                      >
-                        <TableCell className="hidden lg:table-cell">
-                          {trackPlayed?.id === track.id ? (
-                            <PlayStatus />
-                          ) : (
-                            <>
-                              <span className="group-hover:hidden">
-                                {track.track_number}
-                              </span>
-                              <PlayIcon
-                                width={15}
-                                height={15}
-                                fill="currentColor"
-                                className="hidden transition-opacity group-hover:block"
-                              />
-                            </>
-                          )}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {track.title}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground hidden w-28 md:table-cell md:w-40">
-                          <span className="block truncate">
-                            {track.artist_id ? (
-                              <Link
-                                to={`/artists/${track.artist_id}/albums`}
-                                className="hover:underline"
-                                onClick={(event) => event.stopPropagation()}
-                              >
-                                {track.artist_name || album?.artist_name || "-"}
-                              </Link>
-                            ) : (
-                              track.artist_name || album?.artist_name || "-"
-                            )}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatTime(track.duration ?? 0)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-end gap-1">
-                            <LikeButton trackId={track.id} />
-                            <Button
-                              variant="bare"
-                              size="icon-sm"
-                              className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                addToQueue(track.file);
-                              }}
-                              aria-label={t("album.addToQueue")}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {track.title}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground hidden w-28 md:table-cell md:w-40">
+                        <span className="block truncate">
+                          {track.artist_id ? (
+                            <Link
+                              to={`/artists/${track.artist_id}/albums`}
+                              className="hover:underline"
+                              onClick={(event) => event.stopPropagation()}
                             >
-                              <ListPlus />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    </ContextMenuTrigger>
-                    <ContextMenuContent className="w-48">
-                      <ContextMenuItem onClick={() => play(track)}>
-                        {t("contextMenu.play")}
-                      </ContextMenuItem>
-                      <ContextMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          addToQueue(track.file);
-                        }}
-                      >
-                        {t("contextMenu.playLater")}
-                      </ContextMenuItem>
-                      <ContextMenuSeparator />
-                      <AddToPlaylistMenu trackId={track.id} />
-                    </ContextMenuContent>
-                  </ContextMenu>
+                              {track.artist_name || album?.artist_name || "-"}
+                            </Link>
+                          ) : (
+                            track.artist_name || album?.artist_name || "-"
+                          )}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatTime(track.duration ?? 0)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1">
+                          <LikeButton trackId={track.id} />
+                          <Button
+                            variant="bare"
+                            size="icon-sm"
+                            className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addToQueue(track.file);
+                            }}
+                            aria-label={t("album.addToQueue")}
+                          >
+                            <ListPlus />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  </TrackContextMenu>
                 ))}
               </TableBody>
             </Table>

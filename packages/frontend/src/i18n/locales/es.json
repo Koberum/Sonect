@@ -104,7 +104,6 @@
   },
   "contextMenu": {
     "addToPlaylist": "Agregar a la Lista",
-    "addToQueue": "Agregar a cola",
     "newPlaylist": "Nueva Lista",
     "play": "Reproducir",
     "playLater": "Reproducir Después"
@@ -142,7 +141,6 @@
     "trackAddError": "Error al agregar pista",
     "trackRemoved": "Pista eliminada de la lista",
     "trackRemovedError": "Error al eliminar pista",
-    "trackAddedToQueue": "Pista agregada a la cola",
     "removeTrack": "Eliminar pista"
   },
   "albums": {
