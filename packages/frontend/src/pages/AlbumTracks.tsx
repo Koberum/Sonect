@@ -1,10 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import PlayStatus from "@/features/dashboard/components/play-status";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useTranslation } from "react-i18next";
 import { useParams, Link } from "react-router-dom";
-import { formatTime, getCoverPath } from "@/lib/utils";
+import { cn, formatTime, getCoverPath } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/context-menu";
 import { AddToPlaylistMenu } from "@/features/dashboard/components/add-to-playlist-menu";
 import { LikeButton } from "@/features/liked/components/like-button";
+import { setTrackDragData } from "@/features/playlists/track-drag";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
@@ -72,6 +73,7 @@ export default function AlbumPage() {
 
   const { trackPlayed } = usePlaybackContext();
   const { play, addToQueue } = usePlayTrack();
+  const [draggingTrackId, setDraggingTrackId] = useState<number | null>(null);
   return (
     <>
       <PageHeader
@@ -170,7 +172,16 @@ export default function AlbumPage() {
                   <ContextMenu key={track.id}>
                     <ContextMenuTrigger asChild>
                       <TableRow
-                        className="group h-12 cursor-pointer"
+                        draggable
+                        className={cn(
+                          "group h-12 cursor-pointer",
+                          draggingTrackId === track.id && "opacity-50",
+                        )}
+                        onDragStart={(event) => {
+                          setTrackDragData(event.dataTransfer, track.id);
+                          setDraggingTrackId(track.id);
+                        }}
+                        onDragEnd={() => setDraggingTrackId(null)}
                         onClick={() => play(track)}
                       >
                         <TableCell className="hidden lg:table-cell">

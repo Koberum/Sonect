@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type DragEvent } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -33,9 +33,14 @@ import {
   playlistQueries,
   playlistMutations,
 } from "@/features/playlists/queries";
+import {
+  getDraggedTrackId,
+  isTrackDrag,
+} from "@/features/playlists/track-drag";
 import { likedQueries } from "@/features/liked/queries";
 import { scanLibrary } from "@/features/catalog/api";
 import { useAuth } from "@/features/auth/auth-context";
+import { toast } from "sonner";
 
 export interface SidebarProps {
   className?: string;
@@ -49,9 +54,53 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
   const { data: playlists = [] } = useQuery(playlistQueries.list());
   const { data: likedIds = [] } = useQuery(likedQueries.ids(profile?.id ?? ""));
   const createMut = useMutation(playlistMutations.create());
+  const addTrackMut = useMutation(playlistMutations.addTrack());
   const [newName, setNewName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [dragOverPlaylistId, setDragOverPlaylistId] = useState<number | null>(
+    null,
+  );
+
+  const handlePlaylistDragOver = (
+    event: DragEvent<HTMLButtonElement>,
+    playlistId: number,
+  ) => {
+    if (!isTrackDrag(event.dataTransfer)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+    if (dragOverPlaylistId !== playlistId) {
+      setDragOverPlaylistId(playlistId);
+    }
+  };
+
+  const handlePlaylistDragLeave = (
+    event: DragEvent<HTMLButtonElement>,
+    playlistId: number,
+  ) => {
+    if (event.currentTarget.contains(event.relatedTarget as Node | null))
+      return;
+    setDragOverPlaylistId((current) =>
+      current === playlistId ? null : current,
+    );
+  };
+
+  const handlePlaylistDrop = async (
+    event: DragEvent<HTMLButtonElement>,
+    playlistId: number,
+  ) => {
+    if (!isTrackDrag(event.dataTransfer)) return;
+    event.preventDefault();
+    setDragOverPlaylistId(null);
+    const trackId = getDraggedTrackId(event.dataTransfer);
+    if (trackId === null) return;
+    try {
+      await addTrackMut.mutateAsync({ playlistId, trackId });
+      toast(t("playlist.trackAdded"));
+    } catch {
+      toast(t("playlist.trackAddError"));
+    }
+  };
 
   const handleNavigation = (path: string) => {
     navigate(path);
@@ -237,7 +286,20 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
                           ? "secondary"
                           : "ghost"
                       }
-                      className="w-full justify-start"
+                      className={cn(
+                        "w-full justify-start",
+                        dragOverPlaylistId === playlist.id &&
+                          "ring-primary bg-primary/10 ring-2",
+                      )}
+                      onDragOver={(event) =>
+                        handlePlaylistDragOver(event, playlist.id)
+                      }
+                      onDragLeave={(event) =>
+                        handlePlaylistDragLeave(event, playlist.id)
+                      }
+                      onDrop={(event) => {
+                        void handlePlaylistDrop(event, playlist.id);
+                      }}
                     >
                       <ListMusic className="mr-2 h-4 w-4 shrink-0" />
                       <span className="truncate">{playlist.name}</span>
