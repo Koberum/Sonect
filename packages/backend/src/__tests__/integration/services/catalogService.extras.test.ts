@@ -27,11 +27,20 @@ describe("CatalogService extras (trophy)", () => {
       for (const ar of res.artists) expect(ar.coverPreviews).to.be.an("array");
     });
     it("lowercases query before artist search", () => {
-      artist.create({ name: "CaseArtist" }, 5);
+      const a = artist.create({ name: "CaseArtist" }, 5);
+      album.create({ title: "CaseAlbum", artistName: a.name }, 5);
       const lower = catalog.searchTracks("caseartist");
       const upper = catalog.searchTracks("CASEARTIST");
       expect(lower.artists).to.have.length(1);
       expect(upper.artists).to.have.length(1);
+    });
+    it("excludes artists without albums from search results", () => {
+      const a = artist.create({ name: "ResultArtist" }, 6);
+      album.create({ title: "ResultAlbum", artistName: a.name }, 6);
+      artist.create({ name: "ResultArtist NoAlbum" }, 7);
+
+      const res = catalog.searchTracks("resultartist");
+      expect(res.artists.map((ar) => ar.name)).to.deep.equal(["ResultArtist"]);
     });
     it("returns empty arrays when no match", () => {
       const res = catalog.searchTracks("nopeXYZ");

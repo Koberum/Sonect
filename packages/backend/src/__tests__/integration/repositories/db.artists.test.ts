@@ -1,6 +1,12 @@
 import { expect } from "chai";
 import { createTestDb } from "@tests/helpers/db.js";
-import { artistsDb, db, findOrCreateArtist, artists } from "@repo/db";
+import {
+  artistsDb,
+  db,
+  findOrCreateArtist,
+  findOrCreateAlbum,
+  artists,
+} from "@repo/db";
 
 describe("artistsDb (trophy integration)", () => {
   let close: () => void;
@@ -52,6 +58,17 @@ describe("artistsDb (trophy integration)", () => {
       for (let i = 0; i < 4; i++) findOrCreateArtist(db(), `A${i}`);
       expect(artistsDb.getAll({ limit: 2 })).to.have.length(2);
     });
+    it("withAlbumsOnly excludes artists without albums", () => {
+      const withAlbum = findOrCreateArtist(db(), "HasAlbum");
+      findOrCreateArtist(db(), "NoAlbum");
+      findOrCreateAlbum(db(), "Album of HasAlbum", withAlbum);
+
+      expect(
+        artistsDb.getAll({ withAlbumsOnly: true }).map((a) => a.name),
+      ).to.deep.equal(["HasAlbum"]);
+      expect(artistsDb.count({ withAlbumsOnly: true })).to.equal(1);
+      expect(artistsDb.getAll()).to.have.length(2);
+    });
   });
 
   describe("count / getById", () => {
@@ -90,6 +107,17 @@ describe("artistsDb (trophy integration)", () => {
         "Alpha beat",
         "Zebra beat",
       ]);
+    });
+    it("withAlbumsOnly excludes artists without albums", () => {
+      const withAlbum = findOrCreateArtist(db(), "Beat With Album");
+      findOrCreateArtist(db(), "Beat Without Album");
+      findOrCreateAlbum(db(), "Beat Album", withAlbum);
+
+      expect(
+        artistsDb
+          .search("beat", undefined, { withAlbumsOnly: true })
+          .map((a) => a.name),
+      ).to.deep.equal(["Beat With Album"]);
     });
   });
 

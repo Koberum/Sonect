@@ -1,7 +1,16 @@
-import { asc, count, eq, like, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  eq,
+  inArray,
+  isNotNull,
+  like,
+  sql,
+} from "drizzle-orm";
 import type { DBArtist } from "@repo/types";
 import { db } from "../connection.js";
-import { artists } from "../tables.js";
+import { albums, artists } from "../tables.js";
 import { normalizeRowId, type QueryExecutor } from "./rowId.js";
 
 // Shared with tracks.ts so an upsert inside a transaction resolves artists on
@@ -21,16 +30,38 @@ export function findOrCreateArtist(
   return normalizeRowId(result.lastInsertRowid);
 }
 
+// Artists created only as track artists (e.g. collaboration credits) have no
+// album of their own and would open an empty artist page. Catalog listings and
+// search opt into this filter; the repository default stays unfiltered for
+// lookups and maintenance.
+function hasAlbums() {
+  return inArray(
+    artists.id,
+    db()
+      .select({ id: albums.artist_id })
+      .from(albums)
+      .where(isNotNull(albums.artist_id)),
+  );
+}
+
 export const artistsDb = {
   getAll({
     limit,
     offset,
-  }: { limit?: number; offset?: number } = {}): DBArtist[] {
+    withAlbumsOnly = false,
+  }: {
+    limit?: number;
+    offset?: number;
+    withAlbumsOnly?: boolean;
+  } = {}): DBArtist[] {
     let query = db()
       .select()
       .from(artists)
       .orderBy(asc(artists.name))
       .$dynamic();
+    if (withAlbumsOnly) {
+      query = query.where(hasAlbums());
+    }
     if (limit !== undefined) {
       query = query.limit(limit);
       if (offset !== undefined) {
@@ -40,8 +71,12 @@ export const artistsDb = {
     return query.all() as DBArtist[];
   },
 
-  count(): number {
-    const row = db().select({ value: count() }).from(artists).get();
+  count({ withAlbumsOnly = false }: { withAlbumsOnly?: boolean } = {}): number {
+    let query = db().select({ value: count() }).from(artists).$dynamic();
+    if (withAlbumsOnly) {
+      query = query.where(hasAlbums());
+    }
+    const row = query.get();
     return row?.value ?? 0;
   },
 
@@ -50,12 +85,20 @@ export const artistsDb = {
       DBArtist | undefined;
   },
 
-  search(query: string, limit = 20): DBArtist[] {
+  search(
+    query: string,
+    limit = 20,
+    { withAlbumsOnly = false }: { withAlbumsOnly?: boolean } = {},
+  ): DBArtist[] {
     const pattern = `%${query}%`;
+    const conditions = [like(artists.name, pattern)];
+    if (withAlbumsOnly) {
+      conditions.push(hasAlbums());
+    }
     return db()
       .select()
       .from(artists)
-      .where(like(artists.name, pattern))
+      .where(and(...conditions))
       .orderBy(asc(artists.name))
       .limit(limit)
       .all() as DBArtist[];

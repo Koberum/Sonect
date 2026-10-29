@@ -78,6 +78,17 @@ describe("CatalogService (trophy integration)", () => {
         [...names].sort((a, b) => a.localeCompare(b)),
       );
     });
+
+    it("excludes artists without albums", () => {
+      const withAlbum = artist.create({ name: "ListedArtist" }, 1);
+      artist.create({ name: "HiddenArtist" }, 2);
+      album.create({ title: "ListedAlbum", artistName: withAlbum.name }, 1);
+
+      expect(catalog.getAllArtists().map((a) => a.name)).to.deep.equal([
+        "ListedArtist",
+      ]);
+      expect(catalog.getArtistCount()).to.equal(1);
+    });
   });
 
   describe("getArtistCount", () => {
