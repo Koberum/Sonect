@@ -44,10 +44,22 @@ describe("SuggestionService (trophy integration)", () => {
     });
 
     it("recentlyPlayedAlbums is scoped per profile and respects excludeAlbumId", () => {
-      const al1 = album.create({ title: "RecAl1" }, 1);
-      const al2 = album.create({ title: "RecAl2" }, 2);
-      const t1 = track.create({ album: "RecAl1", title: "Rec1" }, 3);
-      const t2 = track.create({ album: "RecAl2", title: "Rec2" }, 4);
+      const al1 = album.create(
+        { title: "RecAl1", artistName: "Rec Artist" },
+        1,
+      );
+      const al2 = album.create(
+        { title: "RecAl2", artistName: "Rec Artist" },
+        2,
+      );
+      const t1 = track.create(
+        { album: "RecAl1", artist: "Rec Artist", title: "Rec1" },
+        3,
+      );
+      const t2 = track.create(
+        { album: "RecAl2", artist: "Rec Artist", title: "Rec2" },
+        4,
+      );
       playHistoryDb.record(profileId, t1.id, 1000);
       playHistoryDb.record(profileId, t2.id, 2000);
       playHistoryDb.record(otherProfileId, t1.id, 3000);

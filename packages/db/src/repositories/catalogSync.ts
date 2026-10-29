@@ -1,7 +1,11 @@
-import { eq, sql } from "drizzle-orm";
+import { eq, isNotNull, notInArray, sql } from "drizzle-orm";
 import type { CatalogTrack } from "@repo/types";
 import { transaction, type DatabaseTransaction } from "../connection.js";
-import { syncMetadata, tracks as tracksTable } from "../tables.js";
+import {
+  albums as albumsTable,
+  syncMetadata,
+  tracks as tracksTable,
+} from "../tables.js";
 import { upsertTrack } from "./tracks.js";
 
 export type LibraryIncrementalResult = {
@@ -52,6 +56,7 @@ export const catalogSyncDb = {
     deletions: string[];
     mpdDbUpdate?: string;
     mpdSongs?: number;
+    catalogSchema?: string;
   }): LibraryIncrementalResult {
     return transaction((tx) => {
       let synced = 0;
@@ -82,6 +87,20 @@ export const catalogSyncDb = {
         deleted += 1;
       }
 
+      // Reassigning tracks to split albums (title + album artist) leaves the
+      // old shared rows behind. Drop albums that no longer own a track.
+      tx.delete(albumsTable)
+        .where(
+          notInArray(
+            albumsTable.id,
+            tx
+              .select({ id: tracksTable.album_id })
+              .from(tracksTable)
+              .where(isNotNull(tracksTable.album_id)),
+          ),
+        )
+        .run();
+
       stampMetadata(tx, "last_sync", new Date().toISOString());
       // A per-track failure means the applied catalog is not the one MPD
       // reported; leave the MPD markers untouched so the next sync retries
@@ -92,6 +111,9 @@ export const catalogSyncDb = {
         }
         if (input.mpdSongs !== undefined) {
           stampMetadata(tx, "mpd_songs", String(input.mpdSongs));
+        }
+        if (input.catalogSchema !== undefined) {
+          stampMetadata(tx, "catalog_schema", input.catalogSchema);
         }
       }
 

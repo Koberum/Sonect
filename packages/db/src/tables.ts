@@ -6,6 +6,7 @@ import {
   sqliteTable,
   text,
   unique,
+  uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
 export const artists = sqliteTable("artists", {
@@ -40,6 +41,10 @@ export const albums = sqliteTable(
     updated_at: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [
+    uniqueIndex("albums_title_artist_unique").on(
+      sql`${table.title} COLLATE NOCASE`,
+      sql`coalesce(${table.artist_id}, -1)`,
+    ),
     index("idx_albums_artist").on(table.artist_id),
     index("idx_albums_genre").on(table.genre_id),
   ],

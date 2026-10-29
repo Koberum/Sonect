@@ -27,9 +27,11 @@ export const albumWithArtist = {
 };
 
 // Shared with tracks.ts so an upsert inside a transaction resolves albums on
-// the same executor instead of the global handle. Album identity stays
-// title-only and case-insensitive; an explicit artist on an existing album is
-// reassigned, and a new genre only fills a NULL genre.
+// the same executor instead of the global handle. Album identity is the
+// case-insensitive title plus the album artist (AlbumArtist tag, falling back
+// to the track artist), so two releases that share a title but not an artist
+// stay separate. An artistless album with the same title is adopted once an
+// artist becomes known; a genre only fills a NULL genre.
 export function findOrCreateAlbum(
   executor: QueryExecutor,
   title: string,
@@ -51,18 +53,18 @@ export function findOrCreateAlbum(
       genre_id: albums.genre_id,
     })
     .from(albums)
-    .where(sql`${albums.title} = ${title} COLLATE NOCASE`)
+    .where(
+      and(
+        sql`${albums.title} = ${title} COLLATE NOCASE`,
+        artistId !== undefined
+          ? eq(albums.artist_id, artistId)
+          : isNull(albums.artist_id),
+      ),
+    )
     .limit(1)
     .get();
 
   if (existing) {
-    if (artistId && existing.artist_id !== artistId) {
-      executor
-        .update(albums)
-        .set({ artist_id: artistId })
-        .where(eq(albums.id, existing.id))
-        .run();
-    }
     if (resolvedGenreId !== undefined && existing.genre_id === null) {
       executor
         .update(albums)
@@ -71,6 +73,37 @@ export function findOrCreateAlbum(
         .run();
     }
     return existing.id;
+  }
+
+  // Adopt a title-only album once an artist is known instead of forking a
+  // second row for the same release.
+  if (artistId !== undefined) {
+    const artistless = executor
+      .select({ id: albums.id, genre_id: albums.genre_id })
+      .from(albums)
+      .where(
+        and(
+          sql`${albums.title} = ${title} COLLATE NOCASE`,
+          isNull(albums.artist_id),
+        ),
+      )
+      .limit(1)
+      .get();
+    if (artistless) {
+      executor
+        .update(albums)
+        .set({ artist_id: artistId })
+        .where(eq(albums.id, artistless.id))
+        .run();
+      if (resolvedGenreId !== undefined && artistless.genre_id === null) {
+        executor
+          .update(albums)
+          .set({ genre_id: resolvedGenreId })
+          .where(and(eq(albums.id, artistless.id), isNull(albums.genre_id)))
+          .run();
+      }
+      return artistless.id;
+    }
   }
 
   const result = executor

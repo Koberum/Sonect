@@ -13,6 +13,7 @@ import {
   or,
   sql,
 } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 import type { CatalogTrack, DBTrack, DBTrackWithRelations } from "@repo/types";
 import { db } from "../connection.js";
 import { albums, artists, genres, storageSources, tracks } from "../tables.js";
@@ -20,6 +21,59 @@ import { normalizeRowId, type QueryExecutor } from "./rowId.js";
 import { findOrCreateArtist } from "./artists.js";
 import { findOrCreateAlbum } from "./albums.js";
 import { findOrCreateGenre } from "./genres.js";
+
+// The same physical song can exist under several library paths (e.g. mirrored
+// folders), which produces distinct rows (tracks.file is unique). Album views
+// collapse those copies at read time without touching the MPD mirror. The key
+// ignores the file path (and the track artist, which may be tagged differently
+// from the album artist), so only one row per logical position in an album is
+// returned. When copies differ in format, the lossless one is kept.
+type AlbumTrackKey = {
+  album_id?: number | null;
+  disc_number?: number | null;
+  track_number?: number | null;
+  title: string;
+  file: string;
+};
+
+const LOSSLESS_EXTENSIONS = new Set([
+  "flac",
+  "wav",
+  "aiff",
+  "aif",
+  "ape",
+  "alac",
+  "dsf",
+  "dff",
+  "wv",
+  "tta",
+]);
+
+function isLosslessFile(file: string): boolean {
+  const extension = file.split(".").pop()?.toLowerCase() ?? "";
+  return LOSSLESS_EXTENSIONS.has(extension);
+}
+
+function dedupeAlbumTracks<T extends AlbumTrackKey>(rows: T[]): T[] {
+  const canonical = new Map<string, T>();
+  for (const row of rows) {
+    const key = [
+      row.album_id ?? "",
+      row.disc_number ?? "",
+      row.track_number ?? "",
+      row.title.trim().toLowerCase(),
+    ].join("\u0000");
+    const current = canonical.get(key);
+    if (
+      !current ||
+      (isLosslessFile(row.file) && !isLosslessFile(current.file))
+    ) {
+      canonical.set(key, row);
+    }
+  }
+  const kept = new Set(canonical.values());
+  return rows.filter((row) => kept.has(row));
+}
 
 export const dBTrackWithRelations = {
   ...getColumns(tracks),
@@ -56,6 +110,7 @@ export type SyncTrackSnapshot = {
   file: string;
   title: string;
   artist_name: string | null;
+  album_artist_name: string | null;
   album_id: number | null;
   album_title: string | null;
   genre: string | null;
@@ -292,12 +347,18 @@ export const tracksDb = {
   },
 
   getByAlbumOrdered(albumId: number): DBTrack[] {
-    return db()
-      .select()
-      .from(tracks)
-      .where(eq(tracks.album_id, albumId))
-      .orderBy(asc(tracks.disc_number), asc(tracks.track_number))
-      .all() as DBTrack[];
+    return dedupeAlbumTracks(
+      db()
+        .select()
+        .from(tracks)
+        .where(eq(tracks.album_id, albumId))
+        .orderBy(
+          asc(tracks.disc_number),
+          asc(tracks.track_number),
+          asc(tracks.id),
+        )
+        .all() as DBTrack[],
+    );
   },
 
   getByFile(file: string): DBTrack | undefined {
@@ -314,11 +375,13 @@ export const tracksDb = {
   },
 
   getSyncSnapshot(): SyncTrackSnapshot[] {
+    const albumArtist = alias(artists, "album_artist");
     return db()
       .select({
         file: tracks.file,
         title: tracks.title,
         artist_name: artists.name,
+        album_artist_name: albumArtist.name,
         album_id: tracks.album_id,
         album_title: albums.title,
         genre: genres.name,
@@ -331,6 +394,7 @@ export const tracksDb = {
       .from(tracks)
       .leftJoin(artists, eq(tracks.artist_id, artists.id))
       .leftJoin(albums, eq(tracks.album_id, albums.id))
+      .leftJoin(albumArtist, eq(albums.artist_id, albumArtist.id))
       .leftJoin(genres, eq(tracks.genre_id, genres.id))
       .all() as SyncTrackSnapshot[];
   },
@@ -399,26 +463,29 @@ export const tracksDb = {
   },
 
   getByAlbumWithRelations(albumId: number): DBTrackWithRelations[] {
-    return db()
-      .select({
-        ...dBTrackWithRelations,
-        storage_source_name: storageSources.name,
-      })
-      .from(tracks)
-      .innerJoin(artists, eq(tracks.artist_id, artists.id))
-      .innerJoin(albums, eq(tracks.album_id, albums.id))
-      .leftJoin(genres, eq(tracks.genre_id, genres.id))
-      .leftJoin(
-        storageSources,
-        eq(tracks.storage_source_id, storageSources.id),
-      )
-      .where(eq(tracks.album_id, albumId))
-      .orderBy(
-        asc(tracks.disc_number),
-        asc(tracks.track_number),
-        asc(tracks.title),
-      )
-      .all() as DBTrackWithRelations[];
+    return dedupeAlbumTracks(
+      db()
+        .select({
+          ...dBTrackWithRelations,
+          storage_source_name: storageSources.name,
+        })
+        .from(tracks)
+        .innerJoin(artists, eq(tracks.artist_id, artists.id))
+        .innerJoin(albums, eq(tracks.album_id, albums.id))
+        .leftJoin(genres, eq(tracks.genre_id, genres.id))
+        .leftJoin(
+          storageSources,
+          eq(tracks.storage_source_id, storageSources.id),
+        )
+        .where(eq(tracks.album_id, albumId))
+        .orderBy(
+          asc(tracks.disc_number),
+          asc(tracks.track_number),
+          asc(tracks.title),
+          asc(tracks.id),
+        )
+        .all() as DBTrackWithRelations[],
+    );
   },
 
   getAllWithRelations(

@@ -367,6 +367,15 @@ are refreshed for libraries whose tracks changed; a forced scan with no catalog
 changes refreshes all sources. `MUSIC_EXTENSIONS` controls which audio
 extensions that stats walk counts.
 
+**Duplicates and album grouping.** If the same song is physically stored under
+several folders, MPD indexes each copy and Sonect keeps every file in the
+catalog — so library file counts still include them and existing playlists keep
+working. Album detail pages and album playback collapse copies at the same
+position (same album, disc, track number and title) to a single row, preferring
+the lossless copy when formats differ. Albums are identified by **title + album
+artist**, so two same-titled releases by different artists remain separate
+albums instead of being merged.
+
 **Network shares with legacy filenames.** Linux and MPD treat filenames as
 UTF-8. Folders whose names were written by old Windows/SMB clients in a legacy
 codepage (Latin-1/CP1252) may not be addressable by path. Fix the names at the

@@ -6,8 +6,11 @@ import path from "path";
 import { eq } from "drizzle-orm";
 import { createTestDb } from "@tests/helpers/db.js";
 import {
+  albumsDb,
   catalogSyncDb,
   db,
+  findOrCreateAlbum,
+  findOrCreateArtist,
   storageDb,
   syncMetadataDb,
   tracks,
@@ -15,7 +18,10 @@ import {
   upsertTrack,
 } from "@repo/db";
 import type { LibrarySyncProgress } from "@repo/types/catalog";
-import { MpdCatalogSyncService } from "@services/library/mpdCatalogSyncService.js";
+import {
+  CATALOG_SCHEMA_VERSION,
+  MpdCatalogSyncService,
+} from "@services/library/mpdCatalogSyncService.js";
 import type { MpdConnectionManager } from "@services/mpd/mpdConnectionManager.js";
 import type { LogService } from "@services/utils/logService.js";
 
@@ -251,6 +257,7 @@ describe("MpdCatalogSyncService (integration)", () => {
       deletions: [],
       mpdDbUpdate: "100",
       mpdSongs: 3,
+      catalogSchema: CATALOG_SCHEMA_VERSION,
     });
 
     const { mpd, findCalls } = makeMpd(fixture, { dbUpdate: "100", songs: 3 });
@@ -488,5 +495,93 @@ describe("MpdCatalogSyncService (integration)", () => {
 
     expect(first.synced).to.equal(2);
     expect(second.synced).to.equal(0);
+    expect(albumsDb.count()).to.equal(2);
+  });
+
+  it("splits albums that were historically merged by title", async () => {
+    const libId = addSource("Lib", "lib");
+    const artistA = findOrCreateArtist(db(), "Artist A");
+    const merged = findOrCreateAlbum(db(), "Greatest Hits", artistA);
+    upsertTrack(db(), {
+      file: "lib/a.mp3",
+      title: "A",
+      artist: "Artist A",
+      album: "Greatest Hits",
+      storageSourceId: libId,
+    });
+    const bId = upsertTrack(db(), {
+      file: "lib/b.mp3",
+      title: "B",
+      artist: "Artist B",
+      album: "Greatest Hits",
+      storageSourceId: libId,
+    });
+    // Reproduce the old title-only merge: both tracks point at one album.
+    db()
+      .update(tracks)
+      .set({ album_id: merged })
+      .where(eq(tracks.id, bId))
+      .run();
+
+    const mergedFixture: TrackFixture[] = [
+      {
+        file: "lib/a.mp3",
+        title: "A",
+        artist: "Artist A",
+        album: "Greatest Hits",
+      },
+      {
+        file: "lib/b.mp3",
+        title: "B",
+        artist: "Artist B",
+        album: "Greatest Hits",
+      },
+    ];
+    const { mpd } = makeMpd(mergedFixture, { dbUpdate: "401", songs: 2 });
+    const result = await makeService(mpd).sync({ force: true });
+
+    expect(result.synced).to.equal(1);
+    expect(albumsDb.count()).to.equal(2);
+    expect(tracksDb.getByFile("lib/a.mp3")?.album_id).to.not.equal(
+      tracksDb.getByFile("lib/b.mp3")?.album_id,
+    );
+  });
+
+  it("prunes albums left without tracks", async () => {
+    addSource("Lib", "lib");
+    upsertTrack(db(), {
+      file: "lib/solo.mp3",
+      title: "Solo",
+      artist: "Solo Artist",
+      album: "Solo Album",
+    });
+    const before = albumsDb.count();
+    expect(before).to.be.greaterThan(0);
+
+    const { mpd } = makeMpd(
+      [
+        {
+          file: "lib/a.mp3",
+          title: "A",
+          artist: "Artist",
+          album: "Album",
+        },
+      ],
+      { dbUpdate: "402", songs: 1 },
+    );
+    await makeService(mpd).sync({ force: true });
+
+    const titles = albumsDb.getAll().map((album) => album.title);
+    expect(titles).to.deep.equal(["Album"]);
+  });
+
+  it("stamps the catalog schema marker after a successful sync", async () => {
+    addSource("Lib", "lib");
+    const { mpd } = makeMpd(fixture, { dbUpdate: "403", songs: 3 });
+    await makeService(mpd).sync({ force: true });
+
+    expect(syncMetadataDb.get("catalog_schema")).to.equal(
+      CATALOG_SCHEMA_VERSION,
+    );
   });
 });

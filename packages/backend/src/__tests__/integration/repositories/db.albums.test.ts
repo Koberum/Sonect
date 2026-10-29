@@ -35,13 +35,23 @@ describe("albumsDb (trophy integration)", () => {
       expect(a).to.equal(b);
       expect(albumsDb.count()).to.equal(1);
     });
-    it("reassigns artist when different artistId supplied", () => {
+    it("keeps same-title albums by different artists separate", () => {
       const a1 = findOrCreateArtist(db(), "Artist1");
       const a2 = findOrCreateArtist(db(), "Artist2");
       const id = findOrCreateAlbum(db(), "SameTitle", a1);
       const id2 = findOrCreateAlbum(db(), "SameTitle", a2);
-      expect(id).to.equal(id2);
-      expect(albumsDb.getById(id)?.artist_name).to.equal("Artist2");
+      expect(id).to.not.equal(id2);
+      expect(albumsDb.getById(id)?.artist_name).to.equal("Artist1");
+      expect(albumsDb.getById(id2)?.artist_name).to.equal("Artist2");
+      expect(albumsDb.count()).to.equal(2);
+    });
+    it("adopts an artistless album once an artist is known", () => {
+      const artistId = findOrCreateArtist(db(), "LateArtist");
+      const orphan = findOrCreateAlbum(db(), "AdoptedTitle");
+      const id = findOrCreateAlbum(db(), "AdoptedTitle", artistId);
+      expect(id).to.equal(orphan);
+      expect(albumsDb.getById(id)?.artist_name).to.equal("LateArtist");
+      expect(albumsDb.count()).to.equal(1);
     });
     it("fills genre only when NULL", () => {
       const g1 = findOrCreateGenre(db(), "Rock");
