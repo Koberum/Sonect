@@ -160,7 +160,7 @@ export default function AlbumPage() {
                     {t("album.trackNumber")}
                   </TableHead>
                   <TableHead>{t("album.title")}</TableHead>
-                  <TableHead className="w-28 sm:w-40">
+                  <TableHead className="hidden w-28 md:table-cell md:w-40">
                     {t("album.artist")}
                   </TableHead>
                   <TableHead className="w-20">{t("album.duration")}</TableHead>
@@ -204,7 +204,7 @@ export default function AlbumPage() {
                         <TableCell className="font-medium">
                           {track.title}
                         </TableCell>
-                        <TableCell className="text-muted-foreground w-28 sm:w-40">
+                        <TableCell className="text-muted-foreground hidden w-28 md:table-cell md:w-40">
                           <span className="block truncate">
                             {track.artist_id ? (
                               <Link
