@@ -158,6 +158,7 @@
     "description": "Explora todas las pistas de tu biblioteca",
     "artist": "Artista",
     "album": "Álbum",
+    "genre": "Género",
     "noTracks": "No se encontraron pistas"
   },
   "liked": {

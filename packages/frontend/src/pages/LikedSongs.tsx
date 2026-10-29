@@ -172,6 +172,9 @@ export default function LikedSongs() {
                 <TableHead className="hidden lg:table-cell">
                   {t("tracks.album")}
                 </TableHead>
+                <TableHead className="hidden lg:table-cell">
+                  {t("tracks.genre")}
+                </TableHead>
                 <TableHead className="w-20">{t("album.duration")}</TableHead>
                 <TableHead className="w-10"></TableHead>
               </TableRow>
@@ -208,6 +211,9 @@ export default function LikedSongs() {
                       </TableCell>
                       <TableCell className="text-muted-foreground hidden lg:table-cell">
                         {track.album_title || "-"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground hidden max-w-40 truncate lg:table-cell">
+                        {track.genre || "-"}
                       </TableCell>
                       <TableCell className="text-right">
                         {formatTime(track.duration ?? 0)}

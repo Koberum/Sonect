@@ -158,6 +158,7 @@
     "description": "Browse all tracks in your library",
     "artist": "Artist",
     "album": "Album",
+    "genre": "Genre",
     "noTracks": "No tracks found"
   },
   "liked": {

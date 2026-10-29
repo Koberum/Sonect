@@ -158,6 +158,7 @@
     "description": "Sfoglia tutti i brani nella tua libreria",
     "artist": "Artista",
     "album": "Album",
+    "genre": "Genere",
     "noTracks": "Nessun brano trovato"
   },
   "liked": {
