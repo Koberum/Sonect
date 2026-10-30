@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useTranslation } from "react-i18next";
@@ -6,20 +5,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatTime } from "@/lib/utils";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { PlayIcon, ListPlus, Disc3, Music } from "lucide-react";
-import { usePlayTrack } from "@/features/player/usePlayTrack";
-import { usePlaybackContext } from "@/components/playback-context";
-import { LikeButton } from "@/features/liked/components/like-button";
-import { TrackContextMenu } from "@/features/tracks/components/track-context-menu";
+import { Table, TableBody } from "@/components/ui/table";
+import { Disc3, Music } from "lucide-react";
+import { TrackRow } from "@/features/tracks/components/track-row";
+import { TrackTableHeader } from "@/features/tracks/components/track-table-header";
 import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
 
@@ -27,8 +16,6 @@ export default function GenreDetail() {
   const { t } = useTranslation();
   const { genre } = useParams<{ genre: string }>();
   const navigate = useNavigate();
-  const { trackPlayed } = usePlaybackContext();
-  const { play, addToQueue } = usePlayTrack();
 
   const { data: albums = [], isPending: albumsPending } = useQuery({
     ...catalogQueries.albumsByGenre(genre ?? ""),
@@ -87,93 +74,14 @@ export default function GenreDetail() {
             <EmptyState icon={Music} title={t("tracks.noTracks")} />
           )}
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-8"></TableHead>
-                <TableHead>{t("album.title")}</TableHead>
-                <TableHead className="hidden md:table-cell">
-                  {t("tracks.artist")}
-                </TableHead>
-                <TableHead className="hidden lg:table-cell">
-                  {t("tracks.album")}
-                </TableHead>
-                <TableHead className="w-20">{t("album.duration")}</TableHead>
-                <TableHead className="w-20"></TableHead>
-              </TableRow>
-            </TableHeader>
+            <TrackTableHeader />
             <TableBody>
-              {tracks.map((track) => (
-                <TrackContextMenu key={track.id} track={track}>
-                  <TableRow
-                    className="group h-12 cursor-pointer"
-                    onClick={() => play(track)}
-                  >
-                    <TableCell>
-                      {trackPlayed?.id === track.id ? (
-                        <div className="flex items-end gap-1">
-                          <div
-                            className="bg-primary eq h-1 w-1 rounded"
-                            style={{ animationDelay: "0ms" }}
-                          />
-                          <div
-                            className="bg-primary eq h-2 w-1 rounded"
-                            style={{ animationDelay: "150ms" }}
-                          />
-                          <div
-                            className="bg-primary eq h-3 w-1 rounded"
-                            style={{ animationDelay: "300ms" }}
-                          />
-                        </div>
-                      ) : (
-                        <PlayIcon
-                          width={15}
-                          height={15}
-                          fill="currentColor"
-                          className="opacity-0 transition-opacity group-hover:opacity-100"
-                        />
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium">{track.title}</TableCell>
-                    <TableCell className="text-muted-foreground hidden md:table-cell">
-                      {track.artist_name}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground hidden lg:table-cell">
-                      {track.album_id ? (
-                        <span
-                          className="cursor-pointer hover:underline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/albums/${track.album_id}`);
-                          }}
-                        >
-                          {track.album_title || "-"}
-                        </span>
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatTime(track.duration ?? 0)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-1">
-                        <LikeButton trackId={track.id} />
-                        <Button
-                          variant="bare"
-                          size="icon-sm"
-                          className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addToQueue(track.file);
-                          }}
-                          aria-label={t("album.addToQueue")}
-                        >
-                          <ListPlus />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                </TrackContextMenu>
+              {tracks.map((track, index) => (
+                <TrackRow
+                  key={track.id}
+                  track={track}
+                  number={track.track_number ?? index + 1}
+                />
               ))}
             </TableBody>
           </Table>

@@ -36,12 +36,10 @@
   "album": {
     "loading": "Cargando álbum...",
     "title": "Título",
-    "artist": "Artista",
     "trackCount_one": "{{count}} pista",
     "trackCount_other": "{{count}} pistas",
     "duration": "Duración",
     "trackNumber": "#",
-    "addToQueue": "Agregar a cola",
     "playAll": "Reproducir Todo",
     "goToAlbum": "Ir al Álbum"
   },
@@ -104,9 +102,12 @@
   },
   "contextMenu": {
     "addToPlaylist": "Agregar a la Lista",
-    "newPlaylist": "Nueva Lista",
     "play": "Reproducir",
-    "playLater": "Reproducir Después"
+    "addToQueue": "Agregar a cola"
+  },
+  "trackActions": {
+    "open": "Acciones de la pista",
+    "noPlaylists": "Aún no hay listas"
   },
   "search": {
     "placeholder": "Buscar",
@@ -154,9 +155,6 @@
   "tracks": {
     "title": "Pistas",
     "description": "Explora todas las pistas de tu biblioteca",
-    "artist": "Artista",
-    "album": "Álbum",
-    "genre": "Género",
     "noTracks": "No se encontraron pistas"
   },
   "liked": {

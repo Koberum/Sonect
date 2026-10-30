@@ -36,12 +36,10 @@
   "album": {
     "loading": "Loading album...",
     "title": "Title",
-    "artist": "Artist",
     "trackCount_one": "{{count}} track",
     "trackCount_other": "{{count}} tracks",
     "duration": "Duration",
     "trackNumber": "#",
-    "addToQueue": "Add to queue",
     "playAll": "Play All",
     "goToAlbum": "Go to Album"
   },
@@ -104,9 +102,12 @@
   },
   "contextMenu": {
     "addToPlaylist": "Add to Playlist",
-    "newPlaylist": "New Playlist",
     "play": "Play",
-    "playLater": "Play Later"
+    "addToQueue": "Add to queue"
+  },
+  "trackActions": {
+    "open": "Track actions",
+    "noPlaylists": "No playlists yet"
   },
   "search": {
     "placeholder": "Search",
@@ -154,9 +155,6 @@
   "tracks": {
     "title": "Tracks",
     "description": "Browse all tracks in your library",
-    "artist": "Artist",
-    "album": "Album",
-    "genre": "Genre",
     "noTracks": "No tracks found"
   },
   "liked": {

@@ -36,12 +36,10 @@
   "album": {
     "loading": "Caricamento album...",
     "title": "Titolo",
-    "artist": "Artista",
     "trackCount_one": "{{count}} brano",
     "trackCount_other": "{{count}} brani",
     "duration": "Durata",
     "trackNumber": "#",
-    "addToQueue": "Aggiungi alla coda",
     "playAll": "Riproduci Tutto",
     "goToAlbum": "Vai all'Album"
   },
@@ -104,9 +102,12 @@
   },
   "contextMenu": {
     "addToPlaylist": "Aggiungi alla Playlist",
-    "newPlaylist": "Nuova Playlist",
     "play": "Riproduci",
-    "playLater": "Riproduci Dopo"
+    "addToQueue": "Aggiungi alla coda"
+  },
+  "trackActions": {
+    "open": "Azioni traccia",
+    "noPlaylists": "Nessuna playlist"
   },
   "search": {
     "placeholder": "Cerca",
@@ -154,9 +155,6 @@
   "tracks": {
     "title": "Brani",
     "description": "Sfoglia tutti i brani nella tua libreria",
-    "artist": "Artista",
-    "album": "Album",
-    "genre": "Genere",
     "noTracks": "Nessun brano trovato"
   },
   "liked": {

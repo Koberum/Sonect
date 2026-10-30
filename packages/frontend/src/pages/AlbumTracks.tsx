@@ -1,27 +1,15 @@
 import { useMemo, useState } from "react";
-import PlayStatus from "@/features/dashboard/components/play-status";
 import { Separator } from "@/components/ui/separator";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useTranslation } from "react-i18next";
 import { useParams, Link } from "react-router-dom";
-import { cn, formatTime, getCoverPath } from "@/lib/utils";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { PlayIcon, ListPlus, Library } from "lucide-react";
+import { getCoverPath } from "@/lib/utils";
+import { Table, TableBody } from "@/components/ui/table";
+import { Library } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { PageHeader } from "@/components/ui/page-header";
-import { usePlaybackContext } from "@/components/playback-context";
-import { LikeButton } from "@/features/liked/components/like-button";
-import { TrackContextMenu } from "@/features/tracks/components/track-context-menu";
+import { TrackRow } from "@/features/tracks/components/track-row";
+import { TrackTableHeader } from "@/features/tracks/components/track-table-header";
 import { setTrackDragData } from "@/features/playlists/track-drag";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
@@ -64,8 +52,6 @@ export default function AlbumPage() {
     metadata.formats.length > 0 ||
     metadata.sourceNames.length > 0;
 
-  const { trackPlayed } = usePlaybackContext();
-  const { play, addToQueue } = usePlayTrack();
   const [draggingTrackId, setDraggingTrackId] = useState<number | null>(null);
   return (
     <>
@@ -144,99 +130,25 @@ export default function AlbumPage() {
             ))}
           </div>
         ) : (
-          <ScrollArea>
-            <ScrollBar orientation="horizontal" />
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="hidden w-12 lg:table-cell">
-                    {t("album.trackNumber")}
-                  </TableHead>
-                  <TableHead>{t("album.title")}</TableHead>
-                  <TableHead className="hidden w-28 md:table-cell md:w-40">
-                    {t("album.artist")}
-                  </TableHead>
-                  <TableHead className="w-20">{t("album.duration")}</TableHead>
-                  <TableHead className="w-20"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tracks.map((track: TrackWithRelations) => (
-                  <TrackContextMenu key={track.id} track={track}>
-                    <TableRow
-                      draggable
-                      className={cn(
-                        "group h-12 cursor-pointer",
-                        draggingTrackId === track.id && "opacity-50",
-                      )}
-                      onDragStart={(event) => {
-                        setTrackDragData(event.dataTransfer, track.id);
-                        setDraggingTrackId(track.id);
-                      }}
-                      onDragEnd={() => setDraggingTrackId(null)}
-                      onClick={() => play(track)}
-                    >
-                      <TableCell className="hidden lg:table-cell">
-                        {trackPlayed?.id === track.id ? (
-                          <PlayStatus />
-                        ) : (
-                          <>
-                            <span className="group-hover:hidden">
-                              {track.track_number}
-                            </span>
-                            <PlayIcon
-                              width={15}
-                              height={15}
-                              fill="currentColor"
-                              className="hidden transition-opacity group-hover:block"
-                            />
-                          </>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {track.title}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground hidden w-28 md:table-cell md:w-40">
-                        <span className="block truncate">
-                          {track.artist_id ? (
-                            <Link
-                              to={`/artists/${track.artist_id}/albums`}
-                              className="hover:underline"
-                              onClick={(event) => event.stopPropagation()}
-                            >
-                              {track.artist_name || album?.artist_name || "-"}
-                            </Link>
-                          ) : (
-                            track.artist_name || album?.artist_name || "-"
-                          )}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatTime(track.duration ?? 0)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-end gap-1">
-                          <LikeButton trackId={track.id} />
-                          <Button
-                            variant="bare"
-                            size="icon-sm"
-                            className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              addToQueue(track.file);
-                            }}
-                            aria-label={t("album.addToQueue")}
-                          >
-                            <ListPlus />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  </TrackContextMenu>
-                ))}
-              </TableBody>
-            </Table>
-          </ScrollArea>
+          <Table>
+            <TrackTableHeader />
+            <TableBody>
+              {tracks.map((track: TrackWithRelations, index) => (
+                <TrackRow
+                  key={track.id}
+                  track={track}
+                  number={track.track_number ?? index + 1}
+                  draggable
+                  isDragging={draggingTrackId === track.id}
+                  onDragStart={(event) => {
+                    setTrackDragData(event.dataTransfer, track.id);
+                    setDraggingTrackId(track.id);
+                  }}
+                  onDragEnd={() => setDraggingTrackId(null)}
+                />
+              ))}
+            </TableBody>
+          </Table>
         )}
       </div>
     </>

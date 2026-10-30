@@ -48,8 +48,8 @@ no subscriptions, no limits.
   profile's Liked Songs. Liked Songs has Play All and Shuffle and is scoped per
   household member; the old flat Tracks page is gone.
 - **Playlists with drag & drop** — drag a track row from an album onto a
-  playlist in the left sidebar to add it instantly (desktop). The track's
-  context menu still offers "Add to playlist" for touch and keyboard use.
+  playlist in the left sidebar to add it instantly (desktop). The three-dot
+  track menu also offers "Add to playlist" for touch and keyboard use.
 - **Dashboard per profile** — Recently played albums, artists, and tracks, top
   tracks, suggestions, and the genre mix are all personal. Listening history is
   recorded separately per household member (MPD plays count for the profile

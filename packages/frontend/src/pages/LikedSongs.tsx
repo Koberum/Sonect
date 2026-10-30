@@ -9,22 +9,12 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Table, TableBody } from "@/components/ui/table";
 import { useAuth } from "@/features/auth/auth-context";
-import { usePlayTrack } from "@/features/player/usePlayTrack";
-import { LikeButton } from "@/features/liked/components/like-button";
 import { likedQueries } from "@/features/liked/queries";
 import { playLiked } from "@/features/liked/api";
-import { TrackContextMenu } from "@/features/tracks/components/track-context-menu";
-import { formatTime, getCoverPath } from "@/lib/utils";
+import { TrackRow } from "@/features/tracks/components/track-row";
+import { TrackTableHeader } from "@/features/tracks/components/track-table-header";
 
 function formatTotalDuration(seconds: number): string {
   const total = Math.max(0, Math.round(seconds));
@@ -40,7 +30,6 @@ export default function LikedSongs() {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const profileId = profile?.id ?? "";
-  const { play } = usePlayTrack();
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -151,70 +140,17 @@ export default function LikedSongs() {
           }
         />
       ) : (
-        <ScrollArea>
-          <ScrollBar orientation="horizontal" />
+        <>
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10">#</TableHead>
-                <TableHead className="w-12"></TableHead>
-                <TableHead>{t("album.title")}</TableHead>
-                <TableHead className="hidden sm:table-cell">
-                  {t("tracks.artist")}
-                </TableHead>
-                <TableHead className="hidden lg:table-cell">
-                  {t("tracks.album")}
-                </TableHead>
-                <TableHead className="hidden lg:table-cell">
-                  {t("tracks.genre")}
-                </TableHead>
-                <TableHead className="w-20">{t("album.duration")}</TableHead>
-                <TableHead className="w-10"></TableHead>
-              </TableRow>
-            </TableHeader>
+            <TrackTableHeader />
             <TableBody>
               {tracks.map((track, index) => (
-                <TrackContextMenu key={track.id} track={track}>
-                  <TableRow
-                    className="group h-12 cursor-pointer"
-                    onClick={() => play(track)}
-                  >
-                    <TableCell className="text-muted-foreground">
-                      {index + 1}
-                    </TableCell>
-                    <TableCell>
-                      <img
-                        src={getCoverPath(track.cover_path)}
-                        alt=""
-                        className="h-8 w-8 rounded-sm object-cover"
-                        onError={(event) => {
-                          event.currentTarget.src = "/default_cover.png";
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      <p className="truncate">{track.title}</p>
-                      <p className="text-muted-foreground truncate text-xs sm:hidden">
-                        {track.artist_name}
-                      </p>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground hidden sm:table-cell">
-                      {track.artist_name}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground hidden lg:table-cell">
-                      {track.album_title || "-"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground hidden max-w-40 truncate lg:table-cell">
-                      {track.genre || "-"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatTime(track.duration ?? 0)}
-                    </TableCell>
-                    <TableCell>
-                      <LikeButton trackId={track.id} />
-                    </TableCell>
-                  </TableRow>
-                </TrackContextMenu>
+                <TrackRow
+                  key={track.id}
+                  track={track}
+                  number={index + 1}
+                  showCover
+                />
               ))}
             </TableBody>
           </Table>
@@ -222,7 +158,7 @@ export default function LikedSongs() {
           {isFetchingNextPage && (
             <Skeleton className="mt-2 h-12 w-full rounded-lg" />
           )}
-        </ScrollArea>
+        </>
       )}
     </div>
   );

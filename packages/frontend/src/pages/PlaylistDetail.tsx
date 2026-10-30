@@ -6,16 +6,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { PlayIcon, Trash2, Play, Edit3, X, ListMusic } from "lucide-react";
-import { formatTime, getCoverPath } from "@/lib/utils";
+import { Table, TableBody } from "@/components/ui/table";
+import { Trash2, Play, Edit3, ListMusic } from "lucide-react";
 import type { PlaylistTrack } from "@repo/types/catalog";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
@@ -55,8 +47,8 @@ import {
   playlistQueries,
   playlistMutations,
 } from "@/features/playlists/queries";
-import { LikeButton } from "@/features/liked/components/like-button";
-import { TrackContextMenu } from "@/features/tracks/components/track-context-menu";
+import { TrackRow } from "@/features/tracks/components/track-row";
+import { TrackTableHeader } from "@/features/tracks/components/track-table-header";
 
 export default function PlaylistDetail() {
   const { t } = useTranslation();
@@ -302,87 +294,18 @@ export default function PlaylistDetail() {
 
       {playlist.tracks.length > 0 ? (
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">#</TableHead>
-              <TableHead className="w-12"></TableHead>
-              <TableHead>{t("album.title")}</TableHead>
-              <TableHead className="hidden sm:table-cell">
-                {t("tracks.artist")}
-              </TableHead>
-              <TableHead>{t("album.duration")}</TableHead>
-              <TableHead className="w-20"></TableHead>
-            </TableRow>
-          </TableHeader>
+          <TrackTableHeader />
           <TableBody>
-            {playlist.tracks.map((track, idx: number) => (
-              <TrackContextMenu
+            {playlist.tracks.map((track, index) => (
+              <TrackRow
                 key={track.pt_id ?? track.id}
                 track={track}
+                number={index + 1}
+                showCover
+                onPlay={() => void handlePlay(track)}
                 onRemove={() => void handleRemoveTrack(track.pt_id)}
                 removeLabel={t("playlist.removeTrack")}
-              >
-                <TableRow
-                  className="group cursor-pointer"
-                  onClick={() => handlePlay(track)}
-                >
-                  <TableCell className="text-muted-foreground">
-                    <span className="group-hover:hidden">{idx + 1}</span>
-                    <PlayIcon
-                      width={15}
-                      height={15}
-                      fill="currentColor"
-                      className="hidden group-hover:block"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <img
-                      src={getCoverPath(track.cover_path)}
-                      alt=""
-                      className="h-8 w-8 rounded-sm object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = "/default_cover.png";
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <p className="font-medium">{track.title}</p>
-                    <p className="text-muted-foreground text-xs sm:hidden">
-                      {track.artist_name}
-                    </p>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground hidden sm:table-cell">
-                    {track.artist_name}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatTime(track.duration ?? 0)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      <LikeButton trackId={track.id} />
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="bare"
-                            size="icon-sm"
-                            className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemoveTrack(track.pt_id);
-                            }}
-                            aria-label={t("playlist.removeTrack")}
-                          >
-                            <X />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {t("playlist.removeTrack")}
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              </TrackContextMenu>
+              />
             ))}
           </TableBody>
         </Table>
