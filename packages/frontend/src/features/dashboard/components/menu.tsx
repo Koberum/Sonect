@@ -6,7 +6,6 @@ import { useTheme } from "@/components/theme-provider";
 import { StatusBar } from "./status-bar";
 import { NetworkStatusIndicator } from "@/features/status/NetworkStatusIndicator";
 import { ProfileSwitcher } from "@/features/profiles/profile-switcher";
-import { SettingsButton } from "./settings-button";
 
 export interface MenuProps {
   isOpen?: boolean;
@@ -61,7 +60,6 @@ export function Menu({ isOpen, toggleSidebar }: MenuProps) {
           <NetworkStatusIndicator />
         </div>
         <ProfileSwitcher />
-        <SettingsButton />
       </div>
     </Menubar>
   );

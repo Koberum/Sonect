@@ -411,9 +411,10 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
   `/system/*` route, all of `/profiles/*`, and `POST /catalog/scan`.
 - **Roles.** Admins own libraries, audio output, sync/scan, debug/setup, and
   profile management. Users can browse and listen, use the global playlists,
-  and change their own password. The UI hides Settings and the sidebar library
-  refresh for users; the API enforces the same split. The last admin cannot be
-  demoted or deleted (409).
+  and change their own password. Settings is an admin-only item in the profile
+  dropdown (`ProfileSwitcher`); the sidebar library refresh is hidden for users.
+  The API enforces the same split. The last admin cannot be demoted or deleted
+  (409).
 - **Cookie.** `sonect_session`: httpOnly, SameSite=Lax, Path=/, 30-day absolute
   `maxAge`, and `Secure` only when `COOKIE_SECURE=true`. CORS uses an exact
   origin allowlist from `CORS_ORIGIN` (comma-separated; empty means same-origin

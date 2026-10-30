@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import {
   Check,
   ChevronsUpDown,
@@ -7,6 +8,7 @@ import {
   LogOut,
   Pencil,
   Plus,
+  Settings,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Profile, PublicProfile } from "@repo/types";
@@ -41,6 +43,7 @@ type Candidate = Profile | PublicProfile;
 
 export function ProfileSwitcher() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { profile, isAdmin, logout } = useAuth();
   const [createOpen, setCreateOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
@@ -177,6 +180,10 @@ export function ProfileSwitcher() {
               >
                 <Plus className="size-4" />
                 {t("profile.addProfile")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => navigate("/settings")}>
+                <Settings className="size-4" />
+                {t("settings.title")}
               </DropdownMenuItem>
             </>
           )}
