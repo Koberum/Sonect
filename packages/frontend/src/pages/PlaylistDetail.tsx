@@ -6,16 +6,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { PlayIcon, Trash2, Play, Edit3, X, ListMusic } from "lucide-react";
-import { formatTime, getCoverPath } from "@/lib/utils";
+import { Table, TableBody } from "@/components/ui/table";
+import { Trash2, Play, Edit3, ListMusic } from "lucide-react";
 import type { PlaylistTrack } from "@repo/types/catalog";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
@@ -50,23 +42,19 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   playlistQueries,
   playlistMutations,
 } from "@/features/playlists/queries";
+import { TrackRow } from "@/features/tracks/components/track-row";
+import { TrackTableHeader } from "@/features/tracks/components/track-table-header";
 
 export default function PlaylistDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
-  const { play, addToQueue } = usePlayTrack();
+  const { play } = usePlayTrack();
   const pid = id ? parseInt(id, 10) : 0;
 
   const { data: playlist, isPending } = useQuery({
@@ -124,11 +112,6 @@ export default function PlaylistDetail() {
     } catch {
       toast.error(t("playlist.trackRemovedError"));
     }
-  };
-
-  const handleAddToQueue = async (file: string) => {
-    await addToQueue(file);
-    toast(t("playlist.trackAddedToQueue"));
   };
 
   const handleEdit = async () => {
@@ -219,7 +202,7 @@ export default function PlaylistDetail() {
                 <TooltipTrigger asChild>
                   <SheetTrigger asChild>
                     <Button
-                      variant="ghost"
+                      variant="bare"
                       size="icon-sm"
                       aria-label={t("playlist.edit")}
                     >
@@ -269,7 +252,7 @@ export default function PlaylistDetail() {
                 <TooltipTrigger asChild>
                   <AlertDialogTrigger asChild>
                     <Button
-                      variant="ghost"
+                      variant="bare"
                       size="icon-sm"
                       className="text-destructive hover:text-destructive"
                       aria-label={t("playlist.delete")}
@@ -311,111 +294,18 @@ export default function PlaylistDetail() {
 
       {playlist.tracks.length > 0 ? (
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">#</TableHead>
-              <TableHead className="w-12"></TableHead>
-              <TableHead>{t("album.title")}</TableHead>
-              <TableHead className="hidden sm:table-cell">
-                {t("tracks.artist")}
-              </TableHead>
-              <TableHead>{t("album.duration")}</TableHead>
-              <TableHead className="w-10"></TableHead>
-            </TableRow>
-          </TableHeader>
+          <TrackTableHeader />
           <TableBody>
-            {playlist.tracks.map((track, idx: number) => (
-              <ContextMenu key={track.pt_id ?? track.id}>
-                <ContextMenuTrigger asChild>
-                  <TableRow
-                    className="group cursor-pointer"
-                    onClick={() => handlePlay(track)}
-                  >
-                    <TableCell className="text-muted-foreground">
-                      <span className="group-hover:hidden">{idx + 1}</span>
-                      <PlayIcon
-                        width={15}
-                        height={15}
-                        fill="currentColor"
-                        className="hidden group-hover:block"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <img
-                        src={getCoverPath(track.cover_path)}
-                        alt=""
-                        className="h-8 w-8 rounded-sm object-cover"
-                        onError={(e) => {
-                          e.currentTarget.src = "/default_cover.png";
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <p className="font-medium">{track.title}</p>
-                      <p className="text-muted-foreground text-xs sm:hidden">
-                        {track.artist_name}
-                      </p>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground hidden sm:table-cell">
-                      {track.artist_name}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatTime(track.duration ?? 0)}
-                    </TableCell>
-                    <TableCell>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemoveTrack(track.pt_id);
-                            }}
-                            aria-label={t("playlist.removeTrack")}
-                          >
-                            <X />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {t("playlist.removeTrack")}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                </ContextMenuTrigger>
-                <ContextMenuContent>
-                  <ContextMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePlay(track);
-                    }}
-                  >
-                    <Play className="mr-2 h-4 w-4" fill="currentColor" />
-                    {t("contextMenu.play")}
-                  </ContextMenuItem>
-                  <ContextMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAddToQueue(track.file);
-                    }}
-                  >
-                    <ListMusic className="mr-2 h-4 w-4" />
-                    {t("contextMenu.addToQueue")}
-                  </ContextMenuItem>
-                  <ContextMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveTrack(track.pt_id);
-                    }}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <X className="mr-2 h-4 w-4" />
-                    {t("playlist.removeTrack")}
-                  </ContextMenuItem>
-                </ContextMenuContent>
-              </ContextMenu>
+            {playlist.tracks.map((track, index) => (
+              <TrackRow
+                key={track.pt_id ?? track.id}
+                track={track}
+                number={index + 1}
+                showCover
+                onPlay={() => void handlePlay(track)}
+                onRemove={() => void handleRemoveTrack(track.pt_id)}
+                removeLabel={t("playlist.removeTrack")}
+              />
             ))}
           </TableBody>
         </Table>

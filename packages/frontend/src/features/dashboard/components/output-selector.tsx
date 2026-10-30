@@ -67,7 +67,7 @@ export function OutputSelector({
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="ghost"
+          variant="bare"
           size="sm"
           disabled={disabled}
           className="text-muted-foreground hover:text-foreground gap-1 text-xs"

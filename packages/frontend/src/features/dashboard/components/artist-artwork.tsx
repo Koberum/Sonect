@@ -87,7 +87,7 @@ export function ArtistArtwork({
             {t("contextMenu.play")}
           </ContextMenuItem>
           <ContextMenuItem onClick={handlePlayLater}>
-            {t("contextMenu.playLater")}
+            {t("contextMenu.addToQueue")}
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>

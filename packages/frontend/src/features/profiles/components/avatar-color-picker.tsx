@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { AVATAR_COLORS, getInitials } from "@/lib/selectedProfile";
+import { AVATAR_COLORS, getInitials } from "@/lib/avatar";
 import { Label } from "@/components/ui/label";
 
 type AvatarColorPickerProps = {

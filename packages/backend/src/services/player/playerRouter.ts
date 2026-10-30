@@ -1,4 +1,5 @@
 import { EventEmitter } from "events";
+import { profileSettingsDb } from "@repo/db";
 import type { LogService } from "../utils/logService.js";
 import type { MpdConfigService } from "../mpd/mpdConfigService.js";
 import {
@@ -9,7 +10,12 @@ import { SessionPlayer } from "../session/sessionPlayer.js";
 import { MpdAdapter, type PlaybackEngine } from "./mpdAdapter.js";
 import type { PlayerServiceImpl } from "./playerService.js";
 import type { MpdConnectionManager } from "../mpd/mpdConnectionManager.js";
-import type { OutputMode, PlaybackStatus, QueuedTrack } from "@repo/types";
+import type {
+  OutputMode,
+  PlaybackStatus,
+  PlayerReport,
+  QueuedTrack,
+} from "@repo/types";
 
 type SessionRecord = {
   mode: OutputMode;
@@ -18,6 +24,7 @@ type SessionRecord = {
   activeDeviceName: string | null;
   activeDeviceType: string | null;
   volume: number;
+  crossfade: number;
 };
 
 function fmtSid(id: string): string {
@@ -61,9 +68,15 @@ export class PlayerRouter extends EventEmitter {
   ): void {
     const prev = this.forwarders.get(sessionId);
     if (prev) prev();
-    const handler = () => this.emit(`session:${sessionId}:stateChanged`);
-    engine.on("stateChanged", handler);
-    this.forwarders.set(sessionId, () => engine.off("stateChanged", handler));
+    const onState = () => this.emit(`session:${sessionId}:stateChanged`);
+    const onTrack = (track: unknown) =>
+      this.emit("trackChanged", { sessionId, track });
+    engine.on("stateChanged", onState);
+    engine.on("trackChanged", onTrack);
+    this.forwarders.set(sessionId, () => {
+      engine.off("stateChanged", onState);
+      engine.off("trackChanged", onTrack);
+    });
   }
 
   private detachForwarder(sessionId: string): void {
@@ -85,6 +98,7 @@ export class PlayerRouter extends EventEmitter {
       activeDeviceName: null,
       activeDeviceType: null,
       volume: 100,
+      crossfade: profileSettingsDb.get(sessionId).crossfadeSeconds,
     };
     this.records.set(sessionId, rec);
     this.attachForwarder(sessionId, engine);
@@ -105,6 +119,7 @@ export class PlayerRouter extends EventEmitter {
       constructor(private p: SessionPlayer) {
         super();
         this.p.on("stateChanged", () => this.emit("stateChanged"));
+        this.p.on("trackChanged", (track) => this.emit("trackChanged", track));
       }
       getStatus(): PlaybackStatus {
         return this.p.getStatus();
@@ -131,6 +146,7 @@ export class PlayerRouter extends EventEmitter {
         const q = this.p.getQueue();
         return q.map((e, idx) => ({
           id: e.id,
+          trackId: e.id,
           file: e.file,
           title: e.title,
           artist_name: e.artist_name,
@@ -144,6 +160,9 @@ export class PlayerRouter extends EventEmitter {
       async addToQueue(file: string): Promise<void> {
         this.p.addToQueue(file);
       }
+      async playFiles(files: string[], startAt = 0): Promise<void> {
+        this.p.playFiles(files, startAt);
+      }
       async removeFromQueue(pos: number): Promise<void> {
         this.p.removeFromQueue(pos);
       }
@@ -155,6 +174,9 @@ export class PlayerRouter extends EventEmitter {
       async enableRepeat(_enabled: boolean): Promise<void> {}
       async playPosition(pos: number): Promise<void> {
         this.p.playPosition(pos);
+      }
+      reportPlayback(report: PlayerReport): void {
+        this.p.reportPlayback(report);
       }
     })(s);
     return adapter;
@@ -200,6 +222,111 @@ export class PlayerRouter extends EventEmitter {
         { sessionId: fmtSid(sessionId), deviceId: deviceId.slice(0, 8) },
       );
     }
+  }
+
+  /**
+   * Mirrors a factual report from the active browser device. Reports from
+   * other devices (or in MPD mode) are ignored so timing cannot be hijacked.
+   */
+  reportPlayback(
+    sessionId: string,
+    deviceId: string | null,
+    report: PlayerReport,
+    deviceName: string | null = null,
+    deviceType: string | null = null,
+  ): boolean {
+    if (!deviceId) return false;
+    const rec = this.ensureRecord(sessionId);
+    if (rec.mode !== "browser") return false;
+    if (rec.activeDeviceId === null) {
+      // Claim silently: the report that follows emits stateChanged with the
+      // claim included, so we avoid an intermediate status without the report.
+      rec.activeDeviceId = deviceId;
+      rec.activeDeviceName = deviceName;
+      rec.activeDeviceType = deviceType;
+      this.logService?.pushLog?.(
+        "info",
+        `[Session ${fmtSid(sessionId)}][browser] claimed by device ${deviceId.slice(0, 8)}`,
+        { sessionId: fmtSid(sessionId), deviceId: deviceId.slice(0, 8) },
+      );
+    }
+    if (rec.activeDeviceId !== deviceId) return false;
+    rec.engine.reportPlayback(report);
+    return true;
+  }
+
+  /**
+   * Called when the device that owned browser playback disconnects. Clearing
+   * the claim lets another tab take over instead of staying stuck as "active".
+   */
+  releaseActiveDevice(sessionId: string, deviceId: string | null): void {
+    if (!deviceId) return;
+    const rec = this.records.get(sessionId);
+    if (!rec || rec.mode !== "browser" || rec.activeDeviceId !== deviceId) {
+      return;
+    }
+    rec.activeDeviceId = null;
+    rec.activeDeviceName = null;
+    rec.activeDeviceType = null;
+    try {
+      void rec.engine.pause();
+    } catch {
+      // engine may already be torn down
+    }
+    this.emit(`session:${sessionId}:stateChanged`);
+    this.logService?.pushLog?.(
+      "debug",
+      `[Session ${fmtSid(sessionId)}][browser] released active device ${deviceId.slice(0, 8)}`,
+      { sessionId: fmtSid(sessionId), deviceId: deviceId.slice(0, 8) },
+    );
+  }
+
+  /**
+   * Updates the crossfade for a profile and applies it to MPD immediately when
+   * that profile currently owns the MPD output. Browser sessions pick up the
+   * value from the next `player-status`.
+   */
+  setCrossfade(sessionId: string, seconds: number): number {
+    const value = Math.max(0, Math.min(30, Math.round(seconds)));
+    const rec = this.ensureRecord(sessionId);
+    rec.crossfade = value;
+    if (
+      rec.mode === "mpd" &&
+      this.mpdConfigService.getMpdOwner() === sessionId
+    ) {
+      this.applyMpdCrossfade(value);
+    }
+    this.emit(`session:${sessionId}:stateChanged`);
+    this.logService?.pushLog?.(
+      "info",
+      `[Session ${fmtSid(sessionId)}] crossfade set to ${value}s`,
+      { sessionId: fmtSid(sessionId), crossfade: value, mode: rec.mode },
+    );
+    return value;
+  }
+
+  /**
+   * Re-applies the current MPD owner's crossfade after the daemon reconnects
+   * (MPD resets runtime playback options on restart).
+   */
+  onMpdConnected(): void {
+    const owner = this.mpdConfigService.getMpdOwner();
+    if (!owner) return;
+    const rec = this.records.get(owner);
+    if (!rec || rec.mode !== "mpd") return;
+    this.applyMpdCrossfade(rec.crossfade);
+  }
+
+  private applyMpdCrossfade(seconds: number): void {
+    this.mpdConnectionManager
+      .executeCommand("crossfade", [String(seconds)])
+      .catch((err: unknown) => {
+        this.logService?.pushLog?.(
+          "warn",
+          `[MPD] failed to apply crossfade ${seconds}s: ${String(err)}`,
+          { crossfade: seconds, error: String(err) },
+        );
+      });
   }
 
   getMpdOwner(): string | null {
@@ -324,6 +451,7 @@ export class PlayerRouter extends EventEmitter {
           warning: `MPD locked by ${acquired.owner ?? "another session"}`,
         };
       }
+      this.applyMpdCrossfade(rec.crossfade);
       this.detachForwarder(sessionId);
       rec.engine.removeAllListeners("stateChanged");
       const mpdEngine = this.createMpdEngine(sessionId);
@@ -334,6 +462,7 @@ export class PlayerRouter extends EventEmitter {
         activeDeviceName: null,
         activeDeviceType: null,
         volume: rec.volume ?? 100,
+        crossfade: rec.crossfade,
       });
       this.attachForwarder(sessionId, mpdEngine);
       // Re-play with clear semantics at same seek
@@ -397,6 +526,7 @@ export class PlayerRouter extends EventEmitter {
         activeDeviceName: deviceName ?? null,
         activeDeviceType: deviceType ?? null,
         volume: rec.volume ?? 100,
+        crossfade: rec.crossfade,
       });
       this.attachForwarder(sessionId, browserEngine);
       if (prevFile) {
@@ -455,6 +585,7 @@ export class PlayerRouter extends EventEmitter {
       activeDeviceName: rec.activeDeviceName,
       activeDeviceType: rec.activeDeviceType,
       mode: rec.mode,
+      crossfade: rec.crossfade,
     } as PlaybackStatus;
   }
 

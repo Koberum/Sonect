@@ -1,14 +1,21 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation } from "@tanstack/react-query";
-import type { Profile } from "@repo/types";
-import { AVATAR_COLORS, toSelectedProfile } from "@/lib/selectedProfile";
-import { useProfile } from "../profile-context";
+import { Loader2 } from "lucide-react";
+import type { Profile, ProfileRole } from "@repo/types";
+import { AVATAR_COLORS } from "@/lib/avatar";
 import { profileMutations } from "../queries";
 import { AvatarColorPicker } from "./avatar-color-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type CreateProfileFormProps = {
   onCreated?: (profile: Profile) => void;
@@ -22,23 +29,40 @@ export function CreateProfileForm({
   autoFocus = true,
 }: CreateProfileFormProps) {
   const { t } = useTranslation();
-  const { selectProfile } = useProfile();
   const [name, setName] = useState("");
   const [color, setColor] = useState<string>(AVATAR_COLORS[0]);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState<ProfileRole>("user");
   const [error, setError] = useState<string | null>(null);
 
   const createMut = useMutation(profileMutations.create());
 
+  const canSubmit =
+    name.trim().length > 0 &&
+    password.length >= 8 &&
+    confirmPassword.length > 0 &&
+    !createMut.isPending;
+
   const handleCreate = async (): Promise<void> => {
     const trimmed = name.trim();
     if (!trimmed || createMut.isPending) return;
+    if (password.length < 8) {
+      setError(t("auth.passwordTooShort"));
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError(t("auth.passwordsDoNotMatch"));
+      return;
+    }
     setError(null);
     try {
       const created = await createMut.mutateAsync({
         name: trimmed,
         avatarColor: color,
+        password,
+        role,
       });
-      selectProfile(toSelectedProfile(created));
       onCreated?.(created);
     } catch {
       setError(t("profile.errors.create"));
@@ -67,6 +91,46 @@ export function CreateProfileForm({
 
       <AvatarColorPicker value={color} onChange={setColor} previewName={name} />
 
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="create-profile-password">{t("auth.password")}</Label>
+        <Input
+          id="create-profile-password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="new-password"
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="create-profile-confirm">
+          {t("auth.confirmPassword")}
+        </Label>
+        <Input
+          id="create-profile-confirm"
+          type="password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          autoComplete="new-password"
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="create-profile-role">{t("auth.role")}</Label>
+        <Select
+          value={role}
+          onValueChange={(value) => setRole(value as ProfileRole)}
+        >
+          <SelectTrigger id="create-profile-role" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="user">{t("auth.roleUser")}</SelectItem>
+            <SelectItem value="admin">{t("auth.roleAdmin")}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {error && (
         <p role="alert" className="text-destructive text-sm">
           {error}
@@ -76,10 +140,11 @@ export function CreateProfileForm({
       <div className="flex gap-2">
         <Button
           type="button"
-          disabled={!name.trim() || createMut.isPending}
+          disabled={!canSubmit}
           onClick={() => void handleCreate()}
           className="flex-1"
         >
+          {createMut.isPending && <Loader2 className="animate-spin" />}
           {t("profile.create")}
         </Button>
         {onCancel && (

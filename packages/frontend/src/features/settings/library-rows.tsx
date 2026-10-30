@@ -50,7 +50,7 @@ export function RegisteredLibraryRow({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant="ghost"
+              variant="bare"
               size="icon-sm"
               onClick={onRefresh}
               disabled={isRefreshing}
@@ -70,7 +70,7 @@ export function RegisteredLibraryRow({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant="ghost"
+              variant="bare"
               size="icon-sm"
               onClick={onEdit}
               aria-label={t("settings.libraries.edit", "Edit")}
@@ -85,7 +85,7 @@ export function RegisteredLibraryRow({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant="ghost"
+              variant="bare"
               size="icon-sm"
               onClick={onDelete}
               aria-label={t("settings.libraries.deleteButton", "Delete")}

@@ -1,15 +1,15 @@
 {
   "dashboard": {
     "title": "Ascolta Ora",
-    "continueListening": "Riproduci di Recente",
+    "recentlyPlayedAlbums": "Ultimi album ascoltati",
+    "recentlyPlayedArtists": "Ultimi artisti ascoltati",
     "recentlyPlayed": "Riprodotti di Recente",
     "topTracks": "Brani Top",
     "suggestedForYou": "Suggeriti per Te",
     "genreQuickMix": "Il tuo Mix {{genre}}",
     "playMix": "Riproduci Mix",
     "trackCount": "{{count}} brani",
-    "trackCount_one": "{{count}} brano",
-    "loading": "Caricamento della dashboard..."
+    "trackCount_one": "{{count}} brano"
   },
   "sidebar": {
     "discover": "Scopri",
@@ -18,7 +18,6 @@
     "artists": "Artisti",
     "statistics": "Statistiche",
     "playlists": "Playlist",
-    "settings": "Impostazioni",
     "refreshLibrary": "Aggiorna Libreria",
     "refreshingLibrary": "Aggiornamento...",
     "toggleSidebar": "Mostra/nascondi barra laterale"
@@ -37,9 +36,10 @@
   "album": {
     "loading": "Caricamento album...",
     "title": "Titolo",
+    "trackCount_one": "{{count}} brano",
+    "trackCount_other": "{{count}} brani",
     "duration": "Durata",
     "trackNumber": "#",
-    "addToQueue": "Aggiungi alla coda",
     "playAll": "Riproduci Tutto",
     "goToAlbum": "Vai all'Album"
   },
@@ -75,6 +75,7 @@
     "outputModeError": "Errore nel cambio della modalità di uscita",
     "tapToPlay": "Tocca per riprodurre",
     "mpdError": "Errore di riproduzione MPD: {{error}}",
+    "playbackError": "Impossibile riprodurre questo brano",
     "mpdLocked": "MPD bloccato",
     "outputModeLocked": "Uscita MPD bloccata da un'altra sessione"
   },
@@ -101,10 +102,12 @@
   },
   "contextMenu": {
     "addToPlaylist": "Aggiungi alla Playlist",
-    "addToQueue": "Aggiungi alla coda",
-    "newPlaylist": "Nuova Playlist",
     "play": "Riproduci",
-    "playLater": "Riproduci Dopo"
+    "addToQueue": "Aggiungi alla coda"
+  },
+  "trackActions": {
+    "open": "Azioni traccia",
+    "noPlaylists": "Nessuna playlist"
   },
   "search": {
     "placeholder": "Cerca",
@@ -114,6 +117,7 @@
     "addToQueue": "Aggiungi alla coda",
     "addedToQueue": "Aggiunto alla coda",
     "startTyping": "Inizia a digitare per cercare...",
+    "recentSearches": "Ricerche recenti",
     "noResults": "Nessun risultato trovato"
   },
   "playlist": {
@@ -138,7 +142,6 @@
     "trackAddError": "Impossibile aggiungere il brano",
     "trackRemoved": "Brano rimosso dalla playlist",
     "trackRemovedError": "Impossibile rimuovere il brano",
-    "trackAddedToQueue": "Brano aggiunto alla coda",
     "removeTrack": "Rimuovi brano"
   },
   "albums": {
@@ -152,9 +155,23 @@
   "tracks": {
     "title": "Brani",
     "description": "Sfoglia tutti i brani nella tua libreria",
-    "artist": "Artista",
-    "album": "Album",
     "noTracks": "Nessun brano trovato"
+  },
+  "liked": {
+    "title": "Preferiti",
+    "description": "I brani che ti piacciono",
+    "count_one": "{{count}} brano",
+    "count_other": "{{count}} brani",
+    "like": "Mi piace",
+    "unlike": "Rimuovi dai brani che ti piacciono",
+    "playAll": "Riproduci tutto",
+    "shuffle": "Casuale",
+    "emptyTitle": "Nessun brano che ti piace",
+    "emptyDescription": "Tocca il cuore su un brano per aggiungerlo qui.",
+    "browse": "Sfoglia gli album",
+    "loadError": "Impossibile caricare i brani che ti piacciono.",
+    "playError": "Impossibile avviare la riproduzione.",
+    "updateError": "Impossibile aggiornare il mi piace."
   },
   "genres": {
     "title": "Generi",
@@ -192,6 +209,7 @@
     "description": "Configura il tuo sistema",
     "tabs": {
       "audio": "Audio",
+      "playback": "Riproduzione",
       "libraries": "Librerie",
       "appearance": "Aspetto",
       "debug": "Debug"
@@ -207,6 +225,19 @@
       "configured": "Uscita audio configurata",
       "configureError": "Impossibile configurare l'audio",
       "loadError": "Impossibile caricare i dispositivi audio"
+    },
+    "playback": {
+      "title": "Riproduzione",
+      "description": "Dissolvenza incrociata tra i brani per questo profilo.",
+      "crossfadeLabel": "Crossfade",
+      "seconds": "{{seconds}} s",
+      "hint": "Sovrappone la fine di un brano all'inizio del successivo. Imposta 0 per disattivare.",
+      "mpdHint": "Con MPD il valore si applica quando questo profilo detiene l'uscita MPD. MPD può fare crossfade solo tra brani con lo stesso formato audio.",
+      "save": "Salva",
+      "saving": "Salvataggio...",
+      "saved": "Impostazioni di riproduzione salvate",
+      "saveError": "Impossibile salvare le impostazioni di riproduzione",
+      "loadError": "Impossibile caricare le impostazioni di riproduzione"
     },
     "storage": {
       "title": "Archiviazione",
@@ -273,6 +304,8 @@
       "mpdStopped": "MPD è fermo",
       "environment": "Ambiente",
       "environmentDescription": "Valori di configurazione build e runtime.",
+      "version": "Versione",
+      "versionUnavailable": "Non disponibile",
       "hardware": {
         "loading": "Caricamento statistiche hardware...",
         "cpu": "CPU",
@@ -295,10 +328,8 @@
   },
   "setup": {
     "welcome": {
-      "description": "Benvenuto in Sonect, il tuo streamer musicale self-hosted.",
       "language": "Lingua",
       "theme": "Tema",
-      "getStarted": "Inizia",
       "skipWizard": "Salta configurazione"
     },
     "storage": {
@@ -319,7 +350,6 @@
       "finish": "Completa configurazione"
     },
     "stepNames": {
-      "welcome": "Benvenuto",
       "storage": "Storage",
       "audio": "Audio",
       "sync": "Sincronizzazione"
@@ -332,6 +362,49 @@
       "completeToast": "Configurazione completata!"
     }
   },
+  "auth": {
+    "loginTitle": "Chi sta ascoltando?",
+    "chooseProfile": "Scegli un profilo per accedere",
+    "password": "Password",
+    "enterPasswordFor": "Inserisci la password di {{name}}",
+    "signIn": "Accedi",
+    "signingIn": "Accesso in corso...",
+    "invalidCredentials": "Password errata",
+    "tooManyAttempts": "Troppi tentativi. Riprova tra {{seconds}}s.",
+    "backToProfiles": "Torna ai profili",
+    "noProfiles": "Nessun profilo disponibile",
+    "logout": "Esci",
+    "switchTitle": "Cambia profilo",
+    "switchDescription": "Inserisci la password di {{name}}",
+    "switch": "Cambia",
+    "switching": "Cambio in corso...",
+    "changePassword": "Cambia password",
+    "currentPassword": "Password attuale",
+    "newPassword": "Nuova password",
+    "confirmPassword": "Conferma nuova password",
+    "passwordsDoNotMatch": "Le password non coincidono",
+    "passwordTooShort": "La password deve contenere almeno 8 caratteri",
+    "passwordChanged": "Password cambiata",
+    "changePasswordError": "Impossibile cambiare la password",
+    "role": "Ruolo",
+    "roleAdmin": "Amministratore",
+    "roleUser": "Utente",
+    "resetPassword": "Reimposta password",
+    "resetPasswordTitle": "Reimposta password",
+    "resetPasswordDescription": "Imposta una nuova password per {{name}}. Le sessioni attive verranno disconnesse.",
+    "resetPasswordDone": "Password reimpostata",
+    "resetPasswordError": "Impossibile reimpostare la password",
+    "bootstrapTitle": "Crea l'amministratore",
+    "bootstrapDescription": "Configura il primo profilo amministratore di questa istanza Sonect.",
+    "bootstrapName": "Nome amministratore",
+    "bootstrapPassword": "Password",
+    "bootstrapConfirm": "Conferma password",
+    "bootstrapSubmit": "Crea amministratore",
+    "bootstrapCreating": "Creazione...",
+    "bootstrapError": "Impossibile creare l'amministratore",
+    "lastAdmin": "L'ultimo amministratore non può essere eliminato o retrocesso",
+    "sessionsInvalidated": "Le sessioni attive sono state disconnesse"
+  },
   "profile": {
     "title": "Chi sta ascoltando?",
     "change": "Cambia profilo",
@@ -340,11 +413,11 @@
     "create": "Crea profilo",
     "addProfile": "Aggiungi profilo",
     "createTitle": "Crea profilo",
-    "createDescription": "Scegli un nome e un colore per il nuovo profilo",
+    "createDescription": "Scegli un nome, un colore, una password e un ruolo per il nuovo profilo",
     "namePlaceholder": "Nome del profilo",
     "rename": "Rinomina",
     "editTitle": "Modifica profilo",
-    "editDescription": "Aggiorna nome e colore per questo profilo",
+    "editDescription": "Aggiorna nome, colore e ruolo di questo profilo, oppure reimposta la password",
     "save": "Salva",
     "color": "Colore",
     "delete": "Elimina",

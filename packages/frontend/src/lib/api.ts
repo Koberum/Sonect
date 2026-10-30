@@ -1,11 +1,18 @@
 export class ApiError extends Error {
   status: number;
   body: unknown;
-  constructor(status: number, body: unknown, message?: string) {
+  retryAfterSeconds?: number;
+  constructor(
+    status: number,
+    body: unknown,
+    message?: string,
+    retryAfterSeconds?: number,
+  ) {
     super(message ?? `API error ${status}`);
     this.name = "ApiError";
     this.status = status;
     this.body = body;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 
@@ -47,35 +54,24 @@ export async function apiFetch<T>(
   const { params, body, headers, signal, ...rest } = options;
   const url = buildUrl(path, params);
 
-  let sessionHeader: Record<string, string> = {};
-  if (typeof window !== "undefined" && !path.startsWith("/profiles")) {
-    try {
-      const raw = localStorage.getItem("sonect-profile");
-      if (raw) {
-        const parsed = JSON.parse(raw) as { id?: string };
-        if (parsed?.id && typeof parsed.id === "string") {
-          sessionHeader = { "X-Session-Id": parsed.id };
-        }
-      }
-    } catch {
-      // ignore
-    }
+  let deviceHeaders: Record<string, string> = {};
+  if (typeof window !== "undefined") {
     try {
       const did = localStorage.getItem("sonect.deviceId");
-      if (did) sessionHeader = { ...sessionHeader, "X-Device-Id": did };
+      if (did) deviceHeaders = { "X-Device-Id": did };
       else {
         // generate via crypto if not exists (lazy)
         const generated =
           Math.random().toString(36).substring(2, 15) +
           Math.random().toString(36).substring(2, 15);
         localStorage.setItem("sonect.deviceId", generated);
-        sessionHeader = { ...sessionHeader, "X-Device-Id": generated };
+        deviceHeaders = { "X-Device-Id": generated };
       }
       // Attach device name/type for cross-device display (shared via PlayerRouter activeDeviceName)
       try {
         const dName = localStorage.getItem("sonect.deviceName");
         if (dName && dName.trim().length > 0) {
-          sessionHeader = { ...sessionHeader, "X-Device-Name": dName.trim() };
+          deviceHeaders = { ...deviceHeaders, "X-Device-Name": dName.trim() };
         } else {
           const ua = navigator.userAgent ?? "";
           let browser = "Browser";
@@ -94,13 +90,16 @@ export async function apiFetch<T>(
           else if (/Linux/.test(ua)) os = "Linux";
           const generatedName = `${browser} on ${os}`;
           localStorage.setItem("sonect.deviceName", generatedName);
-          sessionHeader = { ...sessionHeader, "X-Device-Name": generatedName };
+          deviceHeaders = {
+            ...deviceHeaders,
+            "X-Device-Name": generatedName,
+          };
         }
         const ua2 = navigator.userAgent ?? "";
         const dType = /Mobi|Android|iPhone|iPad|iPod/.test(ua2)
           ? "mobile"
           : "desktop";
-        sessionHeader = { ...sessionHeader, "X-Device-Type": dType };
+        deviceHeaders = { ...deviceHeaders, "X-Device-Type": dType };
       } catch {
         // ignore
       }
@@ -111,7 +110,7 @@ export async function apiFetch<T>(
 
   const finalHeaders: Record<string, string> = {
     "Content-Type": "application/json",
-    ...sessionHeader,
+    ...deviceHeaders,
     ...(headers as Record<string, string> | undefined),
   };
   // Allow caller to delete default header by passing Content-Type: undefined
@@ -124,6 +123,7 @@ export async function apiFetch<T>(
   try {
     res = await fetch(url, {
       ...rest,
+      credentials: "include",
       signal,
       headers: finalHeaders,
       body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -147,13 +147,26 @@ export async function apiFetch<T>(
   }
 
   if (!res.ok) {
+    if (res.status === 401 && typeof window !== "undefined") {
+      window.dispatchEvent(new Event("sonect:unauthorized"));
+    }
     const msg =
       data &&
       typeof data === "object" &&
       "error" in (data as Record<string, unknown>)
         ? String((data as Record<string, unknown>).error)
         : `${res.status} ${res.statusText}`;
-    throw new ApiError(res.status, data, `API ${res.status} ${path}: ${msg}`);
+    const retryAfterHeader = res.headers.get("Retry-After");
+    const parsedRetryAfter = retryAfterHeader ? Number(retryAfterHeader) : NaN;
+    const retryAfterSeconds = Number.isFinite(parsedRetryAfter)
+      ? parsedRetryAfter
+      : undefined;
+    throw new ApiError(
+      res.status,
+      data,
+      `API ${res.status} ${path}: ${msg}`,
+      retryAfterSeconds,
+    );
   }
 
   return data as T;

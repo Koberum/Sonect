@@ -37,6 +37,9 @@ export function errorHandler(
   if (err.details !== undefined) {
     body.details = err.details;
   }
+  if (err instanceof TooManyRequestsError) {
+    res.set("Retry-After", String(err.retryAfterSeconds));
+  }
   res.status(statusCode).json(body);
 }
 
@@ -75,5 +78,34 @@ export class ConflictError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "ConflictError";
+  }
+}
+
+export class UnauthorizedError extends Error {
+  statusCode = 401;
+
+  constructor(message = "Authentication required") {
+    super(message);
+    this.name = "UnauthorizedError";
+  }
+}
+
+export class ForbiddenError extends Error {
+  statusCode = 403;
+
+  constructor(message = "Forbidden") {
+    super(message);
+    this.name = "ForbiddenError";
+  }
+}
+
+export class TooManyRequestsError extends Error {
+  statusCode = 429;
+  retryAfterSeconds: number;
+
+  constructor(retryAfterSeconds: number) {
+    super("Too many failed attempts");
+    this.name = "TooManyRequestsError";
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }

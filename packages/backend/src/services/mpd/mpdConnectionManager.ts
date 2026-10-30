@@ -71,6 +71,11 @@ export class MpdConnectionManager extends EventEmitter {
   private _pollReject: ((err: Error) => void) | null = null;
   private _pollPending = false;
   private _lastStatusError: string | null = null;
+  private _connectedCallback: (() => void) | null = null;
+
+  setConnectedCallback(cb: () => void): void {
+    this._connectedCallback = cb;
+  }
 
   get connected(): boolean {
     return this._cmdConnected;
@@ -231,6 +236,14 @@ export class MpdConnectionManager extends EventEmitter {
         this.logService.pushLog("info", "MPD command connection ready");
         this._cmdConnected = true;
         this._cmdReconnectDelay = RECONNECT_BASE_MS;
+        try {
+          this._connectedCallback?.();
+        } catch (err) {
+          this.logService.pushLog(
+            "warn",
+            `MPD connected callback failed: ${String(err)}`,
+          );
+        }
       });
 
       client.on("end", () => {

@@ -6,6 +6,7 @@ import {
   sqliteTable,
   text,
   unique,
+  uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
 export const artists = sqliteTable("artists", {
@@ -40,6 +41,10 @@ export const albums = sqliteTable(
     updated_at: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [
+    uniqueIndex("albums_title_artist_unique").on(
+      sql`${table.title} COLLATE NOCASE`,
+      sql`coalesce(${table.artist_id}, -1)`,
+    ),
     index("idx_albums_artist").on(table.artist_id),
     index("idx_albums_genre").on(table.genre_id),
   ],
@@ -135,8 +140,38 @@ export const profiles = sqliteTable("profiles", {
   id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
   avatar_color: text("avatar_color").notNull(),
+  password_hash: text("password_hash"),
+  role: text("role").notNull().default("user"),
+  password_updated_at: integer("password_updated_at"),
   created_at: integer("created_at").notNull(),
 });
+
+export const profileSettings = sqliteTable("profile_settings", {
+  profile_id: text("profile_id")
+    .primaryKey()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  crossfade_seconds: integer("crossfade_seconds").notNull().default(0),
+  updated_at: integer("updated_at").notNull(),
+});
+
+export const authSessions = sqliteTable(
+  "auth_sessions",
+  {
+    token_hash: text("token_hash").primaryKey(),
+    profile_id: text("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    created_at: integer("created_at").notNull(),
+    expires_at: integer("expires_at").notNull(),
+    last_used_at: integer("last_used_at").notNull(),
+    user_agent: text("user_agent"),
+    device_id: text("device_id"),
+  },
+  (table) => [
+    index("idx_auth_sessions_profile").on(table.profile_id),
+    index("idx_auth_sessions_expires").on(table.expires_at),
+  ],
+);
 
 export const setupProgress = sqliteTable("setup_progress", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -144,3 +179,49 @@ export const setupProgress = sqliteTable("setup_progress", {
   completed: integer("completed").default(0),
   completed_at: text("completed_at"),
 });
+
+export const playHistory = sqliteTable(
+  "play_history",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    profile_id: text("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    track_id: integer("track_id")
+      .notNull()
+      .references(() => tracks.id, { onDelete: "cascade" }),
+    played_at: integer("played_at").notNull(),
+  },
+  (table) => [
+    index("idx_play_history_profile_played").on(
+      table.profile_id,
+      table.played_at,
+    ),
+    index("idx_play_history_profile_track").on(
+      table.profile_id,
+      table.track_id,
+    ),
+  ],
+);
+
+export const likedTracks = sqliteTable(
+  "liked_tracks",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    profile_id: text("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    track_id: integer("track_id")
+      .notNull()
+      .references(() => tracks.id, { onDelete: "cascade" }),
+    liked_at: integer("liked_at").notNull(),
+  },
+  (table) => [
+    unique("liked_tracks_profile_track_unique").on(
+      table.profile_id,
+      table.track_id,
+    ),
+    index("idx_liked_tracks_profile").on(table.profile_id, table.liked_at),
+    index("idx_liked_tracks_track").on(table.track_id),
+  ],
+);

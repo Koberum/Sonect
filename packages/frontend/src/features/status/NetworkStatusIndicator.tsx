@@ -43,7 +43,7 @@ export function NetworkStatusIndicator() {
       <TooltipTrigger asChild>
         <Button
           type="button"
-          variant="ghost"
+          variant="bare"
           aria-label={indicator.label}
           className="text-muted-foreground size-11 border-0 bg-transparent p-0"
         >

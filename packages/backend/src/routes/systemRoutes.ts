@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireAdmin, requireAuth } from "@middleware/auth";
 import {
   getStatusHandler,
   getHealthHandler,
@@ -27,8 +28,11 @@ import {
 
 const router = Router();
 
-router.get("/status", getStatusHandler);
 router.get("/health", getHealthHandler);
+
+router.use(requireAuth, requireAdmin);
+
+router.get("/status", getStatusHandler);
 
 router.get("/audio/devices", getAudioDevicesHandler);
 router.post("/audio/configure", configureAudioHandler);

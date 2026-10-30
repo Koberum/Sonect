@@ -5,7 +5,8 @@ import { artist } from "@tests/factories/artist.js";
 import { album } from "@tests/factories/album.js";
 import { track } from "@tests/factories/track.js";
 import { genre } from "@tests/factories/genre.js";
-import { db, upsertTrack } from "@repo/db";
+import { db, storageDb, tracks, upsertTrack } from "@repo/db";
+import { eq } from "drizzle-orm";
 import { CatalogServiceImpl } from "@services/library/catalogService.js";
 
 // Trophy middle layer: service + real :memory: DB, no mocks
@@ -76,6 +77,17 @@ describe("CatalogService (trophy integration)", () => {
       expect(names).to.deep.equal(
         [...names].sort((a, b) => a.localeCompare(b)),
       );
+    });
+
+    it("excludes artists without albums", () => {
+      const withAlbum = artist.create({ name: "ListedArtist" }, 1);
+      artist.create({ name: "HiddenArtist" }, 2);
+      album.create({ title: "ListedAlbum", artistName: withAlbum.name }, 1);
+
+      expect(catalog.getAllArtists().map((a) => a.name)).to.deep.equal([
+        "ListedArtist",
+      ]);
+      expect(catalog.getArtistCount()).to.equal(1);
     });
   });
 
@@ -266,6 +278,29 @@ describe("CatalogService (trophy integration)", () => {
       expect(
         catalog.getTracksByAlbum(al2.id).map((t) => t.title),
       ).to.deep.equal(["A", "B"]);
+    });
+
+    it("includes the storage source name for album tracks", () => {
+      const sourceId = storageDb.create({
+        name: "NAS Music",
+        path: "/libraries/nas",
+      });
+      const al = album.create(
+        { title: "SourceAl", artistName: "SourceArtist" },
+        130,
+      );
+      const t = track.create(
+        { album: al.title, artist: "SourceArtist", title: "Sourced" },
+        131,
+      );
+      db()
+        .update(tracks)
+        .set({ storage_source_id: sourceId })
+        .where(eq(tracks.id, t.id))
+        .run();
+
+      const [result] = catalog.getTracksByAlbum(al.id);
+      expect(result.storage_source_name).to.equal("NAS Music");
     });
   });
 

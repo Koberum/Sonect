@@ -1,9 +1,9 @@
 import { asc, eq, sql } from "drizzle-orm";
-import type { DBProfile } from "@repo/types";
+import type { DBProfile, ProfileRole } from "@repo/types";
 import { db, transaction } from "../connection.js";
 import { profiles } from "../tables.js";
 
-export class LastProfileError extends Error {}
+export class LastAdminError extends Error {}
 
 export const AVATAR_COLORS = [
   "#f97316",
@@ -39,16 +39,40 @@ export const profilesDb = {
       DBProfile | undefined;
   },
 
-  create(name: string, avatarColor?: string): string {
-    const trimmed = name.trim();
+  count(): number {
+    const row = db()
+      .select({ n: sql<number>`count(*)` })
+      .from(profiles)
+      .get();
+    return row?.n ?? 0;
+  },
+
+  countAdmins(): number {
+    const row = db()
+      .select({ n: sql<number>`count(*)` })
+      .from(profiles)
+      .where(eq(profiles.role, "admin"))
+      .get();
+    return row?.n ?? 0;
+  },
+
+  create(input: {
+    name: string;
+    avatarColor?: string;
+    passwordHash: string;
+    role?: ProfileRole;
+  }): string {
+    const trimmed = input.name.trim();
     const id = crypto.randomUUID();
-    const color = avatarColor ?? pickAvatarColor(trimmed);
     db()
       .insert(profiles)
       .values({
         id,
         name: trimmed,
-        avatar_color: color,
+        avatar_color: input.avatarColor ?? pickAvatarColor(trimmed),
+        password_hash: input.passwordHash,
+        role: input.role ?? "user",
+        password_updated_at: Date.now(),
         created_at: Date.now(),
       })
       .run();
@@ -71,33 +95,100 @@ export const profilesDb = {
       .run();
   },
 
-  delete(id: string): void {
+  /**
+   * Applies name/avatarColor/role changes in a single transaction so a rejected
+   * role change (or a name conflict) leaves every field untouched.
+   */
+  update(
+    id: string,
+    data: { name?: string; avatarColor?: string; role?: ProfileRole },
+  ): void {
     transaction((tx) => {
-      const row = tx
-        .select({ n: sql<number>`count(*)` })
+      const target = tx
+        .select()
         .from(profiles)
-        .get();
-      if ((row?.n ?? 0) <= 1) {
-        throw new LastProfileError("Cannot delete the last remaining profile");
+        .where(eq(profiles.id, id))
+        .get() as DBProfile | undefined;
+      if (!target) return;
+      if (
+        data.role !== undefined &&
+        target.role === "admin" &&
+        data.role !== "admin"
+      ) {
+        const row = tx
+          .select({ n: sql<number>`count(*)` })
+          .from(profiles)
+          .where(eq(profiles.role, "admin"))
+          .get();
+        if ((row?.n ?? 0) <= 1) {
+          throw new LastAdminError("Cannot demote the last administrator");
+        }
       }
-      tx.delete(profiles).where(eq(profiles.id, id)).run();
+
+      const changes: {
+        name?: string;
+        avatar_color?: string;
+        role?: ProfileRole;
+      } = {};
+      if (data.name !== undefined) changes.name = data.name.trim();
+      if (data.avatarColor !== undefined)
+        changes.avatar_color = data.avatarColor;
+      if (data.role !== undefined) changes.role = data.role;
+      if (Object.keys(changes).length === 0) return;
+
+      tx.update(profiles).set(changes).where(eq(profiles.id, id)).run();
     });
   },
 
-  ensureDefault(): void {
-    const row = db()
-      .select({ n: sql<number>`count(*)` })
-      .from(profiles)
-      .get();
-    if ((row?.n ?? 0) > 0) return;
+  setRole(id: string, role: ProfileRole): void {
+    transaction((tx) => {
+      const target = tx
+        .select()
+        .from(profiles)
+        .where(eq(profiles.id, id))
+        .get() as DBProfile | undefined;
+      if (!target) return;
+      if (target.role === "admin" && role !== "admin") {
+        const row = tx
+          .select({ n: sql<number>`count(*)` })
+          .from(profiles)
+          .where(eq(profiles.role, "admin"))
+          .get();
+        if ((row?.n ?? 0) <= 1) {
+          throw new LastAdminError("Cannot demote the last administrator");
+        }
+      }
+      tx.update(profiles).set({ role }).where(eq(profiles.id, id)).run();
+    });
+  },
+
+  setPassword(id: string, passwordHash: string): void {
     db()
-      .insert(profiles)
-      .values({
-        id: crypto.randomUUID(),
-        name: "default",
-        avatar_color: "#f97316",
-        created_at: Date.now(),
-      })
+      .update(profiles)
+      .set({ password_hash: passwordHash, password_updated_at: Date.now() })
+      .where(eq(profiles.id, id))
       .run();
+  },
+
+  delete(id: string): void {
+    transaction((tx) => {
+      const target = tx
+        .select()
+        .from(profiles)
+        .where(eq(profiles.id, id))
+        .get() as DBProfile | undefined;
+      if (!target) return;
+      if (target.role === "admin") {
+        const row = tx
+          .select({ n: sql<number>`count(*)` })
+          .from(profiles)
+          .where(eq(profiles.role, "admin"))
+          .get();
+        if ((row?.n ?? 0) <= 1) {
+          throw new LastAdminError("Cannot delete the last administrator");
+        }
+      }
+      tx.delete(profiles).where(eq(profiles.id, id)).run();
+    });
   },
 };

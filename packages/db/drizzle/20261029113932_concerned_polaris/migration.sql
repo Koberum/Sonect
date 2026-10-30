@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `albums_title_artist_unique` ON `albums` ("title" COLLATE NOCASE,coalesce("artist_id", -1));

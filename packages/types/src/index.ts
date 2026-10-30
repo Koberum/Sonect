@@ -38,10 +38,32 @@ export type PlaybackStatus = {
   activeDeviceName?: string | null;
   activeDeviceType?: string | null;
   mode?: OutputMode;
+  nextTrackId?: number | null;
+  buffering?: boolean;
+  seekSeq?: number;
+  crossfade?: number;
+};
+
+export type PlaybackSettings = {
+  crossfadeSeconds: number;
+};
+
+
+/**
+ * Playback facts reported by the active browser engine. The browser is the
+ * source of truth for timing in browser mode, so the backend mirrors these
+ * values instead of running its own clock.
+ */
+export type PlayerReport = {
+  state?: PlaybackState;
+  elapsed?: number;
+  event?: "playing" | "paused" | "ended" | "advance" | "waiting";
+  trackId?: number;
 };
 
 export type QueuedTrack = {
   id: number;
+  trackId: number | null;
   file: string;
   title: string;
   artist_name: string;
@@ -69,5 +91,6 @@ export * from "./catalog";
 export * from "./mpd";
 export * from "./system";
 export * from "./db";
+export * from "./auth";
 export * from "./schemas";
 export * from "./errors";

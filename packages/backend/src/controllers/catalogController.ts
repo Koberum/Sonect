@@ -3,6 +3,7 @@ import { catalogSchemas } from "@repo/types/schemas";
 import {
   getCatalogService,
   getCatalogSyncOrchestrator,
+  getTrackInfoService,
 } from "@services/factory";
 import { asyncHandler } from "@middleware/asyncHandler";
 import { NotFoundError } from "@middleware/errorHandler";
@@ -81,6 +82,15 @@ export const getAllTracks = asyncHandler(
     const items = getCatalogService().getAllTracks(sort, limit, offset);
     const total = getCatalogService().getTrackCount();
     res.json({ items, total });
+  },
+);
+
+export const getTrackInfoHandler = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { id } = catalogSchemas.idParam.parse(req.params);
+    const info = getTrackInfoService().getTrackInfo(id);
+    if (!info) throw new NotFoundError("Track");
+    res.json(info);
   },
 );
 

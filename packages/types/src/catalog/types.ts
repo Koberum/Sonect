@@ -52,7 +52,8 @@ export type PlaylistWithTracks = Playlist & {
 };
 
 export interface DashboardData {
-  continueListening: Album[];
+  recentlyPlayedAlbums: Album[];
+  recentlyPlayedArtists: Artist[];
   recentlyPlayed: TrackWithRelations[];
   topTracks: TrackWithRelations[];
   suggestedTracks: TrackWithRelations[];
@@ -67,6 +68,39 @@ export type SearchResults = {
   albums: Album[];
   tracks: TrackWithRelations[];
 };
+
+export interface LikedTracksPage {
+  items: TrackWithRelations[];
+  total: number;
+  totalDuration: number;
+}
+
+export interface TrackInfo {
+  id: number;
+  title: string;
+  file: string;
+  absolutePath: string | null;
+  artist: string | null;
+  album: string | null;
+  albumArtist: string | null;
+  genre: string | null;
+  year: number | null;
+  date: string | null;
+  trackNumber: number | null;
+  discNumber: number | null;
+  duration: number | null;
+  size: number | null;
+  mtime: number | null;
+  storageSource: {
+    id: number;
+    name: string;
+    path: string;
+  } | null;
+  playCount: number;
+  lastPlayed: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
 
 export interface LibraryStats {
   totalTracks: number;

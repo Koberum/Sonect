@@ -1,7 +1,11 @@
 import { EventEmitter } from "events";
 import { tracksDb } from "@repo/db";
 import type { LogService } from "@services/utils/logService";
-import type { PlaybackStatus, SessionQueueEntry } from "@repo/types";
+import type {
+  PlaybackStatus,
+  PlayerReport,
+  SessionQueueEntry,
+} from "@repo/types";
 import type { Track, TrackWithRelations } from "@repo/types/catalog";
 import { AutoplayService } from "../mpd/autoplayService.js";
 
@@ -10,8 +14,10 @@ export class SessionPlayer extends EventEmitter {
   private indexInternal = -1;
   private position = 0;
   private stateInternal: "play" | "pause" | "stop" = "stop";
+  private bufferingInternal = false;
+  private seekSeqInternal = 0;
   private lastActiveAtInternal = Date.now();
-  private tickTimer: ReturnType<typeof setInterval> | null = null;
+  private lastTrackId: number | null = null;
   private readonly autoplayService: AutoplayService;
   private _autofillInProgress = false;
 
@@ -49,36 +55,91 @@ export class SessionPlayer extends EventEmitter {
   }
 
   stop(): void {
-    if (this.tickTimer !== null) {
-      clearInterval(this.tickTimer);
-      this.tickTimer = null;
-    }
+    this.stateInternal = "stop";
+    this.bufferingInternal = false;
   }
 
-  private startClock(): void {
-    if (this.tickTimer !== null) return;
-    this.tickTimer = setInterval(() => this.tick(), 1000);
-  }
-
-  private stopClock(): void {
-    if (this.tickTimer !== null) {
-      clearInterval(this.tickTimer);
-      this.tickTimer = null;
-    }
-  }
-
-  // Public test hook; the registry drives this via the interval.
-  tick(): void {
-    if (this.state !== "play" || this.indexInternal < 0) return;
-    const current = this.queueInternal[this.indexInternal];
-    if (!current) return;
-    this.position += 1;
-    if (this.position >= current.duration) {
-      this.advance();
-    } else {
-      this.maybeRefill();
+  private emitStateChanged(): void {
+    const trackId = this.queueInternal[this.indexInternal]?.id ?? null;
+    if (trackId !== this.lastTrackId) {
+      this.lastTrackId = trackId;
+      if (trackId !== null) {
+        const track = tracksDb.getById(trackId);
+        if (track) this.emit("trackChanged", track);
+      }
     }
     this.emit("stateChanged");
+  }
+
+  private clampElapsed(elapsed: number, duration: number): number {
+    const max = duration > 0 ? duration : elapsed;
+    return Math.max(0, Math.min(elapsed, max));
+  }
+
+  /**
+   * Applies a factual report from the active browser engine. In browser mode
+   * the browser owns timing, so there is no free-running clock here: elapsed
+   * only changes when the device that is actually playing says so.
+   */
+  reportPlayback(report: PlayerReport): void {
+    const current = this.queueInternal[this.indexInternal];
+    if (!current) return;
+
+    const isAdvance =
+      report.event === "ended" || report.event === "advance";
+    if (
+      !isAdvance &&
+      report.trackId !== undefined &&
+      report.trackId !== current.id
+    ) {
+      return;
+    }
+
+    this.touch();
+
+    if (report.event === "ended" || report.event === "advance") {
+      this.advance();
+      this.emitStateChanged();
+      return;
+    }
+
+    if (report.event === "waiting") {
+      this.bufferingInternal = true;
+      this.emitStateChanged();
+      return;
+    }
+
+    if (
+      report.event === "playing" ||
+      report.event === "paused" ||
+      report.state === "play" ||
+      report.state === "pause"
+    ) {
+      this.bufferingInternal = false;
+      this.stateInternal =
+        report.event === "paused" || report.state === "pause"
+          ? "pause"
+          : "play";
+      if (report.elapsed !== undefined) {
+        this.position = this.clampElapsed(report.elapsed, current.duration);
+      }
+      if (this.stateInternal === "play") this.maybeRefill();
+      this.emitStateChanged();
+      return;
+    }
+
+    if (report.state === "stop") {
+      this.stateInternal = "stop";
+      this.bufferingInternal = false;
+      this.position = 0;
+      this.emitStateChanged();
+      return;
+    }
+
+    if (report.elapsed !== undefined) {
+      this.position = this.clampElapsed(report.elapsed, current.duration);
+      this.emitStateChanged();
+    }
   }
 
   private maybeRefill(): void {
@@ -129,17 +190,19 @@ export class SessionPlayer extends EventEmitter {
   }
 
   private advance(): void {
+    this.maybeRefill();
     const next = this.indexInternal + 1;
     if (next >= this.queueInternal.length) {
       this.stateInternal = "stop";
       this.indexInternal = -1;
       this.position = 0;
-      this.stopClock();
+      this.bufferingInternal = false;
       return;
     }
     this.indexInternal = next;
     this.position = 0;
-    this.maybeRefill();
+    this.stateInternal = "play";
+    this.bufferingInternal = false;
   }
 
   private currentTrack(): TrackWithRelations | undefined {
@@ -158,10 +221,15 @@ export class SessionPlayer extends EventEmitter {
 
   getStatus(): PlaybackStatus {
     this.touch();
+    const current = this.queueInternal[this.indexInternal];
+    const next =
+      this.indexInternal >= 0
+        ? this.queueInternal[this.indexInternal + 1]
+        : undefined;
     return {
       state: this.stateInternal,
       elapsed: this.position,
-      duration: this.queueInternal[this.indexInternal]?.duration ?? 0,
+      duration: current?.duration ?? 0,
       volume: 100,
       repeat: false,
       random: false,
@@ -169,6 +237,9 @@ export class SessionPlayer extends EventEmitter {
       consume: false,
       track: this.currentTrack(),
       queueLength: this.queueInternal.length,
+      nextTrackId: next?.id ?? null,
+      buffering: this.bufferingInternal,
+      seekSeq: this.seekSeqInternal,
     };
   }
 
@@ -204,7 +275,8 @@ export class SessionPlayer extends EventEmitter {
     this.indexInternal = 0;
     this.position = 0;
     this.stateInternal = "play";
-    this.startClock();
+    this.bufferingInternal = false;
+    this.seekSeqInternal += 1;
 
     const sessionId = this.autoplayService.resetSession(file, initialFiles);
     try {
@@ -234,13 +306,52 @@ export class SessionPlayer extends EventEmitter {
         queueLength: this.queueInternal.length,
       },
     );
-    this.emit("stateChanged");
+    this.emitStateChanged();
+  }
+
+  playFiles(files: string[], startAt = 0): void {
+    const known: Track[] = [];
+    for (const file of files) {
+      const dbTrack = tracksDb.getByFile(file);
+      if (dbTrack) known.push(dbTrack);
+    }
+
+    if (known.length === 0) {
+      this.queueInternal = [];
+      this.indexInternal = -1;
+      this.position = 0;
+      this.stateInternal = "stop";
+      this.bufferingInternal = false;
+      this.emitStateChanged();
+      return;
+    }
+
+    const startIndex = Math.min(Math.max(0, startAt), known.length - 1);
+    const knownFiles = known.map((track) => track.file);
+    this.queueInternal = known.map((track) => this.buildEntry(track));
+    this.indexInternal = startIndex;
+    this.position = 0;
+    this.stateInternal = "play";
+    this.bufferingInternal = false;
+    this.seekSeqInternal += 1;
+    this.autoplayService.resetSession(knownFiles[startIndex], knownFiles);
+
+    this.log(
+      "debug",
+      `[Session ${this.sessionId.slice(0, 8)}][browser] playFiles count=${known.length} start=${startIndex}`,
+      {
+        sessionId: this.sessionId.slice(0, 8),
+        count: known.length,
+        startIndex,
+      },
+    );
+    this.emitStateChanged();
   }
 
   pause(): void {
     if (this.state !== "play") return;
     this.stateInternal = "pause";
-    this.stopClock();
+    this.bufferingInternal = false;
     this.log(
       "debug",
       `[Session ${this.sessionId.slice(0, 8)}][browser] pause at ${this.position}s`,
@@ -249,7 +360,7 @@ export class SessionPlayer extends EventEmitter {
         position: this.position,
       },
     );
-    this.emit("stateChanged");
+    this.emitStateChanged();
   }
 
   resume(): void {
@@ -265,7 +376,7 @@ export class SessionPlayer extends EventEmitter {
     }
     if (this.indexInternal < 0) this.indexInternal = 0;
     this.stateInternal = "play";
-    this.startClock();
+    this.bufferingInternal = false;
     this.log(
       "debug",
       `[Session ${this.sessionId.slice(0, 8)}][browser] resume at ${this.position}s queueLen=${this.queueInternal.length}`,
@@ -275,7 +386,7 @@ export class SessionPlayer extends EventEmitter {
         queueLength: this.queueInternal.length,
       },
     );
-    this.emit("stateChanged");
+    this.emitStateChanged();
   }
 
   next(): void {
@@ -303,12 +414,12 @@ export class SessionPlayer extends EventEmitter {
     );
     if (this.stateInternal === "stop") {
       // Queue end reached: emit so WS consumers observe the final stop.
-      this.emit("stateChanged");
+      this.emitStateChanged();
       return;
     }
     this.stateInternal = "play";
-    this.startClock();
-    this.emit("stateChanged");
+    this.seekSeqInternal += 1;
+    this.emitStateChanged();
   }
 
   previous(): void {
@@ -319,7 +430,8 @@ export class SessionPlayer extends EventEmitter {
     }
     this.position = 0;
     if (this.queueInternal.length > 0) this.stateInternal = "play";
-    this.startClock();
+    this.bufferingInternal = false;
+    this.seekSeqInternal += 1;
     this.log(
       "debug",
       `[Session ${this.sessionId.slice(0, 8)}][browser] previous ${prevIdx}→${this.indexInternal}`,
@@ -329,7 +441,7 @@ export class SessionPlayer extends EventEmitter {
         to: this.indexInternal,
       },
     );
-    this.emit("stateChanged");
+    this.emitStateChanged();
   }
 
   seek(position: number): void {
@@ -346,6 +458,8 @@ export class SessionPlayer extends EventEmitter {
     }
     const clamped = Math.max(0, Math.min(position, current.duration));
     this.position = clamped;
+    this.bufferingInternal = false;
+    this.seekSeqInternal += 1;
     this.log(
       "debug",
       `[Session ${this.sessionId.slice(0, 8)}][browser] seek ${position}→${clamped}`,
@@ -355,7 +469,7 @@ export class SessionPlayer extends EventEmitter {
         clamped,
       },
     );
-    this.emit("stateChanged");
+    this.emitStateChanged();
   }
 
   playPosition(pos: number): void {
@@ -364,7 +478,8 @@ export class SessionPlayer extends EventEmitter {
     this.indexInternal = pos;
     this.position = 0;
     this.stateInternal = "play";
-    this.startClock();
+    this.bufferingInternal = false;
+    this.seekSeqInternal += 1;
     this.log(
       "debug",
       `[Session ${this.sessionId.slice(0, 8)}][browser] playPosition ${prevIdx}→${this.indexInternal} file="${this.queueInternal[this.indexInternal]?.file}"`,
@@ -375,7 +490,7 @@ export class SessionPlayer extends EventEmitter {
         file: this.queueInternal[this.indexInternal]?.file,
       },
     );
-    this.emit("stateChanged");
+    this.emitStateChanged();
   }
 
   addToQueue(file: string): void {
@@ -391,7 +506,7 @@ export class SessionPlayer extends EventEmitter {
           queueLength: this.queueInternal.length,
         },
       );
-      this.emit("stateChanged");
+      this.emitStateChanged();
     } else {
       this.log(
         "warn",
@@ -414,7 +529,7 @@ export class SessionPlayer extends EventEmitter {
         this.indexInternal = -1;
         this.stateInternal = "stop";
         this.position = 0;
-        this.stopClock();
+        this.bufferingInternal = false;
       } else if (this.indexInternal >= this.queueInternal.length) {
         this.indexInternal = this.queueInternal.length - 1;
         this.position = 0;
@@ -426,7 +541,7 @@ export class SessionPlayer extends EventEmitter {
     } else if (this.indexInternal > removing) {
       this.indexInternal -= 1;
     }
-    this.emit("stateChanged");
+    this.emitStateChanged();
   }
 
   moveQueueItem(from: number, to: number): void {
@@ -457,6 +572,6 @@ export class SessionPlayer extends EventEmitter {
       // Moving an item backward shifts the playing item forward one.
       this.indexInternal += 1;
     }
-    this.emit("stateChanged");
+    this.emitStateChanged();
   }
 }

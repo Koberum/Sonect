@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { profileSettingsDb } from "@repo/db";
 import { playerSchemas, sessionSchemas, systemSchemas } from "@repo/types";
 import { asyncHandler } from "@middleware/asyncHandler";
 import { resolvePlayerRouter } from "@services/player/playerRouter.js";
@@ -318,6 +319,28 @@ export const unifiedSetVolumeHandler = asyncHandler(
     // Browser volume is stored per-profile in PlayerRouter; MPD delegates to engine
     await router().setVolume(sid, volume);
     res.json({ success: true });
+  },
+);
+
+export const unifiedGetPlaybackSettingsHandler = asyncHandler(
+  async (req: Request, res: Response) => {
+    const profileId = req.sessionId as string;
+    res.json(profileSettingsDb.get(profileId));
+  },
+);
+
+export const unifiedSetPlaybackSettingsHandler = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { crossfadeSeconds } = playerSchemas.settings.parse(req.body);
+    const profileId = req.sessionId as string;
+    profileSettingsDb.setCrossfade(profileId, crossfadeSeconds);
+    const value = router().setCrossfade(profileId, crossfadeSeconds);
+    getLogService().pushLog(
+      "info",
+      `[Session ${fmtSid(profileId)}] playback settings saved (crossfade=${value}s)`,
+      { sessionId: fmtSid(profileId), crossfadeSeconds: value },
+    );
+    res.json({ crossfadeSeconds: value });
   },
 );
 

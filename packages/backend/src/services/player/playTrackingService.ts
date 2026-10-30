@@ -1,34 +1,38 @@
 import { EventEmitter } from "events";
-import { tracksDb, albumsDb } from "@repo/db";
+import { albumsDb, playHistoryDb, tracksDb } from "@repo/db";
 
-interface TrackEvent {
-  id: number;
-  album_id: number | null;
-}
+type TrackChangedPayload = {
+  sessionId: string;
+  track: { id: number; album_id?: number };
+};
 
 const DEBOUNCE_MS = 5000;
 
 export class PlayTrackingService {
-  private _lastTrackId: number | null = null;
-  private _lastRecordedAt = 0;
+  private _lastByProfile = new Map<string, { trackId: number; at: number }>();
 
-  constructor(private _emitter: EventEmitter) {}
+  constructor(private _router: EventEmitter) {}
 
   start(): void {
-    this._emitter.on("trackChanged", this._onTrackChanged.bind(this));
+    this._router.on("trackChanged", this._onTrackChanged.bind(this));
   }
 
-  private _onTrackChanged(track: TrackEvent): void {
+  private _onTrackChanged(payload: TrackChangedPayload): void {
+    const { sessionId, track } = payload;
     const now = Date.now();
-    if (now - this._lastRecordedAt < DEBOUNCE_MS) return;
-    if (track.id === this._lastTrackId) return;
+    const last = this._lastByProfile.get(sessionId);
+    if (last && last.trackId === track.id && now - last.at < DEBOUNCE_MS) {
+      return;
+    }
 
-    this._lastTrackId = track.id;
-    this._lastRecordedAt = now;
+    const dbTrack = tracksDb.getById(track.id);
+    if (!dbTrack) return;
 
-    tracksDb.incrementPlayCount(track.id);
-    if (track.album_id) {
-      albumsDb.updateLastPlayed(track.album_id);
+    this._lastByProfile.set(sessionId, { trackId: dbTrack.id, at: now });
+    playHistoryDb.record(sessionId, dbTrack.id, now);
+    tracksDb.incrementPlayCount(dbTrack.id);
+    if (dbTrack.album_id) {
+      albumsDb.updateLastPlayed(dbTrack.album_id);
     }
   }
 }

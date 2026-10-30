@@ -5,6 +5,9 @@ export async function getDashboard(req: Request, res: Response): Promise<void> {
   const currentAlbumId = req.query.excludeAlbum
     ? Number(req.query.excludeAlbum)
     : undefined;
-  const data = getSuggestionService().getDashboard(currentAlbumId);
+  const data = getSuggestionService().getDashboard(
+    req.auth!.profileId,
+    currentAlbumId,
+  );
   res.json(data);
 }

@@ -23,6 +23,7 @@ import { playerQueries } from "@/features/player/queries";
 import { qk } from "@/lib/queryKeys";
 import PlayStatus from "./play-status";
 import { PlaybackErrorNotice } from "./playback-error";
+import { LikeButton } from "@/features/liked/components/like-button";
 
 interface FullPagePlayerProps {
   displayElapsed: number;
@@ -89,12 +90,21 @@ export function FullPagePlayer({
         />
       </div>
 
-      <div className="px-6 pt-4 pb-2 text-center">
-        <h3 className="truncate text-lg font-semibold">{trackPlayed.title}</h3>
-        <p className="text-muted-foreground truncate text-sm">
-          {trackPlayed.artist_name}
-          {trackPlayed.album_title ? ` \u00b7 ${trackPlayed.album_title}` : ""}
-        </p>
+      <div className="flex items-center justify-center gap-2 px-6 pt-4 pb-2">
+        <div className="min-w-0 text-center">
+          <h3 className="truncate text-lg font-semibold">
+            {trackPlayed.title}
+          </h3>
+          <p className="text-muted-foreground truncate text-sm">
+            {trackPlayed.artist_name}
+            {trackPlayed.album_title
+              ? ` \u00b7 ${trackPlayed.album_title}`
+              : ""}
+          </p>
+        </div>
+        <LikeButton
+          trackId={trackPlayed.id ?? playbackStatus.track?.id ?? null}
+        />
       </div>
 
       <div className="px-6 py-2">
@@ -188,8 +198,9 @@ export function FullPagePlayer({
                   <span className="text-muted-foreground shrink-0 text-xs">
                     {formatDuration(track.duration)}
                   </span>
+                  <LikeButton trackId={track.trackId} />
                   <Button
-                    variant="ghost"
+                    variant="bare"
                     size="icon-sm"
                     className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
                     onClick={(e) => handleRemove(e, track.pos)}

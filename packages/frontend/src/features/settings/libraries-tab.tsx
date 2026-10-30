@@ -260,7 +260,7 @@ export function LibrariesTab() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="ghost"
+                  variant="bare"
                   size="icon-sm"
                   onClick={() => void detectedQuery.refetch()}
                   disabled={detectedQuery.isFetching}
@@ -341,7 +341,7 @@ export function LibrariesTab() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      variant="ghost"
+                      variant="bare"
                       size="icon-sm"
                       onClick={copySnippet}
                       aria-label={t(

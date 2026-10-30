@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AudioTab } from "@/features/settings/audio-tab";
+import { PlaybackTab } from "@/features/settings/playback-tab";
 import { LibrariesTab } from "@/features/settings/libraries-tab";
 import { AppearanceTab } from "@/features/settings/appearance-tab";
 import { DebugTab } from "@/features/settings/debug-tab";
@@ -17,8 +18,11 @@ export function Settings() {
       />
 
       <Tabs defaultValue="audio">
-        <TabsList className="mb-4">
+        <TabsList className="mb-4 max-w-full overflow-x-auto">
           <TabsTrigger value="audio">{t("settings.tabs.audio")}</TabsTrigger>
+          <TabsTrigger value="playback">
+            {t("settings.tabs.playback")}
+          </TabsTrigger>
           <TabsTrigger value="libraries">
             {t("settings.tabs.libraries")}
           </TabsTrigger>
@@ -30,6 +34,9 @@ export function Settings() {
 
         <TabsContent value="audio">
           <AudioTab />
+        </TabsContent>
+        <TabsContent value="playback">
+          <PlaybackTab />
         </TabsContent>
         <TabsContent value="libraries">
           <LibrariesTab />

@@ -2,7 +2,6 @@ import { Menu } from "@/features/dashboard/components/menu";
 import MusicPlayer from "@/features/dashboard/components/music-player";
 import { Sidebar } from "@/features/dashboard/components/sidebar";
 import { SetupGuard } from "@/components/setup-guard";
-import { ProfileGuard } from "@/components/profile-guard";
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { useMediaQuery } from "react-responsive";
@@ -50,10 +49,8 @@ export default function MainLayout() {
         <main className="no-scrollbar flex-1 overflow-y-auto">
           <div className="px-4 pt-6 pb-24 sm:px-4 lg:px-8">
             <SetupGuard>
-              <ProfileGuard>
-                <Outlet />
-                <Toaster />
-              </ProfileGuard>
+              <Outlet />
+              <Toaster />
             </SetupGuard>
           </div>
         </main>

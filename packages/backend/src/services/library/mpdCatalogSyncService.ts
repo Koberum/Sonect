@@ -49,6 +49,9 @@ const DEFAULT_POLL_INTERVAL_MS = 500;
 const DEFAULT_UPDATE_TIMEOUT_MS = 30 * 60 * 1000;
 const PROGRESS_THROTTLE_MS = 100;
 const ALL_FILES_FILTER = "(file != '')";
+// Bump when the catalog identity rules change so the next sync reprocesses
+// every track instead of taking the unchanged-catalog shortcut.
+export const CATALOG_SCHEMA_VERSION = "2";
 
 function getMusicDir(): string {
   return path.resolve(process.env.MUSIC_DIR ?? "/opt/sonect/music");
@@ -132,6 +135,7 @@ export class MpdCatalogSyncService implements CatalogSyncService {
         deletions: [],
         mpdDbUpdate: stats.dbUpdate,
         mpdSongs: stats.songs,
+        catalogSchema: CATALOG_SCHEMA_VERSION,
       });
       this.emitProgress(
         onProgress,
@@ -250,6 +254,7 @@ export class MpdCatalogSyncService implements CatalogSyncService {
       deletions,
       mpdDbUpdate: stats.dbUpdate,
       mpdSongs: stats.songs,
+      catalogSchema: CATALOG_SCHEMA_VERSION,
     });
 
     this.log.pushLog(
@@ -314,6 +319,7 @@ export class MpdCatalogSyncService implements CatalogSyncService {
   private isCurrent(stats: MpdStats): boolean {
     return (
       stats.dbUpdate !== "" &&
+      syncMetadataDb.get("catalog_schema") === CATALOG_SCHEMA_VERSION &&
       syncMetadataDb.get("mpd_db_update") === stats.dbUpdate &&
       syncMetadataDb.get("mpd_songs") === String(stats.songs) &&
       tracksDb.count() === stats.songs
@@ -449,12 +455,14 @@ export class MpdCatalogSyncService implements CatalogSyncService {
   }
 
   private trackChanged(existing: Snapshot, next: CatalogTrack): boolean {
-    // Album identity is title-only and shared by every track with that title,
-    // so album artist cannot be compared here: two same-title albums with
-    // different artists would rewrite the shared row on every force scan.
+    // Album identity is title + album artist (AlbumArtist, falling back to the
+    // track artist). Comparing it here reassigns tracks that were previously
+    // merged into a same-title album.
+    const nextAlbumArtist = next.albumArtist ?? next.artist ?? null;
     return (
       existing.title !== (next.title || "Unknown") ||
       (existing.artist_name ?? null) !== (next.artist ?? null) ||
+      (existing.album_artist_name ?? null) !== nextAlbumArtist ||
       (existing.album_title ?? null) !== (next.album ?? null) ||
       (existing.genre ?? null) !== (next.genre ?? null) ||
       (existing.track_number ?? null) !== toInteger(next.track) ||

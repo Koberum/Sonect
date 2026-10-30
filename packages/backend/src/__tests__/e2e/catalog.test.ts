@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import request from "supertest";
 import { createTestDb } from "@tests/helpers/db.js";
+import { createTestSession } from "@tests/helpers/auth.js";
 import { track } from "@tests/factories/index.js";
 import app from "../../app.js";
 import {
@@ -11,13 +12,15 @@ import {
 // Layer 4: Full stack — router → controller → service → real DB, few critical paths
 describe("Catalog e2e (supertest + real seeded DB)", () => {
   let close: () => void;
+  let cookie: string;
 
   before(() => {
     if (!isServicesInitialized()) initializeServices();
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     ({ close } = createTestDb());
+    ({ cookie } = await createTestSession());
   });
   afterEach(() => close());
 
@@ -25,7 +28,9 @@ describe("Catalog e2e (supertest + real seeded DB)", () => {
     track.create({ artist: "E2E Artist One" });
     track.create({ artist: "E2E Artist Two" });
 
-    const res = await request(app).get("/catalog/artists");
+    const res = await request(app)
+      .get("/catalog/artists")
+      .set("Cookie", cookie);
     expect(res.status).to.equal(200);
     expect(res.body.items).to.be.an("array");
     expect(res.body.total).to.be.at.least(2);
@@ -35,6 +40,7 @@ describe("Catalog e2e (supertest + real seeded DB)", () => {
     track.create({ title: "E2EUniqueTitle999" });
     const res = await request(app)
       .get("/catalog/search")
+      .set("Cookie", cookie)
       .query({ q: "E2EUniqueTitle999" });
     expect(res.status).to.equal(200);
     expect(res.body.tracks).to.be.an("array");
@@ -43,7 +49,10 @@ describe("Catalog e2e (supertest + real seeded DB)", () => {
   });
 
   it("GET /catalog/search?q= empty returns empty arrays", async () => {
-    const res = await request(app).get("/catalog/search").query({ q: "" });
+    const res = await request(app)
+      .get("/catalog/search")
+      .set("Cookie", cookie)
+      .query({ q: "" });
     expect(res.status).to.equal(200);
     expect(res.body.artists).to.deep.equal([]);
     expect(res.body.albums).to.deep.equal([]);
@@ -52,9 +61,22 @@ describe("Catalog e2e (supertest + real seeded DB)", () => {
 
   it("GET /catalog/tracks returns paginated seeded tracks", async () => {
     track.createMany(3);
-    const res = await request(app).get("/catalog/tracks").query({ limit: 2 });
+    const res = await request(app)
+      .get("/catalog/tracks")
+      .set("Cookie", cookie)
+      .query({ limit: 2 });
     expect(res.status).to.equal(200);
     expect(res.body.items).to.have.length(2);
     expect(res.body.total).to.equal(3);
+  });
+
+  it("varies on Origin without allowing an untrusted origin", async () => {
+    const res = await request(app)
+      .get("/catalog/artists")
+      .set("Cookie", cookie)
+      .set("Origin", "https://untrusted.example");
+
+    expect(res.headers.vary).to.include("Origin");
+    expect(res.headers["access-control-allow-origin"]).to.be.undefined;
   });
 });

@@ -1,4 +1,4 @@
-import type { PlaybackStatus, QueuedTrack } from "@repo/types";
+import type { PlaybackStatus, PlayerReport, QueuedTrack } from "@repo/types";
 import { PlayerServiceImpl } from "./playerService.js";
 import { MpdConnectionManager } from "../mpd/mpdConnectionManager.js";
 import type { LogService } from "../utils/logService.js";
@@ -14,12 +14,14 @@ export interface PlaybackEngine extends EventEmitter {
   seek(position: number): Promise<void>;
   getQueue(): Promise<QueuedTrack[]>;
   addToQueue(file: string): Promise<void>;
+  playFiles(files: string[], startAt?: number): Promise<void>;
   removeFromQueue(pos: number): Promise<void>;
   moveQueueItem(from: number, to: number): Promise<void>;
   setVolume(volume: number): Promise<void>;
   playPosition(pos: number): Promise<void>;
   enableRandom(enabled: boolean): Promise<void>;
   enableRepeat(enabled: boolean): Promise<void>;
+  reportPlayback(report: PlayerReport): void;
 }
 
 /**
@@ -28,6 +30,7 @@ export interface PlaybackEngine extends EventEmitter {
  */
 export class MpdAdapter extends EventEmitter implements PlaybackEngine {
   private statusForwarder: (() => void) | null = null;
+  private trackForwarder: ((track: unknown) => void) | null = null;
 
   constructor(
     private readonly playerService: PlayerServiceImpl,
@@ -39,7 +42,11 @@ export class MpdAdapter extends EventEmitter implements PlaybackEngine {
     this.statusForwarder = () => {
       this.emit("stateChanged");
     };
+    this.trackForwarder = (track) => {
+      this.emit("trackChanged", track);
+    };
     this.mpdConnectionManager.on("stateChanged", this.statusForwarder);
+    this.mpdConnectionManager.on("trackChanged", this.trackForwarder);
   }
 
   private fmtSid(): string {
@@ -50,6 +57,10 @@ export class MpdAdapter extends EventEmitter implements PlaybackEngine {
     if (this.statusForwarder) {
       this.mpdConnectionManager.off("stateChanged", this.statusForwarder);
       this.statusForwarder = null;
+    }
+    if (this.trackForwarder) {
+      this.mpdConnectionManager.off("trackChanged", this.trackForwarder);
+      this.trackForwarder = null;
     }
   }
 
@@ -210,6 +221,10 @@ export class MpdAdapter extends EventEmitter implements PlaybackEngine {
     await this.playerService.addToQueue(file);
   }
 
+  async playFiles(files: string[], startAt = 0): Promise<void> {
+    await this.playerService.playFiles(files, startAt);
+  }
+
   async removeFromQueue(pos: number): Promise<void> {
     await this.playerService.removeFromQueue(pos);
   }
@@ -233,4 +248,9 @@ export class MpdAdapter extends EventEmitter implements PlaybackEngine {
   async enableRepeat(enabled: boolean): Promise<void> {
     await this.playerService.enableRepeat(enabled);
   }
+
+  /**
+   * MPD is authoritative in MPD mode; browser reports are irrelevant here.
+   */
+  reportPlayback(_report: PlayerReport): void {}
 }

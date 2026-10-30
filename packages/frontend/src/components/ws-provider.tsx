@@ -1,10 +1,33 @@
-import { useEffect, useRef } from "react";
-import { getProfileSessionId } from "@/lib/selectedProfile";
-import { useProfile } from "@/features/profiles/profile-context";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
+import { useAuth } from "@/features/auth/auth-context";
 import { usePlaybackContext, type SyncProgress } from "./playback-context";
 import { defaultPlayerState } from "@/lib/playbackState";
-import type { PlaybackStatus } from "@repo/types";
+import type { PlaybackStatus, PlayerReport } from "@repo/types";
 import { getDeviceId, getDeviceName, getDeviceType } from "@/lib/deviceId";
+
+type PlayerSocketContextValue = {
+  sendReport: (report: PlayerReport) => void;
+};
+
+const PlayerSocketContext = createContext<PlayerSocketContextValue | null>(
+  null,
+);
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function usePlayerSocket(): PlayerSocketContextValue {
+  const value = useContext(PlayerSocketContext);
+  if (!value) {
+    throw new Error("usePlayerSocket must be used inside WebSocketProvider");
+  }
+  return value;
+}
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const {
@@ -15,6 +38,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     setActiveDeviceId,
     setActiveDeviceName,
     setActiveDeviceType,
+    setOutputMode,
   } = usePlaybackContext();
 
   const settersRef = useRef({
@@ -25,6 +49,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     setActiveDeviceId,
     setActiveDeviceName,
     setActiveDeviceType,
+    setOutputMode,
   });
   useEffect(() => {
     settersRef.current = {
@@ -35,20 +60,34 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       setActiveDeviceId,
       setActiveDeviceName,
       setActiveDeviceType,
+      setOutputMode,
     };
   });
 
   const wsRef = useRef<WebSocket | null>(null);
   const trackIdRef = useRef<number | null>(null);
 
-  const { profile } = useProfile();
-  const profileId = profile?.id ?? getProfileSessionId();
+  const sendReport = useCallback((report: PlayerReport) => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    try {
+      ws.send(JSON.stringify({ type: "player-report", ...report }));
+    } catch {
+      // socket may close between the check and the send
+    }
+  }, []);
+  const socketValue = useMemo(() => ({ sendReport }), [sendReport]);
+
+  const { profile } = useAuth();
+  const profileId = profile?.id ?? "";
 
   const wsUrl: string =
     import.meta.env.VITE_WEBSOCKET_URL ||
     `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`;
 
   useEffect(() => {
+    if (!profileId) return;
+
     const {
       setPlaybackStatus,
       setTrackPlayed,
@@ -57,6 +96,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       setActiveDeviceId,
       setActiveDeviceName,
       setActiveDeviceType,
+      setOutputMode,
     } = settersRef.current;
 
     // Guard: each profile gets its own isolated socket. Tear down any previous
@@ -109,7 +149,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const sid = profileId || getProfileSessionId();
+      const sid = profileId;
       const did = getDeviceId();
       const dName = getDeviceName();
       const dType = getDeviceType();
@@ -181,6 +221,10 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
               activeDeviceType: pd.activeDeviceType ?? null,
               mode: (pd as unknown as { mode?: string })
                 .mode as PlaybackStatus["mode"],
+              nextTrackId: pd.nextTrackId ?? null,
+              buffering: pd.buffering ?? false,
+              seekSeq: pd.seekSeq ?? 0,
+              crossfade: pd.crossfade ?? 0,
             });
             if ("activeDeviceId" in pd) {
               setActiveDeviceId(pd.activeDeviceId ?? null);
@@ -190,6 +234,9 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
             }
             if ("activeDeviceType" in pd) {
               setActiveDeviceType(pd.activeDeviceType ?? null);
+            }
+            if (pd.mode === "browser" || pd.mode === "mpd") {
+              setOutputMode(pd.mode);
             }
 
             if (pd.track && trackIdRef.current !== pd.track.id) {
@@ -203,11 +250,15 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }
       };
 
-      nextWs.onclose = () => {
+      nextWs.onclose = (event) => {
         if (ws !== nextWs) return;
         if (wsRef.current === nextWs) wsRef.current = null;
         if (cancelled) return;
         setWsConnected(false);
+        if (event.code === 4401 || event.code === 4403) {
+          window.dispatchEvent(new Event("sonect:unauthorized"));
+          return;
+        }
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempt), 30000);
         reconnectAttempt++;
         reconnectTimer = setTimeout(() => {
@@ -241,5 +292,9 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     };
   }, [wsUrl, profileId]);
 
-  return <>{children}</>;
+  return (
+    <PlayerSocketContext.Provider value={socketValue}>
+      {children}
+    </PlayerSocketContext.Provider>
+  );
 }

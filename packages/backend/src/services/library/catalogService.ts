@@ -52,7 +52,11 @@ export interface CatalogService {
 export class CatalogServiceImpl implements CatalogService {
   // Artist
   public getAllArtists(limit?: number, offset?: number): Artist[] {
-    const artists = artistsDb.getAll({ limit, offset });
+    const artists = artistsDb.getAll({
+      limit,
+      offset,
+      withAlbumsOnly: true,
+    });
     return artists.map((artist) => ({
       ...artist,
       coverPreviews: albumsDb.getCoverPreviews(artist.id, 4), // TODO: Optimize here with single sync join query on db
@@ -60,7 +64,7 @@ export class CatalogServiceImpl implements CatalogService {
   }
 
   public getArtistCount(): number {
-    return artistsDb.count();
+    return artistsDb.count({ withAlbumsOnly: true });
   }
 
   public getArtistById(id: number): Artist | undefined {
@@ -151,7 +155,9 @@ export class CatalogServiceImpl implements CatalogService {
 
   public searchTracks(query: string): SearchResults {
     const q = query.toLowerCase();
-    const matchedArtists = artistsDb.search(q);
+    const matchedArtists = artistsDb.search(q, undefined, {
+      withAlbumsOnly: true,
+    });
     const artists = matchedArtists.map((artist) => ({
       ...artist,
       coverPreviews: albumsDb.getCoverPreviews(artist.id, 4),

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireAuth } from "@middleware/auth";
 import { sessionIdMiddleware } from "@middleware/sessionId";
 import {
   getSessionStatusHandler,
@@ -15,7 +16,7 @@ import {
 } from "../controllers/sessionController";
 
 const router = Router();
-router.use(sessionIdMiddleware);
+router.use(requireAuth, sessionIdMiddleware);
 router.get("/status", getSessionStatusHandler);
 router.get("/queue", sessionQueueGetHandler);
 router.post("/queue", sessionQueueAddHandler);

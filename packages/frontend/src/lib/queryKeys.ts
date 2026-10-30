@@ -1,5 +1,6 @@
 export const qk = {
-  dashboard: () => ["dashboard"] as const,
+  dashboardRoot: () => ["dashboard"] as const,
+  dashboard: (profileId: string) => ["dashboard", profileId] as const,
   catalog: {
     albumsInfinite: (sort: string) =>
       ["catalog", "albums", "infinite", sort] as const,
@@ -11,8 +12,6 @@ export const qk = {
     artistsInfinite: () => ["catalog", "artists", "infinite"] as const,
     artist: (id: string) => ["catalog", "artist", id] as const,
     genres: () => ["catalog", "genres"] as const,
-    tracksInfinite: (sort: string) =>
-      ["catalog", "tracks", "infinite", sort] as const,
     tracksByAlbum: (albumId: string) =>
       ["catalog", "tracksByAlbum", albumId] as const,
     tracksByGenre: (genre: string) =>
@@ -24,9 +23,14 @@ export const qk = {
     list: () => ["playlists", "list"] as const,
     detail: (id: number) => ["playlists", "detail", id] as const,
   },
+  liked: {
+    ids: (profileId: string) => ["liked", "ids", profileId] as const,
+    list: (profileId: string) => ["liked", "list", profileId] as const,
+  },
   player: {
     queue: () => ["player", "queue"] as const,
     waveform: (trackId: number) => ["player", "waveform", trackId] as const,
+    settings: () => ["player", "settings"] as const,
   },
   system: {
     audioDevices: () => ["system", "audio", "devices"] as const,
@@ -39,5 +43,9 @@ export const qk = {
   },
   profiles: {
     list: () => ["profiles", "list"] as const,
+  },
+  auth: {
+    state: () => ["auth", "state"] as const,
+    profiles: () => ["auth", "profiles"] as const,
   },
 };

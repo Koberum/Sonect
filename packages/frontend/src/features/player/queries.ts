@@ -1,6 +1,12 @@
-import { queryOptions } from "@tanstack/react-query";
+import { mutationOptions, queryOptions } from "@tanstack/react-query";
 import { qk } from "@/lib/queryKeys";
-import { getQueue, getWaveform } from "./api";
+import { queryClient } from "@/lib/queryClient";
+import {
+  getPlaybackSettings,
+  getQueue,
+  getWaveform,
+  setPlaybackSettings,
+} from "./api";
 
 export const playerQueries = {
   queue: (enabled = true) =>
@@ -12,6 +18,12 @@ export const playerQueries = {
       refetchInterval: enabled ? 10_000 : false,
       refetchIntervalInBackground: false,
     }),
+  settings: () =>
+    queryOptions({
+      queryKey: qk.player.settings(),
+      queryFn: ({ signal }) => getPlaybackSettings(signal),
+      staleTime: 60_000,
+    }),
   waveform: (trackId: number | null | undefined) =>
     queryOptions({
       queryKey: qk.player.waveform(trackId ?? -1),
@@ -20,5 +32,16 @@ export const playerQueries = {
       staleTime: 5 * 60_000,
       gcTime: 30 * 60_000,
       retry: 1,
+    }),
+};
+
+export const playerMutations = {
+  setSettings: () =>
+    mutationOptions({
+      mutationFn: (crossfadeSeconds: number) =>
+        setPlaybackSettings(crossfadeSeconds),
+      onSuccess: (settings) => {
+        queryClient.setQueryData(qk.player.settings(), settings);
+      },
     }),
 };

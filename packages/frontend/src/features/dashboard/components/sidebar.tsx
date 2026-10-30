@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type DragEvent } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -8,11 +8,10 @@ import {
   ListMusic,
   Plus,
   Library,
-  Music,
+  Heart,
   Disc3,
   LoaderCircle,
   AudioLines,
-  Settings,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
@@ -34,7 +33,14 @@ import {
   playlistQueries,
   playlistMutations,
 } from "@/features/playlists/queries";
+import {
+  getDraggedTrackId,
+  isTrackDrag,
+} from "@/features/playlists/track-drag";
+import { likedQueries } from "@/features/liked/queries";
 import { scanLibrary } from "@/features/catalog/api";
+import { useAuth } from "@/features/auth/auth-context";
+import { toast } from "sonner";
 
 export interface SidebarProps {
   className?: string;
@@ -43,12 +49,58 @@ export interface SidebarProps {
 
 export function Sidebar({ className, toggleSidebar }: SidebarProps) {
   const { t } = useTranslation();
+  const { isAdmin, profile } = useAuth();
   const navigate = useNavigate();
   const { data: playlists = [] } = useQuery(playlistQueries.list());
+  const { data: likedIds = [] } = useQuery(likedQueries.ids(profile?.id ?? ""));
   const createMut = useMutation(playlistMutations.create());
+  const addTrackMut = useMutation(playlistMutations.addTrack());
   const [newName, setNewName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [dragOverPlaylistId, setDragOverPlaylistId] = useState<number | null>(
+    null,
+  );
+
+  const handlePlaylistDragOver = (
+    event: DragEvent<HTMLButtonElement>,
+    playlistId: number,
+  ) => {
+    if (!isTrackDrag(event.dataTransfer)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+    if (dragOverPlaylistId !== playlistId) {
+      setDragOverPlaylistId(playlistId);
+    }
+  };
+
+  const handlePlaylistDragLeave = (
+    event: DragEvent<HTMLButtonElement>,
+    playlistId: number,
+  ) => {
+    if (event.currentTarget.contains(event.relatedTarget as Node | null))
+      return;
+    setDragOverPlaylistId((current) =>
+      current === playlistId ? null : current,
+    );
+  };
+
+  const handlePlaylistDrop = async (
+    event: DragEvent<HTMLButtonElement>,
+    playlistId: number,
+  ) => {
+    if (!isTrackDrag(event.dataTransfer)) return;
+    event.preventDefault();
+    setDragOverPlaylistId(null);
+    const trackId = getDraggedTrackId(event.dataTransfer);
+    if (trackId === null) return;
+    try {
+      await addTrackMut.mutateAsync({ playlistId, trackId });
+      toast(t("playlist.trackAdded"));
+    } catch {
+      toast(t("playlist.trackAddError"));
+    }
+  };
 
   const handleNavigation = (path: string) => {
     navigate(path);
@@ -103,26 +155,28 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
             <h2 className="text-lg font-semibold tracking-tight">
               {t("sidebar.library")}
             </h2>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={handleRefreshLibrary}
-                  disabled={isRefreshing}
-                  aria-label={t("sidebar.refreshLibrary")}
-                >
-                  <LoaderCircle
-                    className={isRefreshing ? "animate-spin" : ""}
-                  />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                {isRefreshing
-                  ? t("sidebar.refreshingLibrary")
-                  : t("sidebar.refreshLibrary")}
-              </TooltipContent>
-            </Tooltip>
+            {isAdmin && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="bare"
+                    size="icon-sm"
+                    onClick={handleRefreshLibrary}
+                    disabled={isRefreshing}
+                    aria-label={t("sidebar.refreshLibrary")}
+                  >
+                    <LoaderCircle
+                      className={isRefreshing ? "animate-spin" : ""}
+                    />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  {isRefreshing
+                    ? t("sidebar.refreshingLibrary")
+                    : t("sidebar.refreshLibrary")}
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
           <div className="space-y-1">
             <Button
@@ -134,12 +188,17 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
               {t("albums.title")}
             </Button>
             <Button
-              onClick={() => handleNavigation("/tracks")}
-              variant={isMenuActive("/tracks") ? "secondary" : "ghost"}
+              onClick={() => handleNavigation("/liked")}
+              variant={isMenuActive("/liked") ? "secondary" : "ghost"}
               className="w-full justify-start"
             >
-              <Music className="mr-2 h-4 w-4" />
-              {t("tracks.title")}
+              <Heart className="mr-2 h-4 w-4" />
+              {t("liked.title")}
+              {likedIds.length > 0 && (
+                <span className="text-muted-foreground ml-auto text-xs">
+                  {likedIds.length}
+                </span>
+              )}
             </Button>
             <Button
               onClick={() => handleNavigation("/genres")}
@@ -168,21 +227,6 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
           </div>
         </div>
         <div className="px-3 py-2">
-          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
-            {t("sidebar.settings")}
-          </h2>
-          <div className="space-y-1">
-            <Button
-              onClick={() => handleNavigation("/settings")}
-              variant={isMenuActive("/settings") ? "secondary" : "ghost"}
-              className="w-full justify-start"
-            >
-              <Settings className="mr-2 h-4 w-4" />
-              {t("sidebar.settings")}
-            </Button>
-          </div>
-        </div>
-        <div className="px-3 py-2">
           <div className="mb-2 flex items-center justify-between px-4">
             <h2 className="text-lg font-semibold tracking-tight">
               {t("sidebar.playlists")}
@@ -192,7 +236,7 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
                 <TooltipTrigger asChild>
                   <DialogTrigger asChild>
                     <Button
-                      variant="ghost"
+                      variant="bare"
                       size="icon-sm"
                       aria-label={t("playlist.new")}
                     >
@@ -242,7 +286,20 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
                           ? "secondary"
                           : "ghost"
                       }
-                      className="w-full justify-start"
+                      className={cn(
+                        "w-full justify-start",
+                        dragOverPlaylistId === playlist.id &&
+                          "ring-primary bg-primary/10 ring-2",
+                      )}
+                      onDragOver={(event) =>
+                        handlePlaylistDragOver(event, playlist.id)
+                      }
+                      onDragLeave={(event) =>
+                        handlePlaylistDragLeave(event, playlist.id)
+                      }
+                      onDrop={(event) => {
+                        void handlePlaylistDrop(event, playlist.id);
+                      }}
                     >
                       <ListMusic className="mr-2 h-4 w-4 shrink-0" />
                       <span className="truncate">{playlist.name}</span>

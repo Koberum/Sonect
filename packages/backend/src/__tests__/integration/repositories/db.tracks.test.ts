@@ -315,6 +315,74 @@ describe("tracksDb (trophy integration)", () => {
         tracksDb.getByAlbumWithRelations(al).map((t) => t.title),
       ).to.deep.equal(["A", "B"]);
     });
+    it("collapses identical copies in album views but keeps distinct positions", () => {
+      const aid = findOrCreateArtist(db(), "DupArtist");
+      const al = findOrCreateAlbum(db(), "DupAlbum", aid);
+      const copies = ["x/copy1.mp3", "x/copy2.mp3", "x/copy3.mp3"];
+      for (const file of copies) {
+        db()
+          .insert(tracks)
+          .values({
+            file,
+            title: "Same Song",
+            artist_id: aid,
+            album_id: al,
+            disc_number: 1,
+            track_number: 1,
+          })
+          .run();
+      }
+      db()
+        .insert(tracks)
+        .values({
+          file: "x/other.mp3",
+          title: "Same Song",
+          artist_id: aid,
+          album_id: al,
+          disc_number: 1,
+          track_number: 2,
+        })
+        .run();
+
+      const related = tracksDb.getByAlbumWithRelations(al);
+      expect(related).to.have.length(2);
+      expect(related.map((t) => t.track_number)).to.deep.equal([1, 2]);
+      expect(tracksDb.getByAlbumOrdered(al)).to.have.length(2);
+    });
+    it("collapses copies with different track artists and keeps the lossless one", () => {
+      const lossyArtist = findOrCreateArtist(db(), "Lossy Artist");
+      const flacArtist = findOrCreateArtist(db(), "Flac Artist");
+      const al = findOrCreateAlbum(db(), "Format Album", flacArtist);
+      db()
+        .insert(tracks)
+        .values({
+          file: "x/track.mp3",
+          title: "Format Song",
+          artist_id: lossyArtist,
+          album_id: al,
+          disc_number: 1,
+          track_number: 1,
+        })
+        .run();
+      db()
+        .insert(tracks)
+        .values({
+          file: "x/track.flac",
+          title: "Format Song",
+          artist_id: flacArtist,
+          album_id: al,
+          disc_number: 1,
+          track_number: 1,
+        })
+        .run();
+
+      const related = tracksDb.getByAlbumWithRelations(al);
+      expect(related).to.have.length(1);
+      expect(related[0]?.file).to.equal("x/track.flac");
+      const ordered = tracksDb.getByAlbumOrdered(al);
+      expect(ordered).to.have.length(1);
+      expect(ordered[0]?.file).to.equal("x/track.flac");
+    });
     it("getByArtistAlbumTitle NOCASE artist, case-sensitive album/title", () => {
       upsertTrack(
         db(),

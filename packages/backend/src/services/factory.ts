@@ -3,6 +3,10 @@ import {
   CatalogServiceImpl,
   type CatalogService,
 } from "./library/catalogService.js";
+import {
+  TrackInfoServiceImpl,
+  type TrackInfoService,
+} from "./library/trackInfoService.js";
 import { MpdConnectionManager } from "./mpd/mpdConnectionManager.js";
 import { AutoplayService } from "./mpd/autoplayService.js";
 import {
@@ -40,6 +44,7 @@ import {
   SuggestionService,
   type SuggestionServiceInterface,
 } from "./library/suggestionService.js";
+import { LikedServiceImpl, type LikedService } from "./library/likedService.js";
 import { SetupServiceImpl, type SetupService } from "./system/setupService.js";
 import {
   NetworkServiceImpl,
@@ -54,10 +59,12 @@ import {
   ProfileServiceImpl,
   type ProfileService,
 } from "./profile/profileService.js";
+import { AuthServiceImpl, type AuthService } from "./auth/authService.js";
 
 let _initialized = false;
 let _logService: LogService;
 let _catalogService: CatalogService;
+let _trackInfoService: TrackInfoService;
 let _mpdConnectionManager: MpdConnectionManager;
 let _autoplayService: AutoplayService;
 let _playerService: PlayerService;
@@ -70,11 +77,13 @@ let _systemService: SystemServiceInterface;
 let _playTrackingService: PlayTrackingService;
 let _playlistService: PlaylistService;
 let _suggestionService: SuggestionServiceInterface;
+let _likedService: LikedService;
 let _setupService: SetupService;
 let _networkService: NetworkService;
 let _sessionRegistry: SessionRegistry;
 let _playerRouter: PlayerRouter;
 let _profileService: ProfileService;
+let _authService: AuthService;
 
 function assertInitialized(): void {
   if (!_initialized) {
@@ -89,6 +98,7 @@ export function initializeServices(): void {
 
   _logService = new LogServiceImpl();
   _catalogService = new CatalogServiceImpl();
+  _trackInfoService = new TrackInfoServiceImpl();
   _autoplayService = new AutoplayService();
 
   _mpdConnectionManager = new MpdConnectionManager(
@@ -128,12 +138,12 @@ export function initializeServices(): void {
 
   _playlistService = new PlaylistServiceImpl(_mpdConnectionManager);
 
-  _playTrackingService = new PlayTrackingService(_mpdConnectionManager);
-
   _suggestionService = new SuggestionService();
+  _likedService = new LikedServiceImpl();
   _setupService = new SetupServiceImpl();
   _networkService = new NetworkServiceImpl();
   _profileService = new ProfileServiceImpl();
+  _authService = new AuthServiceImpl();
 
   _sessionRegistry = new SessionRegistry(_logService);
   setGlobalSessionRegistry(_sessionRegistry);
@@ -146,6 +156,10 @@ export function initializeServices(): void {
     _logService,
   );
   setGlobalPlayerRouter(_playerRouter);
+  _mpdConnectionManager.setConnectedCallback(() => {
+    _playerRouter.onMpdConnected();
+  });
+  _playTrackingService = new PlayTrackingService(_playerRouter);
 
   _mpdConnectionManager.setAutoplayCallback(async (currentFile: string) => {
     const sessionId = _autoplayService.sessionId;
@@ -172,6 +186,11 @@ export function getLogService(): LogService {
 export function getCatalogService(): CatalogService {
   assertInitialized();
   return _catalogService;
+}
+
+export function getTrackInfoService(): TrackInfoService {
+  assertInitialized();
+  return _trackInfoService;
 }
 
 export function getMpdConnectionManager(): MpdConnectionManager {
@@ -214,6 +233,11 @@ export function getSuggestionService(): SuggestionServiceInterface {
   return _suggestionService;
 }
 
+export function getLikedService(): LikedService {
+  assertInitialized();
+  return _likedService;
+}
+
 export function getSetupService(): SetupService {
   assertInitialized();
   return _setupService;
@@ -227,6 +251,11 @@ export function getNetworkService(): NetworkService {
 export function getProfileService(): ProfileService {
   assertInitialized();
   return _profileService;
+}
+
+export function getAuthService(): AuthService {
+  assertInitialized();
+  return _authService;
 }
 
 export function isServicesInitialized(): boolean {

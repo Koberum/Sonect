@@ -1,15 +1,15 @@
 {
   "dashboard": {
     "title": "Listen Now",
-    "continueListening": "Continue Listening",
+    "recentlyPlayedAlbums": "Recently Played Albums",
+    "recentlyPlayedArtists": "Recently Played Artists",
     "recentlyPlayed": "Recently Played",
     "topTracks": "Top Tracks",
     "suggestedForYou": "Suggested for You",
     "genreQuickMix": "Your {{genre}} Mix",
     "playMix": "Play Mix",
     "trackCount": "{{count}} tracks",
-    "trackCount_one": "{{count}} track",
-    "loading": "Loading your dashboard..."
+    "trackCount_one": "{{count}} track"
   },
   "sidebar": {
     "discover": "Discover",
@@ -18,7 +18,6 @@
     "artists": "Artists",
     "statistics": "Statistics",
     "playlists": "Playlists",
-    "settings": "Settings",
     "refreshLibrary": "Refresh Library",
     "refreshingLibrary": "Refreshing...",
     "toggleSidebar": "Toggle sidebar"
@@ -37,9 +36,10 @@
   "album": {
     "loading": "Loading album...",
     "title": "Title",
+    "trackCount_one": "{{count}} track",
+    "trackCount_other": "{{count}} tracks",
     "duration": "Duration",
     "trackNumber": "#",
-    "addToQueue": "Add to queue",
     "playAll": "Play All",
     "goToAlbum": "Go to Album"
   },
@@ -75,6 +75,7 @@
     "outputModeError": "Failed to switch output mode",
     "tapToPlay": "Tap to play",
     "mpdError": "MPD playback error: {{error}}",
+    "playbackError": "Unable to play this track",
     "mpdLocked": "MPD locked",
     "outputModeLocked": "MPD output locked by another session"
   },
@@ -101,10 +102,12 @@
   },
   "contextMenu": {
     "addToPlaylist": "Add to Playlist",
-    "addToQueue": "Add to queue",
-    "newPlaylist": "New Playlist",
     "play": "Play",
-    "playLater": "Play Later"
+    "addToQueue": "Add to queue"
+  },
+  "trackActions": {
+    "open": "Track actions",
+    "noPlaylists": "No playlists yet"
   },
   "search": {
     "placeholder": "Search",
@@ -114,6 +117,7 @@
     "addToQueue": "Add to queue",
     "addedToQueue": "Added to queue",
     "startTyping": "Start typing to search...",
+    "recentSearches": "Recent searches",
     "noResults": "No results found"
   },
   "playlist": {
@@ -138,7 +142,6 @@
     "trackAddError": "Failed to add track",
     "trackRemoved": "Track removed from playlist",
     "trackRemovedError": "Failed to remove track",
-    "trackAddedToQueue": "Track added to queue",
     "removeTrack": "Remove track"
   },
   "albums": {
@@ -152,9 +155,23 @@
   "tracks": {
     "title": "Tracks",
     "description": "Browse all tracks in your library",
-    "artist": "Artist",
-    "album": "Album",
     "noTracks": "No tracks found"
+  },
+  "liked": {
+    "title": "Liked Songs",
+    "description": "Songs you've liked",
+    "count_one": "{{count}} song",
+    "count_other": "{{count}} songs",
+    "like": "Like",
+    "unlike": "Remove from Liked Songs",
+    "playAll": "Play all",
+    "shuffle": "Shuffle",
+    "emptyTitle": "No liked songs yet",
+    "emptyDescription": "Tap the heart on any song to add it here.",
+    "browse": "Browse albums",
+    "loadError": "Could not load your liked songs.",
+    "playError": "Could not start playback.",
+    "updateError": "Could not update this like."
   },
   "genres": {
     "title": "Genres",
@@ -192,6 +209,7 @@
     "description": "Configure your system",
     "tabs": {
       "audio": "Audio",
+      "playback": "Playback",
       "libraries": "Libraries",
       "appearance": "Appearance",
       "debug": "Debug"
@@ -207,6 +225,19 @@
       "configured": "Audio output configured",
       "configureError": "Failed to configure audio",
       "loadError": "Failed to load audio devices"
+    },
+    "playback": {
+      "title": "Playback",
+      "description": "Crossfade between tracks for this profile.",
+      "crossfadeLabel": "Crossfade",
+      "seconds": "{{seconds}} s",
+      "hint": "Overlap the end of one track with the start of the next. Set to 0 to disable.",
+      "mpdHint": "For MPD, the value applies while this profile owns the MPD output. MPD can only crossfade tracks with the same audio format.",
+      "save": "Save",
+      "saving": "Saving...",
+      "saved": "Playback settings saved",
+      "saveError": "Failed to save playback settings",
+      "loadError": "Failed to load playback settings"
     },
     "storage": {
       "title": "Storage",
@@ -273,6 +304,8 @@
       "mpdStopped": "MPD is stopped",
       "environment": "Environment",
       "environmentDescription": "Build and runtime configuration values.",
+      "version": "Version",
+      "versionUnavailable": "Unavailable",
       "hardware": {
         "loading": "Loading hardware stats...",
         "cpu": "CPU",
@@ -293,6 +326,49 @@
       "resetSetupError": "Failed to reset the setup wizard"
     }
   },
+  "auth": {
+    "loginTitle": "Who's listening?",
+    "chooseProfile": "Choose a profile to sign in",
+    "password": "Password",
+    "enterPasswordFor": "Enter the password for {{name}}",
+    "signIn": "Sign in",
+    "signingIn": "Signing in...",
+    "invalidCredentials": "Incorrect password",
+    "tooManyAttempts": "Too many attempts. Try again in {{seconds}}s.",
+    "backToProfiles": "Back to profiles",
+    "noProfiles": "No profiles yet",
+    "logout": "Sign out",
+    "switchTitle": "Switch profile",
+    "switchDescription": "Enter the password for {{name}}",
+    "switch": "Switch",
+    "switching": "Switching...",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "passwordChanged": "Password changed",
+    "changePasswordError": "Could not change the password",
+    "role": "Role",
+    "roleAdmin": "Administrator",
+    "roleUser": "User",
+    "resetPassword": "Reset password",
+    "resetPasswordTitle": "Reset password",
+    "resetPasswordDescription": "Set a new password for {{name}}. Their active sessions will be signed out.",
+    "resetPasswordDone": "Password reset",
+    "resetPasswordError": "Could not reset the password",
+    "bootstrapTitle": "Create the administrator",
+    "bootstrapDescription": "Set up the first administrator profile for this Sonect instance.",
+    "bootstrapName": "Administrator name",
+    "bootstrapPassword": "Password",
+    "bootstrapConfirm": "Confirm password",
+    "bootstrapSubmit": "Create administrator",
+    "bootstrapCreating": "Creating...",
+    "bootstrapError": "Could not create the administrator",
+    "lastAdmin": "The last administrator cannot be removed or demoted",
+    "sessionsInvalidated": "Active sessions were signed out"
+  },
   "profile": {
     "title": "Who's listening?",
     "change": "Change profile",
@@ -301,11 +377,11 @@
     "create": "Create profile",
     "addProfile": "Add profile",
     "createTitle": "Create profile",
-    "createDescription": "Choose a name and color for your new profile",
+    "createDescription": "Choose a name, color, password, and role for the new profile",
     "namePlaceholder": "Profile name",
     "rename": "Rename",
     "editTitle": "Edit profile",
-    "editDescription": "Update the name and color for this profile",
+    "editDescription": "Update this profile's name, color, and role, or reset its password",
     "save": "Save",
     "color": "Color",
     "delete": "Delete",
@@ -322,10 +398,8 @@
   },
   "setup": {
     "welcome": {
-      "description": "Welcome to Sonect — your self-hosted music streamer.",
       "language": "Language",
       "theme": "Theme",
-      "getStarted": "Get Started",
       "skipWizard": "Skip Wizard"
     },
     "storage": {
@@ -346,7 +420,6 @@
       "finish": "Finish Setup"
     },
     "stepNames": {
-      "welcome": "Welcome",
       "storage": "Storage",
       "audio": "Audio",
       "sync": "Sync"

@@ -35,6 +35,7 @@ export type DBTrackWithRelations = DBTrack & {
   album_title?: string;
   cover_path?: string;
   genre?: string;
+  storage_source_name?: string | null;
 };
 
 export type DBArtist = {
@@ -76,10 +77,15 @@ export type DBStorageSource = {
   updated_at?: string;
 };
 
+import type { AuthProfile, ProfileRole, PublicProfile } from "../auth/types.js";
+
 export type DBProfile = {
   id: string;
   name: string;
   avatar_color: string;
+  password_hash: string | null;
+  role: ProfileRole;
+  password_updated_at: number | null;
   created_at: number;
 };
 
@@ -87,6 +93,7 @@ export type Profile = {
   id: string;
   name: string;
   avatarColor: string;
+  role: ProfileRole;
   createdAt: number;
 };
 
@@ -95,6 +102,24 @@ export function toProfile(dbProfile: DBProfile): Profile {
     id: dbProfile.id,
     name: dbProfile.name,
     avatarColor: dbProfile.avatar_color,
+    role: dbProfile.role,
     createdAt: dbProfile.created_at,
+  };
+}
+
+export function toAuthProfile(dbProfile: DBProfile): AuthProfile {
+  return {
+    id: dbProfile.id,
+    name: dbProfile.name,
+    avatarColor: dbProfile.avatar_color,
+    role: dbProfile.role,
+  };
+}
+
+export function toPublicProfile(dbProfile: DBProfile): PublicProfile {
+  return {
+    id: dbProfile.id,
+    name: dbProfile.name,
+    avatarColor: dbProfile.avatar_color,
   };
 }

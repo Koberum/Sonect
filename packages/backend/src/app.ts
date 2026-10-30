@@ -10,16 +10,60 @@ import dashboardRouter from "@routes/dashboardRoutes";
 import sessionRoutes from "@routes/sessionRoutes";
 import unifiedPlayerRoutes from "@routes/unifiedPlayerRoutes";
 import profileRoutes from "@routes/profileRoutes";
+import authRoutes from "@routes/authRoutes";
+import likedRoutes from "@routes/likedRoutes";
 import { errorHandler } from "@middleware/errorHandler";
 import { requestLogger } from "@middleware/requestLogger";
+import { authenticate, requireAuth } from "@middleware/auth";
 import { getLogService } from "@services/factory";
 
 const app = express();
 
+const apiPaths = [
+  "/covers",
+  "/stream",
+  "/waveforms",
+  "/player",
+  "/catalog",
+  "/playlists",
+  "/system",
+  "/dashboard",
+  "/session",
+  "/profiles",
+  "/auth",
+  "/likes",
+];
+
+function configuredCorsOrigins(): string[] {
+  return (process.env.CORS_ORIGIN ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .map((value) => {
+      try {
+        return new URL(value).origin;
+      } catch {
+        return value.replace(/\/$/, "");
+      }
+    });
+}
+
 app.use(requestLogger);
 
-app.use((_req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
+app.use((req, res, next) => {
+  const origin = req.header("Origin");
+  res.header("Vary", "Origin");
+  if (origin) {
+    try {
+      const requestOrigin = new URL(origin).origin;
+      if (configuredCorsOrigins().includes(requestOrigin)) {
+        res.header("Access-Control-Allow-Origin", origin);
+        res.header("Access-Control-Allow-Credentials", "true");
+      }
+    } catch {
+      // Malformed Origin: do not send CORS headers.
+    }
+  }
   res.header(
     "Access-Control-Allow-Methods",
     "GET, POST, PUT, PATCH, DELETE, OPTIONS",
@@ -28,7 +72,7 @@ app.use((_req, res, next) => {
     "Access-Control-Allow-Headers",
     "Content-Type, Authorization, X-Session-Id, X-Device-Id, X-Device-Name, X-Device-Type",
   );
-  if (_req.method === "OPTIONS") {
+  if (req.method === "OPTIONS") {
     res.sendStatus(204);
     return;
   }
@@ -36,13 +80,18 @@ app.use((_req, res, next) => {
 });
 app.use(express.json());
 
+app.use(apiPaths, authenticate);
+
 app.use(
   "/covers",
+  requireAuth,
   express.static(process.env.COVERS_DIR || "@data/covers", {
     maxAge: "30d",
     immutable: true,
   }),
 );
+
+app.use("/auth", authRoutes);
 
 app.use("/stream", streamRoutes);
 app.use("/waveforms", waveformRoutes);
@@ -54,6 +103,7 @@ app.use("/system", systemRoutes);
 app.use("/dashboard", dashboardRouter);
 app.use("/session", sessionRoutes);
 app.use("/profiles", profileRoutes);
+app.use("/likes", likedRoutes);
 
 // In production, serve the built frontend from the same process
 const frontendDist =
@@ -71,7 +121,9 @@ if (process.env.NODE_ENV === "production" && fs.existsSync(frontendDist)) {
       req.path.startsWith("/stream") ||
       req.path.startsWith("/dashboard") ||
       req.path.startsWith("/session") ||
-      req.path.startsWith("/profiles")
+      req.path.startsWith("/profiles") ||
+      req.path.startsWith("/auth") ||
+      req.path.startsWith("/likes")
     ) {
       return next();
     }

@@ -27,6 +27,29 @@ export const playerSchemas = {
   toggle: z.object({
     enabled: z.boolean({ error: "enabled is required" }),
   }),
+  settings: z.object({
+    crossfadeSeconds: z
+      .number()
+      .int("crossfadeSeconds must be an integer")
+      .min(0, "crossfadeSeconds must be >= 0")
+      .max(30, "crossfadeSeconds must be <= 30"),
+  }),
+  report: z
+    .object({
+      state: z.enum(["play", "pause", "stop"]).optional(),
+      elapsed: z.number().finite().min(0).optional(),
+      event: z
+        .enum(["playing", "paused", "ended", "advance", "waiting"])
+        .optional(),
+      trackId: z.number().int().positive().optional(),
+    })
+    .refine(
+      (value) =>
+        value.state !== undefined ||
+        value.elapsed !== undefined ||
+        value.event !== undefined,
+      { message: "report must contain state, elapsed or event" },
+    ),
 };
 
 export const playlistSchemas = {
@@ -52,6 +75,31 @@ export const playlistSchemas = {
   }),
   addTrack: z.object({
     trackId: z.number().int("trackId must be an integer").positive(),
+  }),
+};
+
+export const likedSchemas = {
+  trackIdParam: z.object({
+    trackId: z.coerce
+      .number()
+      .int("trackId must be an integer")
+      .positive("trackId must be positive"),
+  }),
+  listQuery: z.object({
+    limit: z.coerce
+      .number()
+      .int("limit must be an integer")
+      .min(1, "limit must be >= 1")
+      .max(200, "limit must be <= 200")
+      .optional(),
+    offset: z.coerce
+      .number()
+      .int("offset must be an integer")
+      .min(0, "offset must be >= 0")
+      .optional(),
+  }),
+  play: z.object({
+    shuffle: z.boolean().optional(),
   }),
 };
 
@@ -110,6 +158,30 @@ export const sessionSchemas = {
   }),
 };
 
+const passwordSchema = z
+  .string()
+  .min(8, "password must be at least 8 characters")
+  .max(200, "password is too long");
+
+export const authSchemas = {
+  bootstrap: z.object({
+    name: z.string().trim().min(1, "name is required").max(50),
+    password: passwordSchema,
+  }),
+  login: z.object({
+    profileId: z.string().min(1, "profileId is required").max(200),
+    password: z.string().min(1, "password is required").max(200),
+  }),
+  switchProfile: z.object({
+    profileId: z.string().min(1, "profileId is required").max(200),
+    password: z.string().min(1, "password is required").max(200),
+  }),
+  changePassword: z.object({
+    currentPassword: z.string().min(1, "currentPassword is required").max(200),
+    newPassword: passwordSchema,
+  }),
+};
+
 export const profileSchemas = {
   create: z.object({
     name: z.string().trim().min(1, "name is required").max(50),
@@ -117,6 +189,8 @@ export const profileSchemas = {
       .string()
       .regex(/^#[0-9a-fA-F]{6}$/, "avatarColor must be a hex color")
       .optional(),
+    password: passwordSchema,
+    role: z.enum(["admin", "user"]).optional(),
   }),
   update: z
     .object({
@@ -125,10 +199,16 @@ export const profileSchemas = {
         .string()
         .regex(/^#[0-9a-fA-F]{6}$/, "avatarColor must be a hex color")
         .optional(),
+      role: z.enum(["admin", "user"]).optional(),
     })
-    .refine((v) => v.name !== undefined || v.avatarColor !== undefined, {
-      message: "At least one of name or avatarColor is required",
-    }),
+    .refine(
+      (v) =>
+        v.name !== undefined ||
+        v.avatarColor !== undefined ||
+        v.role !== undefined,
+      { message: "At least one of name, avatarColor or role is required" },
+    ),
+  resetPassword: z.object({ password: passwordSchema }),
   idParam: z.object({ id: z.string().min(1, "id is required") }),
 };
 
