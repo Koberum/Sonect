@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.1.5](https://github.com/Koberum/Sonect/compare/sonect-v0.1.4...sonect-v0.1.5) (2026-10-30)
+
+
+### Features
+
+* **album:** add header cover and artist column ([750deb8](https://github.com/Koberum/Sonect/commit/750deb80cfcce302222ed6be64dae6ebbf7afa14))
+* **album:** align header metadata to cover bottom ([079b2aa](https://github.com/Koberum/Sonect/commit/079b2aafc6cc7b619509ecf0ab2a8b5ed1d5a1ab))
+* **album:** show metadata tags and library source ([ff0a123](https://github.com/Koberum/Sonect/commit/ff0a123118adfd5c5239d25e638f1ea69168d444))
+* **api:** add liked songs endpoints and playFiles support ([3690c1d](https://github.com/Koberum/Sonect/commit/3690c1d1bc2c91da3d7982a27ce71de001f63853))
+* **auth:** add AuthService, errors, and factory wiring ([50ae97f](https://github.com/Koberum/Sonect/commit/50ae97f66781200ed70e434fe721eec03212e960))
+* **auth:** add cookie sessions, auth middleware, and /auth API ([a8739f7](https://github.com/Koberum/Sonect/commit/a8739f72d722d11276d76799a3397850cb8b35aa))
+* **auth:** add password hashing, tokens, and login throttle ([d62db64](https://github.com/Koberum/Sonect/commit/d62db64bf7f2c1cc20a126b456f7c7dcb1158e78))
+* **auth:** protect routes and WebSocket, derive session identity ([c7d5404](https://github.com/Koberum/Sonect/commit/c7d5404077c5b8939a340a8f144a1200e07285f6))
+* **catalog:** hide artists without albums in listings and search ([8e5a92e](https://github.com/Koberum/Sonect/commit/8e5a92ef20a0ffa50913a787ef5e644f74c5b0be))
+* **dashboard:** add recently played albums and artists ([8a78d7d](https://github.com/Koberum/Sonect/commit/8a78d7d0f2eac3a146d403354b606452f7c4f771))
+* **dashboard:** scope play history and dashboard per profile ([21471db](https://github.com/Koberum/Sonect/commit/21471db65b0157e080c23cf3d76468601451bd0c))
+* **db:** add auth schema, profile roles, and session repositories ([6f05a48](https://github.com/Koberum/Sonect/commit/6f05a484305088a74a149e8bdd1bab40460421bc))
+* **db:** add per-profile liked tracks ([ec1c2e8](https://github.com/Koberum/Sonect/commit/ec1c2e836918fd29ba92f6d028367fc0ca22dc4c))
+* **frontend:** add cookie auth, login, and profile management ([3663ae6](https://github.com/Koberum/Sonect/commit/3663ae6de80f5e59b43911ee11c6f9b0a822d681))
+* **frontend:** add first-run admin step and role-gated SetupGuard ([650415b](https://github.com/Koberum/Sonect/commit/650415b5489c5c680b546183c8b4bd370c24e1aa))
+* **frontend:** add genre column to liked songs ([b3c02b2](https://github.com/Koberum/Sonect/commit/b3c02b2a7d4b592ad8b0fb8de3d959b7b36fc0e0))
+* **frontend:** add liked songs page and track hearts ([380d800](https://github.com/Koberum/Sonect/commit/380d80024b1a0e0e512366c3d925d48c5a847174))
+* **frontend:** adding debug version ([aa37b10](https://github.com/Koberum/Sonect/commit/aa37b1015246457d469b7004c6d9c5bd19df0abf))
+* **frontend:** link player cover to album ([fe08677](https://github.com/Koberum/Sonect/commit/fe08677009ea0e13bb3838415b90c3b96f7463ba))
+* **frontend:** move settings icon to top bar ([643c950](https://github.com/Koberum/Sonect/commit/643c95000929e6f48bf7d7981d5daccce0ddf0e3))
+* **frontend:** move settings into admin profile menu ([19b701b](https://github.com/Koberum/Sonect/commit/19b701b5f87f2d046ade5d42ac0c5002b54c9e57))
+* **frontend:** redesign track rows with shared actions menu ([0d7fd4e](https://github.com/Koberum/Sonect/commit/0d7fd4e6e90a29121e5d12923d459dc895129857))
+* **player:** add per-profile crossfade settings ([2e06d4c](https://github.com/Koberum/Sonect/commit/2e06d4cb91083662157fcb3f5cf62adb404df5e4))
+* **playlists:** drag album tracks onto sidebar playlists ([32da9ce](https://github.com/Koberum/Sonect/commit/32da9ce7c8681a4a7b54e8aefe6a7ea9c8668365))
+* **search:** show recent searches per profile ([037a3c4](https://github.com/Koberum/Sonect/commit/037a3c4dc4ddd925609ed0fa7e63f2f26b28fff9))
+
+
+### Bug Fixes
+
+* **catalog:** identify albums by artist and dedupe copies ([07c3370](https://github.com/Koberum/Sonect/commit/07c3370526afe08105c3e35aefa04e520faa4a09))
+* **dashboard:** hide artists without albums from recent artists ([50deb97](https://github.com/Koberum/Sonect/commit/50deb97b2b266101390a1d378fa559737212ad6f))
+* **frontend:** avoid dashboard refetch when playback starts ([ac8ae8a](https://github.com/Koberum/Sonect/commit/ac8ae8aa17707af6aa96199293be3b10437d5129))
+* **frontend:** hide artist column on mobile album tracks ([e14e428](https://github.com/Koberum/Sonect/commit/e14e428ebd5bc70626c1b53c811f80e426463593))
+* **player:** drive browser playback from real audio state ([ecace91](https://github.com/Koberum/Sonect/commit/ecace917a44dd30f38df470b483c545d76f37cba))
+* **stream:** stream audio by track id ([528cdb4](https://github.com/Koberum/Sonect/commit/528cdb4d19cb80cc9fa8f950748a5180ccdcd95b))
+
 ## [0.1.4](https://github.com/Koberum/Sonect/compare/sonect-v0.1.3...sonect-v0.1.4) (2026-10-24)
 
 
