@@ -1,11 +1,11 @@
-import * as React from "react"
-import { ChevronRight, MoreHorizontal } from "lucide-react"
-import { Slot } from "radix-ui"
+import * as React from "react";
+import { ChevronRight } from "lucide-react";
+import { Slot } from "radix-ui";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 function Breadcrumb({ ...props }: React.ComponentProps<"nav">) {
-  return <nav data-slot="breadcrumb" aria-label="breadcrumb" {...props} />
+  return <nav data-slot="breadcrumb" aria-label="breadcrumb" {...props} />;
 }
 
 function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
@@ -18,7 +18,7 @@ function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
       )}
       {...props}
     />
-  )
+  );
 }
 
 function BreadcrumbItem({ className, ...props }: React.ComponentProps<"li">) {
@@ -28,7 +28,7 @@ function BreadcrumbItem({ className, ...props }: React.ComponentProps<"li">) {
       className={cn("inline-flex items-center gap-1.5", className)}
       {...props}
     />
-  )
+  );
 }
 
 function BreadcrumbLink({
@@ -36,14 +36,14 @@ function BreadcrumbLink({
   asChild,
   ...props
 }: React.ComponentProps<"a"> & { asChild?: boolean }) {
-  const Comp = asChild ? Slot.Root : "a"
+  const Comp = asChild ? Slot.Root : "a";
   return (
     <Comp
       data-slot="breadcrumb-link"
       className={cn("hover:text-foreground transition-colors", className)}
       {...props}
     />
-  )
+  );
 }
 
 function BreadcrumbSeparator({
@@ -59,24 +59,7 @@ function BreadcrumbSeparator({
     >
       <ChevronRight />
     </li>
-  )
-}
-
-function BreadcrumbEllipsis({
-  className,
-  ...props
-}: React.ComponentProps<"span">) {
-  return (
-    <span
-      data-slot="breadcrumb-ellipsis"
-      className={cn("flex size-9 items-center justify-center", className)}
-      role="presentation"
-      {...props}
-    >
-      <MoreHorizontal className="size-4" />
-      <span className="sr-only">More</span>
-    </span>
-  )
+  );
 }
 
 export {
@@ -85,5 +68,4 @@ export {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbSeparator,
-  BreadcrumbEllipsis,
-}
+};
