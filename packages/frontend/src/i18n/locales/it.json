@@ -153,8 +153,6 @@
     "noAlbums": "Nessun album trovato"
   },
   "tracks": {
-    "title": "Brani",
-    "description": "Sfoglia tutti i brani nella tua libreria",
     "noTracks": "Nessun brano trovato"
   },
   "liked": {
@@ -185,7 +183,6 @@
     "tracks": "Brani"
   },
   "common": {
-    "appName": "Sonect",
     "cover": "Copertina",
     "cancel": "Annulla",
     "retry": "Riprova",
@@ -338,8 +335,7 @@
       "addSourceSubmit": "Crea e continua",
       "creating": "Creazione...",
       "confirmTitle": "Libreria aggiunta",
-      "confirmDescription": "Abbiamo validato la cartella e scansionato i tuoi file musicali.",
-      "confirmContinue": "Continua"
+      "confirmDescription": "Abbiamo validato la cartella e scansionato i tuoi file musicali."
     },
     "audio": {
       "applyAndContinue": "Applica e continua"
@@ -390,7 +386,6 @@
     "roleAdmin": "Amministratore",
     "roleUser": "Utente",
     "resetPassword": "Reimposta password",
-    "resetPasswordTitle": "Reimposta password",
     "resetPasswordDescription": "Imposta una nuova password per {{name}}. Le sessioni attive verranno disconnesse.",
     "resetPasswordDone": "Password reimpostata",
     "resetPasswordError": "Impossibile reimpostare la password",
@@ -402,11 +397,9 @@
     "bootstrapSubmit": "Crea amministratore",
     "bootstrapCreating": "Creazione...",
     "bootstrapError": "Impossibile creare l'amministratore",
-    "lastAdmin": "L'ultimo amministratore non può essere eliminato o retrocesso",
-    "sessionsInvalidated": "Le sessioni attive sono state disconnesse"
+    "lastAdmin": "L'ultimo amministratore non può essere eliminato o retrocesso"
   },
   "profile": {
-    "title": "Chi sta ascoltando?",
     "change": "Cambia profilo",
     "switch": "Cambia profilo",
     "select": "Seleziona",
@@ -415,7 +408,6 @@
     "createTitle": "Crea profilo",
     "createDescription": "Scegli un nome, un colore, una password e un ruolo per il nuovo profilo",
     "namePlaceholder": "Nome del profilo",
-    "rename": "Rinomina",
     "editTitle": "Modifica profilo",
     "editDescription": "Aggiorna nome, colore e ruolo di questo profilo, oppure reimposta la password",
     "save": "Salva",
@@ -423,7 +415,6 @@
     "delete": "Elimina",
     "deleteTitle": "Elimina profilo",
     "deleteMessage": "Eliminare il profilo \"{{name}}\"? Questa azione è irreversibile.",
-    "lastProfile": "L'ultimo profilo non può essere eliminato",
     "retry": "Riprova",
     "errors": {
       "load": "Impossibile caricare i profili",

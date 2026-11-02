@@ -153,8 +153,6 @@
     "noAlbums": "No se encontraron álbumes"
   },
   "tracks": {
-    "title": "Pistas",
-    "description": "Explora todas las pistas de tu biblioteca",
     "noTracks": "No se encontraron pistas"
   },
   "liked": {
@@ -185,7 +183,6 @@
     "tracks": "Pistas"
   },
   "common": {
-    "appName": "Sonect",
     "cover": "Carátula",
     "cancel": "Cancelar",
     "retry": "Reintentar",
@@ -354,7 +351,6 @@
     "roleAdmin": "Administrador",
     "roleUser": "Usuario",
     "resetPassword": "Restablecer contraseña",
-    "resetPasswordTitle": "Restablecer contraseña",
     "resetPasswordDescription": "Establece una nueva contraseña para {{name}}. Sus sesiones activas se cerrarán.",
     "resetPasswordDone": "Contraseña restablecida",
     "resetPasswordError": "No se pudo restablecer la contraseña",
@@ -366,11 +362,9 @@
     "bootstrapSubmit": "Crear administrador",
     "bootstrapCreating": "Creando...",
     "bootstrapError": "No se pudo crear el administrador",
-    "lastAdmin": "El último administrador no se puede eliminar ni degradar",
-    "sessionsInvalidated": "Las sesiones activas se cerraron"
+    "lastAdmin": "El último administrador no se puede eliminar ni degradar"
   },
   "profile": {
-    "title": "¿Quién está escuchando?",
     "change": "Cambiar perfil",
     "switch": "Cambiar perfil",
     "select": "Seleccionar",
@@ -379,7 +373,6 @@
     "createTitle": "Crear perfil",
     "createDescription": "Elige un nombre, un color, una contraseña y un rol para el nuevo perfil",
     "namePlaceholder": "Nombre del perfil",
-    "rename": "Renombrar",
     "editTitle": "Editar perfil",
     "editDescription": "Actualiza el nombre, el color y el rol de este perfil, o restablece su contraseña",
     "save": "Guardar",
@@ -387,7 +380,6 @@
     "delete": "Eliminar",
     "deleteTitle": "Eliminar perfil",
     "deleteMessage": "¿Eliminar el perfil \"{{name}}\"? Esta acción no se puede deshacer.",
-    "lastProfile": "El último perfil no se puede eliminar",
     "retry": "Intentar de nuevo",
     "errors": {
       "load": "No se pudieron cargar los perfiles",
@@ -408,8 +400,7 @@
       "addSourceSubmit": "Crear y continuar",
       "creating": "Creando...",
       "confirmTitle": "Biblioteca agregada",
-      "confirmDescription": "Hemos validado la carpeta y escaneado tus archivos de música.",
-      "confirmContinue": "Continuar"
+      "confirmDescription": "Hemos validado la carpeta y escaneado tus archivos de música."
     },
     "audio": {
       "applyAndContinue": "Aplicar y continuar"
