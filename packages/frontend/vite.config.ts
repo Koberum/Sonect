@@ -21,7 +21,6 @@ export default defineConfig({
       "/stream": "http://localhost:3000",
       "/system": "http://localhost:3000",
       "/dashboard": "http://localhost:3000",
-      "/session": "http://localhost:3000",
       "/profiles": "http://localhost:3000",
       "/auth": "http://localhost:3000",
       "/likes": "http://localhost:3000",

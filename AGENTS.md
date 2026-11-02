@@ -109,8 +109,8 @@ sonect (single image, ENTRYPOINT /init)
 
 - `/player` is the single playback API. Requests require the `sonect_session`
   auth cookie (`authenticate` + `requireAuth`) and take the queue owner from
-  `req.auth.profileId`; legacy `/mpd` routes were removed and `/session` remains
-  only for legacy backend tests.
+  `req.auth.profileId`; legacy `/mpd` and `/session` routes were removed, so
+  `/player` is the only playback API.
 - **Storage is host-provided.** Music folders are bind-mounted into the single
   container under `/libraries/<name>`. The backend never mounts anything and
   never runs privileged commands; a library source is just a registered path
@@ -405,7 +405,7 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 - **Routes.** Public: `GET /auth/state`, `GET /auth/profiles`,
   `POST /auth/bootstrap` (only while no admin exists), `POST /auth/login`, and
   `GET /system/health`. Authenticated: `/auth/logout|switch|password`,
-  `/catalog/*` (except scan), `/playlists/*`, `/player/*`, `/session/*`,
+  `/catalog/*` (except scan), `/playlists/*`, `/player/*`,
   `/dashboard`, `/covers`, `/stream`, `/waveforms`. Admin-only: every other
   `/system/*` route, all of `/profiles/*`, and `POST /catalog/scan`.
 - **Roles.** Admins own libraries, audio output, sync/scan, debug/setup, and
@@ -455,7 +455,7 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
   and on MPD reconnect. MPD can only crossfade tracks with the same audio
   format. There is no gap setting (MPD has no native gap between tracks).
 - **Streaming** — browser audio uses `GET /stream/:trackId` (`controllers/streamController.ts`). The controller resolves the track via `tracksDb.getById` and streams `MUSIC_DIR/track.file`, so filenames never appear in URLs (no special-character encoding issues). It streams progressively with HTTP Range (`start-end`, `start-`, `-suffix`), `HEAD`, `ETag`/`Last-Modified`, `If-Range`, `Cache-Control: private, max-age=3600`, and destroys the read stream when the client aborts. Never buffer the file in memory.
-- **Legacy routes** — `/mpd`, `/system/status`, `/system/network/status`, `/system/output-mode`, `/system/storage/mounts`, and `GET /system/storage/sources/:id` were removed. `/session` remains only for backend integration tests (not used by frontend). Vite proxies `/player` and `/auth` (`frontend/vite.config.ts`).
+- **Legacy routes** — `/mpd`, `/session`, `/system/status`, `/system/network/status`, `/system/output-mode`, `/system/storage/mounts`, and `GET /system/storage/sources/:id` were removed. Vite proxies the API prefixes in `frontend/vite.config.ts`.
 - **Autoplay in sessions** — browser sessions now reuse the same smart-autoplay batches as MPD but per-profile (one `AutoplayService` per `SessionPlayer`); MPD still uses the singleton via `factory.ts` + `MpdConnectionManager` callback.
 
 ### Liked songs
