@@ -15,10 +15,12 @@ type PlaybackContextType = {
   trackPlayed: TrackWithRelations | null;
   playbackStatus: PlaybackStatus;
   syncProgress: SyncProgress | null;
+  syncError: string | null;
   wsConnected: boolean;
   setTrackPlayed: (track: TrackWithRelations | null) => void;
   setPlaybackStatus: (status: PlaybackStatus) => void;
   setSyncProgress: (progress: SyncProgress | null) => void;
+  setSyncError: (error: string | null) => void;
   outputMode: OutputMode;
   setOutputMode: (mode: OutputMode) => void;
   activeDeviceId: string | null;
@@ -44,6 +46,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
   const [playbackStatus, setPlaybackStatus] =
     useState<PlaybackStatus>(defaultPlayerState);
   const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
   const [outputMode, setOutputMode] = useState<OutputMode>(() => {
     if (typeof window === "undefined") return "mpd";
@@ -108,10 +111,12 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
         trackPlayed,
         playbackStatus,
         syncProgress,
+        syncError,
         wsConnected,
         setTrackPlayed,
         setPlaybackStatus,
         setSyncProgress,
+        setSyncError,
         outputMode,
         setOutputMode,
         activeDeviceId,

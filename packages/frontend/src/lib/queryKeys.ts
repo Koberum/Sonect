@@ -2,6 +2,7 @@ export const qk = {
   dashboardRoot: () => ["dashboard"] as const,
   dashboard: (profileId: string) => ["dashboard", profileId] as const,
   catalog: {
+    root: () => ["catalog"] as const,
     albumsInfinite: (sort: string) =>
       ["catalog", "albums", "infinite", sort] as const,
     album: (id: string) => ["catalog", "album", id] as const,

@@ -11,6 +11,13 @@ import { usePlaybackContext, type SyncProgress } from "./playback-context";
 import { defaultPlayerState } from "@/lib/playbackState";
 import type { PlaybackStatus, PlayerReport } from "@repo/types";
 import { getDeviceId, getDeviceName, getDeviceType } from "@/lib/deviceId";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  invalidateCatalogAfterSync,
+  invalidateSystemAfterSync,
+} from "@/features/sync/sync-invalidation";
+import i18n from "@/i18n/config";
+import { toast } from "sonner";
 
 type PlayerSocketContextValue = {
   sendReport: (report: PlayerReport) => void;
@@ -34,6 +41,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     setPlaybackStatus,
     setTrackPlayed,
     setSyncProgress,
+    setSyncError,
     setWsConnected,
     setActiveDeviceId,
     setActiveDeviceName,
@@ -45,6 +53,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     setPlaybackStatus,
     setTrackPlayed,
     setSyncProgress,
+    setSyncError,
     setWsConnected,
     setActiveDeviceId,
     setActiveDeviceName,
@@ -56,6 +65,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       setPlaybackStatus,
       setTrackPlayed,
       setSyncProgress,
+      setSyncError,
       setWsConnected,
       setActiveDeviceId,
       setActiveDeviceName,
@@ -78,8 +88,13 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   }, []);
   const socketValue = useMemo(() => ({ sendReport }), [sendReport]);
 
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const profileId = profile?.id ?? "";
+  const isAdminRef = useRef(isAdmin);
+  useEffect(() => {
+    isAdminRef.current = isAdmin;
+  }, [isAdmin]);
+  const queryClient = useQueryClient();
 
   const wsUrl: string =
     import.meta.env.VITE_WEBSOCKET_URL ||
@@ -92,12 +107,14 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       setPlaybackStatus,
       setTrackPlayed,
       setSyncProgress,
+      setSyncError,
       setWsConnected,
       setActiveDeviceId,
       setActiveDeviceName,
       setActiveDeviceType,
       setOutputMode,
     } = settersRef.current;
+    let lastSyncInvalidationKey: string | null = null;
 
     // Guard: each profile gets its own isolated socket. Tear down any previous
     // socket *before* opening the new one so we never have two live streams
@@ -113,6 +130,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     setPlaybackStatus(defaultPlayerState);
     setTrackPlayed(null);
     setSyncProgress(null);
+    setSyncError(null);
     setActiveDeviceId(null);
     setActiveDeviceName(null);
     setActiveDeviceType(null);
@@ -178,17 +196,48 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           const type = data.type as string | undefined;
 
           if (type === "sync-progress") {
-            setSyncProgress(data as unknown as SyncProgress);
+            const progress = data as unknown as SyncProgress;
+            setSyncProgress(progress);
+            setSyncError(null);
+
+            const tracksSettled =
+              progress.phase === "tracks" &&
+              progress.total > 0 &&
+              progress.current >= progress.total;
+            const invalidationKey =
+              progress.phase === "covers" || tracksSettled
+                ? progress.phase
+                : null;
+            if (
+              invalidationKey !== null &&
+              invalidationKey !== lastSyncInvalidationKey
+            ) {
+              lastSyncInvalidationKey = invalidationKey;
+              invalidateCatalogAfterSync(queryClient);
+            }
             return;
           }
 
           if (type === "sync-complete") {
             setSyncProgress(null);
+            setSyncError(null);
+            invalidateSystemAfterSync(queryClient);
+            if (isAdminRef.current) {
+              toast.success(i18n.t("sync.complete"));
+            }
             return;
           }
 
           if (type === "sync-error") {
+            const message =
+              typeof data.message === "string" && data.message
+                ? data.message
+                : i18n.t("sync.failed");
             setSyncProgress(null);
+            setSyncError(message);
+            if (isAdminRef.current) {
+              toast.error(i18n.t("sync.failed"), { description: message });
+            }
             return;
           }
 
@@ -290,7 +339,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       }
       setWsConnected(false);
     };
-  }, [wsUrl, profileId]);
+  }, [wsUrl, profileId, queryClient]);
 
   return (
     <PlayerSocketContext.Provider value={socketValue}>
