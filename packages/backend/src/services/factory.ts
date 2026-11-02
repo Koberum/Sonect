@@ -3,10 +3,6 @@ import {
   CatalogServiceImpl,
   type CatalogService,
 } from "./library/catalogService.js";
-import {
-  TrackInfoServiceImpl,
-  type TrackInfoService,
-} from "./library/trackInfoService.js";
 import { MpdConnectionManager } from "./mpd/mpdConnectionManager.js";
 import { AutoplayService } from "./mpd/autoplayService.js";
 import {
@@ -64,7 +60,6 @@ import { AuthServiceImpl, type AuthService } from "./auth/authService.js";
 let _initialized = false;
 let _logService: LogService;
 let _catalogService: CatalogService;
-let _trackInfoService: TrackInfoService;
 let _mpdConnectionManager: MpdConnectionManager;
 let _autoplayService: AutoplayService;
 let _playerService: PlayerService;
@@ -98,7 +93,6 @@ export function initializeServices(): void {
 
   _logService = new LogServiceImpl();
   _catalogService = new CatalogServiceImpl();
-  _trackInfoService = new TrackInfoServiceImpl();
   _autoplayService = new AutoplayService();
 
   _mpdConnectionManager = new MpdConnectionManager(
@@ -186,11 +180,6 @@ export function getLogService(): LogService {
 export function getCatalogService(): CatalogService {
   assertInitialized();
   return _catalogService;
-}
-
-export function getTrackInfoService(): TrackInfoService {
-  assertInitialized();
-  return _trackInfoService;
 }
 
 export function getMpdConnectionManager(): MpdConnectionManager {

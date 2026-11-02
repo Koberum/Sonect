@@ -14,7 +14,6 @@ import {
   getGenres,
   getAlbumsByGenre,
   getTracksByGenre,
-  getTrackInfoHandler,
 } from "../controllers/catalogController";
 
 const router = Router();
@@ -30,7 +29,6 @@ router.get("/albums/:id", getAlbumById);
 router.get("/albums/:albumId/tracks", getTracksByAlbum);
 router.get("/artists/:artistId/tracks", getTracksByArtist);
 router.get("/artists/:artistId/albums", getAlbumsByArtist);
-router.get("/tracks/:id/info", getTrackInfoHandler);
 router.get("/genres", getGenres);
 router.get("/genres/:genre/albums", getAlbumsByGenre);
 router.get("/genres/:genre/tracks", getTracksByGenre);
