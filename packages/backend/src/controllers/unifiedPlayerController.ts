@@ -269,24 +269,6 @@ export const unifiedRemoveFromQueueHandler = asyncHandler(
   },
 );
 
-export const unifiedMoveQueueHandler = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { from, to } = playerSchemas.moveQueue.parse(req.body);
-    const sid = req.sessionId as string;
-    getLogService().pushLog(
-      "debug",
-      `[Session ${fmtSid(sid)}][${router().getMode(sid)}] moveQueue ${from}→${to}`,
-      {
-        sessionId: fmtSid(sid),
-        from,
-        to,
-      },
-    );
-    await router().forSession(sid).moveQueueItem(from, to);
-    res.json({ success: true });
-  },
-);
-
 export const unifiedPlayPositionHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { pos } = playerSchemas.playPosition.parse(req.body);

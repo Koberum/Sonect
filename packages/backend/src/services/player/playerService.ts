@@ -22,7 +22,6 @@ export interface PlayerService {
   playPosition(pos: number): Promise<void>;
   removeFromQueue(pos: number): Promise<void>;
   addToQueue(file: string): Promise<void>;
-  moveQueueItem(from: number, to: number): Promise<void>;
 }
 
 export class PlayerServiceImpl implements PlayerService {
@@ -253,16 +252,6 @@ export class PlayerServiceImpl implements PlayerService {
     await this.mpdConnectionManager.executeCommand("add", [file]);
     this.mpdConnectionManager.refreshNow().catch((err) => {
       console.error("[Player] refreshNow failed after addToQueue:", err);
-    });
-  }
-
-  public async moveQueueItem(from: number, to: number): Promise<void> {
-    await this.mpdConnectionManager.executeCommand("move", [
-      from.toString(),
-      to.toString(),
-    ]);
-    this.mpdConnectionManager.refreshNow().catch((err) => {
-      console.error("[Player] refreshNow failed after moveQueueItem:", err);
     });
   }
 }

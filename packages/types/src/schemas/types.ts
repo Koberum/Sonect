@@ -20,10 +20,6 @@ export const playerSchemas = {
   addToQueue: z.object({
     file: z.string().min(1, "file is required"),
   }),
-  moveQueue: z.object({
-    from: z.number().int("from must be an integer").min(0, "from must be >= 0"),
-    to: z.number().int("to must be an integer").min(0, "to must be >= 0"),
-  }),
   volume: z.object({
     volume: z
       .number()

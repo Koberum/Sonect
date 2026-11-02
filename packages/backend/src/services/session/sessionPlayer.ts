@@ -85,8 +85,7 @@ export class SessionPlayer extends EventEmitter {
     const current = this.queueInternal[this.indexInternal];
     if (!current) return;
 
-    const isAdvance =
-      report.event === "ended" || report.event === "advance";
+    const isAdvance = report.event === "ended" || report.event === "advance";
     if (
       !isAdvance &&
       report.trackId !== undefined &&
@@ -540,37 +539,6 @@ export class SessionPlayer extends EventEmitter {
       }
     } else if (this.indexInternal > removing) {
       this.indexInternal -= 1;
-    }
-    this.emitStateChanged();
-  }
-
-  moveQueueItem(from: number, to: number): void {
-    if (from < 0 || from >= this.queueInternal.length) return;
-    if (to < 0 || to > this.queueInternal.length) return;
-    if (from === to) return;
-
-    const [item] = this.queueInternal.splice(from, 1);
-    this.queueInternal.splice(to, 0, item);
-
-    if (this.indexInternal === from) {
-      this.indexInternal = to;
-      if (this.indexInternal >= this.queueInternal.length) {
-        this.indexInternal = this.queueInternal.length - 1;
-      }
-    } else if (
-      from < to &&
-      this.indexInternal > from &&
-      this.indexInternal <= to
-    ) {
-      // Moving an item forward shifts the playing item back one.
-      this.indexInternal -= 1;
-    } else if (
-      from > to &&
-      this.indexInternal >= to &&
-      this.indexInternal < from
-    ) {
-      // Moving an item backward shifts the playing item forward one.
-      this.indexInternal += 1;
     }
     this.emitStateChanged();
   }
