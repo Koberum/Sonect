@@ -644,9 +644,25 @@ recursively and can crash MPD with `SIGSEGV`.
 2. `mpd` — MPD `update` is running; the orchestrator polls `status.updating_db`.
 3. `tracks` — MPD records are read in `find` pages and diffed; each message
    carries `current`/`total` and the current track's `title`/`artist`/`album`
-   (throttled), so the status bar shows song names while importing.
+   (throttled), so the sync card shows song names while importing.
 4. `covers` — album cover backfill, `current`/`total` albums.
 5. `sync-complete` / `sync-error`.
+
+**Frontend sync UI.** There is no top-bar sync widget and no sidebar refresh
+icon. Admins start a scan from the permanent **Library sync** card at the top of
+Settings → Libraries (`features/sync/components/sync-card.tsx`); while a scan
+runs, admins also see a floating pill above the player
+(`sync-indicator.tsx`) that opens a Popover on desktop or a Sheet on mobile.
+`SyncProgressView` renders the 3 steps (MPD / tracks / covers) with an
+indeterminate bar until counts exist, the current item, and `current/total`.
+`syncError` in `PlaybackContext` carries `sync-error.message` (it is cleared by
+the next `sync-progress`/`sync-complete`), so an error never renders as success.
+`WebSocketProvider` invalidates TanStack queries once per phase: when `tracks`
+reaches `total` or `covers` starts it invalidates `qk.catalog.root()` +
+`qk.dashboardRoot()`, and on `sync-complete` it also invalidates
+`qk.system.storageSources()` + `qk.system.detectedLibraries()`. The backend
+catalog write remains atomic, so the lists populate after MPD has been fully
+read, not while it is being read.
 
 MPD's log file is **not** read for progress (it has no built-in rotation and the
 format is not a stable API); the MPD protocol is the source. If MPD is

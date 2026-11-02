@@ -133,7 +133,10 @@ pnpm dev
 Open `http://localhost:5173`. On first launch the wizard asks you to create the
 administrator account (name + password, at least 8 characters), then continues
 with storage, audio, and library sync. The admin can trigger a library scan from
-the sidebar refresh button or from the setup wizard's Sync step.
+the **Library sync** card in Settings → Libraries or from the setup wizard's Sync
+step. While a scan runs, the card shows the current phase and the current
+track/album, catalog lists refresh automatically (no page reload), and admins see
+a small floating status pill above the player.
 
 Finishing or skipping the wizard is persisted by the backend, so the choice
 applies across browsers and private windows until the wizard is reset from
