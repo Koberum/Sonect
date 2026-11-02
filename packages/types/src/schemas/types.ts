@@ -10,6 +10,13 @@ export const playerSchemas = {
   playPosition: z.object({
     pos: z.number().int("pos must be an integer").min(0, "pos must be >= 0"),
   }),
+  queuePos: z.object({
+    // Params arrive as strings from the route; coerce on parse.
+    pos: z.coerce
+      .number("pos must be a number")
+      .int("pos must be an integer")
+      .min(0, "pos must be >= 0"),
+  }),
   addToQueue: z.object({
     file: z.string().min(1, "file is required"),
   }),
@@ -135,26 +142,6 @@ export const systemSchemas = {
   outputMode: z.object({
     mode: z.enum(["mpd", "browser"]),
     deviceId: z.string().min(1).optional(),
-  }),
-};
-
-export const sessionSchemas = {
-  play: z.object({
-    file: z.string().min(1, "file is required"),
-  }),
-  position: z.object({
-    position: z.number().finite("position must be a finite number"),
-  }),
-  queuePos: z.object({
-    // Params arrive as strings from the route; coerce on parse.
-    pos: z.coerce
-      .number("pos must be a number")
-      .int("pos must be an integer")
-      .min(0, "pos must be >= 0"),
-  }),
-  moveQueue: z.object({
-    from: z.number().int("from must be an integer").min(0, "from must be >= 0"),
-    to: z.number().int("to must be an integer").min(0, "to must be >= 0"),
   }),
 };
 

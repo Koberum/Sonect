@@ -18,16 +18,3 @@ export type MPDTrack = {
   mtime?: number;
   size?: number;
 };
-
-export type MPDQueuedTrack = MPDTrack & {
-  pos: number;
-  id: number;
-};
-
-export type MPDEntityType =
-  "file" | "directory" | "playlist" | "song" | "generic";
-
-export interface MPDEntity {
-  type: MPDEntityType;
-  [key: string]: string | number | boolean | undefined;
-}

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { profileSettingsDb } from "@repo/db";
-import { playerSchemas, sessionSchemas, systemSchemas } from "@repo/types";
+import { playerSchemas, systemSchemas } from "@repo/types";
 import { asyncHandler } from "@middleware/asyncHandler";
 import { resolvePlayerRouter } from "@services/player/playerRouter.js";
 import { LockedError } from "../middleware/errorHandler.js";
@@ -254,7 +254,7 @@ export const unifiedAddToQueueHandler = asyncHandler(
 
 export const unifiedRemoveFromQueueHandler = asyncHandler(
   async (req: Request, res: Response) => {
-    const { pos } = sessionSchemas.queuePos.parse(req.params);
+    const { pos } = playerSchemas.queuePos.parse(req.params);
     const sid = req.sessionId as string;
     getLogService().pushLog(
       "debug",

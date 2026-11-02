@@ -1,5 +1,5 @@
 export { PlayTrackError } from "./errors";
-export type { MPDTrack, MPDQueuedTrack, MPDEntity, MPDEntityType } from "./mpd";
+export type { MPDTrack } from "./mpd";
 export type {
   DBTrack,
   DBAlbum,
@@ -47,7 +47,6 @@ export type PlaybackStatus = {
 export type PlaybackSettings = {
   crossfadeSeconds: number;
 };
-
 
 /**
  * Playback facts reported by the active browser engine. The browser is the
