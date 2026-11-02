@@ -178,8 +178,8 @@ sonect (single image, ENTRYPOINT /init)
   (re)publish images for an existing release.
 - **Version**: the running version comes from `/app/.version` written into the
   app image by the release build (Docker `SONECT_VERSION` build-arg, leading
-  `v` stripped) and is exposed via `GET /system/status` and
-  `GET /system/health` → `version` (fallback `"dev"` when absent). The
+  `v` stripped) and is exposed via `GET /system/health` → `version`
+  (fallback `"dev"` when absent). The
   release-please root package uses `extra-files` (`$.version` in
   `packages/frontend/package.json`) so the frontend package version always
   matches the release; Settings → Debug displays `HealthResponse.version` from
@@ -228,12 +228,11 @@ sonect (single image, ENTRYPOINT /init)
   - **Catalog schema marker:** `sync_metadata.catalog_schema` (exported `CATALOG_SCHEMA_VERSION`) is part of `isCurrent`, so bumping it forces one full reprocess after an identity-rule change; it is stamped only when no per-track errors occur.
   - **Duplicate copies in album views:** the same song stored under several paths stays as separate rows (MPD mirror + `tracks.file` unique), but `tracksDb.getByAlbumWithRelations` and `getByAlbumOrdered` collapse copies with the key `album_id + disc_number + track_number + lower(trim(title))` (the track artist is ignored because copies may tag it differently; the album already carries the album artist). When copies differ in format, the lossless one (`flac/wav/aiff/aif/ape/alac/dsf/dff/wv/tta`) is kept as canonical. Album detail and album playback therefore show one row per logical position; global search, existing playlists, and library file counts still reflect every physical file.
 - The backend exposes its build version through `getSystemStatus()` →
-  `/system/status[].version` and `/system/health` → `version`. It reads
+  `/system/health` → `version`. It reads
   `/app/.version` (written only by the release image via the `SONECT_VERSION`
   build-arg), defaulting to `"dev"`. Sources: `services/utils/appVersion.ts`.
 - Host network management is intentionally not part of Sonect. Network status is
-  exposed via the public `GET /system/health` (aggregated) and the admin-only
-  legacy `GET /system/network/status`, both returning `{ connected, dnsReachable }`.
+  exposed via the public `GET /system/health`, returning `{ connected, dnsReachable }`.
   `connected` checks for a non-loopback IPv4 or IPv6 address, while
   `dnsReachable` resolves `DNS_CHECK_HOST` (default `example.com`) with a 3s
   timeout. The frontend polls **health** every **30s** (60s during library sync)
@@ -456,7 +455,7 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
   and on MPD reconnect. MPD can only crossfade tracks with the same audio
   format. There is no gap setting (MPD has no native gap between tracks).
 - **Streaming** — browser audio uses `GET /stream/:trackId` (`controllers/streamController.ts`). The controller resolves the track via `tracksDb.getById` and streams `MUSIC_DIR/track.file`, so filenames never appear in URLs (no special-character encoding issues). It streams progressively with HTTP Range (`start-end`, `start-`, `-suffix`), `HEAD`, `ETag`/`Last-Modified`, `If-Range`, `Cache-Control: private, max-age=3600`, and destroys the read stream when the client aborts. Never buffer the file in memory.
-- **Legacy routes** — `/mpd` was removed. `/session` remains only for backend integration tests (not used by frontend). Vite proxies `/player` and `/auth` (`frontend/vite.config.ts`).
+- **Legacy routes** — `/mpd`, `/system/status`, `/system/network/status`, `/system/output-mode`, `/system/storage/mounts`, and `GET /system/storage/sources/:id` were removed. `/session` remains only for backend integration tests (not used by frontend). Vite proxies `/player` and `/auth` (`frontend/vite.config.ts`).
 - **Autoplay in sessions** — browser sessions now reuse the same smart-autoplay batches as MPD but per-profile (one `AutoplayService` per `SessionPlayer`); MPD still uses the singleton via `factory.ts` + `MpdConnectionManager` callback.
 
 ### Liked songs

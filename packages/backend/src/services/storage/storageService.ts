@@ -99,7 +99,6 @@ interface MountInfo {
 
 export interface StorageService {
   getStorageSourcesHandler(): Promise<StorageSource[]>;
-  getStorageSource(id: number): StorageSource | undefined;
   createStorageSource(data: {
     name: string;
     path: string;
@@ -137,10 +136,6 @@ export class StorageServiceImpl implements StorageService {
 
   public async getStorageSourcesHandler(): Promise<StorageSource[]> {
     return storageDb.getAll() as StorageSource[];
-  }
-
-  public getStorageSource(id: number): StorageSource | undefined {
-    return storageDb.getById(id) as StorageSource | undefined;
   }
 
   public async createStorageSource(data: {

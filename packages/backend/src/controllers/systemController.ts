@@ -8,23 +8,7 @@ import {
   getSetupService,
   getNetworkService,
 } from "@services/factory";
-import {
-  LockedError,
-  NotFoundError,
-  UnauthorizedError,
-  ValidationError,
-} from "../middleware/errorHandler";
-
-export const getStatusHandler = asyncHandler(
-  async (_req: Request, res: Response) => {
-    const status = getSystemService().getSystemStatus();
-    const setup = getSetupService().getSetupProgress();
-    res.json({
-      ...status,
-      setupCompleted: setup.filter((s) => s.completed).map((s) => s.step),
-    });
-  },
-);
+import { NotFoundError, ValidationError } from "../middleware/errorHandler";
 
 export const getAudioDevicesHandler = asyncHandler(
   async (_req: Request, res: Response) => {
@@ -47,41 +31,6 @@ export const getAudioStatusHandler = asyncHandler(
   },
 );
 
-export const getOutputModeHandler = asyncHandler(
-  async (_req: Request, res: Response) => {
-    const svc = getMpdConfigService();
-    const mode = svc.getOutputMode();
-    const deviceName = svc.getOutputDeviceName();
-    res.json({ mode, deviceName, mpdOwner: svc.getMpdOwner() });
-  },
-);
-
-export const setOutputModeHandler = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { mode } = systemSchemas.outputMode.parse(req.body);
-    const profileId = req.auth?.profileId;
-    if (!profileId) throw new UnauthorizedError();
-    const svc = getMpdConfigService();
-    if (mode === "mpd") {
-      const acquired = svc.tryAcquireMpd(profileId);
-      if (!acquired.success) {
-        throw new LockedError("MPD output locked by another session");
-      }
-    } else if (mode === "browser") {
-      svc.releaseMpd(profileId);
-    }
-    const result = svc.setOutputMode(mode);
-    res.json(result);
-  },
-);
-
-export const getNetworkStatusHandler = asyncHandler(
-  async (_req: Request, res: Response) => {
-    const status = await getNetworkService().getNetworkStatus();
-    res.json(status);
-  },
-);
-
 export const getHealthHandler = asyncHandler(
   async (_req: Request, res: Response) => {
     const status = getSystemService().getSystemStatus();
@@ -99,15 +48,6 @@ export const getStorageSourcesHandler = asyncHandler(
   async (_req: Request, res: Response) => {
     const sources = await getStorageService().getStorageSourcesHandler();
     res.json(sources);
-  },
-);
-
-export const getStorageSourceHandler = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { id } = systemSchemas.idParam.parse(req.params);
-    const source = getStorageService().getStorageSource(id);
-    if (!source) throw new NotFoundError(`Storage source ${id}`);
-    res.json(source);
   },
 );
 
@@ -138,13 +78,6 @@ export const deleteStorageSourceHandler = asyncHandler(
     const deleted = getStorageService().deleteStorageSource(id);
     if (!deleted) throw new NotFoundError(`Storage source ${id}`);
     res.json({ success: true });
-  },
-);
-
-export const listMountsHandler = asyncHandler(
-  async (_req: Request, res: Response) => {
-    const mounts = getStorageService().listMounts();
-    res.json(mounts);
   },
 );
 

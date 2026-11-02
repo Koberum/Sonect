@@ -32,7 +32,6 @@ export interface MpdConfigService {
     error?: string;
   };
   setOutputMode(mode: OutputMode): { success: boolean; warning?: string };
-  getOutputMode(): OutputMode;
   getOutputDeviceName(): string | null;
   getMpdOwner(): string | null;
   tryAcquireMpd(sessionId: string): { success: boolean; owner?: string };
@@ -156,7 +155,7 @@ export class MpdConfigServiceImpl implements MpdConfigService {
   }
 
   /**
-   * Backcompat no-op kept for the GET/PATCH /system/output-mode endpoints:
+   * Backcompat no-op used by PlayerRouter when the profile changes output mode:
    * browser sessions run on a separate playback engine, so MPD always stays on
    * the physical speakers and the drop-in config file is never rewritten here.
    */
@@ -166,10 +165,6 @@ export class MpdConfigServiceImpl implements MpdConfigService {
   } {
     this._currentOutputMode = mode;
     return { success: true };
-  }
-
-  public getOutputMode(): OutputMode {
-    return this._currentOutputMode;
   }
 
   public getOutputDeviceName(): string | null {
