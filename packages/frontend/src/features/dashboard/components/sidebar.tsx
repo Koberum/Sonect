@@ -10,7 +10,6 @@ import {
   Library,
   Heart,
   Disc3,
-  LoaderCircle,
   AudioLines,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -38,7 +37,6 @@ import {
   isTrackDrag,
 } from "@/features/playlists/track-drag";
 import { likedQueries } from "@/features/liked/queries";
-import { scanLibrary } from "@/features/catalog/api";
 import { useAuth } from "@/features/auth/auth-context";
 import { toast } from "sonner";
 
@@ -49,7 +47,7 @@ export interface SidebarProps {
 
 export function Sidebar({ className, toggleSidebar }: SidebarProps) {
   const { t } = useTranslation();
-  const { isAdmin, profile } = useAuth();
+  const { profile } = useAuth();
   const navigate = useNavigate();
   const { data: playlists = [] } = useQuery(playlistQueries.list());
   const { data: likedIds = [] } = useQuery(likedQueries.ids(profile?.id ?? ""));
@@ -57,7 +55,6 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
   const addTrackMut = useMutation(playlistMutations.addTrack());
   const [newName, setNewName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [dragOverPlaylistId, setDragOverPlaylistId] = useState<number | null>(
     null,
   );
@@ -111,16 +108,6 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
     return window.location.pathname === path;
   };
 
-  const handleRefreshLibrary = async () => {
-    setIsRefreshing(true);
-    try {
-      await scanLibrary();
-    } catch {
-      // error handled via WS sync-error broadcast
-    }
-    setIsRefreshing(false);
-  };
-
   const handleCreatePlaylist = async () => {
     if (!newName.trim()) return;
     try {
@@ -155,28 +142,6 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
             <h2 className="text-lg font-semibold tracking-tight">
               {t("sidebar.library")}
             </h2>
-            {isAdmin && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="bare"
-                    size="icon-sm"
-                    onClick={handleRefreshLibrary}
-                    disabled={isRefreshing}
-                    aria-label={t("sidebar.refreshLibrary")}
-                  >
-                    <LoaderCircle
-                      className={isRefreshing ? "animate-spin" : ""}
-                    />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  {isRefreshing
-                    ? t("sidebar.refreshingLibrary")
-                    : t("sidebar.refreshLibrary")}
-                </TooltipContent>
-              </Tooltip>
-            )}
           </div>
           <div className="space-y-1">
             <Button

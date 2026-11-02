@@ -85,11 +85,24 @@
     "system": "System"
   },
   "sync": {
+    "title": "Library sync",
+    "preparing": "Preparing...",
+    "readingTracks": "Reading tracks...",
+    "readingCovers": "Syncing covers...",
     "syncingCovers": "Syncing covers...",
     "syncingTracks": "Syncing tracks...",
     "scanningMpd": "Scanning...",
     "updatingMpd": "Updating MPD...",
-    "complete": "Sync complete"
+    "complete": "Sync complete",
+    "failed": "Sync failed",
+    "cardDescription": "Keep your catalog up to date with the files in your libraries.",
+    "runningDescription": "The library is being updated. Lists refresh automatically.",
+    "syncNow": "Sync now",
+    "syncing": "Syncing...",
+    "retry": "Retry",
+    "idle": "No sync in progress.",
+    "openDetails": "Show sync details",
+    "stepOf": "Step {{current}} of {{total}}"
   },
   "language": {
     "en": "English",

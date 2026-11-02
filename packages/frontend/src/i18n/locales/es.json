@@ -85,11 +85,24 @@
     "system": "Sistema"
   },
   "sync": {
+    "title": "Sincronización de biblioteca",
+    "preparing": "Preparando...",
+    "readingTracks": "Leyendo pistas...",
+    "readingCovers": "Sincronizando carátulas...",
     "syncingCovers": "Sincronizando carátulas...",
     "syncingTracks": "Sincronizando pistas...",
     "scanningMpd": "Escaneando...",
     "updatingMpd": "Actualizando MPD...",
-    "complete": "Sincronización completa"
+    "complete": "Sincronización completa",
+    "failed": "Error de sincronización",
+    "cardDescription": "Mantén tu catálogo al día con los archivos de tus bibliotecas.",
+    "runningDescription": "La biblioteca se está actualizando. Las listas se refrescan automáticamente.",
+    "syncNow": "Sincronizar ahora",
+    "syncing": "Sincronizando...",
+    "retry": "Reintentar",
+    "idle": "No hay sincronización en curso.",
+    "openDetails": "Mostrar detalles de sincronización",
+    "stepOf": "Paso {{current}} de {{total}}"
   },
   "language": {
     "en": "English",

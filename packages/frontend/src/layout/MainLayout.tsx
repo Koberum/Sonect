@@ -7,6 +7,7 @@ import { Outlet } from "react-router-dom";
 import { useMediaQuery } from "react-responsive";
 import { Toaster } from "@/components/ui/sonner";
 import { ConnectionBanner } from "@/features/status/ConnectionBanner";
+import { SyncIndicator } from "@/features/sync/components/sync-indicator";
 
 export default function MainLayout() {
   const isMobile = useMediaQuery({ maxWidth: 767 });
@@ -56,6 +57,7 @@ export default function MainLayout() {
         </main>
       </div>
 
+      <SyncIndicator />
       <MusicPlayer />
     </div>
   );

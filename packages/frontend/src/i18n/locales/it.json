@@ -85,11 +85,24 @@
     "system": "Sistema"
   },
   "sync": {
+    "title": "Sincronizzazione libreria",
+    "preparing": "Preparazione...",
+    "readingTracks": "Lettura brani...",
+    "readingCovers": "Sincronizzazione copertine...",
     "syncingCovers": "Sincronizzazione copertine...",
     "syncingTracks": "Sincronizzazione brani...",
     "scanningMpd": "Scansione...",
     "updatingMpd": "Aggiornamento MPD...",
-    "complete": "Sincronizzazione completata"
+    "complete": "Sincronizzazione completata",
+    "failed": "Sincronizzazione non riuscita",
+    "cardDescription": "Mantieni il catalogo allineato ai file delle tue librerie.",
+    "runningDescription": "La libreria si sta aggiornando. Gli elenchi si aggiornano automaticamente.",
+    "syncNow": "Sincronizza ora",
+    "syncing": "Sincronizzazione...",
+    "retry": "Riprova",
+    "idle": "Nessuna sincronizzazione in corso.",
+    "openDetails": "Mostra dettagli sincronizzazione",
+    "stepOf": "Passo {{current}} di {{total}}"
   },
   "language": {
     "en": "English",
