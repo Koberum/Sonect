@@ -133,28 +133,12 @@ describe("albumsDb (trophy integration)", () => {
     });
   });
 
-  describe("count / getRecent / getById", () => {
+  describe("count / getById", () => {
     it("count 0 when empty", () => expect(albumsDb.count()).to.equal(0));
     it("count reflects inserts", () => {
       findOrCreateAlbum(db(), "One");
       findOrCreateAlbum(db(), "Two");
       expect(albumsDb.count()).to.equal(2);
-    });
-    it("getRecent returns latest first", () => {
-      const id1 = findOrCreateAlbum(db(), "Old");
-      const id2 = findOrCreateAlbum(db(), "New");
-      db()
-        .update(albums)
-        .set({ created_at: "2020-01-01 00:00:00" })
-        .where(eq(albums.id, id1))
-        .run();
-      db()
-        .update(albums)
-        .set({ created_at: "2020-01-02 00:00:00" })
-        .where(eq(albums.id, id2))
-        .run();
-      const recent = albumsDb.getRecent(1);
-      expect(recent[0].title).to.equal("New");
     });
     it("getById miss → undefined", () =>
       expect(albumsDb.getById(99999)).to.be.undefined);

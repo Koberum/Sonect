@@ -155,17 +155,6 @@ export const albumsDb = {
     return row?.value ?? 0;
   },
 
-  getRecent(limit: number): Album[] {
-    return db()
-      .select(albumWithArtist)
-      .from(albums)
-      .leftJoin(artists, eq(albums.artist_id, artists.id))
-      .leftJoin(genres, eq(albums.genre_id, genres.id))
-      .orderBy(desc(albums.created_at))
-      .limit(limit)
-      .all() as Album[];
-  },
-
   getById(id: number): Album | undefined {
     return db()
       .select(albumWithArtist)

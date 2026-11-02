@@ -59,17 +59,6 @@ describe("Catalog e2e (supertest + real seeded DB)", () => {
     expect(res.body.tracks).to.deep.equal([]);
   });
 
-  it("GET /catalog/tracks returns paginated seeded tracks", async () => {
-    track.createMany(3);
-    const res = await request(app)
-      .get("/catalog/tracks")
-      .set("Cookie", cookie)
-      .query({ limit: 2 });
-    expect(res.status).to.equal(200);
-    expect(res.body.items).to.have.length(2);
-    expect(res.body.total).to.equal(3);
-  });
-
   it("varies on Origin without allowing an untrusted origin", async () => {
     const res = await request(app)
       .get("/catalog/artists")

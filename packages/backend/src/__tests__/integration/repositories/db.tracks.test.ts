@@ -419,7 +419,7 @@ describe("tracksDb (trophy integration)", () => {
     });
   });
 
-  describe("search / getAllWithRelations / getRecentWithRelations / getGenres / getByGenre", () => {
+  describe("search / getGenres / getByGenre", () => {
     it("search finds via title/artist/album LIKE", () => {
       upsertTrack(
         db(),
@@ -448,71 +448,6 @@ describe("tracksDb (trophy integration)", () => {
       expect(res.map((t) => t.title)).to.deep.equal(
         [...res].map((t) => t.title).sort(),
       );
-    });
-    it("getAllWithRelations sorts: recent/duration/title and pagination guard", () => {
-      const aid = findOrCreateArtist(db(), "SortTArtist");
-      const al = findOrCreateAlbum(db(), "SortTAl", aid);
-      const id1 = db()
-        .insert(tracks)
-        .values({
-          file: "a/short.mp3",
-          title: "Short",
-          artist_id: aid,
-          album_id: al,
-          duration: 10,
-        })
-        .run().lastInsertRowid as number;
-      const id2 = db()
-        .insert(tracks)
-        .values({
-          file: "a/long.mp3",
-          title: "Long",
-          artist_id: aid,
-          album_id: al,
-          duration: 300,
-        })
-        .run().lastInsertRowid as number;
-      expect(tracksDb.getAllWithRelations("duration")[0].title).to.equal(
-        "Long",
-      );
-      expect(tracksDb.getAllWithRelations().map((t) => t.title)).to.deep.equal(
-        ["Long", "Short"].sort(),
-      );
-      // pagination guard
-      expect(
-        tracksDb.getAllWithRelations(undefined, undefined, 5 as never),
-      ).to.have.length(2);
-      expect(tracksDb.getAllWithRelations(undefined, 1, 1)).to.have.length(1);
-      // recent sort
-      db()
-        .update(tracks)
-        .set({ created_at: "2020-01-02 00:00:00" })
-        .where(eq(tracks.id, id2))
-        .run();
-      db()
-        .update(tracks)
-        .set({ created_at: "2020-01-01 00:00:00" })
-        .where(eq(tracks.id, id1))
-        .run();
-      expect(tracksDb.getAllWithRelations("recent")[0].title).to.equal("Long");
-      // orphan inclusion via leftJoin
-      const orphanId = db()
-        .insert(tracks)
-        .values({
-          file: "orphan.mp3",
-          title: "Orphan",
-          artist_id: null,
-          album_id: null,
-        })
-        .run().lastInsertRowid as number;
-      expect(tracksDb.getAllWithRelations().some((t) => t.id === orphanId)).to
-        .be.true;
-    });
-    it("getRecentWithRelations limit", () => {
-      for (let i = 0; i < 5; i++)
-        upsertTrack(db(), mpdTrack({ file: `a/recent${i}.mp3` }));
-      expect(tracksDb.getRecentWithRelations(2)).to.have.length(2);
-      expect(tracksDb.getRecentWithRelations(10)).to.have.length(5);
     });
     it("getGenres removed — use genresDb.getAllWithCounts", () => {
       expect(

@@ -74,32 +74,12 @@ export const getTracksByArtist = asyncHandler(
   },
 );
 
-export const getAllTracks = asyncHandler(
-  async (req: Request, res: Response) => {
-    const sort = req.query.sort as string | undefined;
-    const limit = req.query.limit ? Number(req.query.limit) : undefined;
-    const offset = req.query.offset ? Number(req.query.offset) : undefined;
-    const items = getCatalogService().getAllTracks(sort, limit, offset);
-    const total = getCatalogService().getTrackCount();
-    res.json({ items, total });
-  },
-);
-
 export const getTrackInfoHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = catalogSchemas.idParam.parse(req.params);
     const info = getTrackInfoService().getTrackInfo(id);
     if (!info) throw new NotFoundError("Track");
     res.json(info);
-  },
-);
-
-export const getRecentlyAdded = asyncHandler(
-  async (req: Request, res: Response) => {
-    const limit = Math.min(Number(req.query.limit) || 20, 100);
-    const albums = getCatalogService().getRecentlyAddedAlbums(limit);
-    const tracks = getCatalogService().getRecentlyAddedTracks(limit);
-    res.json({ albums, tracks });
   },
 );
 

@@ -295,13 +295,6 @@ export const tracksDb = {
     return row?.value ?? 0;
   },
 
-  getRecentWithRelations(limit: number): DBTrackWithRelations[] {
-    return joinedOnArtistAndAlbum()
-      .orderBy(desc(tracks.created_at))
-      .limit(limit)
-      .all() as DBTrackWithRelations[];
-  },
-
   getRandomWithRelations(limit: number): DBTrackWithRelations[] {
     return joinedOnArtistAndAlbum()
       .orderBy(sql`random()`)
@@ -478,33 +471,5 @@ export const tracksDb = {
         )
         .all() as DBTrackWithRelations[],
     );
-  },
-
-  getAllWithRelations(
-    sort?: string,
-    limit?: number,
-    offset?: number,
-  ): DBTrackWithRelations[] {
-    const orderBy =
-      sort === "recent"
-        ? [desc(tracks.created_at)]
-        : sort === "duration"
-          ? [desc(tracks.duration)]
-          : [asc(tracks.title)];
-    let query = db()
-      .select(dBTrackWithRelations)
-      .from(tracks)
-      .leftJoin(artists, eq(tracks.artist_id, artists.id))
-      .leftJoin(albums, eq(tracks.album_id, albums.id))
-      .leftJoin(genres, eq(tracks.genre_id, genres.id))
-      .orderBy(...orderBy)
-      .$dynamic();
-    if (limit !== undefined) {
-      query = query.limit(limit);
-      if (offset !== undefined) {
-        query = query.offset(offset);
-      }
-    }
-    return query.all() as DBTrackWithRelations[];
   },
 };
