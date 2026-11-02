@@ -87,14 +87,6 @@ export const profilesDb = {
       .run();
   },
 
-  setColor(id: string, color: string): void {
-    db()
-      .update(profiles)
-      .set({ avatar_color: color })
-      .where(eq(profiles.id, id))
-      .run();
-  },
-
   /**
    * Applies name/avatarColor/role changes in a single transaction so a rejected
    * role change (or a name conflict) leaves every field untouched.

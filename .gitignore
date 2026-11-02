@@ -30,6 +30,7 @@ coverage/
 # ===============================
 *.tsbuildinfo
 .turbo/
+packages/db/drizzle.config.d.ts
 
 # ===============================
 # Environment / secrets

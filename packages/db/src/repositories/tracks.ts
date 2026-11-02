@@ -366,14 +366,6 @@ export const tracksDb = {
       DBTrack | undefined;
   },
 
-  getFiles(): string[] {
-    return db()
-      .select({ file: tracks.file })
-      .from(tracks)
-      .all()
-      .map((row) => row.file);
-  },
-
   getSyncSnapshot(): SyncTrackSnapshot[] {
     const albumArtist = alias(artists, "album_artist");
     return db()
