@@ -279,20 +279,4 @@ export const albumsDb = {
       .where(eq(albums.id, albumId))
       .run();
   },
-
-  getRecentAlbums(limit: number, excludeAlbumId?: number): Album[] {
-    const conditions = [
-      excludeAlbumId !== undefined ? ne(albums.id, excludeAlbumId) : undefined,
-      isNotNull(albums.last_played),
-    ];
-    return db()
-      .select(albumWithArtist)
-      .from(albums)
-      .leftJoin(artists, eq(albums.artist_id, artists.id))
-      .leftJoin(genres, eq(albums.genre_id, genres.id))
-      .where(and(...conditions))
-      .orderBy(desc(albums.last_played))
-      .limit(limit)
-      .all() as Album[];
-  },
 };

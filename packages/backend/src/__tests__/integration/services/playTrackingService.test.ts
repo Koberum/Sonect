@@ -25,9 +25,9 @@ describe("PlayTrackingService (trophy integration)", () => {
 
     router.emit("trackChanged", { sessionId: profileA, track: t });
 
-    expect(playHistoryDb.recentTracks(profileA, 10).map((r) => r.id)).to.deep.equal([
-      t.id,
-    ]);
+    expect(
+      playHistoryDb.recentTracks(profileA, 10).map((r) => r.id),
+    ).to.deep.equal([t.id]);
     expect(playHistoryDb.recentTracks(profileB, 10)).to.deep.equal([]);
     expect(tracksDb.getById(t.id)?.play_count).to.equal(1);
     expect(albumsDb.getById(t.album_id!)?.last_played).to.be.a("string");
@@ -40,7 +40,7 @@ describe("PlayTrackingService (trophy integration)", () => {
         track: { id: 999999, album_id: 123 },
       }),
     ).to.not.throw();
-    expect(playHistoryDb.hasHistory(profileA)).to.be.false;
+    expect(playHistoryDb.recentTracks(profileA, 10)).to.deep.equal([]);
   });
 
   it("debounces the same track per profile but not across profiles", () => {

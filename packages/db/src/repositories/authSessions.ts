@@ -72,15 +72,6 @@ export const authSessionsDb = {
       .run();
   },
 
-  countByProfile(profileId: string): number {
-    const row = db()
-      .select({ n: sql<number>`count(*)` })
-      .from(authSessions)
-      .where(eq(authSessions.profile_id, profileId))
-      .get();
-    return row?.n ?? 0;
-  },
-
   countActiveByProfile(profileId: string, now: number): number {
     const row = db()
       .select({ n: sql<number>`count(*)` })

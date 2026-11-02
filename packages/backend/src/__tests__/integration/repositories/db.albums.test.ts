@@ -211,7 +211,7 @@ describe("albumsDb (trophy integration)", () => {
     });
   });
 
-  describe("getByTitleAndArtist / updateCoverPath / updateLastPlayed / getRecentAlbums / getRankedByPlayCount", () => {
+  describe("getByTitleAndArtist / updateCoverPath / updateLastPlayed / getRankedByPlayCount", () => {
     it("getByTitleAndArtist NOCASE artist", () => {
       const aid = findOrCreateArtist(db(), "Beatles");
       findOrCreateAlbum(db(), "Abbey Road", aid);
@@ -236,21 +236,6 @@ describe("albumsDb (trophy integration)", () => {
       const id = findOrCreateAlbum(db(), "PlayAl");
       albumsDb.updateLastPlayed(id);
       expect(albumsDb.getById(id)?.last_played).to.be.a("string");
-    });
-    it("getRecentAlbums filters last_played not null and excludes id", () => {
-      const id1 = findOrCreateAlbum(db(), "Recent1");
-      const id2 = findOrCreateAlbum(db(), "Recent2");
-      albumsDb.updateLastPlayed(id1);
-      albumsDb.updateLastPlayed(id2);
-      const all = albumsDb.getRecentAlbums(10);
-      expect(all).to.have.length(2);
-      const excl = albumsDb.getRecentAlbums(10, id1);
-      expect(excl.every((a) => a.id !== id1)).to.be.true;
-      expect(excl).to.have.length(1);
-    });
-    it("getRecentAlbums returns [] when none played", () => {
-      findOrCreateAlbum(db(), "NeverPlayed");
-      expect(albumsDb.getRecentAlbums(10)).to.deep.equal([]);
     });
     it("getRankedByPlayCount orders by sum play_count desc", () => {
       const aid = findOrCreateArtist(db(), "RankArtist");

@@ -66,7 +66,7 @@ describe("auth sessions repository", () => {
       last_used_at: 0,
     });
 
-    expect(authSessionsDb.countByProfile(profileId)).to.equal(2);
+    expect(authSessionsDb.countActiveByProfile(profileId, 0)).to.equal(2);
     expect(authSessionsDb.countActiveByProfile(profileId, 1_000)).to.equal(1);
     expect(authSessionsDb.countActiveByProfile(profileId, 2_000)).to.equal(0);
   });
@@ -85,7 +85,9 @@ describe("auth sessions repository", () => {
     });
 
     profilesDb.delete(profileId);
-    expect(authSessionsDb.countByProfile(profileId)).to.equal(0);
+    expect(authSessionsDb.countActiveByProfile(profileId, Date.now())).to.equal(
+      0,
+    );
   });
 
   it("keeps one session when deleting other sessions", () => {
