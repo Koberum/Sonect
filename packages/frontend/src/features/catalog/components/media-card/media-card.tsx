@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { DragEvent, ReactNode } from "react";
 import { getCoverPath } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { LikeButton } from "@/features/liked/components/like-button";
@@ -18,6 +18,9 @@ export interface MediaCardProps {
   actions?: ReactNode;
   isPlaying?: boolean;
   className?: string;
+  draggable?: boolean;
+  onDragStart?: (event: DragEvent<HTMLDivElement>) => void;
+  onDragEnd?: () => void;
 }
 
 /**
@@ -34,11 +37,17 @@ export function MediaCard({
   actions,
   isPlaying = false,
   className,
+  draggable,
+  onDragStart,
+  onDragEnd,
 }: MediaCardProps) {
   return (
     <div
       role="button"
       tabIndex={0}
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
       onClick={() => onActivate?.()}
       onKeyDown={(event) => {
         if (event.target !== event.currentTarget) return;

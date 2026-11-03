@@ -1,20 +1,17 @@
-import type { DragEvent } from "react";
 import type { TrackWithRelations } from "@repo/types/catalog";
 import { TableCell, TableRow } from "@/components/ui/table";
 import PlayStatus from "@/features/dashboard/components/play-status";
 import { TrackActionsMenu } from "@/features/tracks/components/track-actions-menu";
 import { usePlaybackContext } from "@/components/playback-context";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
+import { useTrackDrag } from "@/features/playlists/components/playlist-drop-provider";
+import { setTrackDragData } from "@/features/playlists/track-drag";
 import { cn, formatTime, getCoverPath } from "@/lib/utils";
 
 interface TrackRowProps {
   track: TrackWithRelations;
   number?: number;
   showCover?: boolean;
-  draggable?: boolean;
-  isDragging?: boolean;
-  onDragStart?: (event: DragEvent<HTMLTableRowElement>) => void;
-  onDragEnd?: () => void;
   onPlay?: () => void;
   onRemove?: () => void;
   removeLabel?: string;
@@ -24,16 +21,13 @@ export function TrackRow({
   track,
   number,
   showCover = false,
-  draggable,
-  isDragging,
-  onDragStart,
-  onDragEnd,
   onPlay,
   onRemove,
   removeLabel,
 }: TrackRowProps) {
   const { trackPlayed } = usePlaybackContext();
   const { play } = usePlayTrack();
+  const { startDrag, endDrag } = useTrackDrag();
   const isPlaying = trackPlayed?.id === track.id;
 
   const handlePlay = () => {
@@ -43,15 +37,17 @@ export function TrackRow({
 
   return (
     <TableRow
-      draggable={draggable}
+      draggable
       aria-current={isPlaying ? "true" : undefined}
       className={cn(
         "group h-12 cursor-pointer",
         isPlaying && "bg-primary/10 hover:bg-primary/15",
-        isDragging && "opacity-50",
       )}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
+      onDragStart={(event) => {
+        setTrackDragData(event.dataTransfer, track.id);
+        startDrag(track.id);
+      }}
+      onDragEnd={endDrag}
     >
       <TableCell
         onClick={handlePlay}

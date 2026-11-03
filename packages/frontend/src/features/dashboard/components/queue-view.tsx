@@ -14,6 +14,8 @@ import { LikeButton } from "@/features/liked/components/like-button";
 import PlayStatus from "@/features/dashboard/components/play-status";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { playerQueries } from "@/features/player/queries";
+import { useTrackDrag } from "@/features/playlists/components/playlist-drop-provider";
+import { setTrackDragData } from "@/features/playlists/track-drag";
 import { qk } from "@/lib/queryKeys";
 
 function formatTime(seconds: number): string {
@@ -28,6 +30,7 @@ interface QueueViewProps {
 
 export function QueueView({ currentTrackFile }: QueueViewProps) {
   const { t } = useTranslation();
+  const { startDrag, endDrag } = useTrackDrag();
   const [open, setOpen] = useState(false);
   const qc = useQueryClient();
 
@@ -80,6 +83,13 @@ export function QueueView({ currentTrackFile }: QueueViewProps) {
               return (
                 <div
                   key={`${track.mpdId}-${track.pos}`}
+                  draggable={track.trackId !== null}
+                  onDragStart={(event) => {
+                    if (track.trackId === null) return;
+                    setTrackDragData(event.dataTransfer, track.trackId);
+                    startDrag(track.trackId);
+                  }}
+                  onDragEnd={endDrag}
                   className={`group hover:bg-accent/50 flex cursor-pointer items-center gap-2 px-3 py-2 transition-colors`}
                   onClick={() => !isCurrent && handlePlay(track.pos)}
                 >

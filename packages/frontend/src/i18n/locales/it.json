@@ -48,7 +48,8 @@
     "emptyTitle": "Nessuna playlist",
     "emptyDescription": "Crea una playlist per iniziare a raccogliere brani.",
     "createError": "Creazione della playlist non riuscita",
-    "loadError": "Impossibile caricare le playlist."
+    "loadError": "Impossibile caricare le playlist.",
+    "dropHint": "Trascina un brano su una playlist per aggiungerlo."
   },
   "sidebar": {
     "toggleSidebar": "Mostra/nascondi barra laterale"

@@ -7,6 +7,7 @@ import { useMediaQuery } from "react-responsive";
 import { Toaster } from "@/components/ui/sonner";
 import { ConnectionBanner } from "@/features/status/ConnectionBanner";
 import { SyncIndicator } from "@/features/sync/components/sync-indicator";
+import { PlaylistDropProvider } from "@/features/playlists/components/playlist-drop-provider";
 import { cn } from "@/lib/utils";
 
 export default function MainLayout() {
@@ -31,60 +32,62 @@ export default function MainLayout() {
   }, [sidebarCollapsed]);
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden">
-      <ConnectionBanner />
+    <PlaylistDropProvider>
+      <div className="flex h-dvh flex-col overflow-hidden">
+        <ConnectionBanner />
 
-      <div className="flex flex-1 overflow-hidden">
-        <aside
-          className={cn(
-            "hidden shrink-0 flex-col overflow-hidden border-r transition-[width] duration-300 ease-in-out md:flex",
-            collapsed ? "w-16" : "w-52",
-          )}
-        >
-          <Sidebar
-            toggleSidebar={() => {}}
-            className="no-scrollbar flex-1 overflow-y-auto"
-            collapsed={collapsed}
-            collapsible={!isCompactSidebar}
-            onToggleCollapse={toggleCollapse}
-          />
-        </aside>
-
-        {isMobile && (
-          <>
-            <div
-              className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 ${
-                sidebarOpen ? "opacity-100" : "pointer-events-none opacity-0"
-              }`}
-              onClick={() => setSidebarOpen(false)}
+        <div className="flex flex-1 overflow-hidden">
+          <aside
+            className={cn(
+              "hidden shrink-0 flex-col overflow-hidden border-r transition-[width] duration-300 ease-in-out md:flex",
+              collapsed ? "w-16" : "w-52",
+            )}
+          >
+            <Sidebar
+              toggleSidebar={() => {}}
+              className="no-scrollbar flex-1 overflow-y-auto"
+              collapsed={collapsed}
+              collapsible={!isCompactSidebar}
+              onToggleCollapse={toggleCollapse}
             />
-            <aside
-              className={`bg-background fixed inset-y-0 left-0 z-50 w-52 transition-transform duration-300 ease-in-out ${
-                sidebarOpen ? "translate-x-0" : "-translate-x-full"
-              }`}
-            >
-              <Sidebar
-                toggleSidebar={setSidebarOpen}
-                className="no-scrollbar h-full overflow-y-auto border-r"
+          </aside>
+
+          {isMobile && (
+            <>
+              <div
+                className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 ${
+                  sidebarOpen ? "opacity-100" : "pointer-events-none opacity-0"
+                }`}
+                onClick={() => setSidebarOpen(false)}
               />
-            </aside>
-          </>
-        )}
+              <aside
+                className={`bg-background fixed inset-y-0 left-0 z-50 w-52 transition-transform duration-300 ease-in-out ${
+                  sidebarOpen ? "translate-x-0" : "-translate-x-full"
+                }`}
+              >
+                <Sidebar
+                  toggleSidebar={setSidebarOpen}
+                  className="no-scrollbar h-full overflow-y-auto border-r"
+                />
+              </aside>
+            </>
+          )}
 
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <main className="no-scrollbar flex-1 overflow-y-auto">
-            <div className="px-4 pt-6 pb-12 sm:px-4 lg:px-8">
-              <SetupGuard>
-                <Outlet context={{ openSidebar }} />
-                <Toaster />
-              </SetupGuard>
-            </div>
-          </main>
-          <MusicPlayer />
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            <main className="no-scrollbar flex-1 overflow-y-auto">
+              <div className="px-4 pt-6 pb-12 sm:px-4 lg:px-8">
+                <SetupGuard>
+                  <Outlet context={{ openSidebar }} />
+                  <Toaster />
+                </SetupGuard>
+              </div>
+            </main>
+            <MusicPlayer />
+          </div>
         </div>
-      </div>
 
-      <SyncIndicator />
-    </div>
+        <SyncIndicator />
+      </div>
+    </PlaylistDropProvider>
   );
 }

@@ -14,6 +14,8 @@ import { catalogQueries } from "@/features/catalog/queries";
 import { LikeButton } from "@/features/liked/components/like-button";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useAuth } from "@/features/auth/auth-context";
+import { useTrackDrag } from "@/features/playlists/components/playlist-drop-provider";
+import { setTrackDragData } from "@/features/playlists/track-drag";
 import {
   loadRecentSearches,
   saveRecentSearch,
@@ -27,6 +29,7 @@ export function SearchCommand() {
   const navigate = useNavigate();
   const { play, addToQueue } = usePlayTrack();
   const { profile } = useAuth();
+  const { startDrag, endDrag } = useTrackDrag();
   const profileId = profile?.id ?? "";
   const isDesktop = useMediaQuery({ minWidth: 768 });
   const inputRef = useRef<HTMLInputElement>(null);
@@ -302,6 +305,12 @@ export function SearchCommand() {
                     <div
                       key={track.id}
                       data-index={idx}
+                      draggable
+                      onDragStart={(event) => {
+                        setTrackDragData(event.dataTransfer, track.id);
+                        startDrag(track.id);
+                      }}
+                      onDragEnd={endDrag}
                       className={`group flex cursor-pointer items-center gap-3 rounded-sm px-2 py-2 text-sm transition-colors ${
                         isSelected ? "bg-accent/50" : "hover:bg-accent/50"
                       }`}

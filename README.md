@@ -51,8 +51,9 @@ no subscriptions, no limits.
   each opening a page with horizontal tabs: Home holds Listen Now, Playlists,
   and Liked Songs; Library holds Albums, Artists, Genres, and Statistics;
   Settings (admins) holds Audio, Playback, Libraries, Appearance, and Debug.
-- **Playlists** — create and browse them from Home → Playlists. The three-dot
-  track menu offers "Add to playlist" from any track list.
+- **Playlists** — create and browse them from Home → Playlists. Drag any
+  track onto the right-hand playlist panel to add it, or use "Add to playlist"
+  in the three-dot track menu (touch and keyboard).
 - **Dashboard per profile** — Recently played albums, artists, and tracks, top
   tracks, suggestions, and the genre mix are all personal. Listening history is
   recorded separately per household member (MPD plays count for the profile

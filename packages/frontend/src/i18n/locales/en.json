@@ -48,7 +48,8 @@
     "emptyTitle": "No playlists yet",
     "emptyDescription": "Create a playlist to start collecting tracks.",
     "createError": "Failed to create playlist",
-    "loadError": "Could not load your playlists."
+    "loadError": "Could not load your playlists.",
+    "dropHint": "Drag a song onto a playlist to add it."
   },
   "sidebar": {
     "toggleSidebar": "Toggle sidebar"

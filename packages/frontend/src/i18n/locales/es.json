@@ -48,7 +48,8 @@
     "emptyTitle": "Aún no hay listas",
     "emptyDescription": "Crea una lista para empezar a guardar pistas.",
     "createError": "No se pudo crear la lista",
-    "loadError": "No se pudieron cargar tus listas."
+    "loadError": "No se pudieron cargar tus listas.",
+    "dropHint": "Arrastra una canción sobre una lista para añadirla."
   },
   "sidebar": {
     "toggleSidebar": "Alternar barra lateral"
