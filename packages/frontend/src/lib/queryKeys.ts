@@ -21,8 +21,9 @@ export const qk = {
     search: (query: string) => ["catalog", "search", query] as const,
   },
   playlists: {
-    list: () => ["playlists", "list"] as const,
-    detail: (id: number) => ["playlists", "detail", id] as const,
+    list: (profileId: string) => ["playlists", "list", profileId] as const,
+    detail: (profileId: string, id: number) =>
+      ["playlists", "detail", profileId, id] as const,
   },
   liked: {
     ids: (profileId: string) => ["liked", "ids", profileId] as const,

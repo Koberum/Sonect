@@ -19,17 +19,21 @@ export type PlaylistTrackRow = PlaylistTrack & {
 };
 
 export const playlistsDb = {
-  getAll(): DBPlaylist[] {
+  getAll(profileId: string): DBPlaylist[] {
     return db()
       .select()
       .from(playlists)
+      .where(eq(playlists.profile_id, profileId))
       .orderBy(asc(playlists.name))
       .all() as DBPlaylist[];
   },
 
-  getById(id: number): DBPlaylist | undefined {
-    return db().select().from(playlists).where(eq(playlists.id, id)).get() as
-      DBPlaylist | undefined;
+  getById(profileId: string, id: number): DBPlaylist | undefined {
+    return db()
+      .select()
+      .from(playlists)
+      .where(and(eq(playlists.id, id), eq(playlists.profile_id, profileId)))
+      .get() as DBPlaylist | undefined;
   },
 
   getCoverPreviews(playlistId: number, limit = 4): string[] {
@@ -60,15 +64,19 @@ export const playlistsDb = {
     return row?.count ?? 0;
   },
 
-  create(name: string, description?: string): number {
+  create(profileId: string, name: string, description?: string): number {
     const result = db()
       .insert(playlists)
-      .values({ name, description: description || null })
+      .values({ profile_id: profileId, name, description: description || null })
       .run();
     return normalizeRowId(result.lastInsertRowid);
   },
 
-  update(id: number, data: { name?: string; description?: string }): void {
+  update(
+    profileId: string,
+    id: number,
+    data: { name?: string; description?: string },
+  ): void {
     if (data.name === undefined && data.description === undefined) return;
     db()
       .update(playlists)
@@ -79,13 +87,16 @@ export const playlistsDb = {
           : {}),
         updated_at: sql`CURRENT_TIMESTAMP`,
       })
-      .where(eq(playlists.id, id))
+      .where(and(eq(playlists.id, id), eq(playlists.profile_id, profileId)))
       .run();
   },
 
-  delete(id: number): void {
+  delete(profileId: string, id: number): void {
     db().delete(playlistTracks).where(eq(playlistTracks.playlist_id, id)).run();
-    db().delete(playlists).where(eq(playlists.id, id)).run();
+    db()
+      .delete(playlists)
+      .where(and(eq(playlists.id, id), eq(playlists.profile_id, profileId)))
+      .run();
   },
 
   addTrack(playlistId: number, trackId: number): void {

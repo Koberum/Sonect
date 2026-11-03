@@ -51,9 +51,10 @@ no subscriptions, no limits.
   each opening a page with horizontal tabs: Home holds Listen Now, Playlists,
   and Liked Songs; Library holds Albums, Artists, Genres, and Statistics;
   Settings (admins) holds Audio, Playback, Libraries, Appearance, and Debug.
-- **Playlists** — create and browse them from Home → Playlists. Drag any
-  track onto the right-hand playlist panel to add it, or use "Add to playlist"
-  in the three-dot track menu (touch and keyboard).
+- **Playlists** — create and browse them from Home → Playlists. Playlists are
+  private per profile (same names allowed across profiles). Drag any track onto
+  the right-hand playlist panel to add it, or use "Add to playlist" in the
+  three-dot track menu (touch and keyboard).
 - **Dashboard per profile** — Recently played albums, artists, and tracks, top
   tracks, suggestions, and the genre mix are all personal. Listening history is
   recorded separately per household member (MPD plays count for the profile
@@ -200,7 +201,7 @@ server holding the DAC exclusively must release it first.
 - **Admin:** manages libraries, audio output, library sync/scan, setup, debug
   tools, and other profiles (create, edit, reset password, delete). The last
   administrator cannot be deleted or demoted.
-- **User:** can browse and listen, use the global playlists, and change their own
+- **User:** can browse and listen, use their own playlists, and change their own
   password. Settings (admin-only, in the sidebar), the library
   refresh action, and setup are hidden; the API also rejects those calls with 403.
 - **Signing in and switching:** `/login` lists the public profiles (name and

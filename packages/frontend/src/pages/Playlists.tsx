@@ -8,16 +8,19 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { playlistQueries } from "@/features/playlists/queries";
 import { CreatePlaylistDialog } from "@/features/playlists/components/create-playlist-dialog";
+import { useAuth } from "@/features/auth/auth-context";
 
 export default function Playlists() {
   const { t } = useTranslation();
+  const { profile } = useAuth();
+  const profileId = profile?.id ?? "";
   const [createOpen, setCreateOpen] = useState(false);
   const {
     data: playlists = [],
     isPending,
     isError,
     refetch,
-  } = useQuery(playlistQueries.list());
+  } = useQuery(playlistQueries.list(profileId));
 
   return (
     <div>

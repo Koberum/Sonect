@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { playlistMutations } from "@/features/playlists/queries";
+import { useAuth } from "@/features/auth/auth-context";
 
 export interface CreatePlaylistDialogProps {
   open: boolean;
@@ -21,7 +22,9 @@ export function CreatePlaylistDialog({
   onOpenChange,
 }: CreatePlaylistDialogProps) {
   const { t } = useTranslation();
-  const createMut = useMutation(playlistMutations.create());
+  const { profile } = useAuth();
+  const profileId = profile?.id ?? "";
+  const createMut = useMutation(playlistMutations.create(profileId));
   const [name, setName] = useState("");
 
   const handleSubmit = async () => {

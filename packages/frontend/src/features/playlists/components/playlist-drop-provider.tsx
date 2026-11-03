@@ -16,6 +16,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ImageCollage } from "@/features/catalog/components/media-card/image-collage";
+import { useAuth } from "@/features/auth/auth-context";
 import { cn, getCoverPath } from "@/lib/utils";
 import { playlistMutations, playlistQueries } from "../queries";
 import { getTrackDragId, isTrackDrag } from "../track-drag";
@@ -46,6 +47,8 @@ export function useTrackDrag(): TrackDragContextValue {
 
 export function PlaylistDropProvider({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
+  const { profile } = useAuth();
+  const profileId = profile?.id ?? "";
   const [open, setOpen] = useState(false);
   const [dragTrackId, setDragTrackId] = useState<number | null>(null);
   const [overPlaylistId, setOverPlaylistId] = useState<number | null>(null);
@@ -53,11 +56,11 @@ export function PlaylistDropProvider({ children }: { children: ReactNode }) {
   const [createOpen, setCreateOpen] = useState(false);
 
   const { data: playlists = [], isPending } = useQuery({
-    ...playlistQueries.list(),
-    enabled: open,
+    ...playlistQueries.list(profileId),
+    enabled: open && !!profileId,
   });
-  const addTrackMut = useMutation(playlistMutations.addTrack());
-  const createMut = useMutation(playlistMutations.create());
+  const addTrackMut = useMutation(playlistMutations.addTrack(profileId));
+  const createMut = useMutation(playlistMutations.create(profileId));
 
   const endDrag = useCallback(() => {
     setOpen(false);

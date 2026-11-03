@@ -1,13 +1,26 @@
 import { faker } from "@faker-js/faker";
 import type { DBPlaylist } from "@repo/types";
-import { playlistsDb } from "@repo/db";
+import { playlistsDb, profilesDb } from "@repo/db";
 import { track } from "./track.js";
 
 export type PlaylistOverrides = Partial<
   Pick<DBPlaylist, "name" | "description">
 > & {
   trackCount?: number;
+  profileId?: string;
 };
+
+let cachedProfileId: string | null = null;
+
+export function testProfileId(): string {
+  if (!cachedProfileId || !profilesDb.getById(cachedProfileId)) {
+    cachedProfileId = profilesDb.create({
+      name: "Playlist Test Profile",
+      passwordHash: "hash",
+    });
+  }
+  return cachedProfileId;
+}
 
 export function buildPlaylist(
   overrides: PlaylistOverrides = {},
@@ -28,8 +41,9 @@ export const playlist = {
 
   create(overrides: PlaylistOverrides = {}, seed?: number): DBPlaylist {
     const data = buildPlaylist(overrides, seed);
-    const id = playlistsDb.create(data.name, data.description);
-    const pl = playlistsDb.getById(id);
+    const profileId = overrides.profileId ?? testProfileId();
+    const id = playlistsDb.create(profileId, data.name, data.description);
+    const pl = playlistsDb.getById(profileId, id);
     if (!pl)
       throw new Error("playlist.create: failed to read back inserted row");
     if (data.trackCount > 0) {

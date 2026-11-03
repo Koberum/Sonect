@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
+import { useAuth } from "@/features/auth/auth-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -48,16 +49,18 @@ export default function PlaylistDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { play } = usePlayTrack();
+  const { profile } = useAuth();
+  const profileId = profile?.id ?? "";
   const pid = id ? parseInt(id, 10) : 0;
 
   const { data: playlist, isPending } = useQuery({
-    ...playlistQueries.detail(pid),
-    enabled: !!pid,
+    ...playlistQueries.detail(profileId, pid),
+    enabled: !!pid && !!profileId,
   });
 
-  const updateMut = useMutation(playlistMutations.update());
-  const deleteMut = useMutation(playlistMutations.delete());
-  const removeTrackMut = useMutation(playlistMutations.removeTrack());
+  const updateMut = useMutation(playlistMutations.update(profileId));
+  const deleteMut = useMutation(playlistMutations.delete(profileId));
+  const removeTrackMut = useMutation(playlistMutations.removeTrack(profileId));
   const loadMut = useMutation(playlistMutations.load());
 
   const [editOpen, setEditOpen] = useState(false);

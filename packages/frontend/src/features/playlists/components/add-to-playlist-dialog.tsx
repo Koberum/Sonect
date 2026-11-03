@@ -17,6 +17,7 @@ import {
   playlistMutations,
   playlistQueries,
 } from "@/features/playlists/queries";
+import { useAuth } from "@/features/auth/auth-context";
 
 interface AddToPlaylistDialogProps {
   trackId: number;
@@ -30,12 +31,14 @@ export function AddToPlaylistDialog({
   onOpenChange,
 }: AddToPlaylistDialogProps) {
   const { t } = useTranslation();
+  const { profile } = useAuth();
+  const profileId = profile?.id ?? "";
   const { data: playlists = [], isPending } = useQuery({
-    ...playlistQueries.list(),
-    enabled: open,
+    ...playlistQueries.list(profileId),
+    enabled: open && !!profileId,
   });
-  const addTrackMut = useMutation(playlistMutations.addTrack());
-  const createMut = useMutation(playlistMutations.create());
+  const addTrackMut = useMutation(playlistMutations.addTrack(profileId));
+  const createMut = useMutation(playlistMutations.create(profileId));
   const [newName, setNewName] = useState("");
 
   const pending = addTrackMut.isPending || createMut.isPending;

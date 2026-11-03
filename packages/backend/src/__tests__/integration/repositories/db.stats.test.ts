@@ -3,6 +3,7 @@ import { createTestDb } from "@tests/helpers/db.js";
 import {
   statsDb,
   playlistsDb,
+  profilesDb,
   catalogSyncDb,
   db,
   upsertTrack,
@@ -40,7 +41,10 @@ describe("statsDb (trophy integration)", () => {
     findOrCreateArtist(db(), "A1");
     findOrCreateArtist(db(), "A2");
     findOrCreateAlbum(db(), "Al1");
-    playlistsDb.create("Pl1");
+    playlistsDb.create(
+      profilesDb.create({ name: "Owner", passwordHash: "hash" }),
+      "Pl1",
+    );
     findOrCreateGenre(db(), "Rock");
     upsertTrack(db(), {
       file: "a/t1.mp3",

@@ -2,6 +2,7 @@ import { expect } from "chai";
 import { createTestDb } from "@tests/helpers/db.js";
 import {
   playlistsDb,
+  profilesDb,
   db,
   upsertTrack,
   albums,
@@ -13,38 +14,50 @@ import { eq } from "drizzle-orm";
 
 describe("playlistsDb (trophy integration)", () => {
   let close: () => void;
+  let profileId: string;
   beforeEach(() => {
     ({ close } = createTestDb());
+    profileId = profilesDb.create({ name: "Owner", passwordHash: "hash" });
   });
   afterEach(() => close());
 
   describe("getAll / getById / create", () => {
     it("getAll empty → []", () =>
-      expect(playlistsDb.getAll()).to.deep.equal([]));
+      expect(playlistsDb.getAll(profileId)).to.deep.equal([]));
     it("getById miss → undefined", () =>
-      expect(playlistsDb.getById(99999)).to.be.undefined);
+      expect(playlistsDb.getById(profileId, 99999)).to.be.undefined);
     it("create returns id and getById found", () => {
-      const id = playlistsDb.create("MyPl", "desc");
-      expect(playlistsDb.getById(id)?.name).to.equal("MyPl");
-      expect(playlistsDb.getById(id)?.description).to.equal("desc");
+      const id = playlistsDb.create(profileId, "MyPl", "desc");
+      expect(playlistsDb.getById(profileId, id)?.name).to.equal("MyPl");
+      expect(playlistsDb.getById(profileId, id)?.description).to.equal("desc");
     });
     it("create without description → null", () => {
-      const id = playlistsDb.create("NoDesc");
-      expect(playlistsDb.getById(id)?.description).to.be.null;
+      const id = playlistsDb.create(profileId, "NoDesc");
+      expect(playlistsDb.getById(profileId, id)?.description).to.be.null;
     });
     it("getAll orders asc(name)", () => {
-      playlistsDb.create("Zebra");
-      playlistsDb.create("Alpha");
-      expect(playlistsDb.getAll().map((p) => p.name)).to.deep.equal([
+      playlistsDb.create(profileId, "Zebra");
+      playlistsDb.create(profileId, "Alpha");
+      expect(playlistsDb.getAll(profileId).map((p) => p.name)).to.deep.equal([
         "Alpha",
         "Zebra",
       ]);
     });
+    it("scopes reads and writes to the owning profile", () => {
+      const other = profilesDb.create({ name: "Other", passwordHash: "hash" });
+      const id = playlistsDb.create(profileId, "Mine");
+      expect(playlistsDb.getAll(other)).to.deep.equal([]);
+      expect(playlistsDb.getById(other, id)).to.be.undefined;
+      playlistsDb.update(other, id, { name: "Hacked" });
+      expect(playlistsDb.getById(profileId, id)?.name).to.equal("Mine");
+      playlistsDb.delete(other, id);
+      expect(playlistsDb.getById(profileId, id)).to.exist;
+    });
     it("unique name constraint throws when bypassing", () => {
-      playlistsDb.create("Dup");
+      playlistsDb.create(profileId, "Dup");
       let threw = false;
       try {
-        db().insert(playlists).values({ name: "Dup" }).run();
+        db().insert(playlists).values({ profile_id: profileId, name: "Dup" }).run();
       } catch {
         threw = true;
       }
@@ -54,33 +67,33 @@ describe("playlistsDb (trophy integration)", () => {
 
   describe("update", () => {
     it("no-op when both undefined", () => {
-      const id = playlistsDb.create("UpNoOp");
-      playlistsDb.update(id, {});
-      expect(playlistsDb.getById(id)?.name).to.equal("UpNoOp");
+      const id = playlistsDb.create(profileId, "UpNoOp");
+      playlistsDb.update(profileId, id, {});
+      expect(playlistsDb.getById(profileId, id)?.name).to.equal("UpNoOp");
     });
     it("updates name and description", () => {
-      const id = playlistsDb.create("OldName", "OldDesc");
-      playlistsDb.update(id, { name: "NewName", description: "NewDesc" });
-      const row = playlistsDb.getById(id);
+      const id = playlistsDb.create(profileId, "OldName", "OldDesc");
+      playlistsDb.update(profileId, id, { name: "NewName", description: "NewDesc" });
+      const row = playlistsDb.getById(profileId, id);
       expect(row?.name).to.equal("NewName");
       expect(row?.description).to.equal("NewDesc");
     });
     it("updates only description", () => {
-      const id = playlistsDb.create("OnlyDesc", "Old");
-      playlistsDb.update(id, { description: "New" });
-      expect(playlistsDb.getById(id)?.description).to.equal("New");
-      expect(playlistsDb.getById(id)?.name).to.equal("OnlyDesc");
+      const id = playlistsDb.create(profileId, "OnlyDesc", "Old");
+      playlistsDb.update(profileId, id, { description: "New" });
+      expect(playlistsDb.getById(profileId, id)?.description).to.equal("New");
+      expect(playlistsDb.getById(profileId, id)?.name).to.equal("OnlyDesc");
     });
     it("updates only name", () => {
-      const id = playlistsDb.create("OnlyName");
-      playlistsDb.update(id, { name: "Renamed" });
-      expect(playlistsDb.getById(id)?.name).to.equal("Renamed");
+      const id = playlistsDb.create(profileId, "OnlyName");
+      playlistsDb.update(profileId, id, { name: "Renamed" });
+      expect(playlistsDb.getById(profileId, id)?.name).to.equal("Renamed");
     });
   });
 
   describe("delete", () => {
     it("deletes playlist and cascades tracks", () => {
-      const id = playlistsDb.create("DelPl");
+      const id = playlistsDb.create(profileId, "DelPl");
       const tid = upsertTrack(db(), {
         file: "a/del.mp3",
         title: "Del",
@@ -89,8 +102,8 @@ describe("playlistsDb (trophy integration)", () => {
       } as never);
       playlistsDb.addTrack(id, tid);
       expect(playlistsDb.getTracks(id)).to.have.length(1);
-      playlistsDb.delete(id);
-      expect(playlistsDb.getById(id)).to.be.undefined;
+      playlistsDb.delete(profileId, id);
+      expect(playlistsDb.getById(profileId, id)).to.be.undefined;
       // junction rows removed
       expect(
         db()
@@ -101,14 +114,14 @@ describe("playlistsDb (trophy integration)", () => {
       ).to.deep.equal([]);
     });
     it("delete non-existent no throw", () => {
-      playlistsDb.delete(99999);
-      expect(playlistsDb.getAll()).to.deep.equal([]);
+      playlistsDb.delete(profileId, 99999);
+      expect(playlistsDb.getAll(profileId)).to.deep.equal([]);
     });
   });
 
   describe("addTrack / getTracks / removeTrack", () => {
     it("addTrack assigns position 0 then 1", () => {
-      const pid = playlistsDb.create("PosPl");
+      const pid = playlistsDb.create(profileId, "PosPl");
       const t1 = upsertTrack(db(), {
         file: "a/p1.mp3",
         title: "T1",
@@ -128,7 +141,7 @@ describe("playlistsDb (trophy integration)", () => {
       expect(tracks.map((t) => t.title)).to.deep.equal(["T1", "T2"]);
     });
     it("addTrack duplicate is no-op (onConflictDoNothing)", () => {
-      const pid = playlistsDb.create("DupPl");
+      const pid = playlistsDb.create(profileId, "DupPl");
       const tid = upsertTrack(db(), {
         file: "a/dup.mp3",
         title: "Dup",
@@ -140,12 +153,12 @@ describe("playlistsDb (trophy integration)", () => {
       expect(playlistsDb.getTracks(pid)).to.have.length(1);
     });
     it("getTracks empty → [] and ordered by position", () => {
-      const pid = playlistsDb.create("EmptyPl");
+      const pid = playlistsDb.create(profileId, "EmptyPl");
       expect(playlistsDb.getTracks(pid)).to.deep.equal([]);
       expect(playlistsDb.getTracks(99999)).to.deep.equal([]);
     });
     it("removeTrack deletes junction row", () => {
-      const pid = playlistsDb.create("RemPl");
+      const pid = playlistsDb.create(profileId, "RemPl");
       const tid = upsertTrack(db(), {
         file: "a/rem.mp3",
         title: "Rem",
@@ -159,10 +172,10 @@ describe("playlistsDb (trophy integration)", () => {
     });
     it("removeTrack non-existent no throw", () => {
       playlistsDb.removeTrack(99999);
-      expect(playlistsDb.getAll()).to.deep.equal([]);
+      expect(playlistsDb.getAll(profileId)).to.deep.equal([]);
     });
     it("getTracks returns PlaylistTrackRow with pt_id and position", () => {
-      const pid = playlistsDb.create("RowPl");
+      const pid = playlistsDb.create(profileId, "RowPl");
       const tid = upsertTrack(db(), {
         file: "a/row.mp3",
         title: "Row",
@@ -179,7 +192,7 @@ describe("playlistsDb (trophy integration)", () => {
 
   describe("track count / cover previews", () => {
     it("counts tracks in a playlist", () => {
-      const pid = playlistsDb.create("CountPl");
+      const pid = playlistsDb.create(profileId, "CountPl");
       expect(playlistsDb.getTrackCount(pid)).to.equal(0);
 
       const t1 = upsertTrack(db(), {
@@ -201,7 +214,7 @@ describe("playlistsDb (trophy integration)", () => {
     });
 
     it("returns distinct non-empty album covers up to 4", () => {
-      const pid = playlistsDb.create("CoversPl");
+      const pid = playlistsDb.create(profileId, "CoversPl");
       for (let i = 0; i < 5; i++) {
         const tid = upsertTrack(db(), {
           file: `a/cover${i}.mp3`,
@@ -223,7 +236,7 @@ describe("playlistsDb (trophy integration)", () => {
     });
 
     it("deduplicates covers shared by several tracks", () => {
-      const pid = playlistsDb.create("DupCovers");
+      const pid = playlistsDb.create(profileId, "DupCovers");
       const t1 = upsertTrack(db(), {
         file: "a/dupc1.mp3",
         title: "D1",
