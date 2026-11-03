@@ -43,10 +43,6 @@ import {
 import { LikedServiceImpl, type LikedService } from "./library/likedService.js";
 import { SetupServiceImpl, type SetupService } from "./system/setupService.js";
 import {
-  NetworkServiceImpl,
-  type NetworkService,
-} from "./network/networkService.js";
-import {
   SessionRegistry,
   setGlobalSessionRegistry,
 } from "./session/sessionRegistry.js";
@@ -74,7 +70,6 @@ let _playlistService: PlaylistService;
 let _suggestionService: SuggestionServiceInterface;
 let _likedService: LikedService;
 let _setupService: SetupService;
-let _networkService: NetworkService;
 let _sessionRegistry: SessionRegistry;
 let _playerRouter: PlayerRouter;
 let _profileService: ProfileService;
@@ -135,7 +130,6 @@ export function initializeServices(): void {
   _suggestionService = new SuggestionService();
   _likedService = new LikedServiceImpl();
   _setupService = new SetupServiceImpl();
-  _networkService = new NetworkServiceImpl();
   _profileService = new ProfileServiceImpl();
   _authService = new AuthServiceImpl();
 
@@ -230,11 +224,6 @@ export function getLikedService(): LikedService {
 export function getSetupService(): SetupService {
   assertInitialized();
   return _setupService;
-}
-
-export function getNetworkService(): NetworkService {
-  assertInitialized();
-  return _networkService;
 }
 
 export function getProfileService(): ProfileService {

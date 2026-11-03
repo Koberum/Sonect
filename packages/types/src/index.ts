@@ -17,11 +17,6 @@ export type StorageSource = DBStorageSource;
 export type PlaybackState = "play" | "pause" | "stop";
 export type OutputMode = "mpd" | "browser";
 
-export type NetworkStatus = {
-  connected: boolean;
-  dnsReachable: boolean;
-};
-
 export type PlaybackStatus = {
   state: PlaybackState;
   elapsed: number;

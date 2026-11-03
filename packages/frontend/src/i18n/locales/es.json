@@ -235,11 +235,7 @@
   },
   "status": {
     "backendUnreachable": "No se puede conectar al servidor — reconectando...",
-    "backendOnline": "Conexión restablecida",
-    "networkUnknown": "Estado de red no disponible",
-    "networkDisconnected": "Red desconectada",
-    "networkNoDns": "Conectado a la red, DNS no disponible",
-    "networkConnected": "Conectado a la red"
+    "backendOnline": "Conexión restablecida"
   },
   "settings": {
     "title": "Ajustes",

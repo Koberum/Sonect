@@ -333,7 +333,6 @@ Configure via `packages/backend/.env`:
 | `LOG_LEVEL`        | `info`                                                                   | Console log level; `debug` also logs MPD command responses and catalog details |
 | `MPD_CONFIG_PATH`  | `/app/data/mpd-audio.conf` (docker) / `/opt/sonect/data/...`             | MPD config drop-in (`audio_output` + advanced settings)                        |
 | `MPD_LOG_PATH`     | —                                                                        | Legacy; **no longer read** — sync progress comes from the MPD protocol         |
-| `DNS_CHECK_HOST`   | `example.com`                                                            | Host resolved to verify DNS connectivity                                       |
 | `PORT`             | `3000`                                                                   | Backend HTTP port                                                              |
 | `FRONTEND_DIST`    | `@frontend/dist` (cwd-relative fallback; `/app/frontend/dist` in docker) | Built frontend static files                                                    |
 | `CORS_ORIGIN`      | — (empty → same-origin only)                                             | Comma-separated exact origins allowed to make credentialed requests            |
@@ -395,10 +394,8 @@ source — remount the share with the correct charset (`iocharset=`) or rename t
 folders through a client that displays them correctly. Sonect never renames
 files; its stats walk skips unreadable entries and reports the readable subset.
 
-Sonect does not manage host Wi-Fi connections. `GET /system/health` returns
-whether the server has a non-loopback network address and whether the configured
-`DNS_CHECK_HOST` resolves through the system resolver. The frontend shows this
-read-only status in the desktop top bar.
+Sonect does not manage or report host networking: there is no Wi-Fi
+scan/connect control and no network-status indicator.
 
 ---
 

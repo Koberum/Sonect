@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api";
-import type { NetworkStatus, OutputMode } from "@repo/types";
+import type { OutputMode } from "@repo/types";
 import type { DashboardData } from "@repo/types/catalog";
 
 export interface AudioDevice {
@@ -163,7 +163,6 @@ export interface HealthResponse {
   mpdConnected: boolean;
   setupCompleted: string[];
   version: string;
-  network: NetworkStatus;
 }
 
 export function getHealth(signal?: AbortSignal): Promise<HealthResponse> {

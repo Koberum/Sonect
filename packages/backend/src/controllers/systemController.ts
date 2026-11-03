@@ -6,7 +6,6 @@ import {
   getMpdConfigService,
   getStorageService,
   getSetupService,
-  getNetworkService,
 } from "@services/factory";
 import { NotFoundError, ValidationError } from "../middleware/errorHandler";
 
@@ -35,11 +34,9 @@ export const getHealthHandler = asyncHandler(
   async (_req: Request, res: Response) => {
     const status = getSystemService().getSystemStatus();
     const setup = getSetupService().getSetupProgress();
-    const network = await getNetworkService().getNetworkStatus();
     res.json({
       ...status,
       setupCompleted: setup.filter((s) => s.completed).map((s) => s.step),
-      network,
     });
   },
 );

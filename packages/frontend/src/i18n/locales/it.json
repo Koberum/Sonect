@@ -235,11 +235,7 @@
   },
   "status": {
     "backendUnreachable": "Impossibile raggiungere il server — riconnessione...",
-    "backendOnline": "Connessione ripristinata",
-    "networkUnknown": "Stato della rete non disponibile",
-    "networkDisconnected": "Rete disconnessa",
-    "networkNoDns": "Connesso alla rete, DNS non disponibile",
-    "networkConnected": "Connesso alla rete"
+    "backendOnline": "Connessione ripristinata"
   },
   "settings": {
     "title": "Impostazioni",

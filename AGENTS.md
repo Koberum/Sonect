@@ -81,7 +81,6 @@ After making changes:
 | `WAVEFORMS_DIR`    | `<COVERS_DIR>/../waveforms` or `./data/waveforms`               | Path where waveform JSON caches are saved (SHA1(file).json)                         |
 | `LOG_LEVEL`        | `info`                                                          | Console log level (`debug`/`info`/`warn`/`error`)                                   |
 | `MPD_LOG_PATH`     | —                                                               | Legacy; not read by Sonect (sync progress comes from the MPD protocol, not the log) |
-| `DNS_CHECK_HOST`   | `example.com`                                                   | Host resolved to verify DNS connectivity                                            |
 | `CORS_ORIGIN`      | — (empty → same-origin only)                                    | Comma-separated exact origins allowed to make credentialed cross-origin requests    |
 | `COOKIE_SECURE`    | — (false)                                                       | Set to `true` when Sonect is served over HTTPS so the session cookie is `Secure`    |
 
@@ -231,14 +230,11 @@ sonect (single image, ENTRYPOINT /init)
   `/system/health` → `version`. It reads
   `/app/.version` (written only by the release image via the `SONECT_VERSION`
   build-arg), defaulting to `"dev"`. Sources: `services/utils/appVersion.ts`.
-- Host network management is intentionally not part of Sonect. Network status is
-  exposed via the public `GET /system/health`, returning `{ connected, dnsReachable }`.
-  `connected` checks for a non-loopback IPv4 or IPv6 address, while
-  `dnsReachable` resolves `DNS_CHECK_HOST` (default `example.com`) with a 3s
-  timeout. The frontend polls **health** every **30s** (60s during library sync)
-  for both backend liveness and network indicator — deduplicated via shared
-  `qk.system.health()` key — and shows one localized indicator in the desktop
-  top bar; it does not expose Wi-Fi scan/connect controls.
+- Host network management is intentionally not part of Sonect: no Wi-Fi
+  scan/connect controls and no network-status reporting. The frontend polls the
+  public `GET /system/health` every **30s** (60s during library sync) for backend
+  liveness only (`ConnectionBanner`), deduplicated via the shared
+  `qk.system.health()` key.
 - **Catalog listings only include artists that own an album.** `CatalogServiceImpl.getAllArtists`/`getArtistCount` call `artistsDb.getAll`/`count` with `{ withAlbumsOnly: true }`, and `searchTracks` does the same for `artistsDb.search`. Artists created only as track artists (collaboration credits) are hidden so no result opens an empty artist page; the repository methods default to unfiltered for lookups/maintenance. `playHistoryDb.recentArtists` applies the same `artistsWithAlbums()` predicate, so the dashboard's recently played artists never include album-less artists either.
 - **Track rows and actions.** Album, liked, genre, and playlist tables share `features/tracks/components/track-row.tsx` (number/playing bars, title + artist subtitle, optional cover, duration, three-dot menu) and `track-table-header.tsx`. The three-dot `track-actions-menu.tsx` opens a dropdown on desktop and a right-side sheet on mobile with Play, Add to queue, Like/Unlike, Add to playlist, and optional Remove; it replaced the old right-click context menu. Track play is bound to the number/title/duration cells only, and the actions wrapper stops click/pointer events from bubbling (including through portals), so opening the menu or using a sheet/dialog action never starts playback. The playing row is highlighted with `bg-primary/10`, `text-primary` title, and animated bars in the number column; `AddToPlaylistDialog` (`features/playlists/components/`) handles playlist selection and creation.
 

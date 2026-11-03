@@ -235,11 +235,7 @@
   },
   "status": {
     "backendUnreachable": "Cannot reach server — reconnecting...",
-    "backendOnline": "Connection restored",
-    "networkUnknown": "Network status unavailable",
-    "networkDisconnected": "Network disconnected",
-    "networkNoDns": "Connected to network, DNS unavailable",
-    "networkConnected": "Connected to network"
+    "backendOnline": "Connection restored"
   },
   "settings": {
     "title": "Settings",

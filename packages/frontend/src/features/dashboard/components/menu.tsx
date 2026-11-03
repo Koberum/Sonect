@@ -3,7 +3,6 @@ import SidebarToggler from "@/components/sidebar-toggler";
 import { useEffect, useState } from "react";
 import { SearchCommand } from "@/features/dashboard/components/search-command";
 import { useTheme } from "@/components/theme-provider";
-import { NetworkStatusIndicator } from "@/features/status/NetworkStatusIndicator";
 import { ProfileSwitcher } from "@/features/profiles/profile-switcher";
 
 export interface MenuProps {
@@ -52,9 +51,6 @@ export function Menu({ isOpen, toggleSidebar }: MenuProps) {
         </div>
       </div>
       <div className="flex flex-1 items-center justify-end gap-2">
-        <div className="hidden md:flex">
-          <NetworkStatusIndicator />
-        </div>
         <ProfileSwitcher />
       </div>
     </Menubar>
