@@ -79,7 +79,7 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
     pathname === match || pathname.startsWith(`${match}/`);
 
   return (
-    <div className={cn("flex h-full flex-col pb-24", className)}>
+    <div className={cn("flex h-full flex-col", className)}>
       <div className="flex h-16 shrink-0 items-center px-5">
         <Link
           to="/home/listen"

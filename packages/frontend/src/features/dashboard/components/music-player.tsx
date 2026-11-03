@@ -219,9 +219,7 @@ export default function MusicPlayer() {
             </Button>
           </div>
         )}
-      <div
-        className={`bg-card border-border fixed right-0 bottom-0 left-0 z-50 border border-b-0 pb-[env(safe-area-inset-bottom)] transition-all duration-300 ease-in-out`}
-      >
+      <div className="bg-card border-border relative z-30 shrink-0 border-t pb-[env(safe-area-inset-bottom)]">
         <PlaybackErrorNotice error={playbackStatus.error} />
         <div className="absolute top-0 left-0 z-10 block w-full md:hidden">
           <PlaybackProgressBar

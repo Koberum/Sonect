@@ -415,7 +415,7 @@ export function SearchCommand() {
     return (
       <div className="relative w-full" ref={containerRef}>
         <div
-          className="text-muted-foreground flex cursor-text items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors"
+          className="text-muted-foreground flex h-11 cursor-text items-center gap-2 rounded-md border px-3 text-sm transition-colors"
           onClick={() => inputRef.current?.focus()}
         >
           <Search className="h-4 w-4 shrink-0" />
@@ -445,7 +445,7 @@ export function SearchCommand() {
     return (
       <div
         onClick={() => setOverlayOpen(true)}
-        className="text-muted-foreground flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors"
+        className="text-muted-foreground flex w-fit cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors"
       >
         <Search className="h-4 w-4" />
       </div>

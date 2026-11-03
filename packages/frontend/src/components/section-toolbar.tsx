@@ -56,7 +56,7 @@ export function SectionToolbar() {
         </Button>
       </div>
 
-      <div className="ml-auto flex justify-end md:w-full md:max-w-md">
+      <div className="min-w-0 flex-1 md:max-w-xl">
         <SearchCommand />
       </div>
     </div>
