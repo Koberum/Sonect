@@ -15,7 +15,7 @@ type SortOption = "title" | "year" | "recent";
 export function ArtistAlbums() {
   const { t } = useTranslation();
   const { artistId } = useParams();
-  const [sort, setSort] = useState<SortOption>("year");
+  const [sort, setSort] = useState<SortOption>("recent");
 
   const { data: albums = [], isPending: albumsPending } = useQuery({
     ...catalogQueries.albumsByArtist(artistId ?? ""),
@@ -31,7 +31,7 @@ export function ArtistAlbums() {
   const sortedAlbums = [...(albums ?? [])].sort((a, b) => {
     if (sort === "title") return (a.title ?? "").localeCompare(b.title ?? "");
     if (sort === "year") return (b.year ?? 0) - (a.year ?? 0);
-    return 0;
+    return (b.created_at ?? "").localeCompare(a.created_at ?? "");
   });
 
   const sortOptions: { value: SortOption; label: string }[] = [

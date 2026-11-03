@@ -141,10 +141,6 @@
     "es": "Español",
     "it": "Italiano"
   },
-  "breadcrumb": {
-    "home": "Home",
-    "playlists": "Playlist"
-  },
   "contextMenu": {
     "addToPlaylist": "Aggiungi alla Playlist",
     "play": "Riproduci",

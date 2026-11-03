@@ -12,7 +12,7 @@ type SortOption = "title" | "year" | "recent";
 
 export default function Albums() {
   const { t } = useTranslation();
-  const [sort, setSort] = useState<SortOption>("title");
+  const [sort, setSort] = useState<SortOption>("recent");
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =

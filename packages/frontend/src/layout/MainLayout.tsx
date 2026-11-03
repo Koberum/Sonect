@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 
 export default function MainLayout() {
   const isMobile = useMediaQuery({ maxWidth: 767 });
+  const isCompactSidebar = useMediaQuery({ minWidth: 768, maxWidth: 1279 });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem("sonect.sidebar.collapsed") === "1",
@@ -20,6 +21,7 @@ export default function MainLayout() {
     () => setSidebarCollapsed((collapsed) => !collapsed),
     [],
   );
+  const collapsed = isCompactSidebar || sidebarCollapsed;
 
   useEffect(() => {
     localStorage.setItem(
@@ -36,14 +38,14 @@ export default function MainLayout() {
         <aside
           className={cn(
             "hidden shrink-0 flex-col overflow-hidden border-r transition-[width] duration-300 ease-in-out md:flex",
-            sidebarCollapsed ? "w-16" : "w-52",
+            collapsed ? "w-16" : "w-52",
           )}
         >
           <Sidebar
             toggleSidebar={() => {}}
             className="no-scrollbar flex-1 overflow-y-auto"
-            collapsed={sidebarCollapsed}
-            collapsible
+            collapsed={collapsed}
+            collapsible={!isCompactSidebar}
             onToggleCollapse={toggleCollapse}
           />
         </aside>
