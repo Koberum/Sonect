@@ -43,17 +43,16 @@ Rules:
 
 ## Icon scale (lucide-react)
 
-Exactly three sizes:
+| Size     | Where                                                                             |
+| -------- | --------------------------------------------------------------------------------- |
+| `size-5` | Default for icons inside buttons (menu, toolbar, row actions) and player controls |
+| `size-4` | Inline icons outside buttons, rows, table cells, `text-sm`                        |
+| `size-8` | Empty states and other large illustrative spots                                   |
 
-| Size     | Where                                                          |
-| -------- | -------------------------------------------------------------- |
-| `size-4` | Inside buttons, rows, table cells, inline with `text-sm` text  |
-| `size-5` | Player/header hero controls (play/pause/next, top-bar actions) |
-| `size-8` | Empty states and other large illustrative spots                |
-
-- No standalone `h-3` / `h-3.5` (12–14 px) icons. Button internals already get
-  `size-4` from `button.tsx` when the icon has no explicit size class — don't
-  override unless the button is a player control.
+- `button.tsx` gives every icon inside a `Button` `size-5` (20px) when the icon
+  has no explicit `size-*` class — don't override it unless the button is a
+  player control.
+- No standalone `h-3` / `h-3.5` (12–14 px) icons.
 - Avatar initials (`text-[10px]` inside small colored circles) are the only
   allowed tiny-text exception.
 
@@ -133,11 +132,11 @@ text-muted-foreground` for dashboard-style sections).
 
 ## Shared components catalog
 
-| Component      | Location                              | Contract                                                                                                                |
-| -------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `EmptyState`   | `components/ui/empty-state.tsx`       | `{ icon: LucideIcon; title: string; description?: string; action?: ReactNode }`                                         |
-| `PageHeader`   | `components/ui/page-header.tsx`       | `{ title: ReactNode; description?: ReactNode; actions?: ReactNode; media?: ReactNode; meta?: ReactNode }` — page `h1` left, optional media beside it, metadata below, action buttons right             |
-| `LibraryStats` | `features/settings/library-stats.tsx` | `{ stats?: { file_count?: number; dir_count?: number; total_size?: number } \| null }` — "N files · N folders · 1.2 GB" |
+| Component      | Location                              | Contract                                                                                                                                                                                   |
+| -------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `EmptyState`   | `components/ui/empty-state.tsx`       | `{ icon: LucideIcon; title: string; description?: string; action?: ReactNode }`                                                                                                            |
+| `PageHeader`   | `components/ui/page-header.tsx`       | `{ title: ReactNode; description?: ReactNode; actions?: ReactNode; media?: ReactNode; meta?: ReactNode }` — page `h1` left, optional media beside it, metadata below, action buttons right |
+| `LibraryStats` | `features/settings/library-stats.tsx` | `{ stats?: { file_count?: number; dir_count?: number; total_size?: number } \| null }` — "N files · N folders · 1.2 GB"                                                                    |
 
 Button usage map:
 

@@ -149,7 +149,7 @@ export function Sidebar({
               aria-current={isActive(match) ? "page" : undefined}
               aria-label={t(labelKey)}
             >
-              <Icon className={cn("h-4 w-4", !collapsed && "mr-2")} />
+              <Icon className={cn(!collapsed && "mr-2")} />
               {!collapsed ? (
                 <span className="truncate">{t(labelKey)}</span>
               ) : null}
