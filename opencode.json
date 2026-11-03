@@ -43,6 +43,11 @@
     }
   },
   "mcp": {
+    "paceui": {
+      "type": "remote",
+      "url": "https://paceui.com/api/mcp",
+      "enabled": true
+    },
     "playwright": {
       "type": "local",
       "command": ["npx", "@playwright/mcp@latest", "--no-sandbox"],
