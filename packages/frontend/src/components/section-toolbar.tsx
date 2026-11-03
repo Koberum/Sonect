@@ -26,7 +26,7 @@ export function SectionToolbar() {
   const canGoBack = useCanGoBack();
 
   return (
-    <div className="mb-6 flex items-center gap-2 border-b pb-3">
+    <div className="mb-6 flex items-center gap-2 pb-3">
       <Button
         variant="bare"
         size="icon-sm"
