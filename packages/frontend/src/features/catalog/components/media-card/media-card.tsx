@@ -1,6 +1,5 @@
-import type { DragEvent, ReactNode } from "react";
-import { getCoverPath } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import type { ReactNode, DragEvent } from "react";
+import { cn, getCoverPath } from "@/lib/utils";
 import { LikeButton } from "@/features/liked/components/like-button";
 import { ImageCollage } from "./image-collage";
 
