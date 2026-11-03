@@ -1,15 +1,13 @@
-import { ArtistArtwork } from "@/features/dashboard/components/artist-artwork";
+import { ArtistCard } from "@/features/catalog/components/media-card/artist-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
 import { UserRound } from "lucide-react";
 
 export function Artists() {
-  const navigate = useNavigate();
   const { t } = useTranslation();
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -35,7 +33,7 @@ export function Artists() {
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {isPending ? (
           Array.from({ length: 12 }).map((_, i) => (
             <Skeleton key={i} className="aspect-square w-full rounded-lg" />
@@ -46,13 +44,7 @@ export function Artists() {
           </div>
         ) : (
           artists.map((artist) => (
-            <ArtistArtwork
-              key={artist.id}
-              artist={artist}
-              aspectRatio="square"
-              className="w-full"
-              onClick={() => navigate(`/library/artists/${artist.id}`)}
-            />
+            <ArtistCard key={artist.id} artist={artist} className="w-full" />
           ))
         )}
       </div>

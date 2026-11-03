@@ -1,4 +1,4 @@
-import { asc, eq, getColumns, sql } from "drizzle-orm";
+import { and, asc, eq, getColumns, isNotNull, ne, sql } from "drizzle-orm";
 import type { DBPlaylist } from "@repo/types";
 import type { PlaylistTrack } from "@repo/types/catalog";
 import { db, transaction } from "../connection.js";
@@ -30,6 +30,34 @@ export const playlistsDb = {
   getById(id: number): DBPlaylist | undefined {
     return db().select().from(playlists).where(eq(playlists.id, id)).get() as
       DBPlaylist | undefined;
+  },
+
+  getCoverPreviews(playlistId: number, limit = 4): string[] {
+    return db()
+      .selectDistinct({ cover_path: albums.cover_path })
+      .from(playlistTracks)
+      .innerJoin(tracks, eq(playlistTracks.track_id, tracks.id))
+      .innerJoin(albums, eq(tracks.album_id, albums.id))
+      .where(
+        and(
+          eq(playlistTracks.playlist_id, playlistId),
+          isNotNull(albums.cover_path),
+          ne(albums.cover_path, ""),
+        ),
+      )
+      .limit(limit)
+      .all()
+      .map((row) => row.cover_path)
+      .filter((path): path is string => Boolean(path));
+  },
+
+  getTrackCount(playlistId: number): number {
+    const row = db()
+      .select({ count: sql<number>`count(*)` })
+      .from(playlistTracks)
+      .where(eq(playlistTracks.playlist_id, playlistId))
+      .get();
+    return row?.count ?? 0;
   },
 
   create(name: string, description?: string): number {

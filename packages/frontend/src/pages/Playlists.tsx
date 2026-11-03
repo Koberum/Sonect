@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { PlaylistCard } from "@/features/catalog/components/media-card/playlist-card";
 import { useQuery } from "@tanstack/react-query";
 import { ListMusic, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -57,27 +57,13 @@ export default function Playlists() {
           }
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {playlists.map((playlist) => (
-            <Link
+            <PlaylistCard
               key={playlist.id}
-              to={`/home/playlists/${playlist.id}`}
-              className="bg-card hover:bg-muted/60 flex items-center gap-4 rounded-xl p-4 shadow-sm transition-colors"
-            >
-              <span className="bg-primary/10 text-primary flex size-12 shrink-0 items-center justify-center rounded-lg">
-                <ListMusic className="size-6" />
-              </span>
-              <span className="min-w-0">
-                <span className="block truncate font-medium">
-                  {playlist.name}
-                </span>
-                {playlist.description ? (
-                  <span className="text-muted-foreground block truncate text-sm">
-                    {playlist.description}
-                  </span>
-                ) : null}
-              </span>
-            </Link>
+              playlist={playlist}
+              className="w-full"
+            />
           ))}
         </div>
       )}

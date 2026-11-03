@@ -4,6 +4,7 @@ import {
   playlistsDb,
   db,
   upsertTrack,
+  albums,
   playlists,
   playlistTracks,
 } from "@repo/db";
@@ -173,6 +174,77 @@ describe("playlistsDb (trophy integration)", () => {
       expect(row.pt_id).to.be.a("number");
       expect(row.position).to.equal(0);
       expect(row.added_at).to.be.a("string");
+    });
+  });
+
+  describe("track count / cover previews", () => {
+    it("counts tracks in a playlist", () => {
+      const pid = playlistsDb.create("CountPl");
+      expect(playlistsDb.getTrackCount(pid)).to.equal(0);
+
+      const t1 = upsertTrack(db(), {
+        file: "a/count1.mp3",
+        title: "C1",
+        artist: "A",
+        album: "AlCount1",
+      } as never);
+      const t2 = upsertTrack(db(), {
+        file: "a/count2.mp3",
+        title: "C2",
+        artist: "A",
+        album: "AlCount2",
+      } as never);
+      playlistsDb.addTrack(pid, t1);
+      playlistsDb.addTrack(pid, t2);
+
+      expect(playlistsDb.getTrackCount(pid)).to.equal(2);
+    });
+
+    it("returns distinct non-empty album covers up to 4", () => {
+      const pid = playlistsDb.create("CoversPl");
+      for (let i = 0; i < 5; i++) {
+        const tid = upsertTrack(db(), {
+          file: `a/cover${i}.mp3`,
+          title: `Cover ${i}`,
+          artist: "A",
+          album: `Album ${i}`,
+        } as never);
+        playlistsDb.addTrack(pid, tid);
+        db()
+          .update(albums)
+          .set({ cover_path: `cover-${i}.webp` })
+          .where(eq(albums.title, `Album ${i}`))
+          .run();
+      }
+
+      const previews = playlistsDb.getCoverPreviews(pid);
+      expect(previews).to.have.length(4);
+      expect(previews).to.include("cover-0.webp");
+    });
+
+    it("deduplicates covers shared by several tracks", () => {
+      const pid = playlistsDb.create("DupCovers");
+      const t1 = upsertTrack(db(), {
+        file: "a/dupc1.mp3",
+        title: "D1",
+        artist: "A",
+        album: "Same Album",
+      } as never);
+      const t2 = upsertTrack(db(), {
+        file: "a/dupc2.mp3",
+        title: "D2",
+        artist: "A",
+        album: "Same Album",
+      } as never);
+      playlistsDb.addTrack(pid, t1);
+      playlistsDb.addTrack(pid, t2);
+      db()
+        .update(albums)
+        .set({ cover_path: "same.webp" })
+        .where(eq(albums.title, "Same Album"))
+        .run();
+
+      expect(playlistsDb.getCoverPreviews(pid)).to.deep.equal(["same.webp"]);
     });
   });
 });

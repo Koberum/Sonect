@@ -24,7 +24,11 @@ export class PlaylistServiceImpl implements PlaylistService {
   constructor(private mpdConnectionManager: MpdConnectionManager) {}
 
   getAllPlaylists(): Playlist[] {
-    return playlistsDb.getAll();
+    return playlistsDb.getAll().map((playlist) => ({
+      ...playlist,
+      coverPreviews: playlistsDb.getCoverPreviews(playlist.id, 4),
+      trackCount: playlistsDb.getTrackCount(playlist.id),
+    }));
   }
 
   getPlaylistById(id: number): Playlist | undefined {

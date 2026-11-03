@@ -56,6 +56,7 @@
   "artists": {
     "title": "Artistas",
     "titleSingle": "Artista",
+    "goToArtist": "Ir al artista",
     "noAlbums": "No se encontraron álbumes",
     "noArtists": "No se encontraron artistas",
     "description": "Explora tu música por artista"
@@ -166,6 +167,7 @@
   },
   "playlist": {
     "new": "Nueva Lista",
+    "open": "Abrir lista",
     "edit": "Editar Lista",
     "save": "Guardar",
     "create": "Crear",
@@ -235,7 +237,8 @@
     "deleting": "Eliminando...",
     "collageImage": "Imagen de collage {{index}}",
     "loading": "Cargando...",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "more": "Más acciones"
   },
   "status": {
     "backendUnreachable": "No se puede conectar al servidor — reconectando...",
