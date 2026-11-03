@@ -48,8 +48,7 @@
     "emptyTitle": "Nessuna playlist",
     "emptyDescription": "Crea una playlist per iniziare a raccogliere brani.",
     "createError": "Creazione della playlist non riuscita",
-    "loadError": "Impossibile caricare le playlist.",
-    "dropHint": "Trascina un brano su una playlist per aggiungerlo."
+    "loadError": "Impossibile caricare le playlist."
   },
   "sidebar": {
     "toggleSidebar": "Mostra/nascondi barra laterale"
@@ -165,6 +164,9 @@
   "playlist": {
     "new": "Nuova Playlist",
     "open": "Apri playlist",
+    "defaultName": "La mia playlist",
+    "dropToCreate": "Rilascia qui per creare una playlist",
+    "dropHint": "Trascina un brano su una playlist per aggiungerlo.",
     "edit": "Modifica Playlist",
     "save": "Salva",
     "create": "Crea",

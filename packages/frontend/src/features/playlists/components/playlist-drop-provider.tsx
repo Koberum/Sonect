@@ -28,6 +28,13 @@ interface TrackDragContextValue {
 
 const TrackDragContext = createContext<TrackDragContextValue | null>(null);
 
+function nextPlaylistName(base: string, existingNames: string[]): string {
+  const used = new Set(existingNames.map((name) => name.trim().toLowerCase()));
+  let index = 1;
+  while (used.has(`${base} ${index}`.toLowerCase())) index++;
+  return `${base} ${index}`;
+}
+
 // eslint-disable-next-line react-refresh/only-export-components
 export function useTrackDrag(): TrackDragContextValue {
   const context = useContext(TrackDragContext);
@@ -42,6 +49,7 @@ export function PlaylistDropProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [dragTrackId, setDragTrackId] = useState<number | null>(null);
   const [overPlaylistId, setOverPlaylistId] = useState<number | null>(null);
+  const [overCreate, setOverCreate] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
 
   const { data: playlists = [], isPending } = useQuery({
@@ -49,10 +57,12 @@ export function PlaylistDropProvider({ children }: { children: ReactNode }) {
     enabled: open,
   });
   const addTrackMut = useMutation(playlistMutations.addTrack());
+  const createMut = useMutation(playlistMutations.create());
 
   const endDrag = useCallback(() => {
     setOpen(false);
     setOverPlaylistId(null);
+    setOverCreate(false);
   }, []);
 
   const startDrag = useCallback((trackId: number) => {
@@ -84,6 +94,31 @@ export function PlaylistDropProvider({ children }: { children: ReactNode }) {
     const trackId = getTrackDragId(event.dataTransfer) ?? dragTrackId;
     setOverPlaylistId(null);
     if (trackId !== null) void addTrack(playlistId, trackId);
+  };
+
+  const createPlaylistWithTrack = useCallback(
+    async (trackId: number) => {
+      const name = nextPlaylistName(
+        t("playlist.defaultName"),
+        playlists.map((playlist) => playlist.name),
+      );
+      try {
+        const playlist = await createMut.mutateAsync({ name });
+        await addTrackMut.mutateAsync({ playlistId: playlist.id, trackId });
+        toast(t("playlist.trackAdded"));
+        endDrag();
+      } catch {
+        toast.error(t("playlist.trackAddError"));
+      }
+    },
+    [addTrackMut, createMut, endDrag, playlists, t],
+  );
+
+  const handleCreateDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const trackId = getTrackDragId(event.dataTransfer) ?? dragTrackId;
+    setOverCreate(false);
+    if (trackId !== null) void createPlaylistWithTrack(trackId);
   };
 
   return (
@@ -209,15 +244,44 @@ export function PlaylistDropProvider({ children }: { children: ReactNode }) {
         </ScrollArea>
 
         <div className="border-t p-3">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
+          <div
+            role="button"
+            tabIndex={0}
             onClick={() => setCreateOpen(true)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setCreateOpen(true);
+              }
+            }}
+            onDragOver={(event) => {
+              if (!isTrackDrag(event.dataTransfer)) return;
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "copy";
+              if (!overCreate) setOverCreate(true);
+            }}
+            onDragLeave={(event) => {
+              if (
+                event.currentTarget.contains(event.relatedTarget as Node | null)
+              ) {
+                return;
+              }
+              setOverCreate(false);
+            }}
+            onDrop={handleCreateDrop}
+            className={cn(
+              "hover:bg-muted/60 focus-visible:ring-ring flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed p-3 text-center transition-colors focus-visible:ring-2 focus-visible:outline-none",
+              overCreate && "border-primary bg-primary/10",
+            )}
           >
-            <Plus />
-            {t("playlist.new")}
-          </Button>
+            <span className="flex items-center gap-2 text-sm font-medium">
+              <Plus className="size-4" />
+              {t("playlist.new")}
+            </span>
+            <span className="text-muted-foreground text-xs">
+              {t("playlist.dropToCreate")}
+            </span>
+          </div>
         </div>
 
         <CreatePlaylistDialog open={createOpen} onOpenChange={setCreateOpen} />

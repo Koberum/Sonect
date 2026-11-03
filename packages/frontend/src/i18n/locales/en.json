@@ -48,8 +48,7 @@
     "emptyTitle": "No playlists yet",
     "emptyDescription": "Create a playlist to start collecting tracks.",
     "createError": "Failed to create playlist",
-    "loadError": "Could not load your playlists.",
-    "dropHint": "Drag a song onto a playlist to add it."
+    "loadError": "Could not load your playlists."
   },
   "sidebar": {
     "toggleSidebar": "Toggle sidebar"
@@ -165,6 +164,9 @@
   "playlist": {
     "new": "New Playlist",
     "open": "Open Playlist",
+    "defaultName": "My playlist",
+    "dropToCreate": "Drop here to create a playlist",
+    "dropHint": "Drag a song onto a playlist to add it.",
     "edit": "Edit Playlist",
     "save": "Save",
     "create": "Create",
