@@ -72,7 +72,7 @@ export default function MainLayout() {
 
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
             <main className="no-scrollbar flex-1 overflow-y-auto">
-              <div className="px-4 pt-6 pb-12 sm:px-4 lg:px-8">
+              <div className="px-4 pt-4 pb-12 sm:px-4 lg:px-8">
                 <SetupGuard>
                   <Outlet context={{ openSidebar }} />
                   <Toaster />
