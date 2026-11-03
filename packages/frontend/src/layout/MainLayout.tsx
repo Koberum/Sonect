@@ -1,27 +1,50 @@
 import MusicPlayer from "@/features/dashboard/components/music-player";
 import { Sidebar } from "@/features/dashboard/components/sidebar";
 import { SetupGuard } from "@/components/setup-guard";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import { useMediaQuery } from "react-responsive";
 import { Toaster } from "@/components/ui/sonner";
 import { ConnectionBanner } from "@/features/status/ConnectionBanner";
 import { SyncIndicator } from "@/features/sync/components/sync-indicator";
+import { cn } from "@/lib/utils";
 
 export default function MainLayout() {
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => localStorage.getItem("sonect.sidebar.collapsed") === "1",
+  );
   const openSidebar = useCallback(() => setSidebarOpen(true), []);
+  const toggleCollapse = useCallback(
+    () => setSidebarCollapsed((collapsed) => !collapsed),
+    [],
+  );
+
+  useEffect(() => {
+    localStorage.setItem(
+      "sonect.sidebar.collapsed",
+      sidebarCollapsed ? "1" : "0",
+    );
+  }, [sidebarCollapsed]);
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
       <ConnectionBanner />
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className="hidden w-52 shrink-0 flex-col border-r md:flex">
+        <aside
+          className={cn(
+            "hidden shrink-0 flex-col overflow-hidden border-r transition-[width] duration-300 ease-in-out md:flex",
+            sidebarCollapsed ? "w-16" : "w-52",
+          )}
+        >
           <Sidebar
             toggleSidebar={() => {}}
             className="no-scrollbar flex-1 overflow-y-auto"
+            collapsed={sidebarCollapsed}
+            collapsible
+            onToggleCollapse={toggleCollapse}
           />
         </aside>
 

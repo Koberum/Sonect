@@ -17,7 +17,9 @@
     "library": "Biblioteca",
     "settings": "Ajustes",
     "back": "Atrás",
-    "forward": "Adelante"
+    "forward": "Adelante",
+    "collapse": "Contraer barra lateral",
+    "expand": "Expandir barra lateral"
   },
   "home": {
     "title": "Inicio",

@@ -2,14 +2,28 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { AudioLines, Library, Settings } from "lucide-react";
+import {
+  AudioLines,
+  Library,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/features/auth/auth-context";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export interface SidebarProps {
   className?: string;
   toggleSidebar(open: boolean): void;
+  collapsed?: boolean;
+  collapsible?: boolean;
+  onToggleCollapse?(): void;
 }
 
 interface SidebarItem {
@@ -19,7 +33,13 @@ interface SidebarItem {
   icon: typeof AudioLines;
 }
 
-export function Sidebar({ className, toggleSidebar }: SidebarProps) {
+export function Sidebar({
+  className,
+  toggleSidebar,
+  collapsed = false,
+  collapsible = false,
+  onToggleCollapse,
+}: SidebarProps) {
   const { t } = useTranslation();
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -79,28 +99,72 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
 
   return (
     <div className={cn("flex h-full flex-col", className)}>
-      <div className="flex h-16 shrink-0 items-center px-5">
-        <Link
-          to="/home/listen"
-          onClick={() => toggleSidebar(false)}
-          className="focus-visible:ring-ring rounded-md focus-visible:ring-2 focus-visible:outline-none"
-        >
-          <img src={logoSrc} alt="Sonect" className="h-8 w-auto" />
-        </Link>
-      </div>
-      <nav className="space-y-1 p-3" aria-label={t("nav.label")}>
-        {items.map(({ href, match, labelKey, icon: Icon }) => (
-          <Button
-            key={href}
-            onClick={() => handleNavigation(href)}
-            variant={isActive(match) ? "secondary" : "ghost"}
-            className="w-full justify-start"
-            aria-current={isActive(match) ? "page" : undefined}
+      <div
+        className={cn(
+          "flex h-16 shrink-0 items-center gap-2",
+          collapsed ? "justify-center px-2" : "justify-between px-5",
+        )}
+      >
+        {!collapsed ? (
+          <Link
+            to="/home/listen"
+            onClick={() => toggleSidebar(false)}
+            className="focus-visible:ring-ring rounded-md focus-visible:ring-2 focus-visible:outline-none"
           >
-            <Icon className="mr-2 h-4 w-4" />
-            {t(labelKey)}
-          </Button>
-        ))}
+            <img src={logoSrc} alt="Sonect" className="h-8 w-auto" />
+          </Link>
+        ) : null}
+        {collapsible ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="bare"
+                size="icon-sm"
+                onClick={onToggleCollapse}
+                aria-label={t(collapsed ? "nav.expand" : "nav.collapse")}
+              >
+                {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              {t(collapsed ? "nav.expand" : "nav.collapse")}
+            </TooltipContent>
+          </Tooltip>
+        ) : null}
+      </div>
+      <nav
+        className={cn("space-y-1", collapsed ? "p-2" : "p-3")}
+        aria-label={t("nav.label")}
+      >
+        {items.map(({ href, match, labelKey, icon: Icon }) => {
+          const button = (
+            <Button
+              key={href}
+              onClick={() => handleNavigation(href)}
+              variant={isActive(match) ? "secondary" : "ghost"}
+              className={cn(
+                "w-full",
+                collapsed ? "justify-center px-0" : "justify-start",
+              )}
+              aria-current={isActive(match) ? "page" : undefined}
+              aria-label={t(labelKey)}
+            >
+              <Icon className={cn("h-4 w-4", !collapsed && "mr-2")} />
+              {!collapsed ? (
+                <span className="truncate">{t(labelKey)}</span>
+              ) : null}
+            </Button>
+          );
+
+          if (!collapsed) return button;
+
+          return (
+            <Tooltip key={href}>
+              <TooltipTrigger asChild>{button}</TooltipTrigger>
+              <TooltipContent side="right">{t(labelKey)}</TooltipContent>
+            </Tooltip>
+          );
+        })}
       </nav>
     </div>
   );

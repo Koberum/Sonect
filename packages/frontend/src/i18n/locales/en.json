@@ -17,7 +17,9 @@
     "library": "Library",
     "settings": "Settings",
     "back": "Back",
-    "forward": "Forward"
+    "forward": "Forward",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar"
   },
   "home": {
     "title": "Home",
