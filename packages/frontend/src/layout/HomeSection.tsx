@@ -20,11 +20,5 @@ export function HomeSection() {
     },
   ];
 
-  return (
-    <SectionLayout
-      title={t("home.title")}
-      description={t("home.description")}
-      tabs={tabs}
-    />
-  );
+  return <SectionLayout title={t("home.title")} tabs={tabs} />;
 }

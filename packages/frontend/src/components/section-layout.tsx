@@ -1,22 +1,15 @@
 import { Outlet, useLocation } from "react-router-dom";
-import { PageHeader } from "@/components/ui/page-header";
 import { SectionTabs, type SectionTab } from "@/components/section-tabs";
 import { SectionToolbar } from "@/components/section-toolbar";
 import { cn } from "@/lib/utils";
 
 export interface SectionLayoutProps {
   title: string;
-  description?: string;
   tabs: SectionTab[];
   className?: string;
 }
 
-export function SectionLayout({
-  title,
-  description,
-  tabs,
-  className,
-}: SectionLayoutProps) {
+export function SectionLayout({ title, tabs, className }: SectionLayoutProps) {
   const { pathname } = useLocation();
   const isDetail = !tabs.some((tab) => tab.href === pathname);
 
@@ -25,7 +18,7 @@ export function SectionLayout({
       <SectionToolbar />
       {!isDetail ? (
         <>
-          <PageHeader title={title} description={description} />
+          <h1 className="sr-only">{title}</h1>
           <SectionTabs tabs={tabs} label={title} />
         </>
       ) : null}

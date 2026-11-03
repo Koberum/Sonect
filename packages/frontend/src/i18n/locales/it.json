@@ -22,7 +22,6 @@
   },
   "home": {
     "title": "Home",
-    "description": "La tua musica, ascoltata di recente e salvata.",
     "tabs": {
       "listen": "Ascolta Ora",
       "playlists": "Playlist",
@@ -31,7 +30,6 @@
   },
   "library": {
     "title": "Libreria",
-    "description": "Esplora album, artisti e generi della tua collezione.",
     "tabs": {
       "albums": "Album",
       "artists": "Artisti",
@@ -224,7 +222,6 @@
   },
   "settings": {
     "title": "Impostazioni",
-    "description": "Configura il tuo sistema",
     "tabs": {
       "audio": "Audio",
       "playback": "Riproduzione",

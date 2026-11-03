@@ -12,11 +12,5 @@ const TABS: SectionTab[] = [
 export function LibrarySection() {
   const { t } = useTranslation();
 
-  return (
-    <SectionLayout
-      title={t("library.title")}
-      description={t("library.description")}
-      tabs={TABS}
-    />
-  );
+  return <SectionLayout title={t("library.title")} tabs={TABS} />;
 }

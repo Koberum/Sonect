@@ -13,11 +13,5 @@ const TABS: SectionTab[] = [
 export function Settings() {
   const { t } = useTranslation();
 
-  return (
-    <SectionLayout
-      title={t("settings.title")}
-      description={t("settings.description")}
-      tabs={TABS}
-    />
-  );
+  return <SectionLayout title={t("settings.title")} tabs={TABS} />;
 }
