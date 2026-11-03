@@ -23,7 +23,8 @@ interface UseBrowserAudioReturn {
     trackId: number,
     src: string,
     startAt?: number,
-    commandSeq?: number,
+    epoch?: string,
+    revision?: number,
   ) => void;
   preloadTrack: (trackId: number, src: string) => void;
   state: BrowserAudioState;
@@ -103,9 +104,15 @@ export function useBrowserAudio(
   }, []);
 
   const startTrack = useCallback(
-    (trackId: number, src: string, startAt = 0, commandSeq?: number) => {
+    (
+      trackId: number,
+      src: string,
+      startAt = 0,
+      epoch?: string,
+      revision = 0,
+    ) => {
       setError(null);
-      engineRef.current?.startTrack(trackId, src, startAt, commandSeq);
+      engineRef.current?.startTrack(trackId, src, startAt, epoch, revision);
     },
     [],
   );

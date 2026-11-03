@@ -434,4 +434,51 @@ describe("SessionPlayer", () => {
     expect(s.track).to.be.undefined;
     expect(fired).to.equal(1);
   });
+
+  it("assigns a stable epoch and bumps the revision on state changes", () => {
+    const { t1 } = seedAlbum("EpochArtist", 80);
+    p = new SessionPlayer("S-EPOCH", {} as LogService);
+    const initial = p.getStatus();
+    expect(initial.epoch).to.be.a("string").and.not.equal("");
+    expect(initial.revision).to.equal(0);
+
+    p.playTrack(t1.file);
+    const afterPlay = p.getStatus();
+    expect(afterPlay.epoch).to.equal(initial.epoch);
+    expect(afterPlay.revision).to.be.greaterThan(0);
+  });
+
+  it("ignores reports from a different epoch", () => {
+    const { t1 } = seedAlbum("FenceArtist", 90);
+    p = new SessionPlayer("S-FENCE", {} as LogService);
+    p.playTrack(t1.file);
+    const before = p.getStatus();
+
+    p.reportPlayback({
+      event: "advance",
+      epoch: "some-other-session",
+      fromTrackId: t1.id,
+      trackId: before.nextTrackId ?? undefined,
+    });
+
+    const after = p.getStatus();
+    expect(after.track?.id).to.equal(t1.id);
+    expect(after.state).to.equal("play");
+  });
+
+  it("ignores a stale advance whose source track is no longer current", () => {
+    const { t1 } = seedAlbum("StaleArtist", 100);
+    p = new SessionPlayer("S-STALE", {} as LogService);
+    p.playTrack(t1.file);
+    const before = p.getStatus();
+
+    p.reportPlayback({
+      event: "advance",
+      epoch: before.epoch,
+      fromTrackId: 99999,
+      trackId: before.nextTrackId ?? undefined,
+    });
+
+    expect(p.getStatus().track?.id).to.equal(t1.id);
+  });
 });

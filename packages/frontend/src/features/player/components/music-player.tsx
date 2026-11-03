@@ -8,7 +8,7 @@ import { QueueView } from "./queue-view";
 import { FullPagePlayer } from "./full-page-player";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import type { OutputMode } from "@repo/types";
+import type { OutputMode, PlaybackStatus } from "@repo/types";
 import {
   nextTrack,
   pauseSong,
@@ -41,6 +41,7 @@ export default function MusicPlayer() {
     trackPlayed,
     setTrackPlayed,
     playbackStatus,
+    applyPlaybackStatus,
     outputMode,
     setOutputMode,
     activeDeviceId,
@@ -51,6 +52,7 @@ export default function MusicPlayer() {
 
   const lastAnchorRef = useRef({ time: 0, elapsed: 0 });
   const lastSeekSeqRef = useRef(0);
+  const lastEpochRef = useRef<string | undefined>(undefined);
   const [interpolatedElapsed, setInterpolatedElapsed] = useState(0);
   const [playerSheetOpen, setPlayerSheetOpen] = useState(false);
   const isMobile = useMediaQuery({ maxWidth: 768 });
@@ -88,7 +90,8 @@ export default function MusicPlayer() {
         track.id,
         `/stream/${track.id}`,
         playbackStatus.elapsed || 0,
-        playbackStatus.seekSeq ?? 0,
+        playbackStatus.epoch,
+        playbackStatus.revision ?? 0,
       );
     }
 
@@ -103,6 +106,11 @@ export default function MusicPlayer() {
   // active browser does not fight its own position.
   useEffect(() => {
     if (!isActiveBrowser || playbackStatus.state === "stop") return;
+    if (playbackStatus.epoch !== lastEpochRef.current) {
+      lastEpochRef.current = playbackStatus.epoch;
+      lastSeekSeqRef.current = playbackStatus.seekSeq ?? 0;
+      return;
+    }
     const seq = playbackStatus.seekSeq ?? 0;
     if (seq === lastSeekSeqRef.current) return;
     lastSeekSeqRef.current = seq;
@@ -112,6 +120,7 @@ export default function MusicPlayer() {
     playbackStatus.seekSeq,
     playbackStatus.elapsed,
     playbackStatus.state,
+    playbackStatus.epoch,
     seek,
   ]);
 
@@ -166,13 +175,25 @@ export default function MusicPlayer() {
 
   // Unified backend: single /player interface, backend decides per-session engine.
   // Browser queues are isolated per X-Session-Id; MPD queue is shared but locked to one session.
-  const doPlay = (t: TrackWithRelations | null) => t && playSong(t);
-  const doPause = () => pauseSong();
-  const doResume = () => resumeSong();
-  const doNext = () => nextTrack();
-  const doPrev = () => previousTrack();
+  const doPlay = (t: TrackWithRelations | null) => {
+    if (t) void playSong(t).then(applyPlaybackStatus);
+  };
+  const doPause = () => {
+    void pauseSong().then(applyPlaybackStatus);
+  };
+  const doResume = () => {
+    void resumeSong().then(applyPlaybackStatus);
+  };
+  const doNext = () => {
+    void nextTrack().then(applyPlaybackStatus);
+  };
+  const doPrev = () => {
+    void previousTrack().then(applyPlaybackStatus);
+  };
 
-  const doToggle = (fn: () => Promise<void>) => fn();
+  const doToggle = (fn: () => Promise<PlaybackStatus>) => {
+    void fn().then(applyPlaybackStatus);
+  };
 
   useEffect(() => {
     // The active browser reads the real audio clock; only passive/MPD devices

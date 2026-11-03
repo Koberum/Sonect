@@ -81,7 +81,8 @@ export class BrowserAudioEngine {
   private pendingPlay = false;
   private autoplayBlockedValue = false;
   private lastReportAt = 0;
-  private lastCommandSeq = 0;
+  private epochValue: string | null = null;
+  private revisionValue = 0;
   private lastEndedTrackId: number | null = null;
   private advanceGuardUntil = 0;
   private destroyed = false;
@@ -135,25 +136,39 @@ export class BrowserAudioEngine {
     trackId: number,
     src: string,
     startAt = 0,
-    commandSeq = this.lastCommandSeq,
+    epoch?: string,
+    revision = 0,
   ): void {
     if (this.destroyed) return;
+
+    // A new server epoch means the session was recreated (backend restart or
+    // idle eviction): drop every local guard and force a fresh load.
+    const epochChanged = epoch !== undefined && epoch !== this.epochValue;
+    if (epochChanged) {
+      this.epochValue = epoch;
+      this.revisionValue = -1;
+      this.lastEndedTrackId = null;
+      this.advanceGuardUntil = 0;
+    }
+
     // After a local advance, ignore an in-flight status for the track that
-    // just ended. A real command to go back to it bumps seekSeq on the server.
+    // just ended. A real command to go back to it bumps the server revision.
     if (
       Date.now() < this.advanceGuardUntil &&
       this.lastEndedTrackId === trackId &&
-      commandSeq <= this.lastCommandSeq
+      revision <= this.revisionValue
     ) {
       return;
     }
-    if (commandSeq < this.lastCommandSeq) return;
-    this.lastCommandSeq = commandSeq;
+    if (revision < this.revisionValue && this.active.trackId === trackId) {
+      return;
+    }
+    this.revisionValue = Math.max(this.revisionValue, revision);
     if (this.lastEndedTrackId === trackId) this.lastEndedTrackId = null;
-    if (this.active.trackId === trackId) return;
+    if (this.active.trackId === trackId && !epochChanged) return;
 
     this.cancelCrossfade();
-    if (this.standby.trackId === trackId) {
+    if (this.standby.trackId === trackId && !epochChanged) {
       this.promoteStandby(startAt);
       return;
     }
@@ -381,6 +396,7 @@ export class BrowserAudioEngine {
           ? ended.audio.duration
           : this.currentTimeValue,
         trackId: ended.trackId ?? undefined,
+        fromTrackId: ended.trackId ?? undefined,
       });
       return;
     }
@@ -401,6 +417,7 @@ export class BrowserAudioEngine {
       state: "play",
       elapsed: 0,
       trackId: this.active.trackId ?? undefined,
+      fromTrackId: endedTrackId ?? undefined,
     });
     this.playActive();
   }
@@ -463,6 +480,7 @@ export class BrowserAudioEngine {
       state: "play",
       elapsed: 0,
       trackId: incoming.trackId ?? undefined,
+      fromTrackId: outgoing.trackId ?? undefined,
     });
 
     this.crossfadeTimer = setTimeout(() => this.finishCrossfade(), fade * 1000);
@@ -648,6 +666,7 @@ export class BrowserAudioEngine {
       ...report,
       elapsed: report.elapsed ?? this.currentTimeValue,
       trackId: report.trackId ?? this.active.trackId ?? undefined,
+      epoch: report.epoch ?? this.epochValue ?? undefined,
     };
     this.callbacks.onReport?.(enriched);
   }

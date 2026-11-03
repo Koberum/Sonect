@@ -37,6 +37,10 @@ export type PlaybackStatus = {
   buffering?: boolean;
   seekSeq?: number;
   crossfade?: number;
+  /** Identity of the engine instance that produced this status. */
+  epoch?: string;
+  /** Monotonic status revision within an epoch. */
+  revision?: number;
 };
 
 export type PlaybackSettings = {
@@ -53,6 +57,10 @@ export type PlayerReport = {
   elapsed?: number;
   event?: "playing" | "paused" | "ended" | "advance" | "waiting";
   trackId?: number;
+  /** Engine epoch the report belongs to (stale reports are ignored). */
+  epoch?: string;
+  /** Track that actually ended, used to fence in-flight advance reports. */
+  fromTrackId?: number;
 };
 
 export type QueuedTrack = {

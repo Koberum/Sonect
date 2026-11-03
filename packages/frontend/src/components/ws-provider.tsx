@@ -39,6 +39,7 @@ export function usePlayerSocket(): PlayerSocketContextValue {
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const {
     setPlaybackStatus,
+    applyPlaybackStatus,
     setTrackPlayed,
     setSyncProgress,
     setSyncError,
@@ -51,6 +52,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
   const settersRef = useRef({
     setPlaybackStatus,
+    applyPlaybackStatus,
     setTrackPlayed,
     setSyncProgress,
     setSyncError,
@@ -63,6 +65,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     settersRef.current = {
       setPlaybackStatus,
+      applyPlaybackStatus,
       setTrackPlayed,
       setSyncProgress,
       setSyncError,
@@ -105,6 +108,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     const {
       setPlaybackStatus,
+      applyPlaybackStatus,
       setTrackPlayed,
       setSyncProgress,
       setSyncError,
@@ -253,7 +257,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
               activeDeviceType?: string | null;
             };
 
-            setPlaybackStatus({
+            applyPlaybackStatus({
               track: pd.track,
               elapsed: pd.elapsed,
               duration: pd.duration,
@@ -274,6 +278,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
               buffering: pd.buffering ?? false,
               seekSeq: pd.seekSeq ?? 0,
               crossfade: pd.crossfade ?? 0,
+              epoch: pd.epoch,
+              revision: pd.revision,
             });
             if ("activeDeviceId" in pd) {
               setActiveDeviceId(pd.activeDeviceId ?? null);

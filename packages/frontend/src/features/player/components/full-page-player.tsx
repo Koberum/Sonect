@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Play, X } from "lucide-react";
+import type { PlaybackStatus } from "@repo/types";
 import { Button } from "@/components/ui/button";
 import { PlaybackControls } from "./playback-controls";
 import { PlaybackWaveform } from "./playback-waveform";
@@ -45,19 +46,21 @@ export function FullPagePlayer({
   open = true,
 }: FullPagePlayerProps) {
   const { t } = useTranslation();
-  const { trackPlayed, playbackStatus, outputMode } = usePlaybackContext();
+  const { trackPlayed, playbackStatus, outputMode, applyPlaybackStatus } =
+    usePlaybackContext();
   const qc = useQueryClient();
   const { data: queue = [] } = useQuery(playerQueries.queue(open));
-  const doToggle = (fn: () => Promise<void>) => fn();
+  const doToggle = (fn: () => Promise<PlaybackStatus>) =>
+    fn().then(applyPlaybackStatus);
 
   const handlePlay = async (pos: number) => {
-    await playQueueItem(pos);
+    applyPlaybackStatus(await playQueueItem(pos));
     await qc.invalidateQueries({ queryKey: qk.player.queue() });
   };
 
   const handleRemove = async (e: React.MouseEvent, pos: number) => {
     e.stopPropagation();
-    await removeFromQueue(pos);
+    applyPlaybackStatus(await removeFromQueue(pos));
     qc.setQueryData(qk.player.queue(), (old: typeof queue) =>
       old ? old.filter((tr) => tr.pos !== pos) : old,
     );
@@ -121,12 +124,22 @@ export function FullPagePlayer({
         <PlaybackControls
           playbackStatus={playbackStatus}
           playTrack={() => {
-            if (trackPlayed) return playSong(trackPlayed);
+            if (trackPlayed) {
+              void playSong(trackPlayed).then(applyPlaybackStatus);
+            }
           }}
-          pauseTrack={() => pauseSong()}
-          resumeTrack={() => resumeSong()}
-          nextTrack={() => nextTrack()}
-          previousTrack={() => previousTrack()}
+          pauseTrack={() => {
+            void pauseSong().then(applyPlaybackStatus);
+          }}
+          resumeTrack={() => {
+            void resumeSong().then(applyPlaybackStatus);
+          }}
+          nextTrack={() => {
+            void nextTrack().then(applyPlaybackStatus);
+          }}
+          previousTrack={() => {
+            void previousTrack().then(applyPlaybackStatus);
+          }}
           setRandom={(enabled) => doToggle(() => setRandom(enabled))}
           setRepeat={(enabled) => doToggle(() => setRepeat(enabled))}
           showAllControls

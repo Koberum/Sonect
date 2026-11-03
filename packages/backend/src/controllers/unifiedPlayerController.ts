@@ -74,7 +74,7 @@ export const unifiedPlayHandler = asyncHandler(
       );
       throw err;
     }
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -104,7 +104,7 @@ export const unifiedPauseHandler = asyncHandler(
       );
       throw err;
     }
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -134,7 +134,7 @@ export const unifiedResumeHandler = asyncHandler(
       );
       throw err;
     }
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -160,7 +160,7 @@ export const unifiedNextHandler = asyncHandler(
       );
       throw err;
     }
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -190,7 +190,7 @@ export const unifiedPreviousHandler = asyncHandler(
       );
       throw err;
     }
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -222,7 +222,7 @@ export const unifiedSeekHandler = asyncHandler(
       );
       throw err;
     }
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -248,7 +248,7 @@ export const unifiedAddToQueueHandler = asyncHandler(
       },
     );
     await router().forSession(sid).addToQueue(file);
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -265,7 +265,7 @@ export const unifiedRemoveFromQueueHandler = asyncHandler(
       },
     );
     await router().forSession(sid).removeFromQueue(pos);
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -282,7 +282,7 @@ export const unifiedPlayPositionHandler = asyncHandler(
       },
     );
     await router().forSession(sid).playPosition(pos);
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -300,7 +300,7 @@ export const unifiedSetVolumeHandler = asyncHandler(
     );
     // Browser volume is stored per-profile in PlayerRouter; MPD delegates to engine
     await router().setVolume(sid, volume);
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -419,7 +419,7 @@ export const unifiedEnableRandomHandler = asyncHandler(
       },
     );
     await router().forSession(sid).enableRandom(enabled);
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -436,6 +436,6 @@ export const unifiedEnableRepeatHandler = asyncHandler(
       },
     );
     await router().forSession(sid).enableRepeat(enabled);
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );

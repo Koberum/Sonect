@@ -45,6 +45,8 @@ export const playerSchemas = {
         .enum(["playing", "paused", "ended", "advance", "waiting"])
         .optional(),
       trackId: z.number().int().positive().optional(),
+      epoch: z.string().optional(),
+      fromTrackId: z.number().int().positive().optional(),
     })
     .refine(
       (value) =>
