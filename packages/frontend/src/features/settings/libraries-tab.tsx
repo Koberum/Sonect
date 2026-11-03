@@ -4,6 +4,7 @@ import {
   ChevronDown,
   Copy,
   FolderPlus,
+  FolderSearch,
   HardDrive,
   Loader2,
   Plus,
@@ -17,8 +18,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ItemGroup } from "@/components/ui/item";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,7 +38,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -75,7 +78,6 @@ export function LibrariesTab() {
 
   const sources = sourcesQuery.data ?? [];
   const detected = (detectedQuery.data ?? []).filter((l) => !l.registered);
-  const hasError = sourcesQuery.isError || detectedQuery.isError;
 
   const openAddDialog = () => {
     setEditingId(null);
@@ -166,13 +168,8 @@ export function LibrariesTab() {
     }
   };
 
-  const retry = () => {
-    if (sourcesQuery.isError) void sourcesQuery.refetch();
-    if (detectedQuery.isError) void detectedQuery.refetch();
-  };
-
   const skeleton = (
-    <div className="space-y-2" aria-hidden="true">
+    <div className="flex flex-col gap-2" aria-hidden="true">
       {[0, 1, 2].map((i) => (
         <Skeleton key={i} className="h-16 w-full rounded-lg" />
       ))}
@@ -182,6 +179,7 @@ export function LibrariesTab() {
   return (
     <div className="flex flex-col gap-6">
       <SyncCard />
+
       <Card>
         <CardHeader>
           <CardTitle>{t("settings.libraries.title", "Libraries")}</CardTitle>
@@ -198,46 +196,47 @@ export function LibrariesTab() {
             </Button>
           </CardAction>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {hasError && (
-            <div
-              role="alert"
-              className="border-destructive/50 bg-destructive/10 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
+        <CardContent className="flex flex-col gap-4">
+          {sourcesQuery.isError ? (
+            <Alert
+              variant="destructive"
+              className="flex flex-wrap items-center justify-between gap-3"
             >
-              <p className="text-destructive text-sm">
+              <AlertDescription>
                 {t("settings.libraries.loadError", "Couldn't load libraries")}
-              </p>
-              <Button variant="outline" size="sm" onClick={retry}>
+              </AlertDescription>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void sourcesQuery.refetch()}
+              >
                 {t("common.retry", "Retry")}
               </Button>
-            </div>
-          )}
-
-          <section className="space-y-3">
-            {sourcesQuery.isPending ? (
-              skeleton
-            ) : sources.length === 0 ? (
-              hasError ? null : (
-                <EmptyState
-                  icon={FolderPlus}
-                  title={t(
-                    "settings.libraries.noSources",
-                    "No libraries configured",
-                  )}
-                  description={t(
-                    "settings.libraries.noSourcesDescription",
-                    "Bind-mount a folder into the container, then register it here.",
-                  )}
-                  action={
-                    <Button variant="outline" onClick={openAddDialog}>
-                      <Plus />
-                      {t("settings.libraries.addManual", "Add manually")}
-                    </Button>
-                  }
-                />
-              )
-            ) : (
-              sources.map((src) => (
+            </Alert>
+          ) : sourcesQuery.isPending ? (
+            skeleton
+          ) : sources.length === 0 ? (
+            <EmptyState
+              icon={FolderPlus}
+              title={t(
+                "settings.libraries.noSources",
+                "No libraries configured",
+              )}
+              description={t(
+                "settings.libraries.noSourcesDescription",
+                "Bind-mount a folder into the container, then register it here.",
+              )}
+              action={
+                <Button variant="outline" onClick={openAddDialog}>
+                  <Plus />
+                  {t("settings.libraries.addManual", "Add manually")}
+                </Button>
+              }
+              className="py-6"
+            />
+          ) : (
+            <ItemGroup>
+              {sources.map((src) => (
                 <RegisteredLibraryRow
                   key={src.id}
                   source={src}
@@ -250,122 +249,9 @@ export function LibrariesTab() {
                     setDeletingSource({ id: src.id, name: src.name })
                   }
                 />
-              ))
-            )}
-          </section>
-
-          <section className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="flex items-center gap-2 text-sm font-medium">
-                <HardDrive className="text-muted-foreground size-4" />
-                {t("settings.libraries.detected", "Detected libraries")}
-              </h2>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="bare"
-                    size="icon-sm"
-                    onClick={() => void detectedQuery.refetch()}
-                    disabled={detectedQuery.isFetching}
-                    aria-label={t(
-                      "settings.libraries.refreshDetected",
-                      "Refresh list",
-                    )}
-                  >
-                    <RefreshCw
-                      className={cn(detectedQuery.isFetching && "animate-spin")}
-                    />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {t("settings.libraries.refreshDetected", "Refresh list")}
-                </TooltipContent>
-              </Tooltip>
-            </div>
-            {detectedQuery.isPending ? (
-              skeleton
-            ) : detected.length === 0 ? (
-              hasError ? null : (
-                <p className="text-muted-foreground text-sm">
-                  {t(
-                    "settings.libraries.noDetected",
-                    "No folders detected under the music directory.",
-                  )}
-                </p>
-              )
-            ) : (
-              <div className="space-y-2">
-                {detected.map((lib) => (
-                  <DetectedLibraryRow
-                    key={lib.path}
-                    lib={lib}
-                    isAdding={
-                      createMut.isPending &&
-                      createMut.variables?.path === lib.path
-                    }
-                    isComputing={
-                      computeMut.isPending && computeMut.variables === lib.path
-                    }
-                    onAdd={() => handleAddDetected(lib)}
-                    onCompute={() => handleComputeStats(lib)}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-
-          <div className="rounded-lg border">
-            <button
-              type="button"
-              className="flex w-full items-center justify-between gap-2 p-3 text-left text-sm font-medium"
-              onClick={() => setSnippetOpen((open) => !open)}
-              aria-expanded={snippetOpen}
-            >
-              {t("settings.libraries.snippetTitle", "How to add more folders")}
-              <ChevronDown
-                className={cn(
-                  "text-muted-foreground size-4 transition-transform",
-                  snippetOpen && "rotate-180",
-                )}
-              />
-            </button>
-            {snippetOpen && (
-              <div className="space-y-2 border-t p-3">
-                <p className="text-muted-foreground text-xs">
-                  {t(
-                    "settings.libraries.snippetHint",
-                    "The host bind-mounts a folder into the container; register it here.",
-                  )}
-                </p>
-                <div className="flex items-start gap-2">
-                  <pre className="bg-muted flex-1 overflow-x-auto rounded-md p-3 font-mono text-xs">
-                    {composeSnippet(detected[0])}
-                  </pre>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="bare"
-                        size="icon-sm"
-                        onClick={copySnippet}
-                        aria-label={t(
-                          "settings.libraries.copySnippet",
-                          "Copy compose snippet",
-                        )}
-                      >
-                        <Copy />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {t(
-                        "settings.libraries.copySnippet",
-                        "Copy compose snippet",
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
-            )}
-          </div>
+              ))}
+            </ItemGroup>
+          )}
         </CardContent>
 
         <LibrariesForm
@@ -416,6 +302,142 @@ export function LibrariesTab() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <HardDrive className="text-muted-foreground size-4" />
+            {t("settings.libraries.detected", "Detected libraries")}
+          </CardTitle>
+          <CardAction>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="bare"
+                  size="icon-sm"
+                  onClick={() => void detectedQuery.refetch()}
+                  disabled={detectedQuery.isFetching}
+                  aria-label={t(
+                    "settings.libraries.refreshDetected",
+                    "Refresh list",
+                  )}
+                >
+                  <RefreshCw
+                    className={cn(detectedQuery.isFetching && "animate-spin")}
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {t("settings.libraries.refreshDetected", "Refresh list")}
+              </TooltipContent>
+            </Tooltip>
+          </CardAction>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {detectedQuery.isError ? (
+            <Alert
+              variant="destructive"
+              className="flex flex-wrap items-center justify-between gap-3"
+            >
+              <AlertDescription>
+                {t(
+                  "settings.libraries.loadDetectedError",
+                  "Couldn't load detected folders",
+                )}
+              </AlertDescription>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void detectedQuery.refetch()}
+              >
+                {t("common.retry", "Retry")}
+              </Button>
+            </Alert>
+          ) : detectedQuery.isPending ? (
+            skeleton
+          ) : detected.length === 0 ? (
+            <EmptyState
+              icon={FolderSearch}
+              title={t(
+                "settings.libraries.noDetected",
+                "No folders detected under the music directory.",
+              )}
+              className="py-6"
+            />
+          ) : (
+            <ItemGroup>
+              {detected.map((lib) => (
+                <DetectedLibraryRow
+                  key={lib.path}
+                  lib={lib}
+                  isAdding={
+                    createMut.isPending &&
+                    createMut.variables?.path === lib.path
+                  }
+                  isComputing={
+                    computeMut.isPending && computeMut.variables === lib.path
+                  }
+                  onAdd={() => handleAddDetected(lib)}
+                  onCompute={() => handleComputeStats(lib)}
+                />
+              ))}
+            </ItemGroup>
+          )}
+
+          <div className="rounded-lg border">
+            <button
+              type="button"
+              className="flex w-full items-center justify-between gap-2 p-3 text-left text-sm font-medium"
+              onClick={() => setSnippetOpen((open) => !open)}
+              aria-expanded={snippetOpen}
+            >
+              {t("settings.libraries.snippetTitle", "How to add more folders")}
+              <ChevronDown
+                className={cn(
+                  "text-muted-foreground size-4 transition-transform",
+                  snippetOpen && "rotate-180",
+                )}
+              />
+            </button>
+            {snippetOpen && (
+              <div className="flex flex-col gap-2 border-t p-3">
+                <p className="text-muted-foreground text-xs">
+                  {t(
+                    "settings.libraries.snippetHint",
+                    "The host bind-mounts a folder into the container; register it here.",
+                  )}
+                </p>
+                <div className="flex items-start gap-2">
+                  <pre className="bg-muted flex-1 overflow-x-auto rounded-md p-3 font-mono text-xs">
+                    {composeSnippet(detected[0])}
+                  </pre>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="bare"
+                        size="icon-sm"
+                        onClick={copySnippet}
+                        aria-label={t(
+                          "settings.libraries.copySnippet",
+                          "Copy compose snippet",
+                        )}
+                      >
+                        <Copy />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {t(
+                        "settings.libraries.copySnippet",
+                        "Copy compose snippet",
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
       </Card>
     </div>
   );

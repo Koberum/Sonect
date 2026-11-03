@@ -1,6 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import {
   useLibrarySourceForm,
   type LibrarySourceFormValues,
@@ -16,7 +22,6 @@ interface LibrarySourceFormProps {
   setForm: LibrarySourceFormState["setForm"];
   errors: LibrarySourceFormState["errors"];
   handleFieldBlur: LibrarySourceFormState["handleFieldBlur"];
-  fieldClass: LibrarySourceFormState["fieldClass"];
   formId?: string;
   onSubmit?: () => void;
 }
@@ -26,7 +31,6 @@ export function LibrarySourceForm({
   setForm,
   errors,
   handleFieldBlur,
-  fieldClass,
   formId = "library-source-form",
   onSubmit,
 }: LibrarySourceFormProps) {
@@ -35,54 +39,52 @@ export function LibrarySourceForm({
   return (
     <form
       id={formId}
-      className="space-y-4"
+      className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit?.();
       }}
     >
-      <div className="space-y-2">
-        <Label htmlFor={`${formId}-name`}>
-          {t("settings.libraries.name", "Name")}
-        </Label>
-        <Input
-          id={`${formId}-name`}
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          onBlur={() => handleFieldBlur("name")}
-          placeholder={t("settings.libraries.namePlaceholder", "My Music")}
-          className={fieldClass("name")}
-        />
-        {errors.name && (
-          <p className="text-destructive mt-1 text-xs">{errors.name}</p>
-        )}
-      </div>
+      <FieldGroup className="gap-4">
+        <Field data-invalid={!!errors.name}>
+          <FieldLabel htmlFor={`${formId}-name`}>
+            {t("settings.libraries.name", "Name")}
+          </FieldLabel>
+          <Input
+            id={`${formId}-name`}
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            onBlur={() => handleFieldBlur("name")}
+            aria-invalid={!!errors.name}
+            placeholder={t("settings.libraries.namePlaceholder", "My Music")}
+          />
+          <FieldError>{errors.name}</FieldError>
+        </Field>
 
-      <div className="space-y-2">
-        <Label htmlFor={`${formId}-path`}>
-          {t("settings.libraries.path", "Folder Path")}
-        </Label>
-        <Input
-          id={`${formId}-path`}
-          value={form.path}
-          onChange={(e) => setForm({ ...form, path: e.target.value })}
-          onBlur={() => handleFieldBlur("path")}
-          placeholder={t(
-            "settings.libraries.pathPlaceholder",
-            "/libraries/music",
-          )}
-          className={fieldClass("path")}
-        />
-        {errors.path && (
-          <p className="text-destructive mt-1 text-xs">{errors.path}</p>
-        )}
-        <p className="text-muted-foreground mt-1 text-xs">
-          {t(
-            "settings.libraries.pathHint",
-            "Folder inside the container, under the music directory. Add it as a bind mount on the host.",
-          )}
-        </p>
-      </div>
+        <Field data-invalid={!!errors.path}>
+          <FieldLabel htmlFor={`${formId}-path`}>
+            {t("settings.libraries.path", "Folder Path")}
+          </FieldLabel>
+          <Input
+            id={`${formId}-path`}
+            value={form.path}
+            onChange={(e) => setForm({ ...form, path: e.target.value })}
+            onBlur={() => handleFieldBlur("path")}
+            aria-invalid={!!errors.path}
+            placeholder={t(
+              "settings.libraries.pathPlaceholder",
+              "/libraries/music",
+            )}
+          />
+          <FieldDescription>
+            {t(
+              "settings.libraries.pathHint",
+              "Folder inside the container, under the music directory. Add it as a bind mount on the host.",
+            )}
+          </FieldDescription>
+          <FieldError>{errors.path}</FieldError>
+        </Field>
+      </FieldGroup>
     </form>
   );
 }

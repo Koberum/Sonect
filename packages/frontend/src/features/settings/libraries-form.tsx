@@ -47,7 +47,6 @@ function LibrariesFormFields({
         setForm={form.setForm}
         errors={form.errors}
         handleFieldBlur={form.handleFieldBlur}
-        fieldClass={form.fieldClass}
         formId={formId}
         onSubmit={form.submit}
       />
@@ -56,7 +55,7 @@ function LibrariesFormFields({
           {t("common.cancel", "Cancel")}
         </Button>
         <Button type="submit" form={formId} disabled={form.saving}>
-          {form.saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {form.saving && <Loader2 className="animate-spin" />}
           {editingId
             ? t("settings.libraries.save", "Save")
             : t("settings.libraries.create", "Create")}

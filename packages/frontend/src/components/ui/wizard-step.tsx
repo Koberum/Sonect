@@ -55,7 +55,7 @@ function WizardStepContent({
   return (
     <div
       data-slot="wizard-step-content"
-      className={cn("w-full space-y-4 p-6", className)}
+      className={cn("flex w-full flex-col gap-4 p-6", className)}
       {...props}
     />
   );
@@ -65,7 +65,7 @@ function WizardStepField({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="wizard-step-field"
-      className={cn("space-y-2", className)}
+      className={cn("flex flex-col gap-2", className)}
       {...props}
     />
   );

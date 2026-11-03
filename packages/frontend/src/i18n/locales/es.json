@@ -217,6 +217,7 @@
   "settings": {
     "title": "Ajustes",
     "description": "Configura tu sistema",
+    "sectionLabel": "Sección",
     "tabs": {
       "audio": "Audio",
       "playback": "Reproducción",
@@ -297,15 +298,19 @@
       "formDescription": "Registra una carpeta que esté montada en el contenedor.",
       "required": "Obligatorio",
       "loadError": "No se pudieron cargar las bibliotecas",
+      "loadDetectedError": "No se pudieron cargar las carpetas detectadas",
       "addedToast": "Biblioteca añadida"
     },
     "appearance": {
+      "description": "Personaliza el aspecto y el idioma de Sonect.",
       "theme": "Tema",
       "themeDescription": "Elige tu tema preferido",
       "language": "Idioma",
       "languageDescription": "Elige tu idioma preferido"
     },
     "debug": {
+      "system": "Sistema",
+      "systemDescription": "Estado del demonio MPD y uso del hardware.",
       "mpdStatus": "Estado de MPD",
       "mpdStatusDescription": "Verifica y controla el demonio MPD.",
       "checkMpd": "Verificar MPD",
@@ -316,7 +321,10 @@
       "environmentDescription": "Valores de configuración de compilación y tiempo de ejecución.",
       "version": "Versión",
       "versionUnavailable": "No disponible",
+      "dangerZone": "Zona de peligro",
+      "dangerZoneDescription": "Las acciones aquí restablecen partes de la configuración y no se pueden deshacer.",
       "hardware": {
+        "title": "Hardware",
         "loading": "Cargando estadísticas del sistema...",
         "cpu": "CPU",
         "cores": "{{count}} núcleos",

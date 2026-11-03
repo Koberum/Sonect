@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Loader2 } from "lucide-react";
+import { Loader2, VolumeX } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -8,24 +8,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  SelectGroup,
-} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { AudioDeviceList } from "./audio-device-list";
 import { toast } from "sonner";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { systemQueries, systemMutations } from "@/features/system/queries";
 
 export function AudioTab() {
   const { t } = useTranslation();
-  const { data: devices = [], isPending: fetching } = useQuery(
-    systemQueries.audioDevices(),
-  );
+  const devicesQuery = useQuery(systemQueries.audioDevices());
+  const { data: devices = [] } = devicesQuery;
   const { data: audioStatus } = useQuery(systemQueries.audioStatus());
   const [selected, setSelected] = useState<string>("");
   const userSelected = useRef(false);
@@ -71,40 +67,57 @@ export function AudioTab() {
         <CardTitle>{t("settings.audio.title")}</CardTitle>
         <CardDescription>{t("settings.audio.description")}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {fetching ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+      <CardContent className="flex flex-col gap-4">
+        {devicesQuery.isError ? (
+          <Alert
+            variant="destructive"
+            className="flex flex-wrap items-center justify-between gap-3"
+          >
+            <AlertDescription>{t("settings.audio.loadError")}</AlertDescription>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void devicesQuery.refetch()}
+            >
+              {t("common.retry")}
+            </Button>
+          </Alert>
+        ) : devicesQuery.isPending ? (
+          <div className="flex flex-col gap-2" aria-hidden="true">
+            {[0, 1].map((i) => (
+              <Skeleton key={i} className="h-16 w-full rounded-lg" />
+            ))}
           </div>
         ) : devices.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            {t("settings.audio.noDevices")}
-          </p>
-        ) : null}
-        <Select
-          value={selected}
-          onValueChange={(value) => {
-            userSelected.current = true;
-            setSelected(value);
-          }}
-        >
-          <SelectTrigger className="w-full sm:w-64">
-            <SelectValue placeholder={t("settings.audio.noDevices")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {devices.map((device) => (
-                <SelectItem key={device.card} value={device.card}>
-                  {device.description || device.name} - {device.card}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+          <EmptyState
+            icon={VolumeX}
+            title={t("settings.audio.noDevices")}
+            className="py-6"
+          />
+        ) : (
+          <AudioDeviceList
+            devices={devices}
+            value={selected}
+            currentCard={audioStatus?.card}
+            onValueChange={(value) => {
+              userSelected.current = true;
+              setSelected(value);
+            }}
+          />
+        )}
 
-        <Button onClick={handleApply} disabled={!selected || loading}>
-          {loading ? t("settings.audio.applying") : t("settings.audio.apply")}
-        </Button>
+        <Separator />
+
+        <div className="flex justify-end">
+          <Button
+            onClick={handleApply}
+            disabled={!selected || loading}
+            className="w-full sm:w-auto"
+          >
+            {loading ? <Loader2 className="animate-spin" /> : null}
+            {loading ? t("settings.audio.applying") : t("settings.audio.apply")}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

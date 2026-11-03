@@ -3,6 +3,9 @@ import { Cpu, MemoryStick } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { systemQueries } from "@/features/system/queries";
 import { formatBytes } from "@/lib/format";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function formatUptime(seconds: number): string {
   const d = Math.floor(seconds / 86400);
@@ -13,25 +16,21 @@ function formatUptime(seconds: number): string {
   return `${m}m`;
 }
 
-function ProgressBar({ value, color }: { value: number; color: string }) {
-  return (
-    <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
-      <div
-        className={`h-full rounded-full transition-all duration-500 ${color}`}
-        style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
-      />
-    </div>
-  );
-}
-
 export function HardwareMonitor() {
   const { t } = useTranslation();
   const { data: usage } = useQuery(systemQueries.hardwareUsage(true));
 
   if (!usage) {
     return (
-      <div className="text-muted-foreground text-center text-sm">
-        {t("settings.debug.hardware.loading")}
+      <div className="flex flex-col gap-4" aria-hidden="true">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-2 w-full" />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-2 w-full" />
+        </div>
       </div>
     );
   }
@@ -51,16 +50,16 @@ export function HardwareMonitor() {
         : "bg-success";
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center gap-1.5 font-medium">
-            <Cpu className="h-3.5 w-3.5" />
+          <span className="flex items-center gap-2 font-medium">
+            <Cpu className="size-4" />
             {t("settings.debug.hardware.cpu")}
           </span>
           <span className="tabular-nums">{usage.cpu.usage}%</span>
         </div>
-        <ProgressBar value={usage.cpu.usage} color={cpuColor} />
+        <Progress value={usage.cpu.usage} indicatorClassName={cpuColor} />
         <div className="text-muted-foreground flex justify-between text-xs">
           <span>
             {t("settings.debug.hardware.cores", { count: usage.cpu.cores })}
@@ -72,17 +71,20 @@ export function HardwareMonitor() {
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center gap-1.5 font-medium">
-            <MemoryStick className="h-3.5 w-3.5" />
+          <span className="flex items-center gap-2 font-medium">
+            <MemoryStick className="size-4" />
             {t("settings.debug.hardware.ram")}
           </span>
           <span className="tabular-nums">
             {formatBytes(usage.ram.used)} / {formatBytes(usage.ram.total)}
           </span>
         </div>
-        <ProgressBar value={usage.ram.usagePercent} color={ramColor} />
+        <Progress
+          value={usage.ram.usagePercent}
+          indicatorClassName={ramColor}
+        />
         <div className="text-muted-foreground flex justify-between text-xs">
           <span>
             {t("settings.debug.hardware.free")} {formatBytes(usage.ram.free)}
@@ -91,7 +93,9 @@ export function HardwareMonitor() {
         </div>
       </div>
 
-      <div className="text-muted-foreground border-t pt-2 text-xs">
+      <Separator />
+
+      <div className="text-muted-foreground flex flex-col gap-1 text-xs">
         <div className="flex justify-between">
           <span>{t("settings.debug.hardware.processRss")}</span>
           <span className="tabular-nums">{formatBytes(usage.process.rss)}</span>

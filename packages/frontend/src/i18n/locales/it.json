@@ -217,6 +217,7 @@
   "settings": {
     "title": "Impostazioni",
     "description": "Configura il tuo sistema",
+    "sectionLabel": "Sezione",
     "tabs": {
       "audio": "Audio",
       "playback": "Riproduzione",
@@ -297,15 +298,19 @@
       "formDescription": "Registra una cartella montata nel container.",
       "required": "Obbligatorio",
       "loadError": "Impossibile caricare le librerie",
+      "loadDetectedError": "Impossibile caricare le cartelle rilevate",
       "addedToast": "Libreria aggiunta"
     },
     "appearance": {
+      "description": "Personalizza l'aspetto e la lingua di Sonect.",
       "theme": "Tema",
       "themeDescription": "Scegli il tuo tema preferito",
       "language": "Lingua",
       "languageDescription": "Scegli la tua lingua preferita"
     },
     "debug": {
+      "system": "Sistema",
+      "systemDescription": "Stato del demone MPD e utilizzo hardware.",
       "mpdStatus": "Stato MPD",
       "mpdStatusDescription": "Controlla il demone MPD.",
       "checkMpd": "Controlla Stato MPD",
@@ -316,7 +321,10 @@
       "environmentDescription": "Valori di configurazione build e runtime.",
       "version": "Versione",
       "versionUnavailable": "Non disponibile",
+      "dangerZone": "Zona pericolosa",
+      "dangerZoneDescription": "Le azioni qui azzerano parti della configurazione e non possono essere annullate.",
       "hardware": {
+        "title": "Hardware",
         "loading": "Caricamento statistiche hardware...",
         "cpu": "CPU",
         "cores": "{{count}} core",

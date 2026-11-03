@@ -46,11 +46,6 @@ export function useLibrarySourceForm({
     });
   };
 
-  const fieldClass = (field: string) =>
-    errors[field]
-      ? "border-destructive focus-visible:ring-destructive focus-visible:border-destructive"
-      : "";
-
   const submit = () => {
     if (!validate()) return;
     setSaving(true);
@@ -67,7 +62,6 @@ export function useLibrarySourceForm({
     saving,
     validate,
     handleFieldBlur,
-    fieldClass,
     submit,
   };
 }

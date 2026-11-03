@@ -217,6 +217,7 @@
   "settings": {
     "title": "Settings",
     "description": "Configure your system",
+    "sectionLabel": "Section",
     "tabs": {
       "audio": "Audio",
       "playback": "Playback",
@@ -297,15 +298,19 @@
       "formDescription": "Register a folder that is bind-mounted into the container.",
       "required": "Required",
       "loadError": "Couldn't load libraries",
+      "loadDetectedError": "Couldn't load detected folders",
       "addedToast": "Library added"
     },
     "appearance": {
+      "description": "Customize how Sonect looks and reads for you.",
       "theme": "Theme",
       "themeDescription": "Choose your preferred theme",
       "language": "Language",
       "languageDescription": "Choose your preferred language"
     },
     "debug": {
+      "system": "System",
+      "systemDescription": "MPD daemon status and hardware usage.",
       "mpdStatus": "MPD Status",
       "mpdStatusDescription": "Check and control the MPD daemon.",
       "checkMpd": "Check MPD Status",
@@ -316,7 +321,10 @@
       "environmentDescription": "Build and runtime configuration values.",
       "version": "Version",
       "versionUnavailable": "Unavailable",
+      "dangerZone": "Danger zone",
+      "dangerZoneDescription": "Actions here reset parts of the setup and cannot be undone.",
       "hardware": {
+        "title": "Hardware",
         "loading": "Loading hardware stats...",
         "cpu": "CPU",
         "cores": "{{count}} cores",
