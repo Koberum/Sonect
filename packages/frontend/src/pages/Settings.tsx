@@ -18,7 +18,6 @@ export function Settings() {
       title={t("settings.title")}
       description={t("settings.description")}
       tabs={TABS}
-      className="mx-auto w-full max-w-5xl"
     />
   );
 }
