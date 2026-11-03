@@ -6,6 +6,7 @@ import {
   eq,
   isNull,
   isNotNull,
+  inArray,
   like,
   ne,
   or,
@@ -232,20 +233,38 @@ export const albumsDb = {
       .all() as Album[];
   },
 
-  getCoverPreviews(artistId: number, limit: number): string[] {
-    return db()
-      .select({ cover_path: albums.cover_path })
+  getCoverPreviewsForArtists(
+    artistIds: number[],
+    limit = 4,
+  ): Map<number, string[]> {
+    if (artistIds.length === 0) return new Map();
+
+    const rows = db()
+      .select({
+        artist_id: albums.artist_id,
+        cover_path: albums.cover_path,
+      })
       .from(albums)
       .where(
         and(
-          eq(albums.artist_id, artistId),
+          inArray(albums.artist_id, artistIds),
           isNotNull(albums.cover_path),
           ne(albums.cover_path, ""),
         ),
       )
-      .limit(limit)
-      .all()
-      .map((row) => row.cover_path as string);
+      .orderBy(asc(albums.artist_id), desc(albums.created_at), asc(albums.id))
+      .all();
+
+    const previews = new Map<number, string[]>();
+    for (const row of rows) {
+      if (row.artist_id === null) continue;
+      const list = previews.get(row.artist_id) ?? [];
+      if (list.length < limit && row.cover_path) {
+        list.push(row.cover_path);
+        previews.set(row.artist_id, list);
+      }
+    }
+    return previews;
   },
 
   getByTitleAndArtist(title: string, artistName: string): Album | undefined {

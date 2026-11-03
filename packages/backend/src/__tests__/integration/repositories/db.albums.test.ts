@@ -188,26 +188,31 @@ describe("albumsDb (trophy integration)", () => {
       for (let i = 0; i < 25; i++) findOrCreateAlbum(db(), `SearchAl${i}`);
       expect(albumsDb.search("SearchAl")).to.have.length(20);
     });
-    it("getCoverPreviews filters NULL and empty", () => {
+    it("getCoverPreviewsForArtists filters NULL, empty and unknown artists", () => {
       const aid = findOrCreateArtist(db(), "CoverArtist");
       const id1 = findOrCreateAlbum(db(), "WithCover", aid);
       findOrCreateAlbum(db(), "NoCover", aid);
       const id3 = findOrCreateAlbum(db(), "EmptyCover", aid);
       albumsDb.updateCoverPath(id1, "covers/a.jpg");
       albumsDb.updateCoverPath(id3, "");
-      expect(albumsDb.getCoverPreviews(aid, 10)).to.deep.equal([
-        "covers/a.jpg",
-      ]);
-      expect(albumsDb.getCoverPreviews(aid, 1)).to.have.length(1);
-      expect(albumsDb.getCoverPreviews(99999, 10)).to.deep.equal([]);
+      const previews = albumsDb.getCoverPreviewsForArtists([aid, 99999]);
+      expect(previews.get(aid)).to.deep.equal(["covers/a.jpg"]);
+      expect(previews.has(99999)).to.be.false;
+      expect(albumsDb.getCoverPreviewsForArtists([]).size).to.equal(0);
     });
-    it("getCoverPreviews respects limit", () => {
+    it("getCoverPreviewsForArtists respects the per-artist limit", () => {
       const aid = findOrCreateArtist(db(), "LimitArtist");
+      const other = findOrCreateArtist(db(), "OtherArtist");
       for (let i = 0; i < 5; i++) {
         const id = findOrCreateAlbum(db(), `Al${i}`, aid);
         albumsDb.updateCoverPath(id, `covers/${i}.jpg`);
       }
-      expect(albumsDb.getCoverPreviews(aid, 2)).to.have.length(2);
+      const otherAlbum = findOrCreateAlbum(db(), "OtherAl", other);
+      albumsDb.updateCoverPath(otherAlbum, "covers/other.jpg");
+
+      const previews = albumsDb.getCoverPreviewsForArtists([aid, other], 2);
+      expect(previews.get(aid)).to.have.length(2);
+      expect(previews.get(other)).to.deep.equal(["covers/other.jpg"]);
     });
   });
 

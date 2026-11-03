@@ -49,9 +49,12 @@ export class CatalogServiceImpl implements CatalogService {
       offset,
       withAlbumsOnly: true,
     });
+    const previews = albumsDb.getCoverPreviewsForArtists(
+      artists.map((artist) => artist.id),
+    );
     return artists.map((artist) => ({
       ...artist,
-      coverPreviews: albumsDb.getCoverPreviews(artist.id, 4), // TODO: Optimize here with single sync join query on db
+      coverPreviews: previews.get(artist.id) ?? [],
     }));
   }
 
@@ -128,9 +131,12 @@ export class CatalogServiceImpl implements CatalogService {
     const matchedArtists = artistsDb.search(q, undefined, {
       withAlbumsOnly: true,
     });
+    const previews = albumsDb.getCoverPreviewsForArtists(
+      matchedArtists.map((artist) => artist.id),
+    );
     const artists = matchedArtists.map((artist) => ({
       ...artist,
-      coverPreviews: albumsDb.getCoverPreviews(artist.id, 4),
+      coverPreviews: previews.get(artist.id) ?? [],
     }));
     const albums = albumsDb.search(q);
     const tracks = tracksDb.search(query);
