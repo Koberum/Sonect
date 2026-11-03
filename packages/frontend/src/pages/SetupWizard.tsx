@@ -192,7 +192,7 @@ export default function SetupWizard() {
           )}
         </CardContent>
       </Card>
-      <Toaster />
+      <Toaster offset={{ bottom: 16 }} mobileOffset={{ bottom: 16 }} />
     </div>
   );
 }
