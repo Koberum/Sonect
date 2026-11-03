@@ -78,7 +78,7 @@ export function ArtistArtwork({
         </ContextMenuTrigger>
         <ContextMenuContent className="w-48">
           <ContextMenuItem
-            onClick={() => navigate(`/artists/${artist.id}/albums`)}
+            onClick={() => navigate(`/library/artists/${artist.id}`)}
           >
             {t("artists.titleSingle")}
           </ContextMenuItem>

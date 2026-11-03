@@ -47,9 +47,12 @@ no subscriptions, no limits.
   genre, playlist, search, queue, now playing) adds a song to the signed-in
   profile's Liked Songs. Liked Songs has Play All and Shuffle and is scoped per
   household member; the old flat Tracks page is gone.
-- **Playlists with drag & drop** — drag a track row from an album onto a
-  playlist in the left sidebar to add it instantly (desktop). The three-dot
-  track menu also offers "Add to playlist" for touch and keyboard use.
+- **Three-section navigation** — the sidebar has Home, Library, and Settings,
+  each opening a page with horizontal tabs: Home holds Listen Now, Playlists,
+  and Liked Songs; Library holds Albums, Artists, Genres, and Statistics;
+  Settings (admins) holds Audio, Playback, Libraries, Appearance, and Debug.
+- **Playlists** — create and browse them from Home → Playlists. The three-dot
+  track menu offers "Add to playlist" from any track list.
 - **Dashboard per profile** — Recently played albums, artists, and tracks, top
   tracks, suggestions, and the genre mix are all personal. Listening history is
   recorded separately per household member (MPD plays count for the profile

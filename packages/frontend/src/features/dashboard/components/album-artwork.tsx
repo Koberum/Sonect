@@ -76,7 +76,9 @@ export function AlbumArtwork({
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent className="w-48">
-          <ContextMenuItem onClick={() => navigate(`/albums/${album.id}`)}>
+          <ContextMenuItem
+            onClick={() => navigate(`/library/albums/${album.id}`)}
+          >
             {t("album.goToAlbum")}
           </ContextMenuItem>
           <ContextMenuSeparator />

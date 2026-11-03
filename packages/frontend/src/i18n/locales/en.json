@@ -11,15 +11,42 @@
     "trackCount": "{{count}} tracks",
     "trackCount_one": "{{count}} track"
   },
-  "sidebar": {
-    "discover": "Discover",
-    "listenNow": "Listen Now",
+  "nav": {
+    "label": "Sections",
+    "home": "Home",
     "library": "Library",
-    "artists": "Artists",
-    "statistics": "Statistics",
-    "playlists": "Playlists",
-    "refreshLibrary": "Refresh Library",
-    "refreshingLibrary": "Refreshing...",
+    "settings": "Settings"
+  },
+  "home": {
+    "title": "Home",
+    "description": "Your music, recently played and saved.",
+    "tabs": {
+      "listen": "Listen Now",
+      "playlists": "Playlists",
+      "liked": "Liked Songs"
+    }
+  },
+  "library": {
+    "title": "Library",
+    "description": "Browse albums, artists and genres in your collection.",
+    "tabs": {
+      "albums": "Albums",
+      "artists": "Artists",
+      "genres": "Genres",
+      "statistics": "Statistics"
+    }
+  },
+  "playlists": {
+    "title": "Playlists",
+    "description": "Collections you have built.",
+    "count_one": "{{count}} playlist",
+    "count_other": "{{count}} playlists",
+    "emptyTitle": "No playlists yet",
+    "emptyDescription": "Create a playlist to start collecting tracks.",
+    "createError": "Failed to create playlist",
+    "loadError": "Could not load your playlists."
+  },
+  "sidebar": {
     "toggleSidebar": "Toggle sidebar"
   },
   "artists": {

@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
-import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SortTabs } from "@/features/dashboard/components/sort-tabs";
@@ -46,10 +45,6 @@ export default function Albums() {
 
   return (
     <div>
-      <PageHeader
-        title={t("albums.title")}
-        description={t("albums.description")}
-      />
       <SortTabs
         value={sort}
         onValueChange={setSort}
@@ -72,7 +67,7 @@ export default function Albums() {
               album={album}
               aspectRatio="square"
               className="w-full"
-              onClick={() => navigate(`/albums/${album.id}`)}
+              onClick={() => navigate(`/library/albums/${album.id}`)}
             />
           ))
         )}

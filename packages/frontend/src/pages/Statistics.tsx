@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "react-i18next";
 import {
@@ -71,10 +70,6 @@ export function Statistics() {
   if (isPending || !stats) {
     return (
       <div>
-        <PageHeader
-          title={t("statistics.title")}
-          description={t("statistics.description")}
-        />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-24 w-full rounded-xl" />
@@ -86,15 +81,7 @@ export function Statistics() {
 
   return (
     <div>
-      <PageHeader
-        title={t("statistics.title", "Library Statistics")}
-        description={t(
-          "statistics.description",
-          "Overview of your music library",
-        )}
-      />
-
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
           title={t("statistics.totalTracks")}
           value={stats.totalTracks}

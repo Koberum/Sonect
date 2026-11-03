@@ -1,5 +1,4 @@
 import { ArtistArtwork } from "@/features/dashboard/components/artist-artwork";
-import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRef, useEffect } from "react";
@@ -36,10 +35,6 @@ export function Artists() {
 
   return (
     <div>
-      <PageHeader
-        title={t("artists.title")}
-        description={t("artists.description")}
-      />
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
         {isPending ? (
           Array.from({ length: 12 }).map((_, i) => (
@@ -56,7 +51,7 @@ export function Artists() {
               artist={artist}
               aspectRatio="square"
               className="w-full"
-              onClick={() => navigate(`/artists/${artist.id}/albums`)}
+              onClick={() => navigate(`/library/artists/${artist.id}`)}
             />
           ))
         )}

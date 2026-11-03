@@ -11,15 +11,42 @@
     "trackCount": "{{count}} pistas",
     "trackCount_one": "{{count}} pista"
   },
-  "sidebar": {
-    "discover": "Descubrir",
-    "listenNow": "Escuchar Ahora",
+  "nav": {
+    "label": "Secciones",
+    "home": "Inicio",
     "library": "Biblioteca",
-    "artists": "Artistas",
-    "statistics": "Estadísticas",
-    "playlists": "Listas",
-    "refreshLibrary": "Actualizar Biblioteca",
-    "refreshingLibrary": "Actualizando...",
+    "settings": "Ajustes"
+  },
+  "home": {
+    "title": "Inicio",
+    "description": "Tu música, lo escuchado recientemente y lo guardado.",
+    "tabs": {
+      "listen": "Escuchar Ahora",
+      "playlists": "Listas",
+      "liked": "Canciones que te gustan"
+    }
+  },
+  "library": {
+    "title": "Biblioteca",
+    "description": "Explora álbumes, artistas y géneros de tu colección.",
+    "tabs": {
+      "albums": "Álbumes",
+      "artists": "Artistas",
+      "genres": "Géneros",
+      "statistics": "Estadísticas"
+    }
+  },
+  "playlists": {
+    "title": "Listas",
+    "description": "Colecciones que has creado.",
+    "count_one": "{{count}} lista",
+    "count_other": "{{count}} listas",
+    "emptyTitle": "Aún no hay listas",
+    "emptyDescription": "Crea una lista para empezar a guardar pistas.",
+    "createError": "No se pudo crear la lista",
+    "loadError": "No se pudieron cargar tus listas."
+  },
+  "sidebar": {
     "toggleSidebar": "Alternar barra lateral"
   },
   "artists": {

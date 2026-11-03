@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "react-i18next";
 import { useParams, Link } from "react-router-dom";
@@ -9,7 +9,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { TrackRow } from "@/features/tracks/components/track-row";
 import { TrackTableHeader } from "@/features/tracks/components/track-table-header";
-import { setTrackDragData } from "@/features/playlists/track-drag";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
@@ -52,7 +51,6 @@ export default function AlbumPage() {
     metadata.formats.length > 0 ||
     metadata.sourceNames.length > 0;
 
-  const [draggingTrackId, setDraggingTrackId] = useState<number | null>(null);
   return (
     <>
       <PageHeader
@@ -86,7 +84,7 @@ export default function AlbumPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   {metadata.genre && (
                     <Link
-                      to={`/genres/${encodeURIComponent(metadata.genre)}`}
+                      to={`/library/genres/${encodeURIComponent(metadata.genre)}`}
                       className="focus-visible:ring-ring rounded-md focus-visible:ring-2 focus-visible:outline-none"
                     >
                       <Badge variant="secondary">{metadata.genre}</Badge>
@@ -111,7 +109,7 @@ export default function AlbumPage() {
         description={
           album?.artist_name && album?.artist_id ? (
             <Link
-              to={`/artists/${album.artist_id}/albums`}
+              to={`/library/artists/${album.artist_id}`}
               className="hover:underline"
             >
               {album.artist_name}
@@ -138,13 +136,6 @@ export default function AlbumPage() {
                   key={track.id}
                   track={track}
                   number={track.track_number ?? index + 1}
-                  draggable
-                  isDragging={draggingTrackId === track.id}
-                  onDragStart={(event) => {
-                    setTrackDragData(event.dataTransfer, track.id);
-                    setDraggingTrackId(track.id);
-                  }}
-                  onDragEnd={() => setDraggingTrackId(null)}
                 />
               ))}
             </TableBody>

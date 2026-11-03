@@ -96,7 +96,7 @@ export default function PlaylistDetail() {
     try {
       await deleteMut.mutateAsync(playlist.id);
       toast(t("playlist.deleted"));
-      navigate("/");
+      navigate("/home/playlists");
     } catch {
       toast.error(t("playlist.deleteError"));
     } finally {
@@ -153,13 +153,13 @@ export default function PlaylistDetail() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link to="/">{t("breadcrumb.home")}</Link>
+              <Link to="/home/listen">{t("breadcrumb.home")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink className="text-muted-foreground">
-              {t("breadcrumb.playlists")}
+            <BreadcrumbLink asChild>
+              <Link to="/home/playlists">{t("breadcrumb.playlists")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />

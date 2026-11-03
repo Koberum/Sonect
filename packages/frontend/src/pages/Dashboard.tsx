@@ -6,7 +6,6 @@ import { useNavigate } from "react-router-dom";
 import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
 import { ArtistArtwork } from "@/features/dashboard/components/artist-artwork";
 import { ScrollBar, ScrollArea } from "@/components/ui/scroll-area";
-import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
@@ -37,7 +36,6 @@ export default function Dashboard() {
   if (isPending && !data) {
     return (
       <div>
-        <PageHeader title={t("dashboard.title")} />
         <div className="space-y-8">
           {Array.from({ length: 3 }).map((_, section) => (
             <div key={section} className="space-y-2">
@@ -59,8 +57,6 @@ export default function Dashboard() {
 
   return (
     <div>
-      <PageHeader title={t("dashboard.title")} />
-
       {data?.recentlyPlayedAlbums && data.recentlyPlayedAlbums.length > 0 && (
         <div className="mb-8">
           <h2 className="text-muted-foreground mb-2 text-sm font-medium tracking-wider uppercase">
@@ -76,7 +72,7 @@ export default function Dashboard() {
                   className="w-36 shrink-0 sm:w-40"
                   width={150}
                   height={150}
-                  onClick={() => navigate(`/albums/${album.id}`)}
+                  onClick={() => navigate(`/library/albums/${album.id}`)}
                 />
               ))}
             </div>
@@ -100,7 +96,7 @@ export default function Dashboard() {
                   className="w-36 shrink-0 sm:w-40"
                   width={150}
                   height={150}
-                  onClick={() => navigate(`/artists/${artist.id}/albums`)}
+                  onClick={() => navigate(`/library/artists/${artist.id}`)}
                 />
               ))}
             </div>

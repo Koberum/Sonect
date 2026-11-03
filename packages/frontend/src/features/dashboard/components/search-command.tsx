@@ -42,8 +42,7 @@ export function SearchCommand() {
   );
   const MIN_QUERY_LENGTH = 2;
   const trimmedQuery = query.trim();
-  const showRecents =
-    trimmedQuery.length === 0 && recentSearches.length > 0;
+  const showRecents = trimmedQuery.length === 0 && recentSearches.length > 0;
 
   const enabled = debouncedQuery.trim().length >= MIN_QUERY_LENGTH;
   const { data: results, isFetching: loading } = useQuery({
@@ -108,20 +107,14 @@ export function SearchCommand() {
       if ("file" in item) {
         handlePlayTrack(item as TrackWithRelations);
       } else if ("artist_name" in item && !("name" in item)) {
-        navigate(`/albums/${(item as Album).id}`);
+        navigate(`/library/albums/${(item as Album).id}`);
         closeSearch();
       } else {
-        navigate(`/artists/${(item as Artist).id}/albums`);
+        navigate(`/library/artists/${(item as Artist).id}`);
         closeSearch();
       }
     },
-    [
-      handlePlayTrack,
-      navigate,
-      closeSearch,
-      rememberQuery,
-      profileId,
-    ],
+    [handlePlayTrack, navigate, closeSearch, rememberQuery, profileId],
   );
 
   const sections: { type: SectionType; items: SearchItem[] }[] = [];
@@ -264,10 +257,7 @@ export function SearchCommand() {
     const recents = loadRecentSearches(profileId);
     setRecentSearches(recents);
     const length = query.trim().length;
-    if (
-      length >= MIN_QUERY_LENGTH ||
-      (length === 0 && recents.length > 0)
-    ) {
+    if (length >= MIN_QUERY_LENGTH || (length === 0 && recents.length > 0)) {
       setShowDropdown(true);
     }
   };

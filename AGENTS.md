@@ -248,7 +248,7 @@ sonect (single image, ENTRYPOINT /init)
 - **Design system** — every UI change must follow the `sonect-design-system` skill (semantic tokens only, three-size icon scale, `bare` `icon-sm` actions for icon-only buttons (no hover background; only the icon highlights), Skeleton loading, `EmptyState` for every empty list, spacing/radius rhythm). Shared components: `EmptyState`, `PageHeader` (the only page `h1`), `LibraryStats`. The official `shadcn` and Anthropic `frontend-design` skills are installed under `.opencode/skills/`.
 - Pages live in `packages/frontend/src/pages/`.
 - Feature-specific logic (hooks, context, api, queries) lives in `packages/frontend/src/features/`.
-- **Track drag & drop:** album rows are native HTML5 `draggable` (`pages/AlbumTracks.tsx`) using `features/playlists/track-drag.ts` (custom MIME `application/x-sonect-track`); the playlist buttons in the sidebar are the drop targets and call `playlistMutations.addTrack` with a sonner toast (`playlist.trackAdded`/`trackAddError`). Dragging highlights the target with `ring-2 ring-primary bg-primary/10`. It is desktop-only (the mobile sidebar is an overlay); the context-menu “Add to playlist” remains the touch/keyboard path.
+- **Navigation is section + tab based.** The sidebar has exactly three entries: **Home** (`/home/*`), **Library** (`/library/*`) and **Settings** (`/settings/*`, admin only). Each is a layout route rendering `components/section-layout.tsx` (one section `PageHeader` + horizontal `components/section-tabs.tsx` + `<Outlet/>`), and the old menu entries are URL-driven tabs: `/home/listen`, `/home/playlists`, `/home/liked`; `/library/albums`, `/library/artists`, `/library/genres`, `/library/statistics`; `/settings/audio|playback|libraries|appearance|debug`. Tabs are real routes, never `?tab=`. Detail routes (`/home/playlists/:id`, `/library/albums/:id`, `/library/artists/:artistId`, `/library/genres/:genre`) keep the tab bar with the parent tab highlighted but hide the section header, so the entity name is the only `h1`. Legacy URLs (`/albums`, `/artists/:artistId/albums`, `/genres`, `/liked`, `/tracks`, `/library/stats`, `/playlists/:id`, `/settings`) redirect to their new location. Playlist creation and listing live in Home → Playlists; the sidebar no longer lists playlists, so track drag & drop to playlists is gone — use "Add to playlist" in the track actions menu.
 - `music-player.tsx` shows the active browser's real `audio.currentTime` (browser mode) and only interpolates elapsed time locally via `setInterval` (250ms ticks) for MPD/passive devices, freezing while `PlaybackStatus.buffering` is true. It never advances a browser progress bar from a server clock.
 - Styling is Tailwind CSS 4; avoid inline styles.
 - Use `lucide-react` for icons.
@@ -409,8 +409,9 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
   `/system/*` route, all of `/profiles/*`, and `POST /catalog/scan`.
 - **Roles.** Admins own libraries, audio output, sync/scan, debug/setup, and
   profile management. Users can browse and listen, use the global playlists,
-  and change their own password. Settings is an admin-only item in the profile
-  dropdown (`ProfileSwitcher`); the sidebar library refresh is hidden for users.
+  and change their own password. Settings is an admin-only entry in the
+  sidebar (hidden for non-admins; `AdminGuard` protects every `/settings/*`
+  route).
   The API enforces the same split. The last admin cannot be demoted or deleted
   (409).
 - **Cookie.** `sonect_session`: httpOnly, SameSite=Lax, Path=/, 30-day absolute
@@ -460,9 +461,9 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
 ### Liked songs
 
 - **Per profile, not global.** `liked_tracks` (`profile_id`, `track_id`, `liked_at`) has a unique `(profile_id, track_id)` constraint and cascades on profile/track delete. `likedDb` (`packages/db/src/repositories/liked.ts`) owns `add`/`remove`/`list`/`ids`/`files`/`summary`.
-- **API** (`routes/likedRoutes.ts`, `controllers/likedController.ts`, `services/library/likedService.ts`): `GET /likes` (`items,total,totalDuration`), `GET /likes/ids`, `PUT /likes/:trackId`, `DELETE /likes/:trackId`, `POST /likes/play` (`{shuffle?}`). All require the session cookie; `PUT` returns 404 for unknown tracks and is idempotent. `/likes` must stay in `app.ts` (auth paths + SPA fallback) and the Vite proxy. The frontend page stays at `/liked`; the API prefix is `/likes` to avoid the direct-navigation collision.
+- **API** (`routes/likedRoutes.ts`, `controllers/likedController.ts`, `services/library/likedService.ts`): `GET /likes` (`items,total,totalDuration`), `GET /likes/ids`, `PUT /likes/:trackId`, `DELETE /likes/:trackId`, `POST /likes/play` (`{shuffle?}`). All require the session cookie; `PUT` returns 404 for unknown tracks and is idempotent. `/likes` must stay in `app.ts` (auth paths + SPA fallback) and the Vite proxy. The frontend page is `/home/liked`; the API prefix is `/likes` to avoid the direct-navigation collision.
 - **Hearts are always visible**, not hover/context-menu actions. The shared `features/liked/components/like-button.tsx` uses the per-profile ids query, optimistic add/remove, and rollback + toast on failure. It appears on album/genre/playlist rows, search results, queue rows, full-page now-playing, dashboard track cards, and the Liked Songs page.
-- **Liked Songs page** (`pages/LikedSongs.tsx`, `/liked`) is an infinite list ordered newest-like-first with Play All/Shuffle. Playback uses `POST /likes/play`, which resolves liked files server-side and calls `playFiles(files, startAt)` on the active engine (`SessionPlayer.playFiles` / `PlayerServiceImpl.playFiles`). This replaces the removed flat Tracks page; `/tracks` redirects to `/liked`.
+- **Liked Songs page** (`pages/LikedSongs.tsx`, `/home/liked`) is an infinite list ordered newest-like-first with Play All/Shuffle. Playback uses `POST /likes/play`, which resolves liked files server-side and calls `playFiles(files, startAt)` on the active engine (`SessionPlayer.playFiles` / `PlayerServiceImpl.playFiles`). This replaces the removed flat Tracks page; `/tracks` and the legacy `/liked` redirect to `/home/liked`.
 - **Queue hearts** rely on `QueuedTrack.trackId` (the DB id); `QueuedTrack.id` is a file hash in MPD mode. Do not use `id` for likes.
 - **Query keys** are profile-scoped (`qk.liked.ids(profileId)`, `qk.liked.list(profileId)`) so switching profiles cannot leak another profile's likes.
 

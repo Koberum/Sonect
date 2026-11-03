@@ -64,7 +64,7 @@ export default function GenreDetail() {
                 key={album.id}
                 album={album}
                 className="w-full"
-                onClick={() => navigate(`/albums/${album.id}`)}
+                onClick={() => navigate(`/library/albums/${album.id}`)}
               />
             ))}
           </div>

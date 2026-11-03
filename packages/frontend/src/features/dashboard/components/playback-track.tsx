@@ -25,7 +25,7 @@ export function PlayedTrack({ track }: PlaybackTrack): React.ReactElement {
     <div className="flex h-full items-center gap-2 p-2">
       {track.album_id ? (
         <Link
-          to={`/albums/${track.album_id}`}
+          to={`/library/albums/${track.album_id}`}
           aria-label={t("album.goToAlbum")}
           onClick={(event) => event.stopPropagation()}
           className="focus-visible:ring-ring shrink-0 rounded-md transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
@@ -51,7 +51,7 @@ export function PlayedTrack({ track }: PlaybackTrack): React.ReactElement {
         </h3>
 
         <Link
-          to={`/artists/${track.artist_id}/albums`}
+          to={`/library/artists/${track.artist_id}`}
           className="hover:underline"
         >
           <p className="text-muted-foreground truncate text-xs">

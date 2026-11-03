@@ -71,7 +71,7 @@ export function ArtistAlbums() {
                   album={album}
                   aspectRatio="square"
                   className="w-full"
-                  onClick={() => navigate(`/albums/${album.id}`)}
+                  onClick={() => navigate(`/library/albums/${album.id}`)}
                 />
               ))}
             </div>

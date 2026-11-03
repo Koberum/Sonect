@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useParams } from "react-router-dom";
 import MainLayout from "./layout/MainLayout";
 import { ThemeProvider } from "./components/theme-provider";
 import { AuthProvider } from "./features/auth/auth-context";
@@ -18,6 +18,14 @@ const Devtools = lazy(() =>
   })),
 );
 
+const HomeSection = lazy(() =>
+  import("./layout/HomeSection").then((m) => ({ default: m.HomeSection })),
+);
+const LibrarySection = lazy(() =>
+  import("./layout/LibrarySection").then((m) => ({
+    default: m.LibrarySection,
+  })),
+);
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const AlbumPage = lazy(() => import("./pages/AlbumTracks"));
 const Albums = lazy(() => import("./pages/Albums"));
@@ -33,9 +41,35 @@ const ArtistAlbums = lazy(() =>
 const Statistics = lazy(() =>
   import("./pages/Statistics").then((m) => ({ default: m.Statistics })),
 );
+const Playlists = lazy(() => import("./pages/Playlists"));
 const PlaylistDetail = lazy(() => import("./pages/PlaylistDetail"));
 const Settings = lazy(() =>
   import("./pages/Settings").then((m) => ({ default: m.Settings })),
+);
+const AudioTab = lazy(() =>
+  import("./features/settings/audio-tab").then((m) => ({
+    default: m.AudioTab,
+  })),
+);
+const PlaybackTab = lazy(() =>
+  import("./features/settings/playback-tab").then((m) => ({
+    default: m.PlaybackTab,
+  })),
+);
+const LibrariesTab = lazy(() =>
+  import("./features/settings/libraries-tab").then((m) => ({
+    default: m.LibrariesTab,
+  })),
+);
+const AppearanceTab = lazy(() =>
+  import("./features/settings/appearance-tab").then((m) => ({
+    default: m.AppearanceTab,
+  })),
+);
+const DebugTab = lazy(() =>
+  import("./features/settings/debug-tab").then((m) => ({
+    default: m.DebugTab,
+  })),
 );
 const SetupWizard = lazy(() => import("./pages/SetupWizard"));
 
@@ -45,6 +79,16 @@ function PageLoader() {
       <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
     </div>
   );
+}
+
+function LegacyRedirect({ base }: { base: string }) {
+  const rest = useParams()["*"];
+  return <Navigate to={rest ? `${base}/${rest}` : base} replace />;
+}
+
+function LegacyArtistAlbums() {
+  const { artistId } = useParams();
+  return <Navigate to={`/library/artists/${artistId}`} replace />;
 }
 
 export default function App() {
@@ -81,26 +125,42 @@ export default function App() {
                         </AuthGuard>
                       }
                     >
-                      <Route index element={<Dashboard />} />
-                      <Route path="albums" element={<Albums />} />
-                      <Route path="albums/:id" element={<AlbumPage />} />
-                      <Route path="liked" element={<LikedSongs />} />
                       <Route
-                        path="tracks"
-                        element={<Navigate to="/liked" replace />}
+                        index
+                        element={<Navigate to="/home/listen" replace />}
                       />
-                      <Route path="genres" element={<Genres />} />
-                      <Route path="genres/:genre" element={<GenreDetail />} />
-                      <Route path="artists" element={<Artists />} />
-                      <Route
-                        path="artists/:artistId/albums"
-                        element={<ArtistAlbums />}
-                      />
-                      <Route path="library/stats" element={<Statistics />} />
-                      <Route
-                        path="playlists/:id"
-                        element={<PlaylistDetail />}
-                      />
+
+                      <Route path="home" element={<HomeSection />}>
+                        <Route
+                          index
+                          element={<Navigate to="listen" replace />}
+                        />
+                        <Route path="listen" element={<Dashboard />} />
+                        <Route path="playlists" element={<Playlists />} />
+                        <Route
+                          path="playlists/:id"
+                          element={<PlaylistDetail />}
+                        />
+                        <Route path="liked" element={<LikedSongs />} />
+                      </Route>
+
+                      <Route path="library" element={<LibrarySection />}>
+                        <Route
+                          index
+                          element={<Navigate to="albums" replace />}
+                        />
+                        <Route path="albums" element={<Albums />} />
+                        <Route path="albums/:id" element={<AlbumPage />} />
+                        <Route path="artists" element={<Artists />} />
+                        <Route
+                          path="artists/:artistId"
+                          element={<ArtistAlbums />}
+                        />
+                        <Route path="genres" element={<Genres />} />
+                        <Route path="genres/:genre" element={<GenreDetail />} />
+                        <Route path="statistics" element={<Statistics />} />
+                      </Route>
+
                       <Route
                         path="settings"
                         element={
@@ -108,6 +168,50 @@ export default function App() {
                             <Settings />
                           </AdminGuard>
                         }
+                      >
+                        <Route
+                          index
+                          element={<Navigate to="audio" replace />}
+                        />
+                        <Route path="audio" element={<AudioTab />} />
+                        <Route path="playback" element={<PlaybackTab />} />
+                        <Route path="libraries" element={<LibrariesTab />} />
+                        <Route path="appearance" element={<AppearanceTab />} />
+                        <Route path="debug" element={<DebugTab />} />
+                      </Route>
+
+                      {/* Legacy URLs kept as redirects so old bookmarks work. */}
+                      <Route
+                        path="albums/*"
+                        element={<LegacyRedirect base="/library/albums" />}
+                      />
+                      <Route
+                        path="artists/:artistId/albums"
+                        element={<LegacyArtistAlbums />}
+                      />
+                      <Route
+                        path="artists/*"
+                        element={<LegacyRedirect base="/library/artists" />}
+                      />
+                      <Route
+                        path="genres/*"
+                        element={<LegacyRedirect base="/library/genres" />}
+                      />
+                      <Route
+                        path="playlists/*"
+                        element={<LegacyRedirect base="/home/playlists" />}
+                      />
+                      <Route
+                        path="liked"
+                        element={<Navigate to="/home/liked" replace />}
+                      />
+                      <Route
+                        path="tracks"
+                        element={<Navigate to="/home/liked" replace />}
+                      />
+                      <Route
+                        path="library/stats"
+                        element={<Navigate to="/library/statistics" replace />}
                       />
                     </Route>
                   </Routes>
