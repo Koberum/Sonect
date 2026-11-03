@@ -10,6 +10,7 @@ import { PlaybackProvider } from "./components/playback-context";
 import { WebSocketProvider } from "./components/ws-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { useMediaQuery } from "react-responsive";
 import { queryClient } from "@/lib/queryClient";
 
 const Devtools = lazy(() =>
@@ -92,6 +93,8 @@ function LegacyArtistAlbums() {
 }
 
 export default function App() {
+  const isDesktop = useMediaQuery({ minWidth: 768 });
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
@@ -221,9 +224,9 @@ export default function App() {
           </PlaybackProvider>
         </AuthProvider>
       </ThemeProvider>
-      {import.meta.env.DEV && (
+      {import.meta.env.DEV && isDesktop && (
         <Suspense fallback={null}>
-          <Devtools initialIsOpen={false} buttonPosition="top-left" />
+          <Devtools initialIsOpen={false} buttonPosition="bottom-left" />
         </Suspense>
       )}
     </QueryClientProvider>
