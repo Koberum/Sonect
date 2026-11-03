@@ -239,10 +239,6 @@
     "close": "Cerrar",
     "more": "Más acciones"
   },
-  "status": {
-    "backendUnreachable": "No se puede conectar al servidor — reconectando...",
-    "backendOnline": "Conexión restablecida"
-  },
   "settings": {
     "title": "Ajustes",
     "description": "Configura tu sistema",
@@ -349,7 +345,6 @@
       "environment": "Entorno",
       "environmentDescription": "Valores de configuración de compilación y tiempo de ejecución.",
       "version": "Versión",
-      "versionUnavailable": "No disponible",
       "dangerZone": "Zona de peligro",
       "dangerZoneDescription": "Las acciones aquí restablecen partes de la configuración y no se pueden deshacer.",
       "hardware": {

@@ -35,9 +35,6 @@ RUN case "$TARGETARCH" in \
 
 WORKDIR /app
 
-# Build-time version stamped into /app/.version, read by readAppVersion().
-ARG SONECT_VERSION=dev
-
 COPY --from=builder /build/packages/backend/dist/bundle.cjs ./bundle.cjs
 # The bundled SONECT_BUNDLE_URL anchor resolves MIGRATIONS_FOLDER to
 # /app/drizzle/ (bundle.cjs sits in /app). Without this the migrator fails at
@@ -73,19 +70,16 @@ ENV MPD_CONFIG_PATH=/app/data/mpd-audio.conf
 ENV MPD_HOST=127.0.0.1
 ENV MPD_PORT=6600
 
-# Strip a leading "v" so both `v1.2.3` and `1.2.3` tags report the same string.
-RUN printf '%s' "${SONECT_VERSION#v}" > /app/.version
-
 RUN mkdir -p /app/data
 VOLUME /app/data
 
 EXPOSE 3000
 
 # Container health reported to the orchestrator (docker ps, compose).
-# wget is already present in node:24-alpine. /system/health answers 200
-# whenever the API is up (its DNS check is bounded by a 3s timeout).
+# wget is already present in node:24-alpine; /health is a dependency-free
+# Express route that only confirms the HTTP server is answering.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD wget -q -O /dev/null --tries=1 --timeout=5 http://127.0.0.1:${PORT:-3000}/system/health
+  CMD wget -q -O /dev/null --tries=1 --timeout=5 http://127.0.0.1:${PORT:-3000}/health
 
 # node:24-alpine ships CMD ["node"]; clear it so s6 does not run an extra CMD
 # that exits immediately (which would tear the container down). mpd + node run

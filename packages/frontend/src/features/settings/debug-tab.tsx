@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
 import { Loader2, Server, Tag } from "lucide-react";
 import {
   Card,
@@ -33,8 +32,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { getMpdStatus, resetSetup } from "@/features/system/api";
-import { systemQueries } from "@/features/system/queries";
-import { Skeleton } from "@/components/ui/skeleton";
 import { HardwareMonitor } from "@/components/hardware-monitor";
 
 export function DebugTab() {
@@ -46,10 +43,7 @@ export function DebugTab() {
   const [mpdChecking, setMpdChecking] = useState(false);
   const [resetSetupDialogOpen, setResetSetupDialogOpen] = useState(false);
   const [resettingSetup, setResettingSetup] = useState(false);
-  const { data: version, isPending: versionPending } = useQuery({
-    ...systemQueries.health(),
-    select: (health) => health.version,
-  });
+  const version = __APP_VERSION__;
 
   const checkMpdStatus = async () => {
     setMpdChecking(true);
@@ -140,17 +134,7 @@ export function DebugTab() {
               <ItemTitle>{t("settings.debug.version")}</ItemTitle>
             </ItemContent>
             <ItemActions className="basis-full justify-end sm:basis-auto">
-              {versionPending ? (
-                <Skeleton className="h-5 w-16" />
-              ) : (
-                <Badge variant="secondary">
-                  {version
-                    ? version === "dev"
-                      ? version
-                      : `v${version}`
-                    : t("settings.debug.versionUnavailable")}
-                </Badge>
-              )}
+              <Badge variant="secondary">{`v${version}`}</Badge>
             </ItemActions>
           </Item>
 

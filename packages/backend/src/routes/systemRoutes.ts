@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { requireAdmin, requireAuth } from "@middleware/auth";
 import {
-  getHealthHandler,
   getAudioDevicesHandler,
   configureAudioHandler,
   getAudioStatusHandler,
@@ -21,8 +20,6 @@ import {
 } from "../controllers/systemController";
 
 const router = Router();
-
-router.get("/health", getHealthHandler);
 
 router.use(requireAuth, requireAdmin);
 

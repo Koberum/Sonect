@@ -239,10 +239,6 @@
     "close": "Close",
     "more": "More actions"
   },
-  "status": {
-    "backendUnreachable": "Cannot reach server — reconnecting...",
-    "backendOnline": "Connection restored"
-  },
   "settings": {
     "title": "Settings",
     "description": "Configure your system",
@@ -349,7 +345,6 @@
       "environment": "Environment",
       "environmentDescription": "Build and runtime configuration values.",
       "version": "Version",
-      "versionUnavailable": "Unavailable",
       "dangerZone": "Danger zone",
       "dangerZoneDescription": "Actions here reset parts of the setup and cannot be undone.",
       "hardware": {

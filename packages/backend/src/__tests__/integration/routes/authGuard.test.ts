@@ -3,6 +3,7 @@ import express from "express";
 import request from "supertest";
 import catalogRoutes from "@routes/catalogRoutes";
 import systemRoutes from "@routes/systemRoutes";
+import healthRoutes from "@routes/healthRoutes";
 import { authenticate } from "@middleware/auth";
 import { errorHandler } from "@middleware/errorHandler";
 import { createTestDb } from "@tests/helpers/db.js";
@@ -16,6 +17,7 @@ function makeApp() {
   const app = express();
   app.use(express.json());
   app.use(authenticate);
+  app.use("/health", healthRoutes);
   app.use("/catalog", catalogRoutes);
   app.use("/system", systemRoutes);
   app.use(errorHandler);
@@ -54,8 +56,9 @@ describe("auth guards", () => {
     expect(res.status).to.equal(403);
   });
 
-  it("keeps health public", async () => {
-    const res = await request(makeApp()).get("/system/health");
+  it("keeps the health probe public", async () => {
+    const res = await request(makeApp()).get("/health");
     expect(res.status).to.equal(200);
+    expect(res.body).to.deep.equal({ status: "ok" });
   });
 });

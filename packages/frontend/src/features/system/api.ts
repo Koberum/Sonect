@@ -157,18 +157,6 @@ export function getAudioStatus(
   return apiFetch("/system/audio/status", { signal });
 }
 
-export interface HealthResponse {
-  tools: { aplay: boolean; lsusb: boolean; systemctl: boolean; mpd: boolean };
-  audio: { available: boolean; cards: AudioDevice[] };
-  mpdConnected: boolean;
-  setupCompleted: string[];
-  version: string;
-}
-
-export function getHealth(signal?: AbortSignal): Promise<HealthResponse> {
-  return apiFetch("/system/health", { signal });
-}
-
 export function getMpdStatus(signal?: AbortSignal): Promise<{
   running: boolean;
   pid?: string;

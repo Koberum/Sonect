@@ -184,7 +184,7 @@ cgroup, and adds the `audio` group. Sonect enumerates cards from
 `/sys/class/sound`, so no `/proc/asound` mount or `privileged` mode is needed.
 On a host without sound hardware these settings are harmless. If MPD does not
 reopen a re-plugged DAC automatically, re-apply the output in Settings → Audio.
-The image reports container health via a `HEALTHCHECK` on `GET /system/health`
+The image reports container health via a `HEALTHCHECK` on `GET /health`
 (visible in `docker ps`); s6-overlay restarts the MPD/node services internally if
 they crash.
 
@@ -274,7 +274,7 @@ volume always contains a complete database file.
 ## API Overview
 
 All `/player`, `/catalog`, `/playlists`, `/likes`, `/dashboard`, `/covers`,
-`/stream`, and `/waveforms` routes require the `sonect_session` cookie. `/system/health`,
+`/stream`, and `/waveforms` routes require the `sonect_session` cookie. `/health`,
 `/auth/state`, `/auth/profiles`, `/auth/login`, and `/auth/bootstrap` (while no
 admin exists) are public; the remaining `/system/*` routes, `/profiles/*`, and
 `POST /catalog/scan` are admin-only.
@@ -311,7 +311,7 @@ admin exists) are public; the remaining `/system/*` routes, `/profiles/*`, and
 | POST   | `/likes/play`                            | Play every liked track (`{shuffle?}`) on the active engine                                                                                                                                                                                         |
 | GET    | `/dashboard`                             | Per-profile dashboard data (recent albums/artists/tracks, top, suggestions, mix)                                                                                                                                                                   |
 | GET    | `/waveforms/:trackId`                    | Get waveform peaks for a track (`{samples,duration,version}`)                                                                                                                                                                                      |
-| GET    | `/system/health`                         | Public: liveness, version, MPD status, network status                                                                                                                                                                                              |
+| GET    | `/health`                                | Public: dependency-free liveness probe (`{ status: "ok" }`) for the Docker HEALTHCHECK                                                                                                                                                             |
 | GET    | `/system/setup/progress`                 | Read setup progress (admin-only)                                                                                                                                                                                                                   |
 | POST   | `/system/setup/complete`                 | Complete or skip setup (admin-only)                                                                                                                                                                                                                |
 | POST   | `/system/setup/reset`                    | Reset the setup wizard (admin-only)                                                                                                                                                                                                                |
@@ -468,9 +468,9 @@ Tags: `latest` and the release version.
 
 The Release PR also updates `packages/frontend/package.json` via
 release-please `extra-files`, so the frontend package version always matches
-the release. The running server version is stamped into `/app/.version` from
-`SONECT_VERSION`, exposed by `GET /system/health`, and shown in
-**Settings → Debug**.
+the release. Vite injects that version at build time as `__APP_VERSION__`, and
+**Settings → Debug** displays it. The backend does not expose a version
+endpoint.
 
 The image is published by the release workflow itself (it calls the Docker
 build as a reusable workflow), so no manual step is needed. To (re)publish

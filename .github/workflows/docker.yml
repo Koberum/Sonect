@@ -73,8 +73,6 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            SONECT_VERSION=${{ inputs.version != '' && inputs.version || 'dev' }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,scope=${{ matrix.name }},mode=max
 
@@ -99,8 +97,6 @@ jobs:
           load: true
           push: false
           tags: sonect:smoke
-          build-args: |
-            SONECT_VERSION=dev
           cache-from: type=gha,scope=sonect
 
       - name: Smoke test container startup

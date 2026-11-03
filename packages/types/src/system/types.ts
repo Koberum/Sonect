@@ -1,19 +1,3 @@
-export interface SystemStatus {
-  tools: {
-    aplay: boolean;
-    lsusb: boolean;
-    systemctl: boolean;
-    mpd: boolean;
-  };
-  audio: {
-    available: boolean;
-    cards: AudioDevice[];
-  };
-  mpdConnected: boolean;
-  setupCompleted: string[];
-  version: string;
-}
-
 export interface AudioDevice {
   card: string;
   name: string;

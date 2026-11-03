@@ -11,6 +11,7 @@ import unifiedPlayerRoutes from "@routes/unifiedPlayerRoutes";
 import profileRoutes from "@routes/profileRoutes";
 import authRoutes from "@routes/authRoutes";
 import likedRoutes from "@routes/likedRoutes";
+import healthRoutes from "@routes/healthRoutes";
 import { errorHandler } from "@middleware/errorHandler";
 import { requestLogger } from "@middleware/requestLogger";
 import { authenticate, requireAuth } from "@middleware/auth";
@@ -89,6 +90,8 @@ app.use(
   }),
 );
 
+app.use("/health", healthRoutes);
+
 app.use("/auth", authRoutes);
 
 app.use("/stream", streamRoutes);
@@ -119,7 +122,8 @@ if (process.env.NODE_ENV === "production" && fs.existsSync(frontendDist)) {
       req.path.startsWith("/dashboard") ||
       req.path.startsWith("/profiles") ||
       req.path.startsWith("/auth") ||
-      req.path.startsWith("/likes")
+      req.path.startsWith("/likes") ||
+      req.path.startsWith("/health")
     ) {
       return next();
     }

@@ -239,10 +239,6 @@
     "close": "Chiudi",
     "more": "Altre azioni"
   },
-  "status": {
-    "backendUnreachable": "Impossibile raggiungere il server — riconnessione...",
-    "backendOnline": "Connessione ripristinata"
-  },
   "settings": {
     "title": "Impostazioni",
     "description": "Configura il tuo sistema",
@@ -349,7 +345,6 @@
       "environment": "Ambiente",
       "environmentDescription": "Valori di configurazione build e runtime.",
       "version": "Versione",
-      "versionUnavailable": "Non disponibile",
       "dangerZone": "Zona pericolosa",
       "dangerZoneDescription": "Le azioni qui azzerano parti della configurazione e non possono essere annullate.",
       "hardware": {

@@ -5,7 +5,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import { useMediaQuery } from "react-responsive";
 import { Toaster } from "@/components/ui/sonner";
-import { ConnectionBanner } from "@/features/status/ConnectionBanner";
 import { SyncIndicator } from "@/features/sync/components/sync-indicator";
 import { PlaylistDropProvider } from "@/features/playlists/components/playlist-drop-provider";
 import { cn } from "@/lib/utils";
@@ -34,8 +33,6 @@ export default function MainLayout() {
   return (
     <PlaylistDropProvider>
       <div className="flex h-dvh flex-col overflow-hidden">
-        <ConnectionBanner />
-
         <div className="flex flex-1 overflow-hidden">
           <aside
             className={cn(

@@ -3,14 +3,11 @@ import sinon from "sinon";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import type { MpdConnectionManager } from "@services/mpd/mpdConnectionManager.js";
 import type { LogService } from "@services/utils/logService.js";
 import {
   SystemServiceImpl,
   type SoundPaths,
 } from "@services/system/systemService.js";
-
-const conn = { connected: false } as unknown as MpdConnectionManager;
 
 describe("SystemServiceImpl.detectAudioDevices (unit)", () => {
   let tmpDir: string;
@@ -50,7 +47,7 @@ describe("SystemServiceImpl.detectAudioDevices (unit)", () => {
   }
 
   function makeService(): SystemServiceImpl {
-    return new SystemServiceImpl(conn, { logService, paths });
+    return new SystemServiceImpl({ logService, paths });
   }
 
   it("enumerates playback cards from sysfs without /proc/asound", () => {

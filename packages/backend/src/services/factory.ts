@@ -121,7 +121,7 @@ export function initializeServices(): void {
     libraryStatsService,
   );
 
-  _systemService = new SystemServiceImpl(_mpdConnectionManager, {
+  _systemService = new SystemServiceImpl({
     logService: _logService,
   });
 

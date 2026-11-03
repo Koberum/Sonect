@@ -159,7 +159,7 @@ sonect (single image, ENTRYPOINT /init)
   `ffmpeg` (waveforms), `alsa-utils`, plus **s6-overlay** (v3, arch-selected from
   `TARGETARCH`), keeps only `sharp`/`dotenv` as runtime deps, copies the baked
   base `docker/mpd.conf` to `/etc/mpd/mpd.conf` and the `docker/s6/s6-rc.d`
-  service tree, stamps `/app/.version`, and runs `ENTRYPOINT ["/init"]` with an
+  service tree, and runs `ENTRYPOINT ["/init"]` with an
   empty `CMD` so s6 — not a stray CMD — owns the container. The `/app/drizzle`
   COPY **must remain** (see the migrator anchor note above).
 - **Release CI**: release-please
@@ -175,14 +175,11 @@ sonect (single image, ENTRYPOINT /init)
   never fire) — the build runs in the same run that creates the release. The
   workflow is also `workflow_dispatch`-able with a `version` input to
   (re)publish images for an existing release.
-- **Version**: the running version comes from `/app/.version` written into the
-  app image by the release build (Docker `SONECT_VERSION` build-arg, leading
-  `v` stripped) and is exposed via `GET /system/health` → `version`
-  (fallback `"dev"` when absent). The
-  release-please root package uses `extra-files` (`$.version` in
-  `packages/frontend/package.json`) so the frontend package version always
-  matches the release; Settings → Debug displays `HealthResponse.version` from
-  the `systemQueries.health()` query (via `select`).
+- **Version**: the UI version comes from `packages/frontend/package.json`
+  (release-please `extra-files` keeps it in sync with the release) and is
+  injected at build time as `__APP_VERSION__` by `vite.config.ts`; Settings →
+  Debug renders it. There is no `/app/.version` file, no `SONECT_VERSION`
+  build-arg, and no version endpoint on the backend.
 - **Startup**: `node bundle.cjs` — no tsx, no vite, no compilation at runtime.
 
 ## Key conventions
@@ -226,15 +223,12 @@ sonect (single image, ENTRYPOINT /init)
   - **Album identity is title + album artist** (case-insensitive title, `AlbumArtist` falling back to the track artist). `findOrCreateAlbum` (`repositories/albums.ts`) matches on both and adopts a title-only row once an artist becomes known; `albums_title_artist_unique` enforces it. `trackChanged` compares `album_artist_name`, so a sync splits albums that older builds had merged by title. After applying, `applyIncremental` prunes albums left with no tracks.
   - **Catalog schema marker:** `sync_metadata.catalog_schema` (exported `CATALOG_SCHEMA_VERSION`) is part of `isCurrent`, so bumping it forces one full reprocess after an identity-rule change; it is stamped only when no per-track errors occur.
   - **Duplicate copies in album views:** the same song stored under several paths stays as separate rows (MPD mirror + `tracks.file` unique), but `tracksDb.getByAlbumWithRelations` and `getByAlbumOrdered` collapse copies with the key `album_id + disc_number + track_number + lower(trim(title))` (the track artist is ignored because copies may tag it differently; the album already carries the album artist). When copies differ in format, the lossless one (`flac/wav/aiff/aif/ape/alac/dsf/dff/wv/tta`) is kept as canonical. Album detail and album playback therefore show one row per logical position; global search, existing playlists, and library file counts still reflect every physical file.
-- The backend exposes its build version through `getSystemStatus()` →
-  `/system/health` → `version`. It reads
-  `/app/.version` (written only by the release image via the `SONECT_VERSION`
-  build-arg), defaulting to `"dev"`. Sources: `services/utils/appVersion.ts`.
-- Host network management is intentionally not part of Sonect: no Wi-Fi
-  scan/connect controls and no network-status reporting. The frontend polls the
-  public `GET /system/health` every **30s** (60s during library sync) for backend
-  liveness only (`ConnectionBanner`), deduplicated via the shared
-  `qk.system.health()` key.
+- The backend exposes no version or health-diagnostics endpoint. `GET /health`
+  is a dependency-free public liveness probe used only by the Docker
+  `HEALTHCHECK`; it returns `{ status: "ok" }`. Host network management is
+  intentionally not part of Sonect: no Wi-Fi scan/connect controls and no
+  network-status reporting, and the frontend has no liveness banner or health
+  polling.
 - **Catalog listings only include artists that own an album.** `CatalogServiceImpl.getAllArtists`/`getArtistCount` call `artistsDb.getAll`/`count` with `{ withAlbumsOnly: true }`, and `searchTracks` does the same for `artistsDb.search`. Artists created only as track artists (collaboration credits) are hidden so no result opens an empty artist page; the repository methods default to unfiltered for lookups/maintenance. `playHistoryDb.recentArtists` applies the same `artistsWithAlbums()` predicate, so the dashboard's recently played artists never include album-less artists either.
 - **Track rows and actions.** Album, liked, genre, and playlist tables share `features/tracks/components/track-row.tsx` (number/playing bars, title + artist subtitle, optional cover, duration, three-dot menu) and `track-table-header.tsx`. The three-dot `track-actions-menu.tsx` opens a dropdown on desktop and a right-side sheet on mobile with Play, Add to queue, Like/Unlike, Add to playlist, and optional Remove; it replaced the old right-click context menu. Track play is bound to the number/title/duration cells only, and the actions wrapper stops click/pointer events from bubbling (including through portals), so opening the menu or using a sheet/dialog action never starts playback. The playing row is highlighted with `bg-primary/10`, `text-primary` title, and animated bars in the number column; `AddToPlaylistDialog` (`features/playlists/components/`) handles playlist selection and creation.
 
@@ -398,9 +392,9 @@ User action → executeCommand() → refreshNow() → status poll → stateChang
   trusted identity. `X-Session-Id` is optional and never trusted — if present
   and different from `req.auth.profileId`, `sessionIdMiddleware` rejects it with
   403; `X-Device-Id` remains the output-target hint.
-- **Routes.** Public: `GET /auth/state`, `GET /auth/profiles`,
-  `POST /auth/bootstrap` (only while no admin exists), `POST /auth/login`, and
-  `GET /system/health`. Authenticated: `/auth/logout|switch|password`,
+- **Routes.** Public: `GET /health`, `GET /auth/state`, `GET /auth/profiles`,
+  `POST /auth/bootstrap` (only while no admin exists), `POST /auth/login`.
+  Authenticated: `/auth/logout|switch|password`,
   `/catalog/*` (except scan), `/playlists/*`, `/player/*`,
   `/dashboard`, `/covers`, `/stream`, `/waveforms`. Admin-only: every other
   `/system/*` route, all of `/profiles/*`, and `POST /catalog/scan`.
@@ -563,9 +557,10 @@ sends `SIGHUP` via `pkill -HUP mpd`. There is **no inotify watcher**, no
 hook so the reload can be asserted without touching MPD.
 
 **Health:** the app image declares a Docker `HEALTHCHECK` polling
-`GET /system/health` (interval 30s, start-period 30s). s6 restarts crashed
-longruns internally; the HEALTHCHECK only reports status (it does not trigger
-restarts under `restart: unless-stopped`).
+`GET /health` (interval 30s, start-period 30s), a dependency-free Express route
+that only confirms the HTTP server is answering. s6 restarts crashed longruns
+internally; the HEALTHCHECK only reports status (it does not trigger restarts
+under `restart: unless-stopped`).
 
 **Writing new MPD config code:** always read/write the drop-in (not `mpd.conf`),
 using `fs.readFileSync`/`fs.writeFileSync`. Never shell out.
