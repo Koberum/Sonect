@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { MenuIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SearchCommand } from "@/features/dashboard/components/search-command";
+import { ProfileSwitcher } from "@/features/profiles/profile-switcher";
 
 export interface SidebarOutletContext {
   openSidebar: () => void;
@@ -56,9 +57,11 @@ export function SectionToolbar() {
         </Button>
       </div>
 
-      <div className="min-w-0 flex-1 md:max-w-xl">
+      <div className="min-w-0 flex-1">
         <SearchCommand />
       </div>
+
+      <ProfileSwitcher />
     </div>
   );
 }

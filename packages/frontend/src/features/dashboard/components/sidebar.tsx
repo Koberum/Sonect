@@ -6,7 +6,6 @@ import { AudioLines, Library, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/features/auth/auth-context";
-import { ProfileSwitcher } from "@/features/profiles/profile-switcher";
 
 export interface SidebarProps {
   className?: string;
@@ -103,9 +102,6 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
           </Button>
         ))}
       </nav>
-      <div className="mt-auto border-t p-3">
-        <ProfileSwitcher />
-      </div>
     </div>
   );
 }

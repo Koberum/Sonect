@@ -1,13 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Check,
-  ChevronsUpDown,
-  KeyRound,
-  LogOut,
-  Pencil,
-  Plus,
-} from "lucide-react";
+import { Check, KeyRound, LogOut, Pencil, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Profile, PublicProfile } from "@repo/types";
 import { useAuth } from "@/features/auth/auth-context";
@@ -89,8 +82,9 @@ export function ProfileSwitcher() {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
+            size="icon"
             aria-label={t("profile.switch")}
-            className="h-auto w-full justify-start gap-3 px-2 py-2"
+            className="h-11 w-11 shrink-0 rounded-full"
           >
             <Avatar className="h-8 w-8">
               <AvatarFallback
@@ -100,13 +94,9 @@ export function ProfileSwitcher() {
                 {getInitials(profile.name)}
               </AvatarFallback>
             </Avatar>
-            <span className="min-w-0 flex-1 truncate text-left text-sm font-medium">
-              {profile.name}
-            </span>
-            <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent side="top" align="start" className="w-64">
+        <DropdownMenuContent side="bottom" align="end" className="w-64">
           <DropdownMenuLabel>{t("profile.change")}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {isLoading && (
