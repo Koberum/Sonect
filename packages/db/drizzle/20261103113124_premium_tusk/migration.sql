@@ -1,8 +1,8 @@
-ALTER TABLE `playlists` ADD `profile_id` text REFERENCES profiles(id) ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE `playlists` ADD `profile_id` text NOT NULL REFERENCES profiles(id) ON DELETE CASCADE;--> statement-breakpoint
 PRAGMA foreign_keys=OFF;--> statement-breakpoint
 CREATE TABLE `__new_playlists` (
 	`id` integer PRIMARY KEY AUTOINCREMENT,
-	`profile_id` text,
+	`profile_id` text NOT NULL,
 	`name` text NOT NULL,
 	`description` text,
 	`created_at` text DEFAULT CURRENT_TIMESTAMP,

@@ -2,13 +2,13 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { ListMusic, Play } from "lucide-react";
-import type { Playlist } from "@repo/types/catalog";
+import type { PlaylistSummary } from "@repo/types/catalog";
 import { playlistMutations } from "@/features/playlists/queries";
 import { MediaActionMenu } from "./media-action-menu";
 import { MediaCard } from "./media-card";
 
 export interface PlaylistCardProps {
-  playlist: Playlist;
+  playlist: PlaylistSummary;
   className?: string;
 }
 
@@ -16,8 +16,8 @@ export function PlaylistCard({ playlist, className }: PlaylistCardProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const loadMut = useMutation(playlistMutations.load());
-  const coverPreviews = playlist.coverPreviews ?? [];
-  const trackCount = playlist.trackCount ?? 0;
+  const coverPreviews = playlist.coverPreviews;
+  const trackCount = playlist.trackCount;
 
   const openPlaylist = () => {
     void navigate(`/home/playlists/${playlist.id}`);

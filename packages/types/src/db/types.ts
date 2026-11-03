@@ -59,7 +59,7 @@ export type DBAlbum = {
 
 export type DBPlaylist = {
   id: number;
-  profile_id?: string;
+  profile_id: string;
   name: string;
   description?: string;
   created_at?: string;

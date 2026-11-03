@@ -1,7 +1,5 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useState,
   type DragEvent,
@@ -20,29 +18,14 @@ import { useAuth } from "@/features/auth/auth-context";
 import { cn, getCoverPath } from "@/lib/utils";
 import { playlistMutations, playlistQueries } from "../queries";
 import { getTrackDragId, isTrackDrag } from "../track-drag";
+import { TrackDragContext } from "../playlist-drop-context";
 import { CreatePlaylistDialog } from "./create-playlist-dialog";
-
-interface TrackDragContextValue {
-  startDrag(trackId: number): void;
-  endDrag(): void;
-}
-
-const TrackDragContext = createContext<TrackDragContextValue | null>(null);
 
 function nextPlaylistName(base: string, existingNames: string[]): string {
   const used = new Set(existingNames.map((name) => name.trim().toLowerCase()));
   let index = 1;
   while (used.has(`${base} ${index}`.toLowerCase())) index++;
   return `${base} ${index}`;
-}
-
-// eslint-disable-next-line react-refresh/only-export-components
-export function useTrackDrag(): TrackDragContextValue {
-  const context = useContext(TrackDragContext);
-  if (!context) {
-    throw new Error("useTrackDrag must be used within PlaylistDropProvider");
-  }
-  return context;
 }
 
 export function PlaylistDropProvider({ children }: { children: ReactNode }) {
@@ -167,7 +150,7 @@ export function PlaylistDropProvider({ children }: { children: ReactNode }) {
               />
             ) : (
               playlists.map((playlist) => {
-                const previews = playlist.coverPreviews ?? [];
+                const previews = playlist.coverPreviews;
                 const isOver = overPlaylistId === playlist.id;
                 return (
                   <div

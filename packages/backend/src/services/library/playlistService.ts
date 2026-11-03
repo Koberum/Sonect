@@ -1,10 +1,13 @@
 import { playlistsDb, tracksDb } from "@repo/db";
-import { Playlist, PlaylistWithTracks } from "@repo/types/catalog";
+import {
+  Playlist,
+  PlaylistSummary,
+  PlaylistWithTracks,
+} from "@repo/types/catalog";
 import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager";
 
 export interface PlaylistService {
-  getAllPlaylists(profileId: string): Playlist[];
-  getPlaylistById(profileId: string, id: number): Playlist | undefined;
+  getAllPlaylists(profileId: string): PlaylistSummary[];
   getPlaylistWithTracks(
     profileId: string,
     id: number,
@@ -36,16 +39,14 @@ export interface PlaylistService {
 export class PlaylistServiceImpl implements PlaylistService {
   constructor(private mpdConnectionManager: MpdConnectionManager) {}
 
-  getAllPlaylists(profileId: string): Playlist[] {
+  getAllPlaylists(profileId: string): PlaylistSummary[] {
+    const trackCounts = playlistsDb.getTrackCounts(profileId);
+    const coverPreviews = playlistsDb.getCoverPreviewsForProfile(profileId);
     return playlistsDb.getAll(profileId).map((playlist) => ({
       ...playlist,
-      coverPreviews: playlistsDb.getCoverPreviews(playlist.id, 4),
-      trackCount: playlistsDb.getTrackCount(playlist.id),
+      coverPreviews: coverPreviews.get(playlist.id) ?? [],
+      trackCount: trackCounts.get(playlist.id) ?? 0,
     }));
-  }
-
-  getPlaylistById(profileId: string, id: number): Playlist | undefined {
-    return playlistsDb.getById(profileId, id);
   }
 
   getPlaylistWithTracks(

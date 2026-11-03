@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route, Navigate, useParams } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "./layout/MainLayout";
 import { ThemeProvider } from "./components/theme-provider";
 import { AuthProvider } from "./features/auth/auth-context";
@@ -80,16 +80,6 @@ function PageLoader() {
       <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
     </div>
   );
-}
-
-function LegacyRedirect({ base }: { base: string }) {
-  const rest = useParams()["*"];
-  return <Navigate to={rest ? `${base}/${rest}` : base} replace />;
-}
-
-function LegacyArtistAlbums() {
-  const { artistId } = useParams();
-  return <Navigate to={`/library/artists/${artistId}`} replace />;
 }
 
 export default function App() {
@@ -183,39 +173,6 @@ export default function App() {
                         <Route path="debug" element={<DebugTab />} />
                       </Route>
 
-                      {/* Legacy URLs kept as redirects so old bookmarks work. */}
-                      <Route
-                        path="albums/*"
-                        element={<LegacyRedirect base="/library/albums" />}
-                      />
-                      <Route
-                        path="artists/:artistId/albums"
-                        element={<LegacyArtistAlbums />}
-                      />
-                      <Route
-                        path="artists/*"
-                        element={<LegacyRedirect base="/library/artists" />}
-                      />
-                      <Route
-                        path="genres/*"
-                        element={<LegacyRedirect base="/library/genres" />}
-                      />
-                      <Route
-                        path="playlists/*"
-                        element={<LegacyRedirect base="/home/playlists" />}
-                      />
-                      <Route
-                        path="liked"
-                        element={<Navigate to="/home/liked" replace />}
-                      />
-                      <Route
-                        path="tracks"
-                        element={<Navigate to="/home/liked" replace />}
-                      />
-                      <Route
-                        path="library/stats"
-                        element={<Navigate to="/library/statistics" replace />}
-                      />
                     </Route>
                   </Routes>
                 </Suspense>

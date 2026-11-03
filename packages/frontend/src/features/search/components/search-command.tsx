@@ -14,12 +14,12 @@ import { catalogQueries } from "@/features/catalog/queries";
 import { LikeButton } from "@/features/liked/components/like-button";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useAuth } from "@/features/auth/auth-context";
-import { useTrackDrag } from "@/features/playlists/components/playlist-drop-provider";
+import { useTrackDrag } from "@/features/playlists/playlist-drop-context";
 import { setTrackDragData } from "@/features/playlists/track-drag";
 import {
   loadRecentSearches,
   saveRecentSearch,
-} from "@/features/dashboard/recent-searches";
+} from "@/features/search/recent-searches";
 
 type SectionType = "artists" | "albums" | "tracks" | "recent";
 type SearchItem = Artist | Album | TrackWithRelations | string;

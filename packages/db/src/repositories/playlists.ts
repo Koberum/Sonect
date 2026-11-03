@@ -36,32 +36,57 @@ export const playlistsDb = {
       .get() as DBPlaylist | undefined;
   },
 
-  getCoverPreviews(playlistId: number, limit = 4): string[] {
-    return db()
-      .selectDistinct({ cover_path: albums.cover_path })
+  getCoverPreviewsForProfile(
+    profileId: string,
+    limit = 4,
+  ): Map<number, string[]> {
+    const rows = db()
+      .select({
+        playlist_id: playlistTracks.playlist_id,
+        cover_path: albums.cover_path,
+      })
       .from(playlistTracks)
+      .innerJoin(playlists, eq(playlists.id, playlistTracks.playlist_id))
       .innerJoin(tracks, eq(playlistTracks.track_id, tracks.id))
       .innerJoin(albums, eq(tracks.album_id, albums.id))
       .where(
         and(
-          eq(playlistTracks.playlist_id, playlistId),
+          eq(playlists.profile_id, profileId),
           isNotNull(albums.cover_path),
           ne(albums.cover_path, ""),
         ),
       )
-      .limit(limit)
-      .all()
-      .map((row) => row.cover_path)
-      .filter((path): path is string => Boolean(path));
+      .groupBy(playlistTracks.playlist_id, albums.cover_path)
+      .orderBy(
+        asc(playlistTracks.playlist_id),
+        sql`min(${playlistTracks.position})`,
+      )
+      .all();
+
+    const previews = new Map<number, string[]>();
+    for (const row of rows) {
+      const list = previews.get(row.playlist_id) ?? [];
+      if (list.length < limit && row.cover_path) {
+        list.push(row.cover_path);
+        previews.set(row.playlist_id, list);
+      }
+    }
+    return previews;
   },
 
-  getTrackCount(playlistId: number): number {
-    const row = db()
-      .select({ count: sql<number>`count(*)` })
+  getTrackCounts(profileId: string): Map<number, number> {
+    const rows = db()
+      .select({
+        playlist_id: playlistTracks.playlist_id,
+        count: sql<number>`count(*)`,
+      })
       .from(playlistTracks)
-      .where(eq(playlistTracks.playlist_id, playlistId))
-      .get();
-    return row?.count ?? 0;
+      .innerJoin(playlists, eq(playlists.id, playlistTracks.playlist_id))
+      .where(eq(playlists.profile_id, profileId))
+      .groupBy(playlistTracks.playlist_id)
+      .all();
+
+    return new Map(rows.map((row) => [row.playlist_id, row.count]));
   },
 
   create(profileId: string, name: string, description?: string): number {

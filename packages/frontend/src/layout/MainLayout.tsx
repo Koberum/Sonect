@@ -1,5 +1,5 @@
-import MusicPlayer from "@/features/dashboard/components/music-player";
-import { Sidebar } from "@/features/dashboard/components/sidebar";
+import MusicPlayer from "@/features/player/components/music-player";
+import { Sidebar } from "@/layout/sidebar";
 import { SetupGuard } from "@/components/setup-guard";
 import { useCallback, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";

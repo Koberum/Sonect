@@ -5,7 +5,7 @@ import { catalogQueries } from "@/features/catalog/queries";
 import { AlbumCard } from "@/features/catalog/components/media-card/album-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SortTabs } from "@/features/dashboard/components/sort-tabs";
+import { SortTabs } from "@/components/ui/sort-tabs";
 import { Disc3 } from "lucide-react";
 
 type SortOption = "title" | "year" | "recent";

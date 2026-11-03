@@ -94,9 +94,11 @@ export const playlists = sqliteTable(
   "playlists",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
-    profile_id: text("profile_id").references(() => profiles.id, {
-      onDelete: "cascade",
-    }),
+    profile_id: text("profile_id")
+      .notNull()
+      .references(() => profiles.id, {
+        onDelete: "cascade",
+      }),
     name: text("name").notNull(),
     description: text("description"),
     created_at: text("created_at").default(sql`CURRENT_TIMESTAMP`),

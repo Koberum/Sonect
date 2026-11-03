@@ -59,7 +59,7 @@ export function CreatePlaylistDialog({
           />
           {createMut.isError ? (
             <p className="text-destructive text-sm">
-              {t("playlists.createError")}
+              {t("playlist.createError")}
             </p>
           ) : null}
           <Button

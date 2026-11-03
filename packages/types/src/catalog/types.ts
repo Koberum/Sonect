@@ -43,9 +43,10 @@ export type Album = DBAlbum & {
 };
 
 export type GenreWithCounts = DBGenreWithCounts;
-export type Playlist = DBPlaylist & {
-  coverPreviews?: string[];
-  trackCount?: number;
+export type Playlist = DBPlaylist;
+export type PlaylistSummary = Playlist & {
+  coverPreviews: string[];
+  trackCount: number;
 };
 export type PlaylistTrack = TrackWithRelations & { pt_id: number };
 export type PlaylistWithTracks = Playlist & {

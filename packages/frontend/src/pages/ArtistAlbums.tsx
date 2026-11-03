@@ -2,7 +2,7 @@ import { AlbumCard } from "@/features/catalog/components/media-card/album-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SortTabs } from "@/features/dashboard/components/sort-tabs";
+import { SortTabs } from "@/components/ui/sort-tabs";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";

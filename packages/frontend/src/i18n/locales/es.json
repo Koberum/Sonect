@@ -1,6 +1,5 @@
 {
   "dashboard": {
-    "title": "Escuchar Ahora",
     "recentlyPlayedAlbums": "Álbumes Reproducidos Recientemente",
     "recentlyPlayedArtists": "Artistas Reproducidos Recientemente",
     "recentlyPlayed": "Reproducido Recientemente",
@@ -40,16 +39,6 @@
       "statistics": "Estadísticas"
     }
   },
-  "playlists": {
-    "title": "Listas",
-    "description": "Colecciones que has creado.",
-    "count_one": "{{count}} lista",
-    "count_other": "{{count}} listas",
-    "emptyTitle": "Aún no hay listas",
-    "emptyDescription": "Crea una lista para empezar a guardar pistas.",
-    "createError": "No se pudo crear la lista",
-    "loadError": "No se pudieron cargar tus listas."
-  },
   "sidebar": {
     "toggleSidebar": "Alternar barra lateral"
   },
@@ -57,9 +46,7 @@
     "title": "Artistas",
     "titleSingle": "Artista",
     "goToArtist": "Ir al artista",
-    "noAlbums": "No se encontraron álbumes",
-    "noArtists": "No se encontraron artistas",
-    "description": "Explora tu música por artista"
+    "noArtists": "No se encontraron artistas"
   },
   "artist": {
     "description": "Explora álbumes y pistas de este artista",
@@ -76,8 +63,6 @@
     "goToAlbum": "Ir al Álbum"
   },
   "statistics": {
-    "title": "Estadísticas de la Biblioteca",
-    "description": "Resumen de tu biblioteca de música",
     "totalTracks": "Canciones Totales",
     "totalArtists": "Artistas",
     "totalAlbums": "Álbumes",
@@ -121,9 +106,6 @@
     "preparing": "Preparando...",
     "readingTracks": "Leyendo pistas...",
     "readingCovers": "Sincronizando carátulas...",
-    "syncingCovers": "Sincronizando carátulas...",
-    "syncingTracks": "Sincronizando pistas...",
-    "scanningMpd": "Escaneando...",
     "updatingMpd": "Actualizando MPD...",
     "complete": "Sincronización completa",
     "failed": "Error de sincronización",
@@ -187,11 +169,15 @@
     "trackAddError": "Error al agregar pista",
     "trackRemoved": "Pista eliminada de la lista",
     "trackRemovedError": "Error al eliminar pista",
-    "removeTrack": "Eliminar pista"
+    "removeTrack": "Eliminar pista",
+    "createError": "No se pudo crear la lista",
+    "loadError": "No se pudieron cargar tus listas.",
+    "listCount_one": "{{count}} lista",
+    "listCount_other": "{{count}} listas",
+    "emptyListTitle": "Aún no hay listas",
+    "emptyListDescription": "Crea una lista para empezar a guardar pistas."
   },
   "albums": {
-    "title": "Álbumes",
-    "description": "Explora todos los álbumes de tu biblioteca",
     "sortTitle": "Título",
     "sortYear": "Año",
     "sortRecent": "Agregados Recientemente",
@@ -201,7 +187,6 @@
     "noTracks": "No se encontraron pistas"
   },
   "liked": {
-    "title": "Canciones que te gustan",
     "description": "Las canciones que te gustan",
     "count_one": "{{count}} canción",
     "count_other": "{{count}} canciones",
@@ -217,7 +202,6 @@
     "updateError": "No se pudo actualizar este me gusta."
   },
   "genres": {
-    "title": "Géneros",
     "description": "Explora música por género",
     "trackCount_one": "{{count}} pista",
     "trackCount_other": "{{count}} pistas",
@@ -235,14 +219,12 @@
     "saving": "Guardando...",
     "deleting": "Eliminando...",
     "collageImage": "Imagen de collage {{index}}",
-    "loading": "Cargando...",
     "close": "Cerrar",
     "more": "Más acciones"
   },
   "settings": {
     "title": "Ajustes",
     "description": "Configura tu sistema",
-    "sectionLabel": "Sección",
     "tabs": {
       "audio": "Audio",
       "playback": "Reproducción",
@@ -349,7 +331,6 @@
       "dangerZoneDescription": "Las acciones aquí restablecen partes de la configuración y no se pueden deshacer.",
       "hardware": {
         "title": "Hardware",
-        "loading": "Cargando estadísticas del sistema...",
         "cpu": "CPU",
         "cores": "{{count}} núcleos",
         "loadAvg": "Carga prom:",
@@ -360,7 +341,6 @@
       },
       "checkError": "Error al verificar el estado de MPD",
       "setup": "Asistente de configuración",
-      "setupDescription": "Restablece el asistente de configuración para que vuelva a aparecer en la próxima carga.",
       "resetSetup": "Restablecer asistente",
       "resetSetupConfirmTitle": "¿Restablecer el asistente de configuración?",
       "resetSetupConfirm": "Esto marcará cada paso de configuración como incompleto y el asistente volverá a aparecer en la próxima carga de página.",

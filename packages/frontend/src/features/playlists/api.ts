@@ -1,7 +1,11 @@
 import { apiFetch } from "@/lib/api";
-import type { Playlist, PlaylistWithTracks } from "@repo/types/catalog";
+import type {
+  Playlist,
+  PlaylistSummary,
+  PlaylistWithTracks,
+} from "@repo/types/catalog";
 
-export function getPlaylists(signal?: AbortSignal): Promise<Playlist[]> {
+export function getPlaylists(signal?: AbortSignal): Promise<PlaylistSummary[]> {
   return apiFetch("/playlists/", { signal });
 }
 

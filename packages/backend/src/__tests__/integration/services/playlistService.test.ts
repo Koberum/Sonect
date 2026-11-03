@@ -40,20 +40,20 @@ describe("PlaylistService (trophy integration)", () => {
     sinon.restore();
   });
 
-  describe("getAllPlaylists / getPlaylistById", () => {
+  describe("getAllPlaylists / getPlaylistWithTracks", () => {
     it("getAll empty → []", () =>
       expect(svc.getAllPlaylists(profileId)).to.deep.equal([]));
     it("getById miss → undefined", () =>
-      expect(svc.getPlaylistById(profileId, 99999)).to.be.undefined);
+      expect(svc.getPlaylistWithTracks(profileId, 99999)).to.be.undefined);
     it("does not expose playlists across profiles", () => {
       const other = profilesDb.create({ name: "Other", passwordHash: "hash" });
       const pl = svc.createPlaylist(profileId, "Private")!;
       expect(svc.getAllPlaylists(other)).to.deep.equal([]);
-      expect(svc.getPlaylistById(other, pl.id)).to.be.undefined;
+      expect(svc.getPlaylistWithTracks(other, pl.id)).to.be.undefined;
       expect(svc.updatePlaylist(other, pl.id, { name: "Hacked" })).to.be
         .undefined;
       expect(svc.deletePlaylist(other, pl.id)).to.be.false;
-      expect(svc.getPlaylistById(profileId, pl.id)?.name).to.equal("Private");
+      expect(svc.getPlaylistWithTracks(profileId, pl.id)?.name).to.equal("Private");
     });
     it("allows the same name on different profiles", () => {
       const other = profilesDb.create({ name: "Other", passwordHash: "hash" });
@@ -69,7 +69,7 @@ describe("PlaylistService (trophy integration)", () => {
         "Beta",
       ]);
       expect(
-        svc.getPlaylistById(profileId, svc.getAllPlaylists(profileId)[0].id)
+        svc.getPlaylistWithTracks(profileId, svc.getAllPlaylists(profileId)[0].id)
           ?.name,
       ).to.equal("Alpha");
     });
@@ -128,7 +128,7 @@ describe("PlaylistService (trophy integration)", () => {
     it("deletes and calls rm", () => {
       const pl = svc.createPlaylist(profileId, "DelPl")!;
       expect(svc.deletePlaylist(profileId, pl.id)).to.be.true;
-      expect(svc.getPlaylistById(profileId, pl.id)).to.be.undefined;
+      expect(svc.getPlaylistWithTracks(profileId, pl.id)).to.be.undefined;
       expect(
         (mpd.executeCommand as sinon.SinonStub).calledOnceWith("rm", [
           `sonect-${pl.id}`,
@@ -140,7 +140,7 @@ describe("PlaylistService (trophy integration)", () => {
       const pl = svc.createPlaylist(profileId, "Del2")!;
       svc.deletePlaylist(profileId, pl.id);
       await new Promise((r) => setTimeout(r, 10));
-      expect(svc.getPlaylistById(profileId, pl.id)).to.be.undefined;
+      expect(svc.getPlaylistWithTracks(profileId, pl.id)).to.be.undefined;
     });
   });
 

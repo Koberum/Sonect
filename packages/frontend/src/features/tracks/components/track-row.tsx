@@ -1,10 +1,10 @@
 import type { TrackWithRelations } from "@repo/types/catalog";
 import { TableCell, TableRow } from "@/components/ui/table";
-import PlayStatus from "@/features/dashboard/components/play-status";
+import PlayStatus from "@/features/player/components/play-status";
 import { TrackActionsMenu } from "@/features/tracks/components/track-actions-menu";
 import { usePlaybackContext } from "@/components/playback-context";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
-import { useTrackDrag } from "@/features/playlists/components/playlist-drop-provider";
+import { useTrackDrag } from "@/features/playlists/playlist-drop-context";
 import { setTrackDragData } from "@/features/playlists/track-drag";
 import { cn, formatTime, getCoverPath } from "@/lib/utils";
 

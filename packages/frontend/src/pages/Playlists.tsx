@@ -26,7 +26,7 @@ export default function Playlists() {
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-muted-foreground text-sm">
-          {t("playlists.count", { count: playlists.length })}
+          {t("playlist.listCount", { count: playlists.length })}
         </p>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           <Plus />
@@ -42,7 +42,7 @@ export default function Playlists() {
         </div>
       ) : isError ? (
         <div className="border-destructive/40 bg-destructive/5 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
-          <p className="text-destructive text-sm">{t("playlists.loadError")}</p>
+          <p className="text-destructive text-sm">{t("playlist.loadError")}</p>
           <Button variant="outline" size="sm" onClick={() => void refetch()}>
             {t("common.retry")}
           </Button>
@@ -50,8 +50,8 @@ export default function Playlists() {
       ) : playlists.length === 0 ? (
         <EmptyState
           icon={ListMusic}
-          title={t("playlists.emptyTitle")}
-          description={t("playlists.emptyDescription")}
+          title={t("playlist.emptyListTitle")}
+          description={t("playlist.emptyListDescription")}
           action={
             <Button size="sm" onClick={() => setCreateOpen(true)}>
               <Plus />

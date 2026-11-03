@@ -1,6 +1,5 @@
 {
   "dashboard": {
-    "title": "Ascolta Ora",
     "recentlyPlayedAlbums": "Ultimi album ascoltati",
     "recentlyPlayedArtists": "Ultimi artisti ascoltati",
     "recentlyPlayed": "Riprodotti di Recente",
@@ -40,16 +39,6 @@
       "statistics": "Statistiche"
     }
   },
-  "playlists": {
-    "title": "Playlist",
-    "description": "Le raccolte che hai creato.",
-    "count_one": "{{count}} playlist",
-    "count_other": "{{count}} playlist",
-    "emptyTitle": "Nessuna playlist",
-    "emptyDescription": "Crea una playlist per iniziare a raccogliere brani.",
-    "createError": "Creazione della playlist non riuscita",
-    "loadError": "Impossibile caricare le playlist."
-  },
   "sidebar": {
     "toggleSidebar": "Mostra/nascondi barra laterale"
   },
@@ -57,9 +46,7 @@
     "title": "Artisti",
     "titleSingle": "Artista",
     "goToArtist": "Vai all'artista",
-    "noAlbums": "Nessun album trovato",
-    "noArtists": "Nessun artista trovato",
-    "description": "Sfoglia la tua musica per artista"
+    "noArtists": "Nessun artista trovato"
   },
   "artist": {
     "description": "Sfoglia album e brani di questo artista",
@@ -76,8 +63,6 @@
     "goToAlbum": "Vai all'Album"
   },
   "statistics": {
-    "title": "Statistiche Libreria",
-    "description": "Panoramica della tua libreria musicale",
     "totalTracks": "Totale Brani",
     "totalArtists": "Artisti",
     "totalAlbums": "Album",
@@ -121,9 +106,6 @@
     "preparing": "Preparazione...",
     "readingTracks": "Lettura brani...",
     "readingCovers": "Sincronizzazione copertine...",
-    "syncingCovers": "Sincronizzazione copertine...",
-    "syncingTracks": "Sincronizzazione brani...",
-    "scanningMpd": "Scansione...",
     "updatingMpd": "Aggiornamento MPD...",
     "complete": "Sincronizzazione completata",
     "failed": "Sincronizzazione non riuscita",
@@ -187,11 +169,15 @@
     "trackAddError": "Impossibile aggiungere il brano",
     "trackRemoved": "Brano rimosso dalla playlist",
     "trackRemovedError": "Impossibile rimuovere il brano",
-    "removeTrack": "Rimuovi brano"
+    "removeTrack": "Rimuovi brano",
+    "createError": "Creazione della playlist non riuscita",
+    "loadError": "Impossibile caricare le playlist.",
+    "listCount_one": "{{count}} playlist",
+    "listCount_other": "{{count}} playlist",
+    "emptyListTitle": "Nessuna playlist",
+    "emptyListDescription": "Crea una playlist per iniziare a raccogliere brani."
   },
   "albums": {
-    "title": "Album",
-    "description": "Sfoglia tutti gli album nella tua libreria",
     "sortTitle": "Titolo",
     "sortYear": "Anno",
     "sortRecent": "Aggiunti di Recente",
@@ -201,7 +187,6 @@
     "noTracks": "Nessun brano trovato"
   },
   "liked": {
-    "title": "Preferiti",
     "description": "I brani che ti piacciono",
     "count_one": "{{count}} brano",
     "count_other": "{{count}} brani",
@@ -217,7 +202,6 @@
     "updateError": "Impossibile aggiornare il mi piace."
   },
   "genres": {
-    "title": "Generi",
     "description": "Sfoglia la musica per genere",
     "trackCount_one": "{{count}} brano",
     "trackCount_other": "{{count}} brani",
@@ -235,14 +219,12 @@
     "saving": "Salvataggio...",
     "deleting": "Eliminazione...",
     "collageImage": "Immagine collage {{index}}",
-    "loading": "Caricamento...",
     "close": "Chiudi",
     "more": "Altre azioni"
   },
   "settings": {
     "title": "Impostazioni",
     "description": "Configura il tuo sistema",
-    "sectionLabel": "Sezione",
     "tabs": {
       "audio": "Audio",
       "playback": "Riproduzione",
@@ -349,7 +331,6 @@
       "dangerZoneDescription": "Le azioni qui azzerano parti della configurazione e non possono essere annullate.",
       "hardware": {
         "title": "Hardware",
-        "loading": "Caricamento statistiche hardware...",
         "cpu": "CPU",
         "cores": "{{count}} core",
         "loadAvg": "Carico medio:",
@@ -360,7 +341,6 @@
       },
       "checkError": "Errore nel controllo dello stato MPD",
       "setup": "Procedura guidata",
-      "setupDescription": "Azzerare la procedura guidata di configurazione così riappare al prossimo caricamento.",
       "resetSetup": "Azzera procedura guidata",
       "resetSetupConfirmTitle": "Azzerare la procedura guidata?",
       "resetSetupConfirm": "Ogni passaggio di configurazione verrà segnato come incompleto e la procedura guidata riapparirà al prossimo caricamento della pagina.",

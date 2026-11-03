@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { MenuIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SearchCommand } from "@/features/dashboard/components/search-command";
+import { SearchCommand } from "@/features/search/components/search-command";
 import { ProfileSwitcher } from "@/features/profiles/profile-switcher";
 
 export interface SidebarOutletContext {

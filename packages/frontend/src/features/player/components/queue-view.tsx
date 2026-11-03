@@ -11,10 +11,10 @@ import { ListMusic, X, Play } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTranslation } from "react-i18next";
 import { LikeButton } from "@/features/liked/components/like-button";
-import PlayStatus from "@/features/dashboard/components/play-status";
+import PlayStatus from "@/features/player/components/play-status";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { playerQueries } from "@/features/player/queries";
-import { useTrackDrag } from "@/features/playlists/components/playlist-drop-provider";
+import { useTrackDrag } from "@/features/playlists/playlist-drop-context";
 import { setTrackDragData } from "@/features/playlists/track-drag";
 import { qk } from "@/lib/queryKeys";
 

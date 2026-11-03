@@ -57,7 +57,10 @@ describe("playlistsDb (trophy integration)", () => {
       playlistsDb.create(profileId, "Dup");
       let threw = false;
       try {
-        db().insert(playlists).values({ profile_id: profileId, name: "Dup" }).run();
+        db()
+          .insert(playlists)
+          .values({ profile_id: profileId, name: "Dup" })
+          .run();
       } catch {
         threw = true;
       }
@@ -73,7 +76,10 @@ describe("playlistsDb (trophy integration)", () => {
     });
     it("updates name and description", () => {
       const id = playlistsDb.create(profileId, "OldName", "OldDesc");
-      playlistsDb.update(profileId, id, { name: "NewName", description: "NewDesc" });
+      playlistsDb.update(profileId, id, {
+        name: "NewName",
+        description: "NewDesc",
+      });
       const row = playlistsDb.getById(profileId, id);
       expect(row?.name).to.equal("NewName");
       expect(row?.description).to.equal("NewDesc");
@@ -190,11 +196,10 @@ describe("playlistsDb (trophy integration)", () => {
     });
   });
 
-  describe("track count / cover previews", () => {
-    it("counts tracks in a playlist", () => {
-      const pid = playlistsDb.create(profileId, "CountPl");
-      expect(playlistsDb.getTrackCount(pid)).to.equal(0);
-
+  describe("track counts / cover previews", () => {
+    it("counts tracks for every playlist of the profile", () => {
+      const a = playlistsDb.create(profileId, "CountA");
+      const b = playlistsDb.create(profileId, "CountB");
       const t1 = upsertTrack(db(), {
         file: "a/count1.mp3",
         title: "C1",
@@ -207,13 +212,19 @@ describe("playlistsDb (trophy integration)", () => {
         artist: "A",
         album: "AlCount2",
       } as never);
-      playlistsDb.addTrack(pid, t1);
-      playlistsDb.addTrack(pid, t2);
+      playlistsDb.addTrack(a, t1);
+      playlistsDb.addTrack(a, t2);
+      playlistsDb.addTrack(b, t1);
 
-      expect(playlistsDb.getTrackCount(pid)).to.equal(2);
+      const counts = playlistsDb.getTrackCounts(profileId);
+      expect(counts.get(a)).to.equal(2);
+      expect(counts.get(b)).to.equal(1);
+
+      const other = profilesDb.create({ name: "Other", passwordHash: "hash" });
+      expect(playlistsDb.getTrackCounts(other).size).to.equal(0);
     });
 
-    it("returns distinct non-empty album covers up to 4", () => {
+    it("returns up to 4 distinct covers per playlist", () => {
       const pid = playlistsDb.create(profileId, "CoversPl");
       for (let i = 0; i < 5; i++) {
         const tid = upsertTrack(db(), {
@@ -230,9 +241,9 @@ describe("playlistsDb (trophy integration)", () => {
           .run();
       }
 
-      const previews = playlistsDb.getCoverPreviews(pid);
-      expect(previews).to.have.length(4);
-      expect(previews).to.include("cover-0.webp");
+      const previews = playlistsDb.getCoverPreviewsForProfile(profileId);
+      expect(previews.get(pid)).to.have.length(4);
+      expect(previews.get(pid)).to.include("cover-0.webp");
     });
 
     it("deduplicates covers shared by several tracks", () => {
@@ -257,7 +268,8 @@ describe("playlistsDb (trophy integration)", () => {
         .where(eq(albums.title, "Same Album"))
         .run();
 
-      expect(playlistsDb.getCoverPreviews(pid)).to.deep.equal(["same.webp"]);
+      const previews = playlistsDb.getCoverPreviewsForProfile(profileId);
+      expect(previews.get(pid)).to.deep.equal(["same.webp"]);
     });
   });
 });

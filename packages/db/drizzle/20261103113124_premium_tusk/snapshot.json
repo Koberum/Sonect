@@ -1,7 +1,7 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "efbe2314-d39c-4731-a3c8-e03ac82402da",
+  "id": "c5b2381f-9bbe-4f3d-a97c-d8636a95e8fc",
   "prevIds": [
     "7f56f9d7-e718-47f8-90ab-f595132ce6f2"
   ],
@@ -444,7 +444,7 @@
     },
     {
       "type": "text",
-      "notNull": false,
+      "notNull": true,
       "autoincrement": false,
       "default": null,
       "generated": null,
