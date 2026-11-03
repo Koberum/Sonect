@@ -200,7 +200,7 @@ server holding the DAC exclusively must release it first.
   tools, and other profiles (create, edit, reset password, delete). The last
   administrator cannot be deleted or demoted.
 - **User:** can browse and listen, use the global playlists, and change their own
-  password. Settings (available to admins from the profile menu), the library
+  password. Settings (admin-only, in the sidebar), the library
   refresh action, and setup are hidden; the API also rejects those calls with 403.
 - **Signing in and switching:** `/login` lists the public profiles (name and
   avatar). After entering a password a 30-day `sonect_session` cookie is set.

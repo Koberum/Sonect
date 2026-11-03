@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { AudioLines, Library, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/features/auth/auth-context";
+import { ProfileSwitcher } from "@/features/profiles/profile-switcher";
 
 export interface SidebarProps {
   className?: string;
@@ -57,7 +58,7 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
     pathname === match || pathname.startsWith(`${match}/`);
 
   return (
-    <div className={cn("pb-12", className)}>
+    <div className={cn("flex h-full flex-col pb-24", className)}>
       <nav className="space-y-1 p-3" aria-label={t("nav.label")}>
         {items.map(({ href, match, labelKey, icon: Icon }) => (
           <Button
@@ -72,6 +73,9 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
           </Button>
         ))}
       </nav>
+      <div className="mt-auto border-t p-3">
+        <ProfileSwitcher />
+      </div>
     </div>
   );
 }

@@ -90,23 +90,23 @@ export function ProfileSwitcher() {
           <Button
             variant="ghost"
             aria-label={t("profile.switch")}
-            className="h-8 gap-2 px-2"
+            className="h-auto w-full justify-start gap-3 px-2 py-2"
           >
-            <Avatar className="h-6 w-6">
+            <Avatar className="h-8 w-8">
               <AvatarFallback
-                className="text-[10px] font-bold text-white"
+                className="text-xs font-bold text-white"
                 style={{ backgroundColor: profile.avatarColor }}
               >
                 {getInitials(profile.name)}
               </AvatarFallback>
             </Avatar>
-            <span className="hidden max-w-[120px] truncate text-sm font-medium sm:inline">
+            <span className="min-w-0 flex-1 truncate text-left text-sm font-medium">
               {profile.name}
             </span>
             <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuContent side="top" align="start" className="w-64">
           <DropdownMenuLabel>{t("profile.change")}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {isLoading && (

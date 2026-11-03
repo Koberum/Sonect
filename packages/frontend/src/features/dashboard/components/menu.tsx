@@ -3,7 +3,6 @@ import SidebarToggler from "@/components/sidebar-toggler";
 import { useEffect, useState } from "react";
 import { SearchCommand } from "@/features/dashboard/components/search-command";
 import { useTheme } from "@/components/theme-provider";
-import { ProfileSwitcher } from "@/features/profiles/profile-switcher";
 
 export interface MenuProps {
   isOpen?: boolean;
@@ -50,9 +49,7 @@ export function Menu({ isOpen, toggleSidebar }: MenuProps) {
           <SearchCommand />
         </div>
       </div>
-      <div className="flex flex-1 items-center justify-end gap-2">
-        <ProfileSwitcher />
-      </div>
+      <div className="flex flex-1 items-center justify-end gap-2" />
     </Menubar>
   );
 }
