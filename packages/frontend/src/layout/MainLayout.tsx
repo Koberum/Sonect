@@ -1,8 +1,7 @@
-import { Menu } from "@/features/dashboard/components/menu";
 import MusicPlayer from "@/features/dashboard/components/music-player";
 import { Sidebar } from "@/features/dashboard/components/sidebar";
 import { SetupGuard } from "@/components/setup-guard";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Outlet } from "react-router-dom";
 import { useMediaQuery } from "react-responsive";
 import { Toaster } from "@/components/ui/sonner";
@@ -12,13 +11,13 @@ import { SyncIndicator } from "@/features/sync/components/sync-indicator";
 export default function MainLayout() {
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const openSidebar = useCallback(() => setSidebarOpen(true), []);
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
       <ConnectionBanner />
-      <Menu isOpen={sidebarOpen} toggleSidebar={setSidebarOpen} />
 
-      <div className="flex flex-1 overflow-hidden border-t">
+      <div className="flex flex-1 overflow-hidden">
         <aside className="hidden w-64 shrink-0 flex-col border-r md:flex">
           <Sidebar
             toggleSidebar={() => {}}
@@ -50,7 +49,7 @@ export default function MainLayout() {
         <main className="no-scrollbar flex-1 overflow-y-auto">
           <div className="px-4 pt-6 pb-24 sm:px-4 lg:px-8">
             <SetupGuard>
-              <Outlet />
+              <Outlet context={{ openSidebar }} />
               <Toaster />
             </SetupGuard>
           </div>

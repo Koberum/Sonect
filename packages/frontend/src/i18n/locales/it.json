@@ -15,7 +15,9 @@
     "label": "Sezioni",
     "home": "Home",
     "library": "Libreria",
-    "settings": "Impostazioni"
+    "settings": "Impostazioni",
+    "back": "Indietro",
+    "forward": "Avanti"
   },
   "home": {
     "title": "Home",

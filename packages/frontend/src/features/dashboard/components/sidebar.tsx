@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AudioLines, Library, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/features/auth/auth-context";
 import { ProfileSwitcher } from "@/features/profiles/profile-switcher";
 
@@ -23,6 +25,25 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const { theme } = useTheme();
+  const [systemDark, setSystemDark] = useState(
+    () => window.matchMedia("(prefers-color-scheme: dark)").matches,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (event: MediaQueryListEvent) =>
+      setSystemDark(event.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  const effectiveTheme =
+    theme === "system" ? (systemDark ? "dark" : "light") : theme;
+  const logoSrc =
+    effectiveTheme === "dark"
+      ? "/sonect-logo-dark.svg"
+      : "/sonect-logo-light.svg";
 
   const items: SidebarItem[] = [
     {
@@ -59,6 +80,15 @@ export function Sidebar({ className, toggleSidebar }: SidebarProps) {
 
   return (
     <div className={cn("flex h-full flex-col pb-24", className)}>
+      <div className="flex h-16 shrink-0 items-center px-5">
+        <Link
+          to="/home/listen"
+          onClick={() => toggleSidebar(false)}
+          className="focus-visible:ring-ring rounded-md focus-visible:ring-2 focus-visible:outline-none"
+        >
+          <img src={logoSrc} alt="Sonect" className="h-8 w-auto" />
+        </Link>
+      </div>
       <nav className="space-y-1 p-3" aria-label={t("nav.label")}>
         {items.map(({ href, match, labelKey, icon: Icon }) => (
           <Button

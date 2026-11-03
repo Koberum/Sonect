@@ -413,7 +413,7 @@ export function SearchCommand() {
 
   if (isDesktop) {
     return (
-      <div className="relative w-100" ref={containerRef}>
+      <div className="relative w-full" ref={containerRef}>
         <div
           className="text-muted-foreground flex cursor-text items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors"
           onClick={() => inputRef.current?.focus()}

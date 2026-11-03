@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { PageHeader } from "@/components/ui/page-header";
 import { SectionTabs, type SectionTab } from "@/components/section-tabs";
+import { SectionToolbar } from "@/components/section-toolbar";
 import { cn } from "@/lib/utils";
 
 export interface SectionLayoutProps {
@@ -21,10 +22,13 @@ export function SectionLayout({
 
   return (
     <div className={cn(className)}>
+      <SectionToolbar />
       {!isDetail ? (
-        <PageHeader title={title} description={description} />
+        <>
+          <PageHeader title={title} description={description} />
+          <SectionTabs tabs={tabs} label={title} />
+        </>
       ) : null}
-      <SectionTabs tabs={tabs} label={title} />
       <Outlet />
     </div>
   );

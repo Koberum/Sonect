@@ -15,7 +15,9 @@
     "label": "Sections",
     "home": "Home",
     "library": "Library",
-    "settings": "Settings"
+    "settings": "Settings",
+    "back": "Back",
+    "forward": "Forward"
   },
   "home": {
     "title": "Home",
