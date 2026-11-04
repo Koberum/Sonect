@@ -173,4 +173,4 @@ it.json**. No hardcoded English in components, including validation messages.
 - [ ] Radius follows the mapping
 - [ ] One `h1` per page via `PageHeader`
 - [ ] All strings in en/es/it
-- [ ] Playwright check at 375 / 768 / 1280 px (see `sonect-responsive`)
+- [ ] Responsive check at 375 / 768 / 1280 px (see `sonect-responsive`)

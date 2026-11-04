@@ -82,16 +82,16 @@ Sonect uses **Tailwind CSS 4** with a mobile-first breakpoint system. Every UI c
 
 ---
 
-## Playwright verification workflow
+## Manual verification workflow
 
-Before declaring a frontend change done, verify at 3 viewports using the Playwright MCP server (`playwright_browser_*` tools — see the `sonect-playwright` skill; `playwright` is not a workspace dependency, so do not write `import { chromium } from "playwright"` scripts):
+Before declaring a frontend change done, verify at 3 viewports with the browser's responsive mode (the frontend dev server must be running on `http://localhost:5173`):
 
-1. `browser_navigate` to `http://localhost:5173/PATH` (frontend dev server must be running)
-2. For each viewport — `browser_resize(375, 812)`, `browser_resize(768, 1024)`, `browser_resize(1280, 800)`:
-   - `browser_evaluate`: `document.documentElement.scrollWidth > document.documentElement.clientWidth` → horizontal overflow
-   - `browser_take_screenshot` for the visual check
+1. Open the affected route.
+2. For each viewport — 375×812 (mobile), 768×1024 (tablet), 1280×800 (desktop):
+   - In the DevTools console run `document.documentElement.scrollWidth > document.documentElement.clientWidth` → must be `false` (no horizontal overflow)
+   - Visually check the layout
 
-Check each screenshot for:
+Check each viewport for:
 
 - No horizontal scrollbar
 - All content visible and not cut off
@@ -113,4 +113,4 @@ Check each screenshot for:
 - [ ] Text truncation applied where needed (titles, descriptions)
 - [ ] Sidebar hidden by default on mobile
 - [ ] Player bar does not obscure content
-- [ ] Screenshots taken at all 3 breakpoints
+- [ ] Checked at all 3 breakpoints
