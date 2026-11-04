@@ -1,12 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { isSetupCompleteForSession } from "@/features/system/api";
 import { useAuth } from "@/features/auth/auth-context";
 
 export function SetupGuard({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
+  const navigateRef = useRef(navigate);
   const { isAdmin, profile } = useAuth();
   const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    navigateRef.current = navigate;
+  }, [navigate]);
 
   useEffect(() => {
     // Setup is an admin concern; regular users can use the app immediately.
@@ -19,7 +24,7 @@ export function SetupGuard({ children }: { children: React.ReactNode }) {
         const complete = await isSetupCompleteForSession();
         if (!cancelled) {
           if (!complete) {
-            navigate("/setup", { replace: true });
+            navigateRef.current("/setup", { replace: true });
           } else {
             setChecking(false);
           }
@@ -32,7 +37,7 @@ export function SetupGuard({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [isAdmin, navigate, profile?.id]);
+  }, [isAdmin, profile?.id]);
 
   if (!isAdmin) return <>{children}</>;
 

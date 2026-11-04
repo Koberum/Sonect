@@ -129,7 +129,7 @@ export default function LikedSongs() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate("/library/albums")}
+              onClick={() => navigate("/library", { state: { tab: "albums" } })}
             >
               {t("liked.browse")}
             </Button>

@@ -1,13 +1,9 @@
 import { useTranslation } from "react-i18next";
-import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { MenuIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SearchCommand } from "@/features/search/components/search-command";
 import { ProfileSwitcher } from "@/features/profiles/profile-switcher";
-
-export interface SidebarOutletContext {
-  openSidebar: () => void;
-}
 
 type HistoryState = { idx?: number } | null;
 
@@ -19,10 +15,13 @@ function useCanGoBack(): boolean {
   return ((window.history.state as HistoryState)?.idx ?? 0) > 0;
 }
 
-export function SectionToolbar() {
+export interface SectionToolbarProps {
+  onOpenSidebar: () => void;
+}
+
+export function SectionToolbar({ onOpenSidebar }: SectionToolbarProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const context = useOutletContext<SidebarOutletContext | null>();
   const canGoBack = useCanGoBack();
 
   return (
@@ -31,7 +30,7 @@ export function SectionToolbar() {
         variant="bare"
         size="icon-sm"
         className="md:hidden"
-        onClick={() => context?.openSidebar()}
+        onClick={onOpenSidebar}
         aria-label={t("sidebar.toggleSidebar")}
       >
         <MenuIcon />

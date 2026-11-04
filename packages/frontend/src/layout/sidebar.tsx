@@ -66,13 +66,13 @@ export function Sidebar({
 
   const items: SidebarItem[] = [
     {
-      href: "/home/listen",
+      href: "/home",
       match: "/home",
       labelKey: "nav.home",
       icon: AudioLines,
     },
     {
-      href: "/library/albums",
+      href: "/library",
       match: "/library",
       labelKey: "nav.library",
       icon: Library,
@@ -80,7 +80,7 @@ export function Sidebar({
     ...(isAdmin
       ? [
           {
-            href: "/settings/audio",
+            href: "/settings",
             match: "/settings",
             labelKey: "nav.settings",
             icon: Settings,
@@ -107,7 +107,7 @@ export function Sidebar({
       >
         {!collapsed ? (
           <Link
-            to="/home/listen"
+            to="/home"
             onClick={() => toggleSidebar(false)}
             className="focus-visible:ring-ring rounded-md focus-visible:ring-2 focus-visible:outline-none"
           >

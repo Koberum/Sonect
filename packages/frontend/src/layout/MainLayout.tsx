@@ -1,7 +1,9 @@
 import MusicPlayer from "@/features/player/components/music-player";
 import { Sidebar } from "@/layout/sidebar";
+import { SectionToolbar } from "@/components/section-toolbar";
+import { SectionContentSkeleton } from "@/components/section-tabs";
 import { SetupGuard } from "@/components/setup-guard";
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import { useMediaQuery } from "react-responsive";
 import { Toaster } from "@/components/ui/sonner";
@@ -74,7 +76,10 @@ export default function MainLayout() {
             <main className="no-scrollbar flex-1 overflow-y-auto">
               <div className="px-4 pt-4 pb-12 sm:px-4 lg:px-8">
                 <SetupGuard>
-                  <Outlet context={{ openSidebar }} />
+                  <SectionToolbar onOpenSidebar={openSidebar} />
+                  <Suspense fallback={<SectionContentSkeleton />}>
+                    <Outlet />
+                  </Suspense>
                   <Toaster />
                 </SetupGuard>
               </div>

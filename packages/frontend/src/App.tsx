@@ -27,51 +27,13 @@ const LibrarySection = lazy(() =>
     default: m.LibrarySection,
   })),
 );
-const Dashboard = lazy(() => import("./pages/Dashboard"));
+const PlaylistDetail = lazy(() => import("./pages/PlaylistDetail"));
 const AlbumPage = lazy(() => import("./pages/AlbumTracks"));
-const Albums = lazy(() => import("./pages/Albums"));
-const LikedSongs = lazy(() => import("./pages/LikedSongs"));
-const Genres = lazy(() => import("./pages/Genres"));
-const GenreDetail = lazy(() => import("./pages/GenreDetail"));
-const Artists = lazy(() =>
-  import("./pages/Artists").then((m) => ({ default: m.Artists })),
-);
 const ArtistAlbums = lazy(() =>
   import("./pages/ArtistAlbums").then((m) => ({ default: m.ArtistAlbums })),
 );
-const Statistics = lazy(() =>
-  import("./pages/Statistics").then((m) => ({ default: m.Statistics })),
-);
-const Playlists = lazy(() => import("./pages/Playlists"));
-const PlaylistDetail = lazy(() => import("./pages/PlaylistDetail"));
-const Settings = lazy(() =>
-  import("./pages/Settings").then((m) => ({ default: m.Settings })),
-);
-const AudioTab = lazy(() =>
-  import("./features/settings/audio-tab").then((m) => ({
-    default: m.AudioTab,
-  })),
-);
-const PlaybackTab = lazy(() =>
-  import("./features/settings/playback-tab").then((m) => ({
-    default: m.PlaybackTab,
-  })),
-);
-const LibrariesTab = lazy(() =>
-  import("./features/settings/libraries-tab").then((m) => ({
-    default: m.LibrariesTab,
-  })),
-);
-const AppearanceTab = lazy(() =>
-  import("./features/settings/appearance-tab").then((m) => ({
-    default: m.AppearanceTab,
-  })),
-);
-const DebugTab = lazy(() =>
-  import("./features/settings/debug-tab").then((m) => ({
-    default: m.DebugTab,
-  })),
-);
+const GenreDetail = lazy(() => import("./pages/GenreDetail"));
+const Settings = lazy(() => import("./pages/Settings"));
 const SetupWizard = lazy(() => import("./pages/SetupWizard"));
 
 function PageLoader() {
@@ -80,6 +42,12 @@ function PageLoader() {
       <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
     </div>
   );
+}
+
+type LegacyTabRedirectProps = { to: string; tab: string };
+
+function LegacyTabRedirect({ to, tab }: LegacyTabRedirectProps) {
+  return <Navigate to={to} state={{ tab }} replace />;
 }
 
 export default function App() {
@@ -118,40 +86,22 @@ export default function App() {
                         </AuthGuard>
                       }
                     >
-                      <Route
-                        index
-                        element={<Navigate to="/home/listen" replace />}
-                      />
+                      <Route index element={<Navigate to="/home" replace />} />
 
                       <Route path="home" element={<HomeSection />}>
-                        <Route
-                          index
-                          element={<Navigate to="listen" replace />}
-                        />
-                        <Route path="listen" element={<Dashboard />} />
-                        <Route path="playlists" element={<Playlists />} />
                         <Route
                           path="playlists/:id"
                           element={<PlaylistDetail />}
                         />
-                        <Route path="liked" element={<LikedSongs />} />
                       </Route>
 
                       <Route path="library" element={<LibrarySection />}>
-                        <Route
-                          index
-                          element={<Navigate to="albums" replace />}
-                        />
-                        <Route path="albums" element={<Albums />} />
                         <Route path="albums/:id" element={<AlbumPage />} />
-                        <Route path="artists" element={<Artists />} />
                         <Route
                           path="artists/:artistId"
                           element={<ArtistAlbums />}
                         />
-                        <Route path="genres" element={<Genres />} />
                         <Route path="genres/:genre" element={<GenreDetail />} />
-                        <Route path="statistics" element={<Statistics />} />
                       </Route>
 
                       <Route
@@ -161,18 +111,77 @@ export default function App() {
                             <Settings />
                           </AdminGuard>
                         }
-                      >
-                        <Route
-                          index
-                          element={<Navigate to="audio" replace />}
-                        />
-                        <Route path="audio" element={<AudioTab />} />
-                        <Route path="playback" element={<PlaybackTab />} />
-                        <Route path="libraries" element={<LibrariesTab />} />
-                        <Route path="appearance" element={<AppearanceTab />} />
-                        <Route path="debug" element={<DebugTab />} />
-                      </Route>
+                      />
 
+                      {/* Legacy tab URLs: tabs are in-page state now. */}
+                      <Route
+                        path="home/listen"
+                        element={<LegacyTabRedirect to="/home" tab="listen" />}
+                      />
+                      <Route
+                        path="home/playlists"
+                        element={
+                          <LegacyTabRedirect to="/home" tab="playlists" />
+                        }
+                      />
+                      <Route
+                        path="home/liked"
+                        element={<LegacyTabRedirect to="/home" tab="liked" />}
+                      />
+                      <Route
+                        path="library/albums"
+                        element={
+                          <LegacyTabRedirect to="/library" tab="albums" />
+                        }
+                      />
+                      <Route
+                        path="library/artists"
+                        element={
+                          <LegacyTabRedirect to="/library" tab="artists" />
+                        }
+                      />
+                      <Route
+                        path="library/genres"
+                        element={
+                          <LegacyTabRedirect to="/library" tab="genres" />
+                        }
+                      />
+                      <Route
+                        path="library/statistics"
+                        element={
+                          <LegacyTabRedirect to="/library" tab="statistics" />
+                        }
+                      />
+                      <Route
+                        path="settings/audio"
+                        element={
+                          <LegacyTabRedirect to="/settings" tab="audio" />
+                        }
+                      />
+                      <Route
+                        path="settings/playback"
+                        element={
+                          <LegacyTabRedirect to="/settings" tab="playback" />
+                        }
+                      />
+                      <Route
+                        path="settings/libraries"
+                        element={
+                          <LegacyTabRedirect to="/settings" tab="libraries" />
+                        }
+                      />
+                      <Route
+                        path="settings/appearance"
+                        element={
+                          <LegacyTabRedirect to="/settings" tab="appearance" />
+                        }
+                      />
+                      <Route
+                        path="settings/debug"
+                        element={
+                          <LegacyTabRedirect to="/settings" tab="debug" />
+                        }
+                      />
                     </Route>
                   </Routes>
                 </Suspense>

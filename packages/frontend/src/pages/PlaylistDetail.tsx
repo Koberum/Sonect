@@ -92,7 +92,7 @@ export default function PlaylistDetail() {
     try {
       await deleteMut.mutateAsync(playlist.id);
       toast(t("playlist.deleted"));
-      navigate("/home/playlists");
+      navigate("/home", { state: { tab: "playlists" } });
     } catch {
       toast.error(t("playlist.deleteError"));
     } finally {
