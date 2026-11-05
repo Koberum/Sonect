@@ -5,8 +5,8 @@ import { asyncHandler } from "@middleware/asyncHandler";
 import { NotFoundError } from "@middleware/errorHandler";
 
 export const getAllPlaylistsHandler = asyncHandler(
-  async (_req: Request, res: Response) => {
-    const playlists = getPlaylistService().getAllPlaylists();
+  async (req: Request, res: Response) => {
+    const playlists = getPlaylistService().getAllPlaylists(req.auth!.profileId);
     res.json(playlists);
   },
 );
@@ -14,7 +14,10 @@ export const getAllPlaylistsHandler = asyncHandler(
 export const getPlaylistHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = playlistSchemas.idParam.parse(req.params);
-    const playlist = getPlaylistService().getPlaylistWithTracks(id);
+    const playlist = getPlaylistService().getPlaylistWithTracks(
+      req.auth!.profileId,
+      id,
+    );
     if (!playlist) throw new NotFoundError("Playlist");
     res.json(playlist);
   },
@@ -23,7 +26,11 @@ export const getPlaylistHandler = asyncHandler(
 export const createPlaylistHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { name, description } = playlistSchemas.create.parse(req.body);
-    const playlist = getPlaylistService().createPlaylist(name, description);
+    const playlist = getPlaylistService().createPlaylist(
+      req.auth!.profileId,
+      name,
+      description,
+    );
     if (!playlist) throw new Error("Failed to create playlist");
     res.status(201).json(playlist);
   },
@@ -33,10 +40,11 @@ export const updatePlaylistHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = playlistSchemas.idParam.parse(req.params);
     const { name, description } = playlistSchemas.update.parse(req.body);
-    const playlist = getPlaylistService().updatePlaylist(id, {
-      name,
-      description,
-    });
+    const playlist = getPlaylistService().updatePlaylist(
+      req.auth!.profileId,
+      id,
+      { name, description },
+    );
     if (!playlist) throw new NotFoundError("Playlist");
     res.json(playlist);
   },
@@ -45,7 +53,10 @@ export const updatePlaylistHandler = asyncHandler(
 export const deletePlaylistHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = playlistSchemas.idParam.parse(req.params);
-    const deleted = getPlaylistService().deletePlaylist(id);
+    const deleted = getPlaylistService().deletePlaylist(
+      req.auth!.profileId,
+      id,
+    );
     if (!deleted) throw new NotFoundError("Playlist");
     res.json({ message: "Playlist deleted" });
   },
@@ -55,8 +66,12 @@ export const addTrackToPlaylistHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { id: playlistId } = playlistSchemas.idParam.parse(req.params);
     const { trackId } = playlistSchemas.addTrack.parse(req.body);
-    const result = getPlaylistService().addTrackToPlaylist(playlistId, trackId);
-    if (!result) throw new Error("Failed to add track");
+    const result = getPlaylistService().addTrackToPlaylist(
+      req.auth!.profileId,
+      playlistId,
+      trackId,
+    );
+    if (!result) throw new NotFoundError("Playlist");
     res.status(201).json(result);
   },
 );
@@ -68,6 +83,7 @@ export const removeTrackFromPlaylistHandler = asyncHandler(
       req.params,
     );
     const removed = getPlaylistService().removeTrackFromPlaylist(
+      req.auth!.profileId,
       playlistTrackId,
       playlistId,
     );
@@ -79,7 +95,7 @@ export const removeTrackFromPlaylistHandler = asyncHandler(
 export const loadPlaylistHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = playlistSchemas.idParam.parse(req.params);
-    await getPlaylistService().loadPlaylist(id);
+    await getPlaylistService().loadPlaylist(req.auth!.profileId, id);
     res.json({ message: "Playlist loaded into queue" });
   },
 );

@@ -1,10 +1,18 @@
+import { readFileSync } from "node:fs";
 import path from "path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+const { version } = JSON.parse(
+  readFileSync(path.resolve(__dirname, "./package.json"), "utf-8"),
+) as { version: string };
+
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(version),
+  },
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
@@ -21,7 +29,6 @@ export default defineConfig({
       "/stream": "http://localhost:3000",
       "/system": "http://localhost:3000",
       "/dashboard": "http://localhost:3000",
-      "/session": "http://localhost:3000",
       "/profiles": "http://localhost:3000",
       "/auth": "http://localhost:3000",
       "/likes": "http://localhost:3000",

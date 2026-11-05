@@ -90,13 +90,25 @@ export const tracks = sqliteTable(
   ],
 );
 
-export const playlists = sqliteTable("playlists", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull().unique(),
-  description: text("description"),
-  created_at: text("created_at").default(sql`CURRENT_TIMESTAMP`),
-  updated_at: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
-});
+export const playlists = sqliteTable(
+  "playlists",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    profile_id: text("profile_id")
+      .notNull()
+      .references(() => profiles.id, {
+        onDelete: "cascade",
+      }),
+    name: text("name").notNull(),
+    description: text("description"),
+    created_at: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+    updated_at: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    unique().on(table.profile_id, table.name),
+    index("idx_playlists_profile").on(table.profile_id),
+  ],
+);
 
 export const playlistTracks = sqliteTable(
   "playlist_tracks",

@@ -5,11 +5,7 @@ import {
   desc,
   eq,
   getColumns,
-  inArray,
-  isNull,
-  isNotNull,
   like,
-  lt,
   or,
   sql,
 } from "drizzle-orm";
@@ -207,81 +203,6 @@ export const tracksDb = {
       .run();
   },
 
-  getTopTracks(limit: number, offset = 0): DBTrackWithRelations[] {
-    return joinedOnArtistAndAlbum()
-      .orderBy(desc(tracks.play_count), desc(tracks.last_played))
-      .limit(limit)
-      .offset(offset)
-      .all() as DBTrackWithRelations[];
-  },
-
-  getRecentlyPlayed(limit: number): DBTrackWithRelations[] {
-    return joinedOnArtistAndAlbum()
-      .where(isNotNull(tracks.last_played))
-      .orderBy(desc(tracks.last_played))
-      .limit(limit)
-      .all() as DBTrackWithRelations[];
-  },
-
-  getTracksForDiscovery(
-    genreNames: string[],
-    artistIds: number[],
-    limit: number,
-  ): DBTrackWithRelations[] {
-    // The raw SQL matched `genre IN (...) OR artist_id IN (...)`; an empty
-    // SQLite IN list is always false, so both lists empty matches nothing.
-    if (genreNames.length === 0 && artistIds.length === 0) return [];
-    const scope = or(
-      genreNames.length > 0 ? inArray(genres.name, genreNames) : undefined,
-      artistIds.length > 0 ? inArray(tracks.artist_id, artistIds) : undefined,
-    );
-    return joinedOnArtistAndAlbum()
-      .where(
-        and(scope, or(isNull(tracks.play_count), lt(tracks.play_count, 3))),
-      )
-      .orderBy(sql`random()`)
-      .limit(limit)
-      .all() as DBTrackWithRelations[];
-  },
-
-  getTopGenres(limit: number): string[] {
-    const total = sql<number>`sum(${tracks.play_count})`;
-    return db()
-      .select({ genre: genres.name })
-      .from(tracks)
-      .innerJoin(genres, eq(tracks.genre_id, genres.id))
-      .groupBy(genres.id, genres.name)
-      .orderBy(desc(total))
-      .limit(limit)
-      .all()
-      .map((row) => row.genre);
-  },
-
-  getTopArtists(limit: number): { id: number; name: string; total: number }[] {
-    const total = sql<number>`coalesce(sum(${tracks.play_count}), 0)`;
-    return db()
-      .select({ id: artists.id, name: artists.name, total })
-      .from(artists)
-      .innerJoin(tracks, eq(tracks.artist_id, artists.id))
-      .groupBy(artists.id)
-      .orderBy(desc(total))
-      .limit(limit)
-      .all() as { id: number; name: string; total: number }[];
-  },
-
-  getTopGenre(): string | null {
-    const total = sql<number>`sum(${tracks.play_count})`;
-    const row = db()
-      .select({ genre: genres.name })
-      .from(tracks)
-      .innerJoin(genres, eq(tracks.genre_id, genres.id))
-      .groupBy(genres.id, genres.name)
-      .orderBy(desc(total))
-      .limit(1)
-      .get();
-    return row?.genre || null;
-  },
-
   getTracksByGenre(genre: string, limit: number): DBTrackWithRelations[] {
     return joinedOnArtistAndAlbum()
       .where(sql`${genres.name} = ${genre} COLLATE NOCASE`)
@@ -293,13 +214,6 @@ export const tracksDb = {
   count(): number {
     const row = db().select({ value: count() }).from(tracks).get();
     return row?.value ?? 0;
-  },
-
-  getRecentWithRelations(limit: number): DBTrackWithRelations[] {
-    return joinedOnArtistAndAlbum()
-      .orderBy(desc(tracks.created_at))
-      .limit(limit)
-      .all() as DBTrackWithRelations[];
   },
 
   getRandomWithRelations(limit: number): DBTrackWithRelations[] {
@@ -364,14 +278,6 @@ export const tracksDb = {
   getByFile(file: string): DBTrack | undefined {
     return db().select().from(tracks).where(eq(tracks.file, file)).get() as
       DBTrack | undefined;
-  },
-
-  getFiles(): string[] {
-    return db()
-      .select({ file: tracks.file })
-      .from(tracks)
-      .all()
-      .map((row) => row.file);
   },
 
   getSyncSnapshot(): SyncTrackSnapshot[] {
@@ -486,33 +392,5 @@ export const tracksDb = {
         )
         .all() as DBTrackWithRelations[],
     );
-  },
-
-  getAllWithRelations(
-    sort?: string,
-    limit?: number,
-    offset?: number,
-  ): DBTrackWithRelations[] {
-    const orderBy =
-      sort === "recent"
-        ? [desc(tracks.created_at)]
-        : sort === "duration"
-          ? [desc(tracks.duration)]
-          : [asc(tracks.title)];
-    let query = db()
-      .select(dBTrackWithRelations)
-      .from(tracks)
-      .leftJoin(artists, eq(tracks.artist_id, artists.id))
-      .leftJoin(albums, eq(tracks.album_id, albums.id))
-      .leftJoin(genres, eq(tracks.genre_id, genres.id))
-      .orderBy(...orderBy)
-      .$dynamic();
-    if (limit !== undefined) {
-      query = query.limit(limit);
-      if (offset !== undefined) {
-        query = query.offset(offset);
-      }
-    }
-    return query.all() as DBTrackWithRelations[];
   },
 };

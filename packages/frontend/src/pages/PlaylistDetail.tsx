@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
+import { useAuth } from "@/features/auth/auth-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -35,13 +36,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   playlistQueries,
@@ -55,16 +49,18 @@ export default function PlaylistDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { play } = usePlayTrack();
+  const { profile } = useAuth();
+  const profileId = profile?.id ?? "";
   const pid = id ? parseInt(id, 10) : 0;
 
   const { data: playlist, isPending } = useQuery({
-    ...playlistQueries.detail(pid),
-    enabled: !!pid,
+    ...playlistQueries.detail(profileId, pid),
+    enabled: !!pid && !!profileId,
   });
 
-  const updateMut = useMutation(playlistMutations.update());
-  const deleteMut = useMutation(playlistMutations.delete());
-  const removeTrackMut = useMutation(playlistMutations.removeTrack());
+  const updateMut = useMutation(playlistMutations.update(profileId));
+  const deleteMut = useMutation(playlistMutations.delete(profileId));
+  const removeTrackMut = useMutation(playlistMutations.removeTrack(profileId));
   const loadMut = useMutation(playlistMutations.load());
 
   const [editOpen, setEditOpen] = useState(false);
@@ -96,7 +92,7 @@ export default function PlaylistDetail() {
     try {
       await deleteMut.mutateAsync(playlist.id);
       toast(t("playlist.deleted"));
-      navigate("/");
+      navigate("/home", { state: { tab: "playlists" } });
     } catch {
       toast.error(t("playlist.deleteError"));
     } finally {
@@ -149,28 +145,6 @@ export default function PlaylistDetail() {
 
   return (
     <div>
-      <Breadcrumb className="mb-4">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to="/">{t("breadcrumb.home")}</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink className="text-muted-foreground">
-              {t("breadcrumb.playlists")}
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink className="text-foreground">
-              {playlist.name}
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
       <PageHeader
         title={playlist.name}
         description={

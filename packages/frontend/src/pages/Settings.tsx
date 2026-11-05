@@ -1,53 +1,70 @@
+import { lazy } from "react";
 import { useTranslation } from "react-i18next";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AudioTab } from "@/features/settings/audio-tab";
-import { PlaybackTab } from "@/features/settings/playback-tab";
-import { LibrariesTab } from "@/features/settings/libraries-tab";
-import { AppearanceTab } from "@/features/settings/appearance-tab";
-import { DebugTab } from "@/features/settings/debug-tab";
-import { PageHeader } from "@/components/ui/page-header";
+import type { SectionTab } from "@/components/section-tabs";
+import { SectionLayout } from "@/components/section-layout";
 
-export function Settings() {
+const AudioTab = lazy(() =>
+  import("@/features/settings/audio-tab").then((m) => ({
+    default: m.AudioTab,
+  })),
+);
+const PlaybackTab = lazy(() =>
+  import("@/features/settings/playback-tab").then((m) => ({
+    default: m.PlaybackTab,
+  })),
+);
+const LibrariesTab = lazy(() =>
+  import("@/features/settings/libraries-tab").then((m) => ({
+    default: m.LibrariesTab,
+  })),
+);
+const AppearanceTab = lazy(() =>
+  import("@/features/settings/appearance-tab").then((m) => ({
+    default: m.AppearanceTab,
+  })),
+);
+const DebugTab = lazy(() =>
+  import("@/features/settings/debug-tab").then((m) => ({
+    default: m.DebugTab,
+  })),
+);
+
+export default function Settings() {
   const { t } = useTranslation();
 
+  const tabs: SectionTab[] = [
+    {
+      id: "audio",
+      labelKey: "settings.tabs.audio",
+      content: <AudioTab />,
+    },
+    {
+      id: "playback",
+      labelKey: "settings.tabs.playback",
+      content: <PlaybackTab />,
+    },
+    {
+      id: "libraries",
+      labelKey: "settings.tabs.libraries",
+      content: <LibrariesTab />,
+    },
+    {
+      id: "appearance",
+      labelKey: "settings.tabs.appearance",
+      content: <AppearanceTab />,
+    },
+    {
+      id: "debug",
+      labelKey: "settings.tabs.debug",
+      content: <DebugTab />,
+    },
+  ];
+
   return (
-    <div>
-      <PageHeader
-        title={t("settings.title")}
-        description={t("settings.description")}
-      />
-
-      <Tabs defaultValue="audio">
-        <TabsList className="mb-4 max-w-full overflow-x-auto">
-          <TabsTrigger value="audio">{t("settings.tabs.audio")}</TabsTrigger>
-          <TabsTrigger value="playback">
-            {t("settings.tabs.playback")}
-          </TabsTrigger>
-          <TabsTrigger value="libraries">
-            {t("settings.tabs.libraries")}
-          </TabsTrigger>
-          <TabsTrigger value="appearance">
-            {t("settings.tabs.appearance")}
-          </TabsTrigger>
-          <TabsTrigger value="debug">{t("settings.tabs.debug")}</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="audio">
-          <AudioTab />
-        </TabsContent>
-        <TabsContent value="playback">
-          <PlaybackTab />
-        </TabsContent>
-        <TabsContent value="libraries">
-          <LibrariesTab />
-        </TabsContent>
-        <TabsContent value="appearance">
-          <AppearanceTab />
-        </TabsContent>
-        <TabsContent value="debug">
-          <DebugTab />
-        </TabsContent>
-      </Tabs>
-    </div>
+    <SectionLayout
+      title={t("settings.title")}
+      basePath="/settings"
+      tabs={tabs}
+    />
   );
 }

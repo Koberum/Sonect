@@ -1,8 +1,8 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useParams } from "react-router-dom";
-import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
+import { useParams } from "react-router-dom";
+import { AlbumCard } from "@/features/catalog/components/media-card/album-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody } from "@/components/ui/table";
@@ -15,7 +15,6 @@ import { catalogQueries } from "@/features/catalog/queries";
 export default function GenreDetail() {
   const { t } = useTranslation();
   const { genre } = useParams<{ genre: string }>();
-  const navigate = useNavigate();
 
   const { data: albums = [], isPending: albumsPending } = useQuery({
     ...catalogQueries.albumsByGenre(genre ?? ""),
@@ -58,14 +57,9 @@ export default function GenreDetail() {
           {albums.length === 0 && (
             <EmptyState icon={Disc3} title={t("albums.noAlbums")} />
           )}
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             {albums.map((album) => (
-              <AlbumArtwork
-                key={album.id}
-                album={album}
-                className="w-full"
-                onClick={() => navigate(`/albums/${album.id}`)}
-              />
+              <AlbumCard key={album.id} album={album} className="w-full" />
             ))}
           </div>
         </TabsContent>

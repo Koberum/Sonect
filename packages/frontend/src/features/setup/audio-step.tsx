@@ -1,13 +1,10 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Loader2 } from "lucide-react";
+import { VolumeX } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  SelectableRow,
-  SelectableRowDescription,
-  SelectableRowTitle,
-} from "@/components/ui/selectable-row";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   WizardStep,
   WizardStepActions,
@@ -16,6 +13,7 @@ import {
   WizardStepHeader,
   WizardStepTitle,
 } from "@/components/ui/wizard-step";
+import { AudioDeviceList } from "@/features/settings/audio-device-list";
 import { toast } from "sonner";
 import {
   getAudioDevices,
@@ -35,28 +33,30 @@ export function AudioStep({ onNext }: AudioStepProps) {
   const [currentCard, setCurrentCard] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+
+  const load = useCallback(async () => {
+    setFetching(true);
+    setLoadError(false);
+    try {
+      const [devicesData, audioStatus] = await Promise.all([
+        getAudioDevices(),
+        getAudioStatus(),
+      ]);
+      setDevices(devicesData);
+      setCurrentCard(audioStatus?.card ?? null);
+      const matched = devicesData.find((d) => d.card === audioStatus?.card);
+      setSelected(matched?.card ?? "");
+    } catch {
+      setLoadError(true);
+    } finally {
+      setFetching(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        const [devicesData, audioStatus] = await Promise.all([
-          getAudioDevices(),
-          getAudioStatus(),
-        ]);
-        setDevices(devicesData);
-        if (audioStatus) {
-          setCurrentCard(audioStatus.card);
-          const matched = devicesData.find((d) => d.card === audioStatus.card);
-          if (matched) setSelected(matched.card);
-        }
-      } catch {
-        toast.error(t("settings.audio.loadError"));
-      } finally {
-        setFetching(false);
-      }
-    };
-    fetch();
-  }, [t]);
+    void load();
+  }, [load]);
 
   const handleApply = async () => {
     if (!selected) return;
@@ -89,50 +89,38 @@ export function AudioStep({ onNext }: AudioStepProps) {
         </WizardStepDescription>
       </WizardStepHeader>
 
-      <WizardStepContent>
+      <WizardStepContent className="flex flex-col gap-4">
         {fetching ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+          <div className="flex flex-col gap-2" aria-hidden="true">
+            {[0, 1].map((i) => (
+              <Skeleton key={i} className="h-16 w-full rounded-lg" />
+            ))}
           </div>
+        ) : loadError ? (
+          <Alert
+            variant="destructive"
+            className="flex flex-wrap items-center justify-between gap-3 text-left"
+          >
+            <AlertDescription>{t("settings.audio.loadError")}</AlertDescription>
+            <Button variant="outline" size="sm" onClick={() => void load()}>
+              {t("common.retry")}
+            </Button>
+          </Alert>
         ) : devices.length === 0 ? (
-          <p className="text-muted-foreground text-center text-sm">
-            {t("settings.audio.noDevices")}
-          </p>
+          <EmptyState
+            icon={VolumeX}
+            title={t("settings.audio.noDevices")}
+            className="py-6"
+          />
         ) : (
-          devices.map((device, index) => (
-            <SelectableRow key={index} asChild>
-              <label>
-                <input
-                  type="radio"
-                  name="wizard-audio"
-                  value={device.card}
-                  checked={selected === device.card}
-                  onChange={() => setSelected(device.card)}
-                  className="h-4 w-4"
-                />
-                <div className="flex-1">
-                  <SelectableRowTitle>
-                    {device.description || device.name}
-                  </SelectableRowTitle>
-                  <SelectableRowDescription>
-                    {device.card}
-                  </SelectableRowDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  {currentCard === device.card && (
-                    <Badge className="border-transparent bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                      {t("settings.audio.currentlyActive")}
-                    </Badge>
-                  )}
-                  {device.usb && (
-                    <Badge className="border-transparent bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                      {t("settings.audio.usbDac")}
-                    </Badge>
-                  )}
-                </div>
-              </label>
-            </SelectableRow>
-          ))
+          <div className="text-left">
+            <AudioDeviceList
+              devices={devices}
+              value={selected}
+              onValueChange={setSelected}
+              currentCard={currentCard}
+            />
+          </div>
         )}
       </WizardStepContent>
 

@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api";
-import type { NetworkStatus, OutputMode } from "@repo/types";
+import type { OutputMode } from "@repo/types";
 import type { DashboardData } from "@repo/types/catalog";
 
 export interface AudioDevice {
@@ -155,19 +155,6 @@ export function getAudioStatus(
   signal?: AbortSignal,
 ): Promise<AudioStatusResponse | null> {
   return apiFetch("/system/audio/status", { signal });
-}
-
-export interface HealthResponse {
-  tools: { aplay: boolean; lsusb: boolean; systemctl: boolean; mpd: boolean };
-  audio: { available: boolean; cards: AudioDevice[] };
-  mpdConnected: boolean;
-  setupCompleted: string[];
-  version: string;
-  network: NetworkStatus;
-}
-
-export function getHealth(signal?: AbortSignal): Promise<HealthResponse> {
-  return apiFetch("/system/health", { signal });
 }
 
 export function getMpdStatus(signal?: AbortSignal): Promise<{

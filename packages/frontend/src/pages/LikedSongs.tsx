@@ -5,7 +5,6 @@ import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
 import { Heart, Loader2, Play, Shuffle } from "lucide-react";
 import { toast } from "sonner";
 import type { LikedTracksPage } from "@repo/types/catalog";
-import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -75,41 +74,38 @@ export default function LikedSongs() {
 
   return (
     <div>
-      <PageHeader
-        title={t("liked.title")}
-        description={description}
-        actions={
-          total > 0 ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!canPlay}
-                onClick={() => playMutation.mutate(true)}
-              >
-                {playMutation.isPending && playMutation.variables === true ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <Shuffle />
-                )}
-                {t("liked.shuffle")}
-              </Button>
-              <Button
-                size="sm"
-                disabled={!canPlay}
-                onClick={() => playMutation.mutate(false)}
-              >
-                {playMutation.isPending && playMutation.variables === false ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <Play />
-                )}
-                {t("liked.playAll")}
-              </Button>
-            </div>
-          ) : undefined
-        }
-      />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-muted-foreground text-sm">{description}</p>
+        {total > 0 ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!canPlay}
+              onClick={() => playMutation.mutate(true)}
+            >
+              {playMutation.isPending && playMutation.variables === true ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Shuffle />
+              )}
+              {t("liked.shuffle")}
+            </Button>
+            <Button
+              size="sm"
+              disabled={!canPlay}
+              onClick={() => playMutation.mutate(false)}
+            >
+              {playMutation.isPending && playMutation.variables === false ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Play />
+              )}
+              {t("liked.playAll")}
+            </Button>
+          </div>
+        ) : null}
+      </div>
 
       {isPending ? (
         <div className="space-y-2">
@@ -133,7 +129,7 @@ export default function LikedSongs() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate("/albums")}
+              onClick={() => navigate("/library", { state: { tab: "albums" } })}
             >
               {t("liked.browse")}
             </Button>

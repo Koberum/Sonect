@@ -43,9 +43,12 @@ export type Album = DBAlbum & {
   genre?: string;
 };
 
-export type Genre = DBGenre;
 export type GenreWithCounts = DBGenreWithCounts;
 export type Playlist = DBPlaylist;
+export type PlaylistSummary = Playlist & {
+  coverPreviews: string[];
+  trackCount: number;
+};
 export type PlaylistTrack = TrackWithRelations & { pt_id: number };
 export type PlaylistWithTracks = Playlist & {
   tracks: PlaylistTrack[];
@@ -67,39 +70,13 @@ export type SearchResults = {
   artists: Artist[];
   albums: Album[];
   tracks: TrackWithRelations[];
+  genres: DBGenre[];
 };
 
 export interface LikedTracksPage {
   items: TrackWithRelations[];
   total: number;
   totalDuration: number;
-}
-
-export interface TrackInfo {
-  id: number;
-  title: string;
-  file: string;
-  absolutePath: string | null;
-  artist: string | null;
-  album: string | null;
-  albumArtist: string | null;
-  genre: string | null;
-  year: number | null;
-  date: string | null;
-  trackNumber: number | null;
-  discNumber: number | null;
-  duration: number | null;
-  size: number | null;
-  mtime: number | null;
-  storageSource: {
-    id: number;
-    name: string;
-    path: string;
-  } | null;
-  playCount: number;
-  lastPlayed: string | null;
-  createdAt: string | null;
-  updatedAt: string | null;
 }
 
 export interface LibraryStats {

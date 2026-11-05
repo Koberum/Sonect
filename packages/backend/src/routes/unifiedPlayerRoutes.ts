@@ -12,7 +12,6 @@ import {
   unifiedGetQueueHandler,
   unifiedAddToQueueHandler,
   unifiedRemoveFromQueueHandler,
-  unifiedMoveQueueHandler,
   unifiedPlayPositionHandler,
   unifiedSetVolumeHandler,
   unifiedGetPlaybackSettingsHandler,
@@ -36,7 +35,6 @@ router.post("/previous", unifiedPreviousHandler);
 router.post("/seek", unifiedSeekHandler);
 router.post("/queue", unifiedAddToQueueHandler);
 router.delete("/queue/:pos", unifiedRemoveFromQueueHandler);
-router.post("/queue/move", unifiedMoveQueueHandler);
 router.post("/play-position", unifiedPlayPositionHandler);
 router.patch("/volume", unifiedSetVolumeHandler);
 router.post("/random", unifiedEnableRandomHandler);

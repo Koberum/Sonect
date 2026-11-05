@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, Server, Tag } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -11,6 +10,16 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item";
+import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,8 +32,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { getMpdStatus, resetSetup } from "@/features/system/api";
-import { systemQueries } from "@/features/system/queries";
-import { Skeleton } from "@/components/ui/skeleton";
 import { HardwareMonitor } from "@/components/hardware-monitor";
 
 export function DebugTab() {
@@ -36,10 +43,7 @@ export function DebugTab() {
   const [mpdChecking, setMpdChecking] = useState(false);
   const [resetSetupDialogOpen, setResetSetupDialogOpen] = useState(false);
   const [resettingSetup, setResettingSetup] = useState(false);
-  const { data: version, isPending: versionPending } = useQuery({
-    ...systemQueries.health(),
-    select: (health) => health.version,
-  });
+  const version = __APP_VERSION__;
 
   const checkMpdStatus = async () => {
     setMpdChecking(true);
@@ -49,7 +53,7 @@ export function DebugTab() {
     } catch {
       setMpdStatus({
         running: false,
-        error: t("settings.debug.checkError", "Failed to check MPD status"),
+        error: t("settings.debug.checkError"),
       });
     } finally {
       setMpdChecking(false);
@@ -57,59 +61,59 @@ export function DebugTab() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>{t("settings.debug.mpdStatus")}</CardTitle>
+          <CardTitle>{t("settings.debug.system")}</CardTitle>
           <CardDescription>
-            {t("settings.debug.mpdStatusDescription")}
+            {t("settings.debug.systemDescription")}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={checkMpdStatus}
-              disabled={mpdChecking}
-            >
-              {mpdChecking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {mpdChecking
-                ? t("settings.debug.checking")
-                : t("settings.debug.checkMpd")}
-            </Button>
-            {mpdStatus && (
-              <Badge variant={mpdStatus.running ? "default" : "destructive"}>
-                {mpdStatus.running
-                  ? t("settings.debug.mpdRunning")
-                  : t("settings.debug.mpdStopped")}
-                {mpdStatus.error ? ` (${mpdStatus.error})` : ""}
-              </Badge>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+        <CardContent className="flex flex-col gap-4">
+          <ItemGroup>
+            <Item variant="outline" size="sm" className="p-3">
+              <ItemMedia variant="icon">
+                <Server />
+              </ItemMedia>
+              <ItemContent className="min-w-0">
+                <ItemTitle>{t("settings.debug.engineStatus")}</ItemTitle>
+                <ItemDescription>
+                  {t("settings.debug.engineStatusDescription")}
+                </ItemDescription>
+              </ItemContent>
+              <ItemActions className="basis-full justify-end sm:basis-auto">
+                {mpdStatus && (
+                  <Badge
+                    variant={mpdStatus.running ? "default" : "destructive"}
+                  >
+                    {mpdStatus.running
+                      ? t("settings.debug.engineRunning")
+                      : t("settings.debug.engineStopped")}
+                    {mpdStatus.error ? ` (${mpdStatus.error})` : ""}
+                  </Badge>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={checkMpdStatus}
+                  disabled={mpdChecking}
+                >
+                  {mpdChecking && <Loader2 className="animate-spin" />}
+                  {mpdChecking
+                    ? t("settings.debug.checking")
+                    : t("settings.debug.checkEngine")}
+                </Button>
+              </ItemActions>
+            </Item>
+          </ItemGroup>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("settings.debug.setup")}</CardTitle>
-          <CardDescription>
-            {t("settings.debug.setupDescription")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setResetSetupDialogOpen(true)}
-              disabled={resettingSetup}
-            >
-              {resettingSetup && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              {t("settings.debug.resetSetup")}
-            </Button>
+          <Separator />
+
+          <div className="flex flex-col gap-3">
+            <h2 className="text-sm font-medium">
+              {t("settings.debug.hardware.title")}
+            </h2>
+            <HardwareMonitor />
           </div>
         </CardContent>
       </Card>
@@ -121,23 +125,19 @@ export function DebugTab() {
             {t("settings.debug.environmentDescription")}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="mb-3 flex items-center justify-between gap-3 text-sm">
-            <span className="text-muted-foreground">
-              {t("settings.debug.version")}
-            </span>
-            {versionPending ? (
-              <Skeleton className="h-5 w-16" />
-            ) : (
-              <Badge variant="secondary">
-                {version
-                  ? version === "dev"
-                    ? version
-                    : `v${version}`
-                  : t("settings.debug.versionUnavailable")}
-              </Badge>
-            )}
-          </div>
+        <CardContent className="flex flex-col gap-4">
+          <Item variant="outline" size="sm" className="p-3">
+            <ItemMedia variant="icon">
+              <Tag />
+            </ItemMedia>
+            <ItemContent>
+              <ItemTitle>{t("settings.debug.version")}</ItemTitle>
+            </ItemContent>
+            <ItemActions className="basis-full justify-end sm:basis-auto">
+              <Badge variant="secondary">{`v${version}`}</Badge>
+            </ItemActions>
+          </Item>
+
           <pre className="bg-muted max-h-32 overflow-auto rounded-md p-3 text-xs">
             {JSON.stringify(
               {
@@ -153,18 +153,23 @@ export function DebugTab() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-destructive/30">
         <CardHeader>
-          <CardTitle>
-            {t("settings.debug.hardware.cpu")} &{" "}
-            {t("settings.debug.hardware.ram")}
-          </CardTitle>
+          <CardTitle>{t("settings.debug.dangerZone")}</CardTitle>
           <CardDescription>
-            {t("settings.debug.hardware.loading")}
+            {t("settings.debug.dangerZoneDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <HardwareMonitor />
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setResetSetupDialogOpen(true)}
+            disabled={resettingSetup}
+          >
+            {resettingSetup && <Loader2 className="animate-spin" />}
+            {t("settings.debug.resetSetup")}
+          </Button>
         </CardContent>
       </Card>
 

@@ -4,7 +4,14 @@ import type {
   LibrarySyncProgress,
   TrackWithRelations,
 } from "@repo/types/catalog";
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { getOutputMode } from "@/features/player/api";
 import { getDeviceId, getDeviceName, getDeviceType } from "@/lib/deviceId";
 import { defaultPlayerState } from "@/lib/playbackState";
@@ -15,10 +22,13 @@ type PlaybackContextType = {
   trackPlayed: TrackWithRelations | null;
   playbackStatus: PlaybackStatus;
   syncProgress: SyncProgress | null;
+  syncError: string | null;
   wsConnected: boolean;
   setTrackPlayed: (track: TrackWithRelations | null) => void;
   setPlaybackStatus: (status: PlaybackStatus) => void;
+  applyPlaybackStatus: (status: PlaybackStatus) => void;
   setSyncProgress: (progress: SyncProgress | null) => void;
+  setSyncError: (error: string | null) => void;
   outputMode: OutputMode;
   setOutputMode: (mode: OutputMode) => void;
   activeDeviceId: string | null;
@@ -43,7 +53,30 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
   );
   const [playbackStatus, setPlaybackStatus] =
     useState<PlaybackStatus>(defaultPlayerState);
+  const lastStatusRef = useRef<{ epoch?: string; revision?: number }>({});
+
+  // Statuses can arrive from the WS broadcast and from command responses.
+  // Apply them in (epoch, revision) order so a slower response cannot roll
+  // playback back to an older state.
+  const applyPlaybackStatus = useCallback((status: PlaybackStatus) => {
+    if (status.epoch !== undefined && status.revision !== undefined) {
+      const previous = lastStatusRef.current;
+      if (
+        previous.epoch === status.epoch &&
+        previous.revision !== undefined &&
+        status.revision <= previous.revision
+      ) {
+        return;
+      }
+      lastStatusRef.current = {
+        epoch: status.epoch,
+        revision: status.revision,
+      };
+    }
+    setPlaybackStatus(status);
+  }, []);
   const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
   const [outputMode, setOutputMode] = useState<OutputMode>(() => {
     if (typeof window === "undefined") return "mpd";
@@ -107,11 +140,14 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       value={{
         trackPlayed,
         playbackStatus,
+        applyPlaybackStatus,
         syncProgress,
+        syncError,
         wsConnected,
         setTrackPlayed,
         setPlaybackStatus,
         setSyncProgress,
+        setSyncError,
         outputMode,
         setOutputMode,
         activeDeviceId,

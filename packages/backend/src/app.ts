@@ -7,11 +7,11 @@ import systemRoutes from "@routes/systemRoutes";
 import streamRoutes from "@routes/streamRoutes";
 import waveformRoutes from "@routes/waveformRoutes";
 import dashboardRouter from "@routes/dashboardRoutes";
-import sessionRoutes from "@routes/sessionRoutes";
 import unifiedPlayerRoutes from "@routes/unifiedPlayerRoutes";
 import profileRoutes from "@routes/profileRoutes";
 import authRoutes from "@routes/authRoutes";
 import likedRoutes from "@routes/likedRoutes";
+import healthRoutes from "@routes/healthRoutes";
 import { errorHandler } from "@middleware/errorHandler";
 import { requestLogger } from "@middleware/requestLogger";
 import { authenticate, requireAuth } from "@middleware/auth";
@@ -28,7 +28,6 @@ const apiPaths = [
   "/playlists",
   "/system",
   "/dashboard",
-  "/session",
   "/profiles",
   "/auth",
   "/likes",
@@ -91,6 +90,8 @@ app.use(
   }),
 );
 
+app.use("/health", healthRoutes);
+
 app.use("/auth", authRoutes);
 
 app.use("/stream", streamRoutes);
@@ -101,7 +102,6 @@ app.use("/catalog", catalogRoutes);
 app.use("/playlists", playlistRoutes);
 app.use("/system", systemRoutes);
 app.use("/dashboard", dashboardRouter);
-app.use("/session", sessionRoutes);
 app.use("/profiles", profileRoutes);
 app.use("/likes", likedRoutes);
 
@@ -120,10 +120,10 @@ if (process.env.NODE_ENV === "production" && fs.existsSync(frontendDist)) {
       req.path.startsWith("/system") ||
       req.path.startsWith("/stream") ||
       req.path.startsWith("/dashboard") ||
-      req.path.startsWith("/session") ||
       req.path.startsWith("/profiles") ||
       req.path.startsWith("/auth") ||
-      req.path.startsWith("/likes")
+      req.path.startsWith("/likes") ||
+      req.path.startsWith("/health")
     ) {
       return next();
     }

@@ -40,13 +40,6 @@ describe("Service + real DB integration (trophy middle layer)", () => {
     expect(results[0].title).to.equal("ZUniqueSearchXYZ");
   });
 
-  it("tracksDb.getTopTracks orders by play_count", () => {
-    track.create({ title: "Low", play_count: 1 });
-    track.create({ title: "High", play_count: 99 });
-    const top = tracksDb.getTopTracks(1);
-    expect(top[0].title).to.equal("High");
-  });
-
   it("incrementPlayCount updates play_count", () => {
     const t = track.create({ play_count: 2 });
     tracksDb.incrementPlayCount(t.id);

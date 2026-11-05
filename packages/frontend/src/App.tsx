@@ -10,6 +10,7 @@ import { PlaybackProvider } from "./components/playback-context";
 import { WebSocketProvider } from "./components/ws-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { useMediaQuery } from "react-responsive";
 import { queryClient } from "@/lib/queryClient";
 
 const Devtools = lazy(() =>
@@ -18,25 +19,21 @@ const Devtools = lazy(() =>
   })),
 );
 
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const AlbumPage = lazy(() => import("./pages/AlbumTracks"));
-const Albums = lazy(() => import("./pages/Albums"));
-const LikedSongs = lazy(() => import("./pages/LikedSongs"));
-const Genres = lazy(() => import("./pages/Genres"));
-const GenreDetail = lazy(() => import("./pages/GenreDetail"));
-const Artists = lazy(() =>
-  import("./pages/Artists").then((m) => ({ default: m.Artists })),
+const HomeSection = lazy(() =>
+  import("./layout/HomeSection").then((m) => ({ default: m.HomeSection })),
 );
+const LibrarySection = lazy(() =>
+  import("./layout/LibrarySection").then((m) => ({
+    default: m.LibrarySection,
+  })),
+);
+const PlaylistDetail = lazy(() => import("./pages/PlaylistDetail"));
+const AlbumPage = lazy(() => import("./pages/AlbumTracks"));
 const ArtistAlbums = lazy(() =>
   import("./pages/ArtistAlbums").then((m) => ({ default: m.ArtistAlbums })),
 );
-const Statistics = lazy(() =>
-  import("./pages/Statistics").then((m) => ({ default: m.Statistics })),
-);
-const PlaylistDetail = lazy(() => import("./pages/PlaylistDetail"));
-const Settings = lazy(() =>
-  import("./pages/Settings").then((m) => ({ default: m.Settings })),
-);
+const GenreDetail = lazy(() => import("./pages/GenreDetail"));
+const Settings = lazy(() => import("./pages/Settings"));
 const SetupWizard = lazy(() => import("./pages/SetupWizard"));
 
 function PageLoader() {
@@ -47,7 +44,15 @@ function PageLoader() {
   );
 }
 
+type LegacyTabRedirectProps = { to: string; tab: string };
+
+function LegacyTabRedirect({ to, tab }: LegacyTabRedirectProps) {
+  return <Navigate to={to} state={{ tab }} replace />;
+}
+
 export default function App() {
+  const isDesktop = useMediaQuery({ minWidth: 768 });
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
@@ -81,32 +86,100 @@ export default function App() {
                         </AuthGuard>
                       }
                     >
-                      <Route index element={<Dashboard />} />
-                      <Route path="albums" element={<Albums />} />
-                      <Route path="albums/:id" element={<AlbumPage />} />
-                      <Route path="liked" element={<LikedSongs />} />
-                      <Route
-                        path="tracks"
-                        element={<Navigate to="/liked" replace />}
-                      />
-                      <Route path="genres" element={<Genres />} />
-                      <Route path="genres/:genre" element={<GenreDetail />} />
-                      <Route path="artists" element={<Artists />} />
-                      <Route
-                        path="artists/:artistId/albums"
-                        element={<ArtistAlbums />}
-                      />
-                      <Route path="library/stats" element={<Statistics />} />
-                      <Route
-                        path="playlists/:id"
-                        element={<PlaylistDetail />}
-                      />
+                      <Route index element={<Navigate to="/home" replace />} />
+
+                      <Route path="home" element={<HomeSection />}>
+                        <Route
+                          path="playlists/:id"
+                          element={<PlaylistDetail />}
+                        />
+                      </Route>
+
+                      <Route path="library" element={<LibrarySection />}>
+                        <Route path="albums/:id" element={<AlbumPage />} />
+                        <Route
+                          path="artists/:artistId"
+                          element={<ArtistAlbums />}
+                        />
+                        <Route path="genres/:genre" element={<GenreDetail />} />
+                      </Route>
+
                       <Route
                         path="settings"
                         element={
                           <AdminGuard>
                             <Settings />
                           </AdminGuard>
+                        }
+                      />
+
+                      {/* Legacy tab URLs: tabs are in-page state now. */}
+                      <Route
+                        path="home/listen"
+                        element={<LegacyTabRedirect to="/home" tab="listen" />}
+                      />
+                      <Route
+                        path="home/playlists"
+                        element={
+                          <LegacyTabRedirect to="/home" tab="playlists" />
+                        }
+                      />
+                      <Route
+                        path="home/liked"
+                        element={<LegacyTabRedirect to="/home" tab="liked" />}
+                      />
+                      <Route
+                        path="library/albums"
+                        element={
+                          <LegacyTabRedirect to="/library" tab="albums" />
+                        }
+                      />
+                      <Route
+                        path="library/artists"
+                        element={
+                          <LegacyTabRedirect to="/library" tab="artists" />
+                        }
+                      />
+                      <Route
+                        path="library/genres"
+                        element={
+                          <LegacyTabRedirect to="/library" tab="genres" />
+                        }
+                      />
+                      <Route
+                        path="library/statistics"
+                        element={
+                          <LegacyTabRedirect to="/library" tab="statistics" />
+                        }
+                      />
+                      <Route
+                        path="settings/audio"
+                        element={
+                          <LegacyTabRedirect to="/settings" tab="audio" />
+                        }
+                      />
+                      <Route
+                        path="settings/playback"
+                        element={
+                          <LegacyTabRedirect to="/settings" tab="playback" />
+                        }
+                      />
+                      <Route
+                        path="settings/libraries"
+                        element={
+                          <LegacyTabRedirect to="/settings" tab="libraries" />
+                        }
+                      />
+                      <Route
+                        path="settings/appearance"
+                        element={
+                          <LegacyTabRedirect to="/settings" tab="appearance" />
+                        }
+                      />
+                      <Route
+                        path="settings/debug"
+                        element={
+                          <LegacyTabRedirect to="/settings" tab="debug" />
                         }
                       />
                     </Route>
@@ -117,9 +190,9 @@ export default function App() {
           </PlaybackProvider>
         </AuthProvider>
       </ThemeProvider>
-      {import.meta.env.DEV && (
+      {import.meta.env.DEV && isDesktop && (
         <Suspense fallback={null}>
-          <Devtools initialIsOpen={false} buttonPosition="top-left" />
+          <Devtools initialIsOpen={false} buttonPosition="bottom-left" />
         </Suspense>
       )}
     </QueryClientProvider>

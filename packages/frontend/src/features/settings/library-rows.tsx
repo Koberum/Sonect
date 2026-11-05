@@ -12,6 +12,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item";
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -37,16 +45,18 @@ export function RegisteredLibraryRow({
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
-      <Folder className="text-muted-foreground size-5 shrink-0" />
-      <div className="min-w-0 flex-1 basis-48">
-        <div className="truncate font-medium">{source.name}</div>
-        <div className="text-muted-foreground truncate font-mono text-xs">
+    <Item variant="outline" size="sm" className="p-3">
+      <ItemMedia variant="icon">
+        <Folder />
+      </ItemMedia>
+      <ItemContent className="min-w-0">
+        <ItemTitle className="max-w-full truncate">{source.name}</ItemTitle>
+        <ItemDescription className="truncate font-mono text-xs">
           {source.path}
-        </div>
+        </ItemDescription>
         <LibraryStats stats={source} />
-      </div>
-      <div className="flex shrink-0 items-center gap-1">
+      </ItemContent>
+      <ItemActions className="basis-full justify-end sm:basis-auto">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -97,8 +107,8 @@ export function RegisteredLibraryRow({
             {t("settings.libraries.deleteButton", "Delete")}
           </TooltipContent>
         </Tooltip>
-      </div>
-    </div>
+      </ItemActions>
+    </Item>
   );
 }
 
@@ -120,20 +130,22 @@ export function DetectedLibraryRow({
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
-      <HardDrive className="text-muted-foreground size-5 shrink-0" />
-      <div className="min-w-0 flex-1 basis-48">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="truncate font-medium">{lib.name}</span>
+    <Item variant="outline" size="sm" className="p-3">
+      <ItemMedia variant="icon">
+        <HardDrive />
+      </ItemMedia>
+      <ItemContent className="min-w-0">
+        <ItemTitle className="max-w-full flex-wrap">
+          <span className="min-w-0 truncate">{lib.name}</span>
           {lib.isMount && (
             <Badge variant="secondary" className="shrink-0">
               {t("settings.libraries.isMount", "Mount")}
             </Badge>
           )}
-        </div>
-        <div className="text-muted-foreground truncate font-mono text-xs">
+        </ItemTitle>
+        <ItemDescription className="truncate font-mono text-xs">
           {lib.path}
-        </div>
+        </ItemDescription>
         {lib.stats ? (
           <LibraryStats stats={lib.stats} />
         ) : (
@@ -141,8 +153,8 @@ export function DetectedLibraryRow({
             {t("settings.libraries.statsUnavailable", "Stats not available")}
           </p>
         )}
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
+      </ItemContent>
+      <ItemActions className="basis-full justify-end sm:basis-auto">
         {!lib.stats && (
           <Button
             variant="ghost"
@@ -164,7 +176,7 @@ export function DetectedLibraryRow({
           {isAdding ? <Loader2 className="animate-spin" /> : <Plus />}
           {t("settings.libraries.add", "Add")}
         </Button>
-      </div>
-    </div>
+      </ItemActions>
+    </Item>
   );
 }

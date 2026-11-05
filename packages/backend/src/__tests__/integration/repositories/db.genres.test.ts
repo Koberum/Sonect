@@ -60,6 +60,31 @@ describe("genresDb (trophy integration)", () => {
     });
   });
 
+  describe("search", () => {
+    it("matches case-insensitively and orders by name", () => {
+      findOrCreateGenre(db(), "Techno");
+      findOrCreateGenre(db(), "Tech House");
+      findOrCreateGenre(db(), "Jazz");
+      expect(genresDb.search("TECH").map((g) => g.name)).to.deep.equal([
+        "Tech House",
+        "Techno",
+      ]);
+    });
+    it("returns [] on miss", () => {
+      findOrCreateGenre(db(), "Jazz");
+      expect(genresDb.search("nope")).to.deep.equal([]);
+    });
+    it("respects the limit", () => {
+      for (const name of ["Rock", "Rockabilly", "Rocksteady"]) {
+        findOrCreateGenre(db(), name);
+      }
+      expect(genresDb.search("rock", 2).map((g) => g.name)).to.deep.equal([
+        "Rock",
+        "Rockabilly",
+      ]);
+    });
+  });
+
   describe("unique constraint", () => {
     it("throws on duplicate when bypassing findOrCreate", () => {
       db().insert(genres).values({ name: "Dup" }).run();

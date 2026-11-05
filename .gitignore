@@ -30,6 +30,7 @@ coverage/
 # ===============================
 *.tsbuildinfo
 .turbo/
+packages/db/drizzle.config.d.ts
 
 # ===============================
 # Environment / secrets
@@ -84,7 +85,6 @@ data/covers/*
 data/playlists/*
 data/music/*
 data/waveforms/*
-packages/backend/.version
 TODO.md
 
 # ===============================
@@ -94,4 +94,3 @@ TODO.md
 .opencode/plans/
 .opencode/skills/*.local.md
 docs/superpowers
-.playwright-mcp/

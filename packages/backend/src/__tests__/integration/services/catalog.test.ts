@@ -5,7 +5,7 @@ import { artist } from "@tests/factories/artist.js";
 import { album } from "@tests/factories/album.js";
 import { track } from "@tests/factories/track.js";
 import { genre } from "@tests/factories/genre.js";
-import { db, storageDb, tracks, upsertTrack } from "@repo/db";
+import { db, storageDb, tracks } from "@repo/db";
 import { eq } from "drizzle-orm";
 import { CatalogServiceImpl } from "@services/library/catalogService.js";
 
@@ -173,21 +173,6 @@ describe("CatalogService (trophy integration)", () => {
     });
   });
 
-  describe("getRecentlyAddedAlbums", () => {
-    it("returns [] when empty", () => {
-      expect(catalog.getRecentlyAddedAlbums(2)).to.deep.equal([]);
-    });
-    it("respects limit", () => {
-      for (let i = 0; i < 5; i++)
-        album.create(
-          { title: `RecAl${i}`, artistName: `RAlArtist${i}` },
-          40 + i,
-        );
-      expect(catalog.getRecentlyAddedAlbums(2)).to.have.length(2);
-      expect(catalog.getRecentlyAddedAlbums()).to.have.length(5);
-    });
-  });
-
   describe("getAlbumById", () => {
     it("returns undefined on miss", () => {
       expect(catalog.getAlbumById(99999)).to.be.undefined;
@@ -323,48 +308,6 @@ describe("CatalogService (trophy integration)", () => {
     });
   });
 
-  describe("getAllTracks", () => {
-    it("returns [] when empty", () => {
-      expect(catalog.getAllTracks()).to.deep.equal([]);
-    });
-    it("sorts found and pagination guard + orphan inclusion", () => {
-      const a = artist.create({ name: "SortTArtist" }, 130);
-      const al = album.create({ title: "SortTAl", artistName: a.name }, 130);
-      track.create(
-        { artist: a.name, album: al.title, title: "Short", duration: 10 },
-        131,
-      );
-      track.create(
-        { artist: a.name, album: al.title, title: "Long", duration: 300 },
-        132,
-      );
-      expect(catalog.getAllTracks("duration")[0].title).to.equal("Long");
-      expect(catalog.getAllTracks().map((t) => t.title)).to.deep.equal(
-        ["Long", "Short"].sort(),
-      );
-      expect(catalog.getAllTracks(undefined, undefined, 5)).to.have.length(2);
-      expect(catalog.getAllTracks(undefined, 1, 1)).to.have.length(1);
-      // orphan via leftJoin included in getAllTracks
-      const orphanId = upsertTrack(db(), {
-        file: "orphan.mp3",
-        title: "Orphan",
-        artist: "",
-        album: "",
-      } as never);
-      expect(catalog.getAllTracks().some((t) => t.id === orphanId)).to.be.true;
-    });
-  });
-
-  describe("getTrackCount", () => {
-    it("returns 0 when empty", () => {
-      expect(catalog.getTrackCount()).to.equal(0);
-    });
-    it("reflects seeded count", () => {
-      track.create({ title: "FindMe" }, 90);
-      expect(catalog.getTrackCount()).to.equal(1);
-    });
-  });
-
   describe("resolveTrack", () => {
     it("returns null on miss", () => {
       expect(catalog.resolveTrack("Nobody", "Nowhere", "Nothing")).to.be.null;
@@ -403,32 +346,6 @@ describe("CatalogService (trophy integration)", () => {
         catalog.getTracksByGenre("shoegaze").map((t) => t.title),
       ).to.deep.equal(["G0", "G1"]);
       expect(catalog.getTracksByGenre("SHOEGAZE")).to.have.length(2);
-    });
-  });
-
-  describe("getRecentlyAddedTracks", () => {
-    it("returns [] when empty", () => {
-      expect(catalog.getRecentlyAddedTracks(2)).to.deep.equal([]);
-    });
-    it("respects limit", () => {
-      for (let i = 0; i < 5; i++)
-        track.create({ title: `RecT${i}`, artist: `RArtist${i}` }, 140 + i);
-      expect(catalog.getRecentlyAddedTracks(2)).to.have.length(2);
-      expect(catalog.getRecentlyAddedTracks()).to.have.length(5);
-    });
-  });
-
-  describe("getRecentlyAddedAlbums", () => {
-    it("returns [] when empty", () => {
-      expect(catalog.getRecentlyAddedAlbums(2)).to.deep.equal([]);
-    });
-    it("respects limit", () => {
-      for (let i = 0; i < 5; i++)
-        album.create(
-          { title: `RecAl${i}`, artistName: `RAlArtist${i}` },
-          45 + i,
-        );
-      expect(catalog.getRecentlyAddedAlbums(2)).to.have.length(2);
     });
   });
 });

@@ -11,12 +11,9 @@ import {
   getArtists,
   getLibraryStatsHandler,
   searchHandler,
-  getAllTracks,
-  getRecentlyAdded,
   getGenres,
   getAlbumsByGenre,
   getTracksByGenre,
-  getTrackInfoHandler,
 } from "../controllers/catalogController";
 
 const router = Router();
@@ -32,9 +29,6 @@ router.get("/albums/:id", getAlbumById);
 router.get("/albums/:albumId/tracks", getTracksByAlbum);
 router.get("/artists/:artistId/tracks", getTracksByArtist);
 router.get("/artists/:artistId/albums", getAlbumsByArtist);
-router.get("/tracks", getAllTracks);
-router.get("/tracks/:id/info", getTrackInfoHandler);
-router.get("/recently-added", getRecentlyAdded);
 router.get("/genres", getGenres);
 router.get("/genres/:genre/albums", getAlbumsByGenre);
 router.get("/genres/:genre/tracks", getTracksByGenre);

@@ -6,7 +6,6 @@ import {
   getAudioDevices,
   getAudioStatus,
   getHardwareUsage,
-  getHealth,
   getOutputMode,
   getStorageSources,
   createStorageSource,
@@ -49,17 +48,6 @@ export const systemQueries = {
       queryKey: qk.system.detectedLibraries(),
       queryFn: ({ signal }) => getDetectedLibraries(signal),
       staleTime: 30_000,
-    }),
-
-  health: () =>
-    queryOptions({
-      queryKey: qk.system.health(),
-      queryFn: ({ signal }) => getHealth(signal),
-      staleTime: 0,
-      gcTime: 0,
-      retry: false,
-      refetchInterval: 30_000,
-      refetchIntervalInBackground: false,
     }),
 
   hardwareUsage: (enabled = true) =>
@@ -151,6 +139,7 @@ export const systemMutations = {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: qk.system.audioDevices() });
         queryClient.invalidateQueries({ queryKey: qk.system.audioStatus() });
+        queryClient.invalidateQueries({ queryKey: qk.system.outputMode() });
       },
     }),
 };

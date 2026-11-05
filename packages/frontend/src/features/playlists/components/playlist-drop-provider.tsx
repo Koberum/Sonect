@@ -1,0 +1,277 @@
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type DragEvent,
+  type ReactNode,
+} from "react";
+import { useTranslation } from "react-i18next";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { ListMusic, Plus, X } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ImageCollage } from "@/features/catalog/components/media-card/image-collage";
+import { useAuth } from "@/features/auth/auth-context";
+import { cn, getCoverPath } from "@/lib/utils";
+import { playlistMutations, playlistQueries } from "../queries";
+import { getTrackDragId, isTrackDrag } from "../track-drag";
+import { TrackDragContext } from "../playlist-drop-context";
+import { CreatePlaylistDialog } from "./create-playlist-dialog";
+
+function nextPlaylistName(base: string, existingNames: string[]): string {
+  const used = new Set(existingNames.map((name) => name.trim().toLowerCase()));
+  let index = 1;
+  while (used.has(`${base} ${index}`.toLowerCase())) index++;
+  return `${base} ${index}`;
+}
+
+export function PlaylistDropProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  const { profile } = useAuth();
+  const profileId = profile?.id ?? "";
+  const [open, setOpen] = useState(false);
+  const [dragTrackId, setDragTrackId] = useState<number | null>(null);
+  const [overPlaylistId, setOverPlaylistId] = useState<number | null>(null);
+  const [overCreate, setOverCreate] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+
+  const { data: playlists = [], isPending } = useQuery({
+    ...playlistQueries.list(profileId),
+    enabled: open && !!profileId,
+  });
+  const addTrackMut = useMutation(playlistMutations.addTrack(profileId));
+  const createMut = useMutation(playlistMutations.create(profileId));
+
+  const endDrag = useCallback(() => {
+    setOpen(false);
+    setOverPlaylistId(null);
+    setOverCreate(false);
+  }, []);
+
+  const startDrag = useCallback((trackId: number) => {
+    setDragTrackId(trackId);
+    setOpen(true);
+  }, []);
+
+  useEffect(() => {
+    // Covers drags that finish outside any drop target.
+    document.addEventListener("dragend", endDrag);
+    return () => document.removeEventListener("dragend", endDrag);
+  }, [endDrag]);
+
+  const addTrack = useCallback(
+    async (playlistId: number, trackId: number) => {
+      try {
+        await addTrackMut.mutateAsync({ playlistId, trackId });
+        toast(t("playlist.trackAdded"));
+        endDrag();
+      } catch {
+        toast.error(t("playlist.trackAddError"));
+      }
+    },
+    [addTrackMut, endDrag, t],
+  );
+
+  const handleDrop = (event: DragEvent<HTMLDivElement>, playlistId: number) => {
+    event.preventDefault();
+    const trackId = getTrackDragId(event.dataTransfer) ?? dragTrackId;
+    setOverPlaylistId(null);
+    if (trackId !== null) void addTrack(playlistId, trackId);
+  };
+
+  const createPlaylistWithTrack = useCallback(
+    async (trackId: number) => {
+      const name = nextPlaylistName(
+        t("playlist.defaultName"),
+        playlists.map((playlist) => playlist.name),
+      );
+      try {
+        const playlist = await createMut.mutateAsync({ name });
+        await addTrackMut.mutateAsync({ playlistId: playlist.id, trackId });
+        toast(t("playlist.trackAdded"));
+        endDrag();
+      } catch {
+        toast.error(t("playlist.trackAddError"));
+      }
+    },
+    [addTrackMut, createMut, endDrag, playlists, t],
+  );
+
+  const handleCreateDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const trackId = getTrackDragId(event.dataTransfer) ?? dragTrackId;
+    setOverCreate(false);
+    if (trackId !== null) void createPlaylistWithTrack(trackId);
+  };
+
+  return (
+    <TrackDragContext.Provider value={{ startDrag, endDrag }}>
+      {children}
+
+      <aside
+        aria-hidden={!open}
+        inert={!open}
+        className={cn(
+          "bg-background fixed inset-y-0 right-0 z-50 flex w-80 max-w-[85vw] flex-col border-l shadow-lg transition-transform duration-300 ease-in-out",
+          open ? "translate-x-0" : "pointer-events-none translate-x-full",
+        )}
+      >
+        <div className="flex items-center justify-between p-4 pb-2">
+          <h2 className="text-sm font-semibold">
+            {t("contextMenu.addToPlaylist")}
+          </h2>
+          <Button
+            type="button"
+            variant="bare"
+            size="icon-sm"
+            onClick={endDrag}
+            aria-label={t("common.close")}
+          >
+            <X />
+          </Button>
+        </div>
+        <p className="text-muted-foreground px-4 pb-3 text-xs">
+          {t("playlist.dropHint")}
+        </p>
+
+        <ScrollArea className="min-h-0 flex-1">
+          <div className="space-y-1 px-2 pb-2">
+            {isPending ? (
+              Array.from({ length: 4 }).map((_, index) => (
+                <Skeleton key={index} className="h-16 w-full rounded-lg" />
+              ))
+            ) : playlists.length === 0 ? (
+              <EmptyState
+                icon={ListMusic}
+                title={t("trackActions.noPlaylists")}
+              />
+            ) : (
+              playlists.map((playlist) => {
+                const previews = playlist.coverPreviews;
+                const isOver = overPlaylistId === playlist.id;
+                return (
+                  <div
+                    key={playlist.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() =>
+                      dragTrackId !== null &&
+                      void addTrack(playlist.id, dragTrackId)
+                    }
+                    onKeyDown={(event) => {
+                      if (
+                        dragTrackId !== null &&
+                        (event.key === "Enter" || event.key === " ")
+                      ) {
+                        event.preventDefault();
+                        void addTrack(playlist.id, dragTrackId);
+                      }
+                    }}
+                    onDragOver={(event) => {
+                      if (!isTrackDrag(event.dataTransfer)) return;
+                      event.preventDefault();
+                      event.dataTransfer.dropEffect = "copy";
+                      if (overPlaylistId !== playlist.id) {
+                        setOverPlaylistId(playlist.id);
+                      }
+                    }}
+                    onDragLeave={(event) => {
+                      if (
+                        event.currentTarget.contains(
+                          event.relatedTarget as Node | null,
+                        )
+                      ) {
+                        return;
+                      }
+                      setOverPlaylistId((current) =>
+                        current === playlist.id ? null : current,
+                      );
+                    }}
+                    onDrop={(event) => handleDrop(event, playlist.id)}
+                    className={cn(
+                      "hover:bg-muted/60 focus-visible:ring-ring flex cursor-pointer items-center gap-3 rounded-lg border p-2 transition-colors focus-visible:ring-2 focus-visible:outline-none",
+                      isOver && "ring-primary bg-primary/10 ring-2",
+                    )}
+                  >
+                    <div className="bg-muted size-12 shrink-0 overflow-hidden rounded-md">
+                      {previews.length > 0 ? (
+                        <ImageCollage
+                          images={previews.map((preview) =>
+                            getCoverPath(preview),
+                          )}
+                          aspectRatio="square"
+                        />
+                      ) : (
+                        <img
+                          src={getCoverPath()}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 text-sm font-medium">
+                        {playlist.name}
+                      </p>
+                      {playlist.description ? (
+                        <p className="text-muted-foreground line-clamp-1 text-xs">
+                          {playlist.description}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </ScrollArea>
+
+        <div className="border-t p-3">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setCreateOpen(true)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setCreateOpen(true);
+              }
+            }}
+            onDragOver={(event) => {
+              if (!isTrackDrag(event.dataTransfer)) return;
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "copy";
+              if (!overCreate) setOverCreate(true);
+            }}
+            onDragLeave={(event) => {
+              if (
+                event.currentTarget.contains(event.relatedTarget as Node | null)
+              ) {
+                return;
+              }
+              setOverCreate(false);
+            }}
+            onDrop={handleCreateDrop}
+            className={cn(
+              "hover:bg-muted/60 focus-visible:ring-ring flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed p-3 text-center transition-colors focus-visible:ring-2 focus-visible:outline-none",
+              overCreate && "border-primary bg-primary/10",
+            )}
+          >
+            <span className="flex items-center gap-2 text-sm font-medium">
+              <Plus className="size-4" />
+              {t("playlist.new")}
+            </span>
+            <span className="text-muted-foreground text-xs">
+              {t("playlist.dropToCreate")}
+            </span>
+          </div>
+        </div>
+
+        <CreatePlaylistDialog open={createOpen} onOpenChange={setCreateOpen} />
+      </aside>
+    </TrackDragContext.Provider>
+  );
+}

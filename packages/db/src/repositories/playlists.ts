@@ -1,4 +1,4 @@
-import { asc, eq, getColumns, sql } from "drizzle-orm";
+import { and, asc, eq, getColumns, isNotNull, ne, sql } from "drizzle-orm";
 import type { DBPlaylist } from "@repo/types";
 import type { PlaylistTrack } from "@repo/types/catalog";
 import { db, transaction } from "../connection.js";
@@ -19,28 +19,89 @@ export type PlaylistTrackRow = PlaylistTrack & {
 };
 
 export const playlistsDb = {
-  getAll(): DBPlaylist[] {
+  getAll(profileId: string): DBPlaylist[] {
     return db()
       .select()
       .from(playlists)
+      .where(eq(playlists.profile_id, profileId))
       .orderBy(asc(playlists.name))
       .all() as DBPlaylist[];
   },
 
-  getById(id: number): DBPlaylist | undefined {
-    return db().select().from(playlists).where(eq(playlists.id, id)).get() as
-      DBPlaylist | undefined;
+  getById(profileId: string, id: number): DBPlaylist | undefined {
+    return db()
+      .select()
+      .from(playlists)
+      .where(and(eq(playlists.id, id), eq(playlists.profile_id, profileId)))
+      .get() as DBPlaylist | undefined;
   },
 
-  create(name: string, description?: string): number {
+  getCoverPreviewsForProfile(
+    profileId: string,
+    limit = 4,
+  ): Map<number, string[]> {
+    const rows = db()
+      .select({
+        playlist_id: playlistTracks.playlist_id,
+        cover_path: albums.cover_path,
+      })
+      .from(playlistTracks)
+      .innerJoin(playlists, eq(playlists.id, playlistTracks.playlist_id))
+      .innerJoin(tracks, eq(playlistTracks.track_id, tracks.id))
+      .innerJoin(albums, eq(tracks.album_id, albums.id))
+      .where(
+        and(
+          eq(playlists.profile_id, profileId),
+          isNotNull(albums.cover_path),
+          ne(albums.cover_path, ""),
+        ),
+      )
+      .groupBy(playlistTracks.playlist_id, albums.cover_path)
+      .orderBy(
+        asc(playlistTracks.playlist_id),
+        sql`min(${playlistTracks.position})`,
+      )
+      .all();
+
+    const previews = new Map<number, string[]>();
+    for (const row of rows) {
+      const list = previews.get(row.playlist_id) ?? [];
+      if (list.length < limit && row.cover_path) {
+        list.push(row.cover_path);
+        previews.set(row.playlist_id, list);
+      }
+    }
+    return previews;
+  },
+
+  getTrackCounts(profileId: string): Map<number, number> {
+    const rows = db()
+      .select({
+        playlist_id: playlistTracks.playlist_id,
+        count: sql<number>`count(*)`,
+      })
+      .from(playlistTracks)
+      .innerJoin(playlists, eq(playlists.id, playlistTracks.playlist_id))
+      .where(eq(playlists.profile_id, profileId))
+      .groupBy(playlistTracks.playlist_id)
+      .all();
+
+    return new Map(rows.map((row) => [row.playlist_id, row.count]));
+  },
+
+  create(profileId: string, name: string, description?: string): number {
     const result = db()
       .insert(playlists)
-      .values({ name, description: description || null })
+      .values({ profile_id: profileId, name, description: description || null })
       .run();
     return normalizeRowId(result.lastInsertRowid);
   },
 
-  update(id: number, data: { name?: string; description?: string }): void {
+  update(
+    profileId: string,
+    id: number,
+    data: { name?: string; description?: string },
+  ): void {
     if (data.name === undefined && data.description === undefined) return;
     db()
       .update(playlists)
@@ -51,13 +112,16 @@ export const playlistsDb = {
           : {}),
         updated_at: sql`CURRENT_TIMESTAMP`,
       })
-      .where(eq(playlists.id, id))
+      .where(and(eq(playlists.id, id), eq(playlists.profile_id, profileId)))
       .run();
   },
 
-  delete(id: number): void {
+  delete(profileId: string, id: number): void {
     db().delete(playlistTracks).where(eq(playlistTracks.playlist_id, id)).run();
-    db().delete(playlists).where(eq(playlists.id, id)).run();
+    db()
+      .delete(playlists)
+      .where(and(eq(playlists.id, id), eq(playlists.profile_id, profileId)))
+      .run();
   },
 
   addTrack(playlistId: number, trackId: number): void {

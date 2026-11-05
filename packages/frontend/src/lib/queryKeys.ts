@@ -2,6 +2,7 @@ export const qk = {
   dashboardRoot: () => ["dashboard"] as const,
   dashboard: (profileId: string) => ["dashboard", profileId] as const,
   catalog: {
+    root: () => ["catalog"] as const,
     albumsInfinite: (sort: string) =>
       ["catalog", "albums", "infinite", sort] as const,
     album: (id: string) => ["catalog", "album", id] as const,
@@ -20,8 +21,9 @@ export const qk = {
     search: (query: string) => ["catalog", "search", query] as const,
   },
   playlists: {
-    list: () => ["playlists", "list"] as const,
-    detail: (id: number) => ["playlists", "detail", id] as const,
+    list: (profileId: string) => ["playlists", "list", profileId] as const,
+    detail: (profileId: string, id: number) =>
+      ["playlists", "detail", profileId, id] as const,
   },
   liked: {
     ids: (profileId: string) => ["liked", "ids", profileId] as const,
@@ -37,7 +39,6 @@ export const qk = {
     audioStatus: () => ["system", "audio", "status"] as const,
     storageSources: () => ["system", "storage", "sources"] as const,
     detectedLibraries: () => ["system", "storage", "detected"] as const,
-    health: () => ["system", "health"] as const,
     hardwareUsage: () => ["system", "hardware", "usage"] as const,
     outputMode: () => ["system", "outputMode"] as const,
   },

@@ -1,47 +1,52 @@
 import { apiFetch } from "@/lib/api";
-import type { PlaybackSettings, QueuedTrack, OutputMode } from "@repo/types";
+import type {
+  PlaybackSettings,
+  PlaybackStatus,
+  QueuedTrack,
+  OutputMode,
+} from "@repo/types";
 import type { Track } from "@repo/types/catalog";
 
-export function playSong(track: Track): Promise<void> {
+export function playSong(track: Track): Promise<PlaybackStatus> {
   return apiFetch("/player/play", {
     method: "POST",
     body: { file: track.file },
   });
 }
-export function pauseSong(): Promise<void> {
+export function pauseSong(): Promise<PlaybackStatus> {
   return apiFetch("/player/pause", { method: "POST", body: {} });
 }
-export function resumeSong(): Promise<void> {
+export function resumeSong(): Promise<PlaybackStatus> {
   return apiFetch("/player/resume", { method: "POST", body: {} });
 }
-export function nextTrack(): Promise<void> {
+export function nextTrack(): Promise<PlaybackStatus> {
   return apiFetch("/player/next", { method: "POST", body: {} });
 }
-export function previousTrack(): Promise<void> {
+export function previousTrack(): Promise<PlaybackStatus> {
   return apiFetch("/player/previous", { method: "POST", body: {} });
 }
-export function setRandom(enabled: boolean): Promise<void> {
+export function setRandom(enabled: boolean): Promise<PlaybackStatus> {
   return apiFetch("/player/random", { method: "POST", body: { enabled } });
 }
-export function setRepeat(enabled: boolean): Promise<void> {
+export function setRepeat(enabled: boolean): Promise<PlaybackStatus> {
   return apiFetch("/player/repeat", { method: "POST", body: { enabled } });
 }
-export function goToPosition(position: number): Promise<void> {
+export function goToPosition(position: number): Promise<PlaybackStatus> {
   return apiFetch("/player/seek", { method: "POST", body: { position } });
 }
-export function setVolume(volume: number): Promise<void> {
+export function setVolume(volume: number): Promise<PlaybackStatus> {
   return apiFetch("/player/volume", { method: "PATCH", body: { volume } });
 }
 export function getQueue(signal?: AbortSignal): Promise<QueuedTrack[]> {
   return apiFetch("/player/queue", { signal });
 }
-export function playQueueItem(pos: number): Promise<void> {
+export function playQueueItem(pos: number): Promise<PlaybackStatus> {
   return apiFetch("/player/play-position", { method: "POST", body: { pos } });
 }
-export function removeFromQueue(pos: number): Promise<void> {
+export function removeFromQueue(pos: number): Promise<PlaybackStatus> {
   return apiFetch("/player/queue/" + pos, { method: "DELETE" });
 }
-export function addToQueue(file: string): Promise<void> {
+export function addToQueue(file: string): Promise<PlaybackStatus> {
   return apiFetch("/player/queue", { method: "POST", body: { file } });
 }
 export function getOutputMode(signal?: AbortSignal): Promise<{

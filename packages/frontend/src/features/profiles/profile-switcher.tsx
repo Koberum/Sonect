@@ -1,15 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
-import {
-  Check,
-  ChevronsUpDown,
-  KeyRound,
-  LogOut,
-  Pencil,
-  Plus,
-  Settings,
-} from "lucide-react";
+import { Check, KeyRound, LogOut, Pencil, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Profile, PublicProfile } from "@repo/types";
 import { useAuth } from "@/features/auth/auth-context";
@@ -43,7 +34,6 @@ type Candidate = Profile | PublicProfile;
 
 export function ProfileSwitcher() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { profile, isAdmin, logout } = useAuth();
   const [createOpen, setCreateOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
@@ -92,24 +82,21 @@ export function ProfileSwitcher() {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
+            size="icon"
             aria-label={t("profile.switch")}
-            className="h-8 gap-2 px-2"
+            className="h-11 w-11 shrink-0 rounded-full"
           >
-            <Avatar className="h-6 w-6">
+            <Avatar className="h-8 w-8">
               <AvatarFallback
-                className="text-[10px] font-bold text-white"
+                className="text-xs font-bold text-white"
                 style={{ backgroundColor: profile.avatarColor }}
               >
                 {getInitials(profile.name)}
               </AvatarFallback>
             </Avatar>
-            <span className="hidden max-w-[120px] truncate text-sm font-medium sm:inline">
-              {profile.name}
-            </span>
-            <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuContent side="bottom" align="end" className="w-64">
           <DropdownMenuLabel>{t("profile.change")}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {isLoading && (
@@ -180,10 +167,6 @@ export function ProfileSwitcher() {
               >
                 <Plus className="size-4" />
                 {t("profile.addProfile")}
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => navigate("/settings")}>
-                <Settings className="size-4" />
-                {t("settings.title")}
               </DropdownMenuItem>
             </>
           )}

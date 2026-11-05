@@ -24,7 +24,7 @@ export function SyncStep({ onComplete }: SyncStepProps) {
         <WizardStepDescription className="max-w-sm">
           {t(
             "setup.sync.description",
-            "Your music library is ready to scan. Sonect will sync your music from MPD. You can trigger a full sync at any time.",
+            "Scan your music library to build the catalog. You can trigger a full sync at any time.",
           )}
         </WizardStepDescription>
       </WizardStepHeader>

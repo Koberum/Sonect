@@ -41,7 +41,9 @@ describe("profiles repository (auth fields)", () => {
       role: "admin",
     });
 
-    expect(() => profilesDb.setRole(adminId, "user")).to.throw(LastAdminError);
+    expect(() => profilesDb.update(adminId, { role: "user" })).to.throw(
+      LastAdminError,
+    );
     expect(() => profilesDb.delete(adminId)).to.throw(LastAdminError);
   });
 
@@ -57,7 +59,7 @@ describe("profiles repository (auth fields)", () => {
       role: "admin",
     });
 
-    profilesDb.setRole(first, "user");
+    profilesDb.update(first, { role: "user" });
     expect(profilesDb.getById(first)?.role).to.equal("user");
     expect(profilesDb.countAdmins()).to.equal(1);
   });

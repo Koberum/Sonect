@@ -1,21 +1,18 @@
 import { useTranslation } from "react-i18next";
 import { useRef, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
-import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
-import { PageHeader } from "@/components/ui/page-header";
+import { AlbumCard } from "@/features/catalog/components/media-card/album-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SortTabs } from "@/features/dashboard/components/sort-tabs";
+import { SortTabs } from "@/components/ui/sort-tabs";
 import { Disc3 } from "lucide-react";
 
 type SortOption = "title" | "year" | "recent";
 
 export default function Albums() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const [sort, setSort] = useState<SortOption>("title");
+  const [sort, setSort] = useState<SortOption>("recent");
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
@@ -46,17 +43,13 @@ export default function Albums() {
 
   return (
     <div>
-      <PageHeader
-        title={t("albums.title")}
-        description={t("albums.description")}
-      />
       <SortTabs
         value={sort}
         onValueChange={setSort}
         options={sortOptions}
         className="mb-4"
       />
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {isPending ? (
           Array.from({ length: 12 }).map((_, i) => (
             <Skeleton key={i} className="aspect-square w-full rounded-lg" />
@@ -67,13 +60,7 @@ export default function Albums() {
           </div>
         ) : (
           albums.map((album) => (
-            <AlbumArtwork
-              key={album.id}
-              album={album}
-              aspectRatio="square"
-              className="w-full"
-              onClick={() => navigate(`/albums/${album.id}`)}
-            />
+            <AlbumCard key={album.id} album={album} className="w-full" />
           ))
         )}
       </div>

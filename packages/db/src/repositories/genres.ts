@@ -1,4 +1,4 @@
-import { asc, count, eq, sql } from "drizzle-orm";
+import { asc, count, eq, like, sql } from "drizzle-orm";
 import type { DBGenre, DBGenreWithCounts } from "@repo/types";
 import { db } from "../connection.js";
 import { genres } from "../tables.js";
@@ -53,6 +53,17 @@ export const genresDb = {
   count(): number {
     const row = db().select({ value: count() }).from(genres).get();
     return row?.value ?? 0;
+  },
+
+  search(query: string, limit = 5): DBGenre[] {
+    const pattern = `%${query}%`;
+    return db()
+      .select()
+      .from(genres)
+      .where(like(genres.name, pattern))
+      .orderBy(asc(genres.name))
+      .limit(limit)
+      .all() as DBGenre[];
   },
 
   getById(id: number): DBGenre | undefined {

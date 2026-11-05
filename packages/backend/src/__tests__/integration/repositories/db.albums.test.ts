@@ -133,28 +133,12 @@ describe("albumsDb (trophy integration)", () => {
     });
   });
 
-  describe("count / getRecent / getById", () => {
+  describe("count / getById", () => {
     it("count 0 when empty", () => expect(albumsDb.count()).to.equal(0));
     it("count reflects inserts", () => {
       findOrCreateAlbum(db(), "One");
       findOrCreateAlbum(db(), "Two");
       expect(albumsDb.count()).to.equal(2);
-    });
-    it("getRecent returns latest first", () => {
-      const id1 = findOrCreateAlbum(db(), "Old");
-      const id2 = findOrCreateAlbum(db(), "New");
-      db()
-        .update(albums)
-        .set({ created_at: "2020-01-01 00:00:00" })
-        .where(eq(albums.id, id1))
-        .run();
-      db()
-        .update(albums)
-        .set({ created_at: "2020-01-02 00:00:00" })
-        .where(eq(albums.id, id2))
-        .run();
-      const recent = albumsDb.getRecent(1);
-      expect(recent[0].title).to.equal("New");
     });
     it("getById miss → undefined", () =>
       expect(albumsDb.getById(99999)).to.be.undefined);
@@ -204,30 +188,35 @@ describe("albumsDb (trophy integration)", () => {
       for (let i = 0; i < 25; i++) findOrCreateAlbum(db(), `SearchAl${i}`);
       expect(albumsDb.search("SearchAl")).to.have.length(20);
     });
-    it("getCoverPreviews filters NULL and empty", () => {
+    it("getCoverPreviewsForArtists filters NULL, empty and unknown artists", () => {
       const aid = findOrCreateArtist(db(), "CoverArtist");
       const id1 = findOrCreateAlbum(db(), "WithCover", aid);
       findOrCreateAlbum(db(), "NoCover", aid);
       const id3 = findOrCreateAlbum(db(), "EmptyCover", aid);
       albumsDb.updateCoverPath(id1, "covers/a.jpg");
       albumsDb.updateCoverPath(id3, "");
-      expect(albumsDb.getCoverPreviews(aid, 10)).to.deep.equal([
-        "covers/a.jpg",
-      ]);
-      expect(albumsDb.getCoverPreviews(aid, 1)).to.have.length(1);
-      expect(albumsDb.getCoverPreviews(99999, 10)).to.deep.equal([]);
+      const previews = albumsDb.getCoverPreviewsForArtists([aid, 99999]);
+      expect(previews.get(aid)).to.deep.equal(["covers/a.jpg"]);
+      expect(previews.has(99999)).to.be.false;
+      expect(albumsDb.getCoverPreviewsForArtists([]).size).to.equal(0);
     });
-    it("getCoverPreviews respects limit", () => {
+    it("getCoverPreviewsForArtists respects the per-artist limit", () => {
       const aid = findOrCreateArtist(db(), "LimitArtist");
+      const other = findOrCreateArtist(db(), "OtherArtist");
       for (let i = 0; i < 5; i++) {
         const id = findOrCreateAlbum(db(), `Al${i}`, aid);
         albumsDb.updateCoverPath(id, `covers/${i}.jpg`);
       }
-      expect(albumsDb.getCoverPreviews(aid, 2)).to.have.length(2);
+      const otherAlbum = findOrCreateAlbum(db(), "OtherAl", other);
+      albumsDb.updateCoverPath(otherAlbum, "covers/other.jpg");
+
+      const previews = albumsDb.getCoverPreviewsForArtists([aid, other], 2);
+      expect(previews.get(aid)).to.have.length(2);
+      expect(previews.get(other)).to.deep.equal(["covers/other.jpg"]);
     });
   });
 
-  describe("getByTitleAndArtist / updateCoverPath / updateLastPlayed / getRecentAlbums / getRankedByPlayCount", () => {
+  describe("getByTitleAndArtist / updateCoverPath / updateLastPlayed / getRankedByPlayCount", () => {
     it("getByTitleAndArtist NOCASE artist", () => {
       const aid = findOrCreateArtist(db(), "Beatles");
       findOrCreateAlbum(db(), "Abbey Road", aid);
@@ -252,21 +241,6 @@ describe("albumsDb (trophy integration)", () => {
       const id = findOrCreateAlbum(db(), "PlayAl");
       albumsDb.updateLastPlayed(id);
       expect(albumsDb.getById(id)?.last_played).to.be.a("string");
-    });
-    it("getRecentAlbums filters last_played not null and excludes id", () => {
-      const id1 = findOrCreateAlbum(db(), "Recent1");
-      const id2 = findOrCreateAlbum(db(), "Recent2");
-      albumsDb.updateLastPlayed(id1);
-      albumsDb.updateLastPlayed(id2);
-      const all = albumsDb.getRecentAlbums(10);
-      expect(all).to.have.length(2);
-      const excl = albumsDb.getRecentAlbums(10, id1);
-      expect(excl.every((a) => a.id !== id1)).to.be.true;
-      expect(excl).to.have.length(1);
-    });
-    it("getRecentAlbums returns [] when none played", () => {
-      findOrCreateAlbum(db(), "NeverPlayed");
-      expect(albumsDb.getRecentAlbums(10)).to.deep.equal([]);
     });
     it("getRankedByPlayCount orders by sum play_count desc", () => {
       const aid = findOrCreateArtist(db(), "RankArtist");

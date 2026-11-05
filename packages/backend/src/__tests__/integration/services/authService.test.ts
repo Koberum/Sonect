@@ -239,6 +239,8 @@ describe("AuthService", () => {
       password: "password123",
     });
     await service.resetPassword(profile.id, "newpassword123");
-    expect(authSessionsDb.countByProfile(profile.id)).to.equal(0);
+    expect(
+      authSessionsDb.countActiveByProfile(profile.id, Date.now()),
+    ).to.equal(0);
   });
 });

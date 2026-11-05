@@ -3,10 +3,6 @@ import {
   CatalogServiceImpl,
   type CatalogService,
 } from "./library/catalogService.js";
-import {
-  TrackInfoServiceImpl,
-  type TrackInfoService,
-} from "./library/trackInfoService.js";
 import { MpdConnectionManager } from "./mpd/mpdConnectionManager.js";
 import { AutoplayService } from "./mpd/autoplayService.js";
 import {
@@ -47,10 +43,6 @@ import {
 import { LikedServiceImpl, type LikedService } from "./library/likedService.js";
 import { SetupServiceImpl, type SetupService } from "./system/setupService.js";
 import {
-  NetworkServiceImpl,
-  type NetworkService,
-} from "./network/networkService.js";
-import {
   SessionRegistry,
   setGlobalSessionRegistry,
 } from "./session/sessionRegistry.js";
@@ -64,7 +56,6 @@ import { AuthServiceImpl, type AuthService } from "./auth/authService.js";
 let _initialized = false;
 let _logService: LogService;
 let _catalogService: CatalogService;
-let _trackInfoService: TrackInfoService;
 let _mpdConnectionManager: MpdConnectionManager;
 let _autoplayService: AutoplayService;
 let _playerService: PlayerService;
@@ -79,7 +70,6 @@ let _playlistService: PlaylistService;
 let _suggestionService: SuggestionServiceInterface;
 let _likedService: LikedService;
 let _setupService: SetupService;
-let _networkService: NetworkService;
 let _sessionRegistry: SessionRegistry;
 let _playerRouter: PlayerRouter;
 let _profileService: ProfileService;
@@ -98,7 +88,6 @@ export function initializeServices(): void {
 
   _logService = new LogServiceImpl();
   _catalogService = new CatalogServiceImpl();
-  _trackInfoService = new TrackInfoServiceImpl();
   _autoplayService = new AutoplayService();
 
   _mpdConnectionManager = new MpdConnectionManager(
@@ -106,7 +95,15 @@ export function initializeServices(): void {
     _logService,
   );
 
-  _mpdConfigService = new MpdConfigServiceImpl(_mpdConnectionManager);
+  _systemService = new SystemServiceImpl({ logService: _logService });
+
+  _mpdConfigService = new MpdConfigServiceImpl(
+    _mpdConnectionManager,
+    undefined,
+    (card, fallback) =>
+      _systemService.detectAudioDevices().find((device) => device.card === card)
+        ?.description ?? fallback,
+  );
 
   _playerService = new PlayerServiceImpl(
     _logService,
@@ -132,16 +129,11 @@ export function initializeServices(): void {
     libraryStatsService,
   );
 
-  _systemService = new SystemServiceImpl(_mpdConnectionManager, {
-    logService: _logService,
-  });
-
   _playlistService = new PlaylistServiceImpl(_mpdConnectionManager);
 
   _suggestionService = new SuggestionService();
   _likedService = new LikedServiceImpl();
   _setupService = new SetupServiceImpl();
-  _networkService = new NetworkServiceImpl();
   _profileService = new ProfileServiceImpl();
   _authService = new AuthServiceImpl();
 
@@ -186,11 +178,6 @@ export function getLogService(): LogService {
 export function getCatalogService(): CatalogService {
   assertInitialized();
   return _catalogService;
-}
-
-export function getTrackInfoService(): TrackInfoService {
-  assertInitialized();
-  return _trackInfoService;
 }
 
 export function getMpdConnectionManager(): MpdConnectionManager {
@@ -241,11 +228,6 @@ export function getLikedService(): LikedService {
 export function getSetupService(): SetupService {
   assertInitialized();
   return _setupService;
-}
-
-export function getNetworkService(): NetworkService {
-  assertInitialized();
-  return _networkService;
 }
 
 export function getProfileService(): ProfileService {

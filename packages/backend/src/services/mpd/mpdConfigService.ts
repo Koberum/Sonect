@@ -17,6 +17,12 @@ function defaultReload(): void {
   }
 }
 
+/**
+ * Resolves the friendly name of the configured audio device. The fallback is
+ * the name stored in the MPD drop-in (often the raw ALSA card id).
+ */
+export type DeviceNameResolver = (card: string, fallback: string) => string;
+
 export interface MpdConfigService {
   // AudioService
   getCurrentAudioOutput(): { card: string; name: string } | null;
@@ -32,7 +38,6 @@ export interface MpdConfigService {
     error?: string;
   };
   setOutputMode(mode: OutputMode): { success: boolean; warning?: string };
-  getOutputMode(): OutputMode;
   getOutputDeviceName(): string | null;
   getMpdOwner(): string | null;
   tryAcquireMpd(sessionId: string): { success: boolean; owner?: string };
@@ -43,12 +48,15 @@ export class MpdConfigServiceImpl implements MpdConfigService {
   private readonly MPD_CONFIG_PATH =
     process.env.MPD_CONFIG_PATH ?? "/opt/sonect/data/mpd-audio.conf";
 
-  private _currentOutputMode: OutputMode = "mpd";
   private _mpdOwnerSessionId: string | null = null;
 
   constructor(
     private readonly mpdConnectionManager: MpdConnectionManager,
     private readonly reload: () => void = defaultReload,
+    private readonly resolveDeviceName: DeviceNameResolver = (
+      _card,
+      fallback,
+    ) => fallback,
   ) {}
 
   // AudioService
@@ -156,28 +164,21 @@ export class MpdConfigServiceImpl implements MpdConfigService {
   }
 
   /**
-   * Backcompat no-op kept for the GET/PATCH /system/output-mode endpoints:
+   * Backcompat no-op used by PlayerRouter when the profile changes output mode:
    * browser sessions run on a separate playback engine, so MPD always stays on
    * the physical speakers and the drop-in config file is never rewritten here.
    */
-  public setOutputMode(mode: OutputMode): {
+  public setOutputMode(_mode: OutputMode): {
     success: boolean;
     warning?: string;
   } {
-    this._currentOutputMode = mode;
     return { success: true };
   }
 
-  public getOutputMode(): OutputMode {
-    return this._currentOutputMode;
-  }
-
   public getOutputDeviceName(): string | null {
-    if (this._currentOutputMode === "mpd") {
-      const status = this.getCurrentAudioOutput();
-      return status?.name ?? null;
-    }
-    return null;
+    const output = this.getCurrentAudioOutput();
+    if (!output) return null;
+    return this.resolveDeviceName(output.card, output.name);
   }
 
   public getMpdOwner(): string | null {

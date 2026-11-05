@@ -1,11 +1,11 @@
-import { AlbumArtwork } from "@/features/dashboard/components/album-artwork";
+import { AlbumCard } from "@/features/catalog/components/media-card/album-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SortTabs } from "@/features/dashboard/components/sort-tabs";
+import { SortTabs } from "@/components/ui/sort-tabs";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
 import { Disc3 } from "lucide-react";
@@ -15,8 +15,7 @@ type SortOption = "title" | "year" | "recent";
 export function ArtistAlbums() {
   const { t } = useTranslation();
   const { artistId } = useParams();
-  const navigate = useNavigate();
-  const [sort, setSort] = useState<SortOption>("year");
+  const [sort, setSort] = useState<SortOption>("recent");
 
   const { data: albums = [], isPending: albumsPending } = useQuery({
     ...catalogQueries.albumsByArtist(artistId ?? ""),
@@ -32,7 +31,7 @@ export function ArtistAlbums() {
   const sortedAlbums = [...(albums ?? [])].sort((a, b) => {
     if (sort === "title") return (a.title ?? "").localeCompare(b.title ?? "");
     if (sort === "year") return (b.year ?? 0) - (a.year ?? 0);
-    return 0;
+    return (b.created_at ?? "").localeCompare(a.created_at ?? "");
   });
 
   const sortOptions: { value: SortOption; label: string }[] = [
@@ -48,7 +47,7 @@ export function ArtistAlbums() {
         description={t("artist.description")}
       />
       {isPending ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {Array.from({ length: 12 }).map((_, i) => (
             <Skeleton key={i} className="aspect-square w-full rounded-lg" />
           ))}
@@ -64,15 +63,9 @@ export function ArtistAlbums() {
           {sortedAlbums.length === 0 ? (
             <EmptyState icon={Disc3} title={t("albums.noAlbums")} />
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {sortedAlbums.map((album) => (
-                <AlbumArtwork
-                  key={album.id}
-                  album={album}
-                  aspectRatio="square"
-                  className="w-full"
-                  onClick={() => navigate(`/albums/${album.id}`)}
-                />
+                <AlbumCard key={album.id} album={album} className="w-full" />
               ))}
             </div>
           )}

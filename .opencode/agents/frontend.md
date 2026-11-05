@@ -17,4 +17,4 @@ You are a frontend specialist for Sonect, a self-hosted music streaming app.
 - **Data fetching**: TanStack Query with the `features/<domain>/{api,queries}.ts` layout and `qk` keys from `lib/queryKeys.ts`.
 - **Music player**: `music-player.tsx` interpolates elapsed time locally via `setInterval` (250ms) during `state === "play"`. Elapsed anchor resets on each WebSocket message from the server.
 - **WebSocket**: the server pushes playback state (initial `player-status` on connect, then updates from MPD polls or browser-session ticks) through `components/ws-provider.tsx` into `PlaybackContext`; the client only listens, it never sends status.
-- **Responsive**: every change must work at 375px / 768px / 1280px — verify with the Playwright MCP tools (`playwright_browser_*`).
+- **Responsive**: every change must work at 375px / 768px / 1280px — verify with the browser's responsive mode at all three widths.

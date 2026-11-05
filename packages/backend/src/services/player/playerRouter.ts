@@ -166,9 +166,6 @@ export class PlayerRouter extends EventEmitter {
       async removeFromQueue(pos: number): Promise<void> {
         this.p.removeFromQueue(pos);
       }
-      async moveQueueItem(from: number, to: number): Promise<void> {
-        this.p.moveQueueItem(from, to);
-      }
       async setVolume(_volume: number): Promise<void> {}
       async enableRandom(_enabled: boolean): Promise<void> {}
       async enableRepeat(_enabled: boolean): Promise<void> {}
@@ -448,7 +445,7 @@ export class PlayerRouter extends EventEmitter {
         );
         return {
           success: false,
-          warning: `MPD locked by ${acquired.owner ?? "another session"}`,
+          warning: "Audio output is in use by another session",
         };
       }
       this.applyMpdCrossfade(rec.crossfade);

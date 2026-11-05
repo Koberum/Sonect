@@ -1,4 +1,5 @@
 import { EventEmitter } from "events";
+import { randomUUID } from "node:crypto";
 import { tracksDb } from "@repo/db";
 import type { LogService } from "@services/utils/logService";
 import type {
@@ -10,6 +11,8 @@ import type { Track, TrackWithRelations } from "@repo/types/catalog";
 import { AutoplayService } from "../mpd/autoplayService.js";
 
 export class SessionPlayer extends EventEmitter {
+  private readonly epochInternal = randomUUID();
+  private revisionInternal = 0;
   private queueInternal: SessionQueueEntry[] = [];
   private indexInternal = -1;
   private position = 0;
@@ -60,6 +63,7 @@ export class SessionPlayer extends EventEmitter {
   }
 
   private emitStateChanged(): void {
+    this.revisionInternal += 1;
     const trackId = this.queueInternal[this.indexInternal]?.id ?? null;
     if (trackId !== this.lastTrackId) {
       this.lastTrackId = trackId;
@@ -82,16 +86,33 @@ export class SessionPlayer extends EventEmitter {
    * only changes when the device that is actually playing says so.
    */
   reportPlayback(report: PlayerReport): void {
+    if (report.epoch !== undefined && report.epoch !== this.epochInternal) {
+      return;
+    }
     const current = this.queueInternal[this.indexInternal];
     if (!current) return;
 
-    const isAdvance =
-      report.event === "ended" || report.event === "advance";
-    if (
-      !isAdvance &&
-      report.trackId !== undefined &&
-      report.trackId !== current.id
-    ) {
+    // Fence in-flight track transitions: an advance/ended report belongs to the
+    // track that produced it, so a command that replaced the queue meanwhile
+    // must not be advanced by a stale report.
+    if (report.event === "ended") {
+      if (report.trackId !== undefined && report.trackId !== current.id) return;
+    } else if (report.event === "advance") {
+      if (
+        report.fromTrackId !== undefined &&
+        report.fromTrackId !== current.id
+      ) {
+        return;
+      }
+      const expected = this.queueInternal[this.indexInternal + 1]?.id;
+      if (
+        report.trackId !== undefined &&
+        expected !== undefined &&
+        report.trackId !== expected
+      ) {
+        return;
+      }
+    } else if (report.trackId !== undefined && report.trackId !== current.id) {
       return;
     }
 
@@ -240,6 +261,8 @@ export class SessionPlayer extends EventEmitter {
       nextTrackId: next?.id ?? null,
       buffering: this.bufferingInternal,
       seekSeq: this.seekSeqInternal,
+      epoch: this.epochInternal,
+      revision: this.revisionInternal,
     };
   }
 
@@ -540,37 +563,6 @@ export class SessionPlayer extends EventEmitter {
       }
     } else if (this.indexInternal > removing) {
       this.indexInternal -= 1;
-    }
-    this.emitStateChanged();
-  }
-
-  moveQueueItem(from: number, to: number): void {
-    if (from < 0 || from >= this.queueInternal.length) return;
-    if (to < 0 || to > this.queueInternal.length) return;
-    if (from === to) return;
-
-    const [item] = this.queueInternal.splice(from, 1);
-    this.queueInternal.splice(to, 0, item);
-
-    if (this.indexInternal === from) {
-      this.indexInternal = to;
-      if (this.indexInternal >= this.queueInternal.length) {
-        this.indexInternal = this.queueInternal.length - 1;
-      }
-    } else if (
-      from < to &&
-      this.indexInternal > from &&
-      this.indexInternal <= to
-    ) {
-      // Moving an item forward shifts the playing item back one.
-      this.indexInternal -= 1;
-    } else if (
-      from > to &&
-      this.indexInternal >= to &&
-      this.indexInternal < from
-    ) {
-      // Moving an item backward shifts the playing item forward one.
-      this.indexInternal += 1;
     }
     this.emitStateChanged();
   }

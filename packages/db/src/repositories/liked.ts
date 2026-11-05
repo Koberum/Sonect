@@ -94,15 +94,4 @@ export const likedDb = {
       totalDuration: Number(row?.totalDuration ?? 0),
     };
   },
-
-  isLiked(profileId: string, trackId: number): boolean {
-    const row = db()
-      .select({ id: likedTracks.id })
-      .from(likedTracks)
-      .where(
-        sql`${likedTracks.profile_id} = ${profileId} AND ${likedTracks.track_id} = ${trackId}`,
-      )
-      .get();
-    return Boolean(row);
-  },
 };

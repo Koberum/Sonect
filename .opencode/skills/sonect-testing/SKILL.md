@@ -47,7 +47,7 @@ Tests import through the tsconfig path aliases (with the `.js` extension convent
 - `@services/*`, `@controllers/*`, `@routes/*`, `@middleware/*`, `@tests/*`
 
 ```ts
-import { NetworkServiceImpl } from "@services/network/networkService.js";
+import { MpdConfigServiceImpl } from "@services/mpd/mpdConfigService.js";
 import { createTestDb } from "@tests/helpers/db.js";
 ```
 
@@ -78,23 +78,17 @@ Seeds take `(overrides, seed)`; the seed makes faker deterministic.
 ```ts
 import { expect } from "chai";
 import sinon from "sinon";
-import { NetworkServiceImpl } from "@services/network/networkService.js";
+import type { MpdConnectionManager } from "@services/mpd/mpdConnectionManager.js";
+import { MpdConfigServiceImpl } from "@services/mpd/mpdConfigService.js";
 
-describe("NetworkService (unit, DI)", () => {
-  it("returns dnsReachable true when lookup resolves", async () => {
-    const osStub = {
-      networkInterfaces: () => ({
-        eth0: [{ family: "IPv4", internal: false, address: "192.168.1.10" }],
-      }),
-    } as unknown as typeof import("node:os");
-    const lookup = (() =>
-      Promise.resolve({ address: "93.184.216.34", family: 4 })) as never;
+describe("MpdConfigServiceImpl.restartMPD (unit, DI)", () => {
+  it("calls the injected reload hook once and returns success", () => {
+    const conn = { connected: false } as unknown as MpdConnectionManager;
+    const reload = sinon.spy();
+    const service = new MpdConfigServiceImpl(conn, reload);
 
-    const service = new NetworkServiceImpl(osStub, lookup);
-    expect(await service.getNetworkStatus()).to.deep.equal({
-      connected: true,
-      dnsReachable: true,
-    });
+    expect(service.restartMPD()).to.deep.equal({ success: true });
+    expect(reload.calledOnce).to.equal(true);
   });
 });
 ```

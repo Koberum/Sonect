@@ -3,17 +3,23 @@ import {
   playSong,
   addToQueue as unifiedAddToQueue,
 } from "@/features/player/api";
+import { usePlaybackContext } from "@/components/playback-context";
 import type { Track } from "@repo/types/catalog";
 
 export function usePlayTrack() {
-  const play = useCallback((track: Track) => {
-    if (!track.file) return Promise.resolve();
-    return playSong(track);
-  }, []);
+  const { applyPlaybackStatus } = usePlaybackContext();
 
-  const addToQueue = useCallback((file: string) => {
-    if (!file) return Promise.resolve();
-    return unifiedAddToQueue(file);
+  const play = useCallback(
+    async (track: Track) => {
+      if (!track.file) return;
+      applyPlaybackStatus(await playSong(track));
+    },
+    [applyPlaybackStatus],
+  );
+
+  const addToQueue = useCallback(async (file: string) => {
+    if (!file) return;
+    await unifiedAddToQueue(file);
   }, []);
 
   return { play, addToQueue };

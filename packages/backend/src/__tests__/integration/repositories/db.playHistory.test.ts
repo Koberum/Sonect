@@ -15,12 +15,12 @@ describe("playHistoryDb (trophy integration)", () => {
   });
   afterEach(() => close());
 
-  it("record + hasHistory", () => {
-    expect(playHistoryDb.hasHistory(profileA)).to.be.false;
+  it("records history per profile", () => {
+    expect(playHistoryDb.recentTracks(profileA, 10)).to.deep.equal([]);
     const t = track.create({ title: "One" }, 1);
     playHistoryDb.record(profileA, t.id, 1000);
-    expect(playHistoryDb.hasHistory(profileA)).to.be.true;
-    expect(playHistoryDb.hasHistory(profileB)).to.be.false;
+    expect(playHistoryDb.recentTracks(profileA, 10)).to.have.length(1);
+    expect(playHistoryDb.recentTracks(profileB, 10)).to.deep.equal([]);
   });
 
   it("isolates recent tracks/albums/artists per profile", () => {

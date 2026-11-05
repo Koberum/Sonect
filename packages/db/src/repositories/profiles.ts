@@ -87,14 +87,6 @@ export const profilesDb = {
       .run();
   },
 
-  setColor(id: string, color: string): void {
-    db()
-      .update(profiles)
-      .set({ avatar_color: color })
-      .where(eq(profiles.id, id))
-      .run();
-  },
-
   /**
    * Applies name/avatarColor/role changes in a single transaction so a rejected
    * role change (or a name conflict) leaves every field untouched.
@@ -137,28 +129,6 @@ export const profilesDb = {
       if (Object.keys(changes).length === 0) return;
 
       tx.update(profiles).set(changes).where(eq(profiles.id, id)).run();
-    });
-  },
-
-  setRole(id: string, role: ProfileRole): void {
-    transaction((tx) => {
-      const target = tx
-        .select()
-        .from(profiles)
-        .where(eq(profiles.id, id))
-        .get() as DBProfile | undefined;
-      if (!target) return;
-      if (target.role === "admin" && role !== "admin") {
-        const row = tx
-          .select({ n: sql<number>`count(*)` })
-          .from(profiles)
-          .where(eq(profiles.role, "admin"))
-          .get();
-        if ((row?.n ?? 0) <= 1) {
-          throw new LastAdminError("Cannot demote the last administrator");
-        }
-      }
-      tx.update(profiles).set({ role }).where(eq(profiles.id, id)).run();
     });
   },
 

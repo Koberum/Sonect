@@ -29,16 +29,6 @@ export const playHistoryDb = {
       .run();
   },
 
-  hasHistory(profileId: string): boolean {
-    const row = db()
-      .select({ id: playHistory.id })
-      .from(playHistory)
-      .where(eq(playHistory.profile_id, profileId))
-      .limit(1)
-      .get();
-    return row !== undefined;
-  },
-
   recentTracks(profileId: string, limit: number): DBTrackWithRelations[] {
     const latest = db()
       .select({

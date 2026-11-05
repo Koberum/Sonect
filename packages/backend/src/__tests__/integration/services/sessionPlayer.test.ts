@@ -240,7 +240,7 @@ describe("SessionPlayer", () => {
     expect(p.getStatus().elapsed).to.equal(10);
   });
 
-  it("removeFromQueue and moveQueueItem adjust the index", () => {
+  it("removeFromQueue drops the requested position", () => {
     const a = artist.create({ name: "QArtist" }, 30);
     const al = album.create({ title: "QAlbum", artistName: a.name }, 30);
     const t1 = track.create(
@@ -251,7 +251,7 @@ describe("SessionPlayer", () => {
       { artist: a.name, album: al.title, title: "S", track: 2 },
       232,
     );
-    const t3 = track.create(
+    track.create(
       { artist: a.name, album: al.title, title: "T", track: 3 },
       233,
     );
@@ -260,9 +260,6 @@ describe("SessionPlayer", () => {
     p.playTrack(t1.file);
     p.removeFromQueue(2); // drop T
     expect(p.getQueue().map((e) => e.title)).to.deep.equal(["R", "S"]);
-    p.addToQueue(t3.file);
-    p.moveQueueItem(2, 1);
-    expect(p.getQueue().map((e) => e.title)).to.deep.equal(["R", "T", "S"]);
   });
 
   it("removing the current track advances to the next at position 0 (or stops when empty)", () => {
@@ -384,198 +381,6 @@ describe("SessionPlayer", () => {
     expect(s.elapsed).to.equal(0);
   });
 
-  it("moveQueueItem keeps the cursor on a moved playing item and shifts the index", () => {
-    const a = artist.create({ name: "MvArtist" }, 51);
-    const al = album.create({ title: "MvAlbum", artistName: a.name }, 52);
-    const t1 = track.create(
-      {
-        artist: a.name,
-        album: al.title,
-        title: "M1",
-        track: 1,
-        duration: 60,
-        disc: "1",
-      },
-      53,
-    );
-    track.create(
-      {
-        artist: a.name,
-        album: al.title,
-        title: "M2",
-        track: 2,
-        duration: 60,
-        disc: "1",
-      },
-      54,
-    );
-    track.create(
-      {
-        artist: a.name,
-        album: al.title,
-        title: "M3",
-        track: 3,
-        duration: 60,
-        disc: "1",
-      },
-      55,
-    );
-    track.create(
-      {
-        artist: a.name,
-        album: al.title,
-        title: "M4",
-        track: 4,
-        duration: 60,
-        disc: "1",
-      },
-      56,
-    );
-
-    p = new SessionPlayer("S-7", {} as LogService);
-    p.playTrack(t1.file); // playing M1 (index 0)
-
-    // Playing item moved: the cursor follows it to the new slot.
-    p.moveQueueItem(0, 3);
-    expect(p.getQueue().map((e) => e.title)).to.deep.equal([
-      "M2",
-      "M3",
-      "M4",
-      "M1",
-    ]);
-    expect(p.getStatus().track?.title).to.equal("M1");
-  });
-
-  it("moveQueueItem shifts the cursor down when a non-playing item moves forward across it", () => {
-    const a = artist.create({ name: "FwArtist" }, 57);
-    const al = album.create({ title: "FwAlbum", artistName: a.name }, 58);
-    const t1 = track.create(
-      {
-        artist: a.name,
-        album: al.title,
-        title: "F1",
-        track: 1,
-        duration: 60,
-        disc: "1",
-      },
-      59,
-    );
-    track.create(
-      {
-        artist: a.name,
-        album: al.title,
-        title: "F2",
-        track: 2,
-        duration: 60,
-        disc: "1",
-      },
-      60,
-    );
-    track.create(
-      {
-        artist: a.name,
-        album: al.title,
-        title: "F3",
-        track: 3,
-        duration: 60,
-        disc: "1",
-      },
-      61,
-    );
-    track.create(
-      {
-        artist: a.name,
-        album: al.title,
-        title: "F4",
-        track: 4,
-        duration: 60,
-        disc: "1",
-      },
-      62,
-    );
-
-    p = new SessionPlayer("S-8", {} as LogService);
-    p.playTrack(t1.file); // [F1,F2,F3,F4]
-    for (let i = 0; i < 3; i++) p.next(); // now on F4 (index 3)
-    expect(p.getStatus().track?.title).to.equal("F4");
-
-    // Move F3 (index 2) forward into F4's slot (to 3): the playing index
-    // shifts back one.
-    p.moveQueueItem(2, 3);
-    expect(p.getQueue().map((e) => e.title)).to.deep.equal([
-      "F1",
-      "F2",
-      "F4",
-      "F3",
-    ]);
-    expect(p.getStatus().track?.title).to.equal("F4");
-  });
-
-  it("moveQueueItem shifts the cursor up when a non-playing item moves backward across it", () => {
-    const a = artist.create({ name: "BwArtist" }, 63);
-    const al = album.create({ title: "BwAlbum", artistName: a.name }, 64);
-    const t1 = track.create(
-      {
-        artist: a.name,
-        album: al.title,
-        title: "B1",
-        track: 1,
-        duration: 60,
-        disc: "1",
-      },
-      65,
-    );
-    track.create(
-      {
-        artist: a.name,
-        album: al.title,
-        title: "B2",
-        track: 2,
-        duration: 60,
-        disc: "1",
-      },
-      66,
-    );
-    track.create(
-      {
-        artist: a.name,
-        album: al.title,
-        title: "B3",
-        track: 3,
-        duration: 60,
-        disc: "1",
-      },
-      67,
-    );
-    track.create(
-      {
-        artist: a.name,
-        album: al.title,
-        title: "B4",
-        track: 4,
-        duration: 60,
-        disc: "1",
-      },
-      68,
-    );
-
-    p = new SessionPlayer("S-9", {} as LogService);
-    p.playTrack(t1.file); // [B1,B2,B3,B4]
-    for (let i = 0; i < 2; i++) p.next(); // now on B3 (index 2)
-    expect(p.getStatus().track?.title).to.equal("B3");
-
-    // Move B4 (index 3) backward to index 1, crossing the playing B3: the
-    // playing index shifts up one (B3 moves from 2 to 3).
-    p.moveQueueItem(3, 1);
-    expect(p.getQueue().map((e) => e.title)).to.deep.equal([
-      "B1",
-      "B4",
-      "B2",
-      "B3",
-    ]);
-    expect(p.getStatus().track?.title).to.equal("B3");
-  });
-
   it("empty-queue boundaries are no-ops and a fresh player is stopped", () => {
     p = new SessionPlayer("S-empty", {} as LogService);
 
@@ -628,5 +433,52 @@ describe("SessionPlayer", () => {
     expect(s.queueLength).to.equal(1);
     expect(s.track).to.be.undefined;
     expect(fired).to.equal(1);
+  });
+
+  it("assigns a stable epoch and bumps the revision on state changes", () => {
+    const { t1 } = seedAlbum("EpochArtist", 80);
+    p = new SessionPlayer("S-EPOCH", {} as LogService);
+    const initial = p.getStatus();
+    expect(initial.epoch).to.be.a("string").and.not.equal("");
+    expect(initial.revision).to.equal(0);
+
+    p.playTrack(t1.file);
+    const afterPlay = p.getStatus();
+    expect(afterPlay.epoch).to.equal(initial.epoch);
+    expect(afterPlay.revision).to.be.greaterThan(0);
+  });
+
+  it("ignores reports from a different epoch", () => {
+    const { t1 } = seedAlbum("FenceArtist", 90);
+    p = new SessionPlayer("S-FENCE", {} as LogService);
+    p.playTrack(t1.file);
+    const before = p.getStatus();
+
+    p.reportPlayback({
+      event: "advance",
+      epoch: "some-other-session",
+      fromTrackId: t1.id,
+      trackId: before.nextTrackId ?? undefined,
+    });
+
+    const after = p.getStatus();
+    expect(after.track?.id).to.equal(t1.id);
+    expect(after.state).to.equal("play");
+  });
+
+  it("ignores a stale advance whose source track is no longer current", () => {
+    const { t1 } = seedAlbum("StaleArtist", 100);
+    p = new SessionPlayer("S-STALE", {} as LogService);
+    p.playTrack(t1.file);
+    const before = p.getStatus();
+
+    p.reportPlayback({
+      event: "advance",
+      epoch: before.epoch,
+      fromTrackId: 99999,
+      trackId: before.nextTrackId ?? undefined,
+    });
+
+    expect(p.getStatus().track?.id).to.equal(t1.id);
   });
 });

@@ -37,6 +37,7 @@ interface TrackActionsMenuProps {
   onRemove?: () => void;
   removeLabel?: string;
   onPlay?: () => void;
+  align?: "start" | "end";
 }
 
 interface TrackAction {
@@ -55,6 +56,7 @@ export function TrackActionsMenu({
   onRemove,
   removeLabel,
   onPlay,
+  align = "end",
 }: TrackActionsMenuProps) {
   const { t } = useTranslation();
   const { play, addToQueue } = usePlayTrack();
@@ -144,7 +146,7 @@ export function TrackActionsMenu({
             <EllipsisVertical />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuContent align={align} className="w-48">
           {actions.map((action) => (
             <Fragment key={action.key}>
               {action.separatorBefore && <DropdownMenuSeparator />}

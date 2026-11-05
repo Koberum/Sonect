@@ -9,6 +9,7 @@ import {
   genresDb,
   syncMetadataDb,
   playlistsDb,
+  profilesDb,
   storageDb,
   db,
   upsertTrack,
@@ -70,7 +71,11 @@ describe("catalogSyncDb (trophy integration)", () => {
 
   it("applyIncremental cascades playlist rows on delete", () => {
     const tid = upsertTrack(db(), mkTrack("a/p.mp3"));
-    const pid = playlistsDb.create("P");
+    const profileId = profilesDb.create({
+      name: "Owner",
+      passwordHash: "hash",
+    });
+    const pid = playlistsDb.create(profileId, "P");
     playlistsDb.addTrack(pid, tid);
     catalogSyncDb.applyIncremental({ upserts: [], deletions: ["a/p.mp3"] });
     expect(playlistsDb.getTracks(pid)).to.have.length(0);

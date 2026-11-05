@@ -18,7 +18,6 @@ export interface CatalogService {
   getAlbumsByArtist(artistId: number): Album[];
   getAllAlbums(sort?: string, limit?: number, offset?: number): Album[];
   getAlbumCount(): number;
-  getRecentlyAddedAlbums(limit?: number): Album[];
   getAlbumById(id: number): Album | undefined;
   getAlbumsByGenre(genre: string): Album[];
 
@@ -28,19 +27,12 @@ export interface CatalogService {
   // Track
   getTracksByAlbum(albumId: number): TrackWithRelations[];
   getTracksByArtist(artistId: number): TrackWithRelations[];
-  getAllTracks(
-    sort?: string,
-    limit?: number,
-    offset?: number,
-  ): TrackWithRelations[];
-  getTrackCount(): number;
   resolveTrack(
     artist: string,
     album: string,
     title: string,
   ): TrackWithRelations | null;
   getTracksByGenre(genre: string): TrackWithRelations[];
-  getRecentlyAddedTracks(limit?: number): TrackWithRelations[];
 
   // Search
   searchTracks(query: string): SearchResults;
@@ -57,9 +49,12 @@ export class CatalogServiceImpl implements CatalogService {
       offset,
       withAlbumsOnly: true,
     });
+    const previews = albumsDb.getCoverPreviewsForArtists(
+      artists.map((artist) => artist.id),
+    );
     return artists.map((artist) => ({
       ...artist,
-      coverPreviews: albumsDb.getCoverPreviews(artist.id, 4), // TODO: Optimize here with single sync join query on db
+      coverPreviews: previews.get(artist.id) ?? [],
     }));
   }
 
@@ -84,10 +79,6 @@ export class CatalogServiceImpl implements CatalogService {
     return albumsDb.count();
   }
 
-  public getRecentlyAddedAlbums(limit = 20): Album[] {
-    return albumsDb.getRecent(limit);
-  }
-
   public getAlbumById(id: number): Album | undefined {
     return albumsDb.getById(id);
   }
@@ -102,11 +93,6 @@ export class CatalogServiceImpl implements CatalogService {
   }
 
   // Track
-  public getRecentlyAddedTracks(limit = 20): TrackWithRelations[] {
-    const dbTracks = tracksDb.getRecentWithRelations(limit);
-    return dbTracks as TrackWithRelations[];
-  }
-
   public getTracksByGenre(genre: string): TrackWithRelations[] {
     const dbTracks = tracksDb.getByGenreWithRelations(genre);
     return dbTracks as TrackWithRelations[];
@@ -140,31 +126,22 @@ export class CatalogServiceImpl implements CatalogService {
     return tracksDb.getByArtistWithRelations(artistId);
   }
 
-  public getAllTracks(
-    sort?: string,
-    limit?: number,
-    offset?: number,
-  ): TrackWithRelations[] {
-    const dbTracks = tracksDb.getAllWithRelations(sort, limit, offset);
-    return dbTracks as TrackWithRelations[];
-  }
-
-  public getTrackCount(): number {
-    return tracksDb.count();
-  }
-
   public searchTracks(query: string): SearchResults {
     const q = query.toLowerCase();
     const matchedArtists = artistsDb.search(q, undefined, {
       withAlbumsOnly: true,
     });
+    const previews = albumsDb.getCoverPreviewsForArtists(
+      matchedArtists.map((artist) => artist.id),
+    );
     const artists = matchedArtists.map((artist) => ({
       ...artist,
-      coverPreviews: albumsDb.getCoverPreviews(artist.id, 4),
+      coverPreviews: previews.get(artist.id) ?? [],
     }));
     const albums = albumsDb.search(q);
     const tracks = tracksDb.search(query);
-    return { artists, albums, tracks };
+    const genres = genresDb.search(q);
+    return { artists, albums, tracks, genres };
   }
 
   public getLibraryStats(): LibraryStats {

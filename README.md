@@ -47,9 +47,14 @@ no subscriptions, no limits.
   genre, playlist, search, queue, now playing) adds a song to the signed-in
   profile's Liked Songs. Liked Songs has Play All and Shuffle and is scoped per
   household member; the old flat Tracks page is gone.
-- **Playlists with drag & drop** — drag a track row from an album onto a
-  playlist in the left sidebar to add it instantly (desktop). The three-dot
-  track menu also offers "Add to playlist" for touch and keyboard use.
+- **Three-section navigation** — the sidebar has Home, Library, and Settings,
+  each opening a page with horizontal tabs: Home holds Listen Now, Playlists,
+  and Liked Songs; Library holds Albums, Artists, Genres, and Statistics;
+  Settings (admins) holds Audio, Playback, Libraries, Appearance, and Debug.
+- **Playlists** — create and browse them from Home → Playlists. Playlists are
+  private per profile (same names allowed across profiles). Drag any track onto
+  the right-hand playlist panel to add it, or use "Add to playlist" in the
+  three-dot track menu (touch and keyboard).
 - **Dashboard per profile** — Recently played albums, artists, and tracks, top
   tracks, suggestions, and the genre mix are all personal. Listening history is
   recorded separately per household member (MPD plays count for the profile
@@ -133,7 +138,10 @@ pnpm dev
 Open `http://localhost:5173`. On first launch the wizard asks you to create the
 administrator account (name + password, at least 8 characters), then continues
 with storage, audio, and library sync. The admin can trigger a library scan from
-the sidebar refresh button or from the setup wizard's Sync step.
+the **Library sync** card in Settings → Libraries or from the setup wizard's Sync
+step. While a scan runs, the card shows the current phase and the current
+track/album, catalog lists refresh automatically (no page reload), and admins see
+a small floating status pill above the player.
 
 Finishing or skipping the wizard is persisted by the backend, so the choice
 applies across browsers and private windows until the wizard is reset from
@@ -176,7 +184,7 @@ cgroup, and adds the `audio` group. Sonect enumerates cards from
 `/sys/class/sound`, so no `/proc/asound` mount or `privileged` mode is needed.
 On a host without sound hardware these settings are harmless. If MPD does not
 reopen a re-plugged DAC automatically, re-apply the output in Settings → Audio.
-The image reports container health via a `HEALTHCHECK` on `GET /system/health`
+The image reports container health via a `HEALTHCHECK` on `GET /health`
 (visible in `docker ps`); s6-overlay restarts the MPD/node services internally if
 they crash.
 
@@ -193,10 +201,9 @@ server holding the DAC exclusively must release it first.
 - **Admin:** manages libraries, audio output, library sync/scan, setup, debug
   tools, and other profiles (create, edit, reset password, delete). The last
   administrator cannot be deleted or demoted.
-- **User:** can browse and listen, use the global playlists, and change their own
-  password. Settings (available to admins from the profile menu), the library
-  refresh action, and setup are hidden; the API also rejects those calls with
-  403.
+- **User:** can browse and listen, use their own playlists, and change their own
+  password. Settings (admin-only, in the sidebar), the library
+  refresh action, and setup are hidden; the API also rejects those calls with 403.
 - **Signing in and switching:** `/login` lists the public profiles (name and
   avatar). After entering a password a 30-day `sonect_session` cookie is set.
   Switching profiles from the account menu requires the destination profile's
@@ -267,48 +274,47 @@ volume always contains a complete database file.
 ## API Overview
 
 All `/player`, `/catalog`, `/playlists`, `/likes`, `/dashboard`, `/covers`,
-`/stream`, and `/waveforms` routes require the `sonect_session` cookie. `/system/health`,
+`/stream`, and `/waveforms` routes require the `sonect_session` cookie. `/health`,
 `/auth/state`, `/auth/profiles`, `/auth/login`, and `/auth/bootstrap` (while no
 admin exists) are public; the remaining `/system/*` routes, `/profiles/*`, and
 `POST /catalog/scan` are admin-only.
 
-| Method | Path                                     | Description                                                                                                                                                                                         |
-| ------ | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/auth/state`                            | Public: `{bootstrapRequired, authenticated, profile}` for the current cookie                                                                                                                        |
-| GET    | `/auth/profiles`                         | Public: list profiles for the login picker (`id`, `name`, `avatarColor`)                                                                                                                            |
-| POST   | `/auth/bootstrap`                        | Create the first admin (409 once one exists); sets the session cookie                                                                                                                               |
-| POST   | `/auth/login`                            | Sign in with `{profileId, password}`; sets the session cookie                                                                                                                                       |
-| POST   | `/auth/logout`                           | Delete the current session and clear the cookie                                                                                                                                                     |
-| POST   | `/auth/switch`                           | Switch profile; requires the destination profile's password                                                                                                                                         |
-| POST   | `/auth/password`                         | Change the current profile's password (current + new)                                                                                                                                               |
-| GET    | `/catalog/albums`                        | List all albums                                                                                                                                                                                     |
-| GET    | `/catalog/albums/:id`                    | Get album by ID                                                                                                                                                                                     |
-| GET    | `/catalog/albums/:albumId/tracks`        | Tracks for an album                                                                                                                                                                                 |
-| GET    | `/catalog/artists`                       | List all artists                                                                                                                                                                                    |
-| GET    | `/catalog/artists/:artistId/albums`      | Albums for an artist                                                                                                                                                                                |
-| POST   | `/catalog/scan`                          | Trigger library re-scan (admin-only)                                                                                                                                                                |
-| POST   | `/player/play`                           | Play track for the authenticated profile (`X-Device-Id` optional) — queues through end of album; first play claims browser output for that device                                                   |
-| POST   | `/player/pause`                          | Pause (per-profile, remote control if not active browser device)                                                                                                                                    |
-| POST   | `/player/resume`                         | Resume (per-profile) — fixes `pause`/`play` toggle; uses explicit `pause 0` for MPD                                                                                                                 |
-| POST   | `/player/next`                           | Next track (per-profile)                                                                                                                                                                            |
-| POST   | `/player/previous`                       | Previous track (per-profile)                                                                                                                                                                        |
-| POST   | `/player/seek`                           | Seek to position (per-profile)                                                                                                                                                                      |
-| GET    | `/player/queue`                          | Queue for this profile (browser: shared per profile, MPD: shared global)                                                                                                                            |
-| PUT    | `/player/output-mode`                    | Switch `browser`↔`mpd` (per-profile, `mpd` locked → 423 if busy; `browser` with `X-Device-Id` hands off to that browser)                                                                            |
-| PATCH  | `/player/volume`                         | Set volume (per-profile; browser stored in-memory and broadcast to active device)                                                                                                                   |
-| GET    | `/stream/:trackId`                       | Stream an audio track by database ID (progressive HTTP Range incl. suffix, HEAD, ETag/Last-Modified)                                                                                               |
-| GET    | `/likes`                                 | List the current profile's liked tracks (`items,total,totalDuration`, `limit`/`offset`)                                                                                                             |
-| GET    | `/likes/ids`                             | Track IDs liked by the current profile                                                                                                                                                              |
-| PUT    | `/likes/:trackId`                        | Like a track (idempotent; 404 for unknown tracks)                                                                                                                                                   |
-| DELETE | `/likes/:trackId`                        | Unlike a track                                                                                                                                                                                      |
-| POST   | `/likes/play`                            | Play every liked track (`{shuffle?}`) on the active engine                                                                                                                                          |
-| GET    | `/dashboard`                             | Per-profile dashboard data (recent albums/artists/tracks, top, suggestions, mix)                                                                                                                    |
-| GET    | `/waveforms/:trackId`                    | Get waveform peaks for a track (`{samples,duration,version}`)                                                                                                                                       |
-| GET    | `/system/health`                         | Public: liveness, version, MPD status, network status                                                                                                                                               |
-| GET    | `/system/network/status`                 | Read network/DNS status (admin-only)                                                                                                                                                                |
-| GET    | `/system/setup/progress`                 | Read setup progress (admin-only)                                                                                                                                                                    |
-| POST   | `/system/setup/complete`                 | Complete or skip setup (admin-only)                                                                                                                                                                 |
-| POST   | `/system/setup/reset`                    | Reset the setup wizard (admin-only)                                                                                                                                                                 |
+| Method | Path                                     | Description                                                                                                                                                                                                                                        |
+| ------ | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/auth/state`                            | Public: `{bootstrapRequired, authenticated, profile}` for the current cookie                                                                                                                                                                       |
+| GET    | `/auth/profiles`                         | Public: list profiles for the login picker (`id`, `name`, `avatarColor`)                                                                                                                                                                           |
+| POST   | `/auth/bootstrap`                        | Create the first admin (409 once one exists); sets the session cookie                                                                                                                                                                              |
+| POST   | `/auth/login`                            | Sign in with `{profileId, password}`; sets the session cookie                                                                                                                                                                                      |
+| POST   | `/auth/logout`                           | Delete the current session and clear the cookie                                                                                                                                                                                                    |
+| POST   | `/auth/switch`                           | Switch profile; requires the destination profile's password                                                                                                                                                                                        |
+| POST   | `/auth/password`                         | Change the current profile's password (current + new)                                                                                                                                                                                              |
+| GET    | `/catalog/albums`                        | List all albums                                                                                                                                                                                                                                    |
+| GET    | `/catalog/albums/:id`                    | Get album by ID                                                                                                                                                                                                                                    |
+| GET    | `/catalog/albums/:albumId/tracks`        | Tracks for an album                                                                                                                                                                                                                                |
+| GET    | `/catalog/artists`                       | List all artists                                                                                                                                                                                                                                   |
+| GET    | `/catalog/artists/:artistId/albums`      | Albums for an artist                                                                                                                                                                                                                               |
+| POST   | `/catalog/scan`                          | Trigger library re-scan (admin-only)                                                                                                                                                                                                               |
+| POST   | `/player/play`                           | Play track for the authenticated profile (`X-Device-Id` optional) — queues through end of album; first play claims browser output for that device                                                                                                  |
+| POST   | `/player/pause`                          | Pause (per-profile, remote control if not active browser device)                                                                                                                                                                                   |
+| POST   | `/player/resume`                         | Resume (per-profile) — fixes `pause`/`play` toggle; uses explicit `pause 0` for MPD                                                                                                                                                                |
+| POST   | `/player/next`                           | Next track (per-profile)                                                                                                                                                                                                                           |
+| POST   | `/player/previous`                       | Previous track (per-profile)                                                                                                                                                                                                                       |
+| POST   | `/player/seek`                           | Seek to position (per-profile)                                                                                                                                                                                                                     |
+| GET    | `/player/queue`                          | Queue for this profile (browser: shared per profile, MPD: shared global)                                                                                                                                                                           |
+| PUT    | `/player/output-mode`                    | Switch `browser`↔`mpd` (per-profile, `mpd` locked → 423 if busy; `browser` with `X-Device-Id` hands off to that browser)                                                                                                                           |
+| PATCH  | `/player/volume`                         | Set volume (per-profile; browser stored in-memory and broadcast to active device)                                                                                                                                                                  |
+| GET    | `/stream/:trackId`                       | Stream an audio track by database ID (progressive HTTP Range incl. suffix, HEAD, ETag/Last-Modified)                                                                                                                                               |
+| GET    | `/likes`                                 | List the current profile's liked tracks (`items,total,totalDuration`, `limit`/`offset`)                                                                                                                                                            |
+| GET    | `/likes/ids`                             | Track IDs liked by the current profile                                                                                                                                                                                                             |
+| PUT    | `/likes/:trackId`                        | Like a track (idempotent; 404 for unknown tracks)                                                                                                                                                                                                  |
+| DELETE | `/likes/:trackId`                        | Unlike a track                                                                                                                                                                                                                                     |
+| POST   | `/likes/play`                            | Play every liked track (`{shuffle?}`) on the active engine                                                                                                                                                                                         |
+| GET    | `/dashboard`                             | Per-profile dashboard data (recent albums/artists/tracks, top, suggestions, mix)                                                                                                                                                                   |
+| GET    | `/waveforms/:trackId`                    | Get waveform peaks for a track (`{samples,duration,version}`)                                                                                                                                                                                      |
+| GET    | `/health`                                | Public: dependency-free liveness probe (`{ status: "ok" }`) for the Docker HEALTHCHECK                                                                                                                                                             |
+| GET    | `/system/setup/progress`                 | Read setup progress (admin-only)                                                                                                                                                                                                                   |
+| POST   | `/system/setup/complete`                 | Complete or skip setup (admin-only)                                                                                                                                                                                                                |
+| POST   | `/system/setup/reset`                    | Reset the setup wizard (admin-only)                                                                                                                                                                                                                |
 | GET    | `ws://host:3000/ws?sessionId=&deviceId=` | WebSocket playback state — handshake requires the session cookie; `?sessionId=` must match it (4403 otherwise); `deviceId` identifies the browser; `player-status` includes `activeDeviceId`+`mode`; the active device sends `player-report` facts |
 
 ### Environment variables
@@ -329,7 +335,6 @@ Configure via `packages/backend/.env`:
 | `LOG_LEVEL`        | `info`                                                                   | Console log level; `debug` also logs MPD command responses and catalog details |
 | `MPD_CONFIG_PATH`  | `/app/data/mpd-audio.conf` (docker) / `/opt/sonect/data/...`             | MPD config drop-in (`audio_output` + advanced settings)                        |
 | `MPD_LOG_PATH`     | —                                                                        | Legacy; **no longer read** — sync progress comes from the MPD protocol         |
-| `DNS_CHECK_HOST`   | `example.com`                                                            | Host resolved to verify DNS connectivity                                       |
 | `PORT`             | `3000`                                                                   | Backend HTTP port                                                              |
 | `FRONTEND_DIST`    | `@frontend/dist` (cwd-relative fallback; `/app/frontend/dist` in docker) | Built frontend static files                                                    |
 | `CORS_ORIGIN`      | — (empty → same-origin only)                                             | Comma-separated exact origins allowed to make credentialed requests            |
@@ -391,10 +396,8 @@ source — remount the share with the correct charset (`iocharset=`) or rename t
 folders through a client that displays them correctly. Sonect never renames
 files; its stats walk skips unreadable entries and reports the readable subset.
 
-Sonect does not manage host Wi-Fi connections. `GET /system/network/status`
-returns whether the server has a non-loopback network address and whether the
-configured `DNS_CHECK_HOST` resolves through the system resolver. The frontend
-shows this read-only status in the desktop top bar.
+Sonect does not manage or report host networking: there is no Wi-Fi
+scan/connect control and no network-status indicator.
 
 ---
 
@@ -465,9 +468,9 @@ Tags: `latest` and the release version.
 
 The Release PR also updates `packages/frontend/package.json` via
 release-please `extra-files`, so the frontend package version always matches
-the release. The running server version is stamped into `/app/.version` from
-`SONECT_VERSION`, exposed by `GET /system/health`, and shown in
-**Settings → Debug**.
+the release. Vite injects that version at build time as `__APP_VERSION__`, and
+**Settings → Debug** displays it. The backend does not expose a version
+endpoint.
 
 The image is published by the release workflow itself (it calls the Docker
 build as a reusable workflow), so no manual step is needed. To (re)publish

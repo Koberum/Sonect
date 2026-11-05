@@ -1,0 +1,171 @@
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  AudioLines,
+  Library,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings,
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { useTheme } from "@/components/theme-provider";
+import { useAuth } from "@/features/auth/auth-context";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+export interface SidebarProps {
+  className?: string;
+  toggleSidebar(open: boolean): void;
+  collapsed?: boolean;
+  collapsible?: boolean;
+  onToggleCollapse?(): void;
+}
+
+interface SidebarItem {
+  href: string;
+  match: string;
+  labelKey: string;
+  icon: typeof AudioLines;
+}
+
+export function Sidebar({
+  className,
+  toggleSidebar,
+  collapsed = false,
+  collapsible = false,
+  onToggleCollapse,
+}: SidebarProps) {
+  const { t } = useTranslation();
+  const { isAdmin } = useAuth();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const { theme } = useTheme();
+  const [systemDark, setSystemDark] = useState(
+    () => window.matchMedia("(prefers-color-scheme: dark)").matches,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (event: MediaQueryListEvent) =>
+      setSystemDark(event.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  const effectiveTheme =
+    theme === "system" ? (systemDark ? "dark" : "light") : theme;
+  const logoSrc =
+    effectiveTheme === "dark"
+      ? "/sonect-logo-dark.svg"
+      : "/sonect-logo-light.svg";
+
+  const items: SidebarItem[] = [
+    {
+      href: "/home",
+      match: "/home",
+      labelKey: "nav.home",
+      icon: AudioLines,
+    },
+    {
+      href: "/library",
+      match: "/library",
+      labelKey: "nav.library",
+      icon: Library,
+    },
+    ...(isAdmin
+      ? [
+          {
+            href: "/settings",
+            match: "/settings",
+            labelKey: "nav.settings",
+            icon: Settings,
+          },
+        ]
+      : []),
+  ];
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    toggleSidebar(false);
+  };
+
+  const isActive = (match: string) =>
+    pathname === match || pathname.startsWith(`${match}/`);
+
+  return (
+    <div className={cn("flex h-full flex-col", className)}>
+      <div
+        className={cn(
+          "flex h-16 shrink-0 items-center gap-2",
+          collapsed ? "justify-center px-2" : "justify-between px-5",
+        )}
+      >
+        {!collapsed ? (
+          <Link
+            to="/home"
+            onClick={() => toggleSidebar(false)}
+            className="focus-visible:ring-ring rounded-md focus-visible:ring-2 focus-visible:outline-none"
+          >
+            <img src={logoSrc} alt="Sonect" className="h-8 w-auto" />
+          </Link>
+        ) : null}
+        {collapsible ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="bare"
+                size="icon-sm"
+                onClick={onToggleCollapse}
+                aria-label={t(collapsed ? "nav.expand" : "nav.collapse")}
+              >
+                {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              {t(collapsed ? "nav.expand" : "nav.collapse")}
+            </TooltipContent>
+          </Tooltip>
+        ) : null}
+      </div>
+      <nav
+        className={cn("space-y-1", collapsed ? "p-2" : "p-3")}
+        aria-label={t("nav.label")}
+      >
+        {items.map(({ href, match, labelKey, icon: Icon }) => {
+          const button = (
+            <Button
+              key={href}
+              onClick={() => handleNavigation(href)}
+              variant={isActive(match) ? "secondary" : "ghost"}
+              className={cn(
+                "w-full",
+                collapsed ? "justify-center px-0" : "justify-start",
+              )}
+              aria-current={isActive(match) ? "page" : undefined}
+              aria-label={t(labelKey)}
+            >
+              <Icon className={cn(!collapsed && "mr-2")} />
+              {!collapsed ? (
+                <span className="truncate">{t(labelKey)}</span>
+              ) : null}
+            </Button>
+          );
+
+          if (!collapsed) return button;
+
+          return (
+            <Tooltip key={href}>
+              <TooltipTrigger asChild>{button}</TooltipTrigger>
+              <TooltipContent side="right">{t(labelKey)}</TooltipContent>
+            </Tooltip>
+          );
+        })}
+      </nav>
+    </div>
+  );
+}

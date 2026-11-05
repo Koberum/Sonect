@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { FolderSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ItemGroup } from "@/components/ui/item";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import type { DetectedLibrary, StorageSource } from "@/features/system/api";
 import { systemQueries, systemMutations } from "@/features/system/queries";
@@ -111,24 +117,47 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
           )}
         </WizardStepDescription>
       </WizardStepHeader>
-      <WizardStepContent>
-        <div className="space-y-2">
-          <p className="text-sm font-medium">
+      <WizardStepContent className="flex flex-col gap-4 text-left">
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-medium">
             {t("settings.libraries.detected", "Detected libraries")}
-          </p>
-          {detectedQuery.isPending ? (
-            <p className="text-muted-foreground text-sm">
-              {t("common.loading", "Loading...")}
-            </p>
+          </h2>
+          {detectedQuery.isError ? (
+            <Alert
+              variant="destructive"
+              className="flex flex-wrap items-center justify-between gap-3"
+            >
+              <AlertDescription>
+                {t(
+                  "settings.libraries.loadDetectedError",
+                  "Couldn't load detected folders",
+                )}
+              </AlertDescription>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void detectedQuery.refetch()}
+              >
+                {t("common.retry", "Retry")}
+              </Button>
+            </Alert>
+          ) : detectedQuery.isPending ? (
+            <div className="flex flex-col gap-2" aria-hidden="true">
+              {[0, 1].map((i) => (
+                <Skeleton key={i} className="h-16 w-full rounded-lg" />
+              ))}
+            </div>
           ) : detected.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              {t(
+            <EmptyState
+              icon={FolderSearch}
+              title={t(
                 "settings.libraries.noDetected",
                 "No folders detected under the music directory.",
               )}
-            </p>
+              className="py-6"
+            />
           ) : (
-            <div className="space-y-2">
+            <ItemGroup>
               {detected.map((lib) => (
                 <DetectedLibraryRow
                   key={lib.path}
@@ -144,23 +173,26 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
                   onCompute={() => handleComputeStats(lib)}
                 />
               ))}
-            </div>
+            </ItemGroup>
           )}
-        </div>
+        </section>
 
-        <p className="text-muted-foreground pt-2 text-sm font-medium">
-          {t("setup.storage.addManually", "Or add manually")}
-        </p>
+        <Separator />
 
-        <LibrarySourceForm
-          form={form.form}
-          setForm={form.setForm}
-          errors={form.errors}
-          handleFieldBlur={form.handleFieldBlur}
-          fieldClass={form.fieldClass}
-          formId={FORM_ID}
-          onSubmit={form.submit}
-        />
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-medium">
+            {t("setup.storage.addManually", "Or add manually")}
+          </h2>
+
+          <LibrarySourceForm
+            form={form.form}
+            setForm={form.setForm}
+            errors={form.errors}
+            handleFieldBlur={form.handleFieldBlur}
+            formId={FORM_ID}
+            onSubmit={form.submit}
+          />
+        </section>
       </WizardStepContent>
       <WizardStepActions>
         {onBack && (
@@ -202,7 +234,7 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           {createdSource && (
-            <div className="space-y-2 text-sm">
+            <div className="flex flex-col gap-2 text-sm">
               <div className="font-medium">{createdSource.name}</div>
               <div className="text-muted-foreground font-mono text-xs break-all">
                 {createdSource.path}

@@ -16,7 +16,6 @@ export interface PlaybackEngine extends EventEmitter {
   addToQueue(file: string): Promise<void>;
   playFiles(files: string[], startAt?: number): Promise<void>;
   removeFromQueue(pos: number): Promise<void>;
-  moveQueueItem(from: number, to: number): Promise<void>;
   setVolume(volume: number): Promise<void>;
   playPosition(pos: number): Promise<void>;
   enableRandom(enabled: boolean): Promise<void>;
@@ -227,10 +226,6 @@ export class MpdAdapter extends EventEmitter implements PlaybackEngine {
 
   async removeFromQueue(pos: number): Promise<void> {
     await this.playerService.removeFromQueue(pos);
-  }
-
-  async moveQueueItem(from: number, to: number): Promise<void> {
-    await this.playerService.moveQueueItem(from, to);
   }
 
   async setVolume(volume: number): Promise<void> {

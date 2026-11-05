@@ -2,7 +2,6 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
 import { useNavigate } from "react-router-dom";
-import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -20,10 +19,6 @@ export default function Genres() {
 
   return (
     <div>
-      <PageHeader
-        title={t("genres.title")}
-        description={t("genres.description")}
-      />
       {isPending ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -42,7 +37,7 @@ export default function Genres() {
                 asChild
                 className="bg-card gap-4 rounded-xl p-4 shadow-sm"
                 onClick={() =>
-                  navigate(`/genres/${encodeURIComponent(g.name)}`)
+                  navigate(`/library/genres/${encodeURIComponent(g.name)}`)
                 }
               >
                 <div>

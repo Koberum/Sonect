@@ -8,10 +8,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { playerMutations, playerQueries } from "@/features/player/queries";
@@ -45,54 +53,71 @@ export function PlaybackTab() {
         <CardTitle>{t("settings.playback.title")}</CardTitle>
         <CardDescription>{t("settings.playback.description")}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="flex flex-col gap-4">
         {settingsQuery.isPending ? (
-          <div className="space-y-3">
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-2 w-full" />
-          </div>
+          <FieldGroup className="gap-3">
+            <Field className="gap-3">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-2 w-full" />
+              <Skeleton className="h-3 w-2/3" />
+            </Field>
+          </FieldGroup>
         ) : settingsQuery.isError ? (
-          <div className="border-destructive/30 bg-destructive/10 text-destructive flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3 text-sm">
-            <p>{t("settings.playback.loadError")}</p>
+          <Alert
+            variant="destructive"
+            className="flex flex-wrap items-center justify-between gap-3"
+          >
+            <AlertDescription>
+              {t("settings.playback.loadError")}
+            </AlertDescription>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => settingsQuery.refetch()}
+              onClick={() => void settingsQuery.refetch()}
             >
               {t("common.retry")}
             </Button>
-          </div>
+          </Alert>
         ) : (
           <>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between gap-4">
-                <Label>{t("settings.playback.crossfadeLabel")}</Label>
-                <span className="text-muted-foreground text-sm tabular-nums">
-                  {t("settings.playback.seconds", { seconds: crossfade })}
-                </span>
-              </div>
-              <Slider
-                min={0}
-                max={30}
-                step={1}
-                value={[crossfade]}
-                aria-label={t("settings.playback.crossfadeLabel")}
-                onValueChange={(value) => {
-                  setDirty(true);
-                  setCrossfade(value[0] ?? 0);
-                }}
-              />
-              <p className="text-muted-foreground text-xs leading-5">
-                {t("settings.playback.hint")}
-              </p>
-              <p className="text-muted-foreground text-xs leading-5">
-                {t("settings.playback.mpdHint")}
-              </p>
-            </div>
+            <FieldGroup className="gap-4">
+              <Field>
+                <div className="flex items-center justify-between gap-3">
+                  <FieldLabel htmlFor="crossfade-slider">
+                    {t("settings.playback.crossfadeLabel")}
+                  </FieldLabel>
+                  <Badge variant="secondary" className="tabular-nums">
+                    {t("settings.playback.seconds", { seconds: crossfade })}
+                  </Badge>
+                </div>
+                <Slider
+                  id="crossfade-slider"
+                  min={0}
+                  max={30}
+                  step={1}
+                  value={[crossfade]}
+                  aria-label={t("settings.playback.crossfadeLabel")}
+                  onValueChange={(value) => {
+                    setDirty(true);
+                    setCrossfade(value[0] ?? 0);
+                  }}
+                />
+                <FieldDescription>
+                  <span className="block">{t("settings.playback.hint")}</span>
+                  <span className="mt-1 block">
+                    {t("settings.playback.outputHint")}
+                  </span>
+                </FieldDescription>
+              </Field>
+            </FieldGroup>
+
+            <Separator />
+
             <div className="flex justify-end">
               <Button
                 onClick={handleSave}
                 disabled={!dirty || saveMut.isPending}
+                className="w-full sm:w-auto"
               >
                 {saveMut.isPending ? (
                   <Loader2 className="animate-spin" />

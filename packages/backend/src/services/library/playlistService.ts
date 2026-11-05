@@ -1,38 +1,59 @@
 import { playlistsDb, tracksDb } from "@repo/db";
-import { Playlist, PlaylistWithTracks } from "@repo/types/catalog";
+import {
+  Playlist,
+  PlaylistSummary,
+  PlaylistWithTracks,
+} from "@repo/types/catalog";
 import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager";
 
 export interface PlaylistService {
-  getAllPlaylists(): Playlist[];
-  getPlaylistById(id: number): Playlist | undefined;
-  getPlaylistWithTracks(id: number): PlaylistWithTracks | undefined;
-  createPlaylist(name: string, description?: string): Playlist | undefined;
+  getAllPlaylists(profileId: string): PlaylistSummary[];
+  getPlaylistWithTracks(
+    profileId: string,
+    id: number,
+  ): PlaylistWithTracks | undefined;
+  createPlaylist(
+    profileId: string,
+    name: string,
+    description?: string,
+  ): Playlist | undefined;
   updatePlaylist(
+    profileId: string,
     id: number,
     data: { name?: string; description?: string },
   ): Playlist | undefined;
-  deletePlaylist(id: number): boolean;
+  deletePlaylist(profileId: string, id: number): boolean;
   addTrackToPlaylist(
+    profileId: string,
     playlistId: number,
     trackId: number,
   ): { pt_id: number } | null;
-  removeTrackFromPlaylist(playlistTrackId: number, playlistId: number): boolean;
-  loadPlaylist(id: number): Promise<void>;
+  removeTrackFromPlaylist(
+    profileId: string,
+    playlistTrackId: number,
+    playlistId: number,
+  ): boolean;
+  loadPlaylist(profileId: string, id: number): Promise<void>;
 }
 
 export class PlaylistServiceImpl implements PlaylistService {
   constructor(private mpdConnectionManager: MpdConnectionManager) {}
 
-  getAllPlaylists(): Playlist[] {
-    return playlistsDb.getAll();
+  getAllPlaylists(profileId: string): PlaylistSummary[] {
+    const trackCounts = playlistsDb.getTrackCounts(profileId);
+    const coverPreviews = playlistsDb.getCoverPreviewsForProfile(profileId);
+    return playlistsDb.getAll(profileId).map((playlist) => ({
+      ...playlist,
+      coverPreviews: coverPreviews.get(playlist.id) ?? [],
+      trackCount: trackCounts.get(playlist.id) ?? 0,
+    }));
   }
 
-  getPlaylistById(id: number): Playlist | undefined {
-    return playlistsDb.getById(id);
-  }
-
-  getPlaylistWithTracks(id: number): PlaylistWithTracks | undefined {
-    const playlist = playlistsDb.getById(id);
+  getPlaylistWithTracks(
+    profileId: string,
+    id: number,
+  ): PlaylistWithTracks | undefined {
+    const playlist = playlistsDb.getById(profileId, id);
     if (!playlist) return undefined;
 
     const tracks = playlistsDb.getTracks(id).map((t) => ({
@@ -44,55 +65,56 @@ export class PlaylistServiceImpl implements PlaylistService {
     return { ...playlist, tracks };
   }
 
-  createPlaylist(name: string, description?: string): Playlist | undefined {
-    const id = playlistsDb.create(name, description);
-    return playlistsDb.getById(id);
+  createPlaylist(
+    profileId: string,
+    name: string,
+    description?: string,
+  ): Playlist | undefined {
+    const id = playlistsDb.create(profileId, name, description);
+    return playlistsDb.getById(profileId, id);
   }
 
   updatePlaylist(
+    profileId: string,
     id: number,
     data: { name?: string; description?: string },
   ): Playlist | undefined {
-    const playlist = playlistsDb.getById(id);
+    const playlist = playlistsDb.getById(profileId, id);
     if (!playlist) return undefined;
 
-    const oldName = playlist.name;
-    playlistsDb.update(id, data);
-
-    if (data.name && data.name !== oldName) {
-      this.mpdConnectionManager
-        .executeCommand("rename", [oldName, data.name])
-        .catch(() => {});
-    }
-
-    return playlistsDb.getById(id);
+    playlistsDb.update(profileId, id, data);
+    return playlistsDb.getById(profileId, id);
   }
 
-  deletePlaylist(id: number): boolean {
-    const playlist = playlistsDb.getById(id);
+  deletePlaylist(profileId: string, id: number): boolean {
+    const playlist = playlistsDb.getById(profileId, id);
     if (!playlist) return false;
 
-    playlistsDb.delete(id);
+    playlistsDb.delete(profileId, id);
     this.mpdConnectionManager
-      .executeCommand("rm", [playlist.name])
+      .executeCommand("rm", [this.mpdPlaylistName(id)])
       .catch(() => {});
     return true;
   }
 
   addTrackToPlaylist(
+    profileId: string,
     playlistId: number,
     trackId: number,
   ): { pt_id: number } | null {
     const track = tracksDb.getById(trackId);
     if (!track) throw new Error("Track not found");
 
-    const playlist = playlistsDb.getById(playlistId);
-    if (!playlist) throw new Error("Playlist not found");
+    const playlist = playlistsDb.getById(profileId, playlistId);
+    if (!playlist) return null;
 
     playlistsDb.addTrack(playlistId, trackId);
 
     this.mpdConnectionManager
-      .executeCommand("playlistadd", [playlist.name, track.file])
+      .executeCommand("playlistadd", [
+        this.mpdPlaylistName(playlistId),
+        track.file,
+      ])
       .catch(() => {});
 
     const tracks = playlistsDb.getTracks(playlistId);
@@ -101,32 +123,43 @@ export class PlaylistServiceImpl implements PlaylistService {
   }
 
   removeTrackFromPlaylist(
+    profileId: string,
     playlistTrackId: number,
     playlistId: number,
   ): boolean {
+    const playlist = playlistsDb.getById(profileId, playlistId);
+    if (!playlist) return false;
+
     const tracks = playlistsDb.getTracks(playlistId);
     const track = tracks.find((t) => t.pt_id === playlistTrackId);
     if (!track) return false;
 
-    const playlist = playlistsDb.getById(playlistId);
-
     playlistsDb.removeTrack(playlistTrackId);
 
-    if (playlist) {
-      this.removeTrackFromMpdPlaylist(playlist.name, track.file).catch(
-        () => {},
-      );
-    }
+    this.removeTrackFromMpdPlaylist(
+      this.mpdPlaylistName(playlistId),
+      track.file,
+    ).catch(() => {});
     return true;
   }
 
-  async loadPlaylist(id: number): Promise<void> {
-    const playlist = playlistsDb.getById(id);
+  async loadPlaylist(profileId: string, id: number): Promise<void> {
+    const playlist = playlistsDb.getById(profileId, id);
     if (!playlist) throw new Error("Playlist not found");
 
     await this.mpdConnectionManager.executeCommand("clear");
-    await this.mpdConnectionManager.executeCommand("load", [playlist.name]);
+    await this.mpdConnectionManager.executeCommand("load", [
+      this.mpdPlaylistName(id),
+    ]);
     this.mpdConnectionManager.refreshNow().catch(() => {});
+  }
+
+  /**
+   * MPD playlists share one global namespace, while Sonect playlists are
+   * per-profile and may reuse names. The id-based name keeps them separate.
+   */
+  private mpdPlaylistName(id: number): string {
+    return `sonect-${id}`;
   }
 
   private async removeTrackFromMpdPlaylist(

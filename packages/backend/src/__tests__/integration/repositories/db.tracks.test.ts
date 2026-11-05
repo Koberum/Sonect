@@ -7,7 +7,6 @@ import {
   upsertTrack,
   findOrCreateArtist,
   findOrCreateAlbum,
-  findOrCreateGenre,
   storageDb,
   tracks,
 } from "@repo/db";
@@ -419,7 +418,7 @@ describe("tracksDb (trophy integration)", () => {
     });
   });
 
-  describe("search / getAllWithRelations / getRecentWithRelations / getGenres / getByGenre", () => {
+  describe("search / getGenres / getByGenre", () => {
     it("search finds via title/artist/album LIKE", () => {
       upsertTrack(
         db(),
@@ -448,71 +447,6 @@ describe("tracksDb (trophy integration)", () => {
       expect(res.map((t) => t.title)).to.deep.equal(
         [...res].map((t) => t.title).sort(),
       );
-    });
-    it("getAllWithRelations sorts: recent/duration/title and pagination guard", () => {
-      const aid = findOrCreateArtist(db(), "SortTArtist");
-      const al = findOrCreateAlbum(db(), "SortTAl", aid);
-      const id1 = db()
-        .insert(tracks)
-        .values({
-          file: "a/short.mp3",
-          title: "Short",
-          artist_id: aid,
-          album_id: al,
-          duration: 10,
-        })
-        .run().lastInsertRowid as number;
-      const id2 = db()
-        .insert(tracks)
-        .values({
-          file: "a/long.mp3",
-          title: "Long",
-          artist_id: aid,
-          album_id: al,
-          duration: 300,
-        })
-        .run().lastInsertRowid as number;
-      expect(tracksDb.getAllWithRelations("duration")[0].title).to.equal(
-        "Long",
-      );
-      expect(tracksDb.getAllWithRelations().map((t) => t.title)).to.deep.equal(
-        ["Long", "Short"].sort(),
-      );
-      // pagination guard
-      expect(
-        tracksDb.getAllWithRelations(undefined, undefined, 5 as never),
-      ).to.have.length(2);
-      expect(tracksDb.getAllWithRelations(undefined, 1, 1)).to.have.length(1);
-      // recent sort
-      db()
-        .update(tracks)
-        .set({ created_at: "2020-01-02 00:00:00" })
-        .where(eq(tracks.id, id2))
-        .run();
-      db()
-        .update(tracks)
-        .set({ created_at: "2020-01-01 00:00:00" })
-        .where(eq(tracks.id, id1))
-        .run();
-      expect(tracksDb.getAllWithRelations("recent")[0].title).to.equal("Long");
-      // orphan inclusion via leftJoin
-      const orphanId = db()
-        .insert(tracks)
-        .values({
-          file: "orphan.mp3",
-          title: "Orphan",
-          artist_id: null,
-          album_id: null,
-        })
-        .run().lastInsertRowid as number;
-      expect(tracksDb.getAllWithRelations().some((t) => t.id === orphanId)).to
-        .be.true;
-    });
-    it("getRecentWithRelations limit", () => {
-      for (let i = 0; i < 5; i++)
-        upsertTrack(db(), mpdTrack({ file: `a/recent${i}.mp3` }));
-      expect(tracksDb.getRecentWithRelations(2)).to.have.length(2);
-      expect(tracksDb.getRecentWithRelations(10)).to.have.length(5);
     });
     it("getGenres removed — use genresDb.getAllWithCounts", () => {
       expect(
@@ -544,119 +478,6 @@ describe("tracksDb (trophy integration)", () => {
       db().update(tracks).set({ play_count: 2 }).where(eq(tracks.id, id)).run();
       tracksDb.incrementPlayCount(id);
       expect(tracksDb.getById(id)?.play_count).to.equal(3);
-    });
-    it("getTopTracks orders play_count desc", () => {
-      const idLow = upsertTrack(
-        db(),
-        mpdTrack({ file: "a/low.mp3", title: "Low" }),
-      );
-      const idHigh = upsertTrack(
-        db(),
-        mpdTrack({ file: "a/high.mp3", title: "High" }),
-      );
-      db()
-        .update(tracks)
-        .set({ play_count: 1 })
-        .where(eq(tracks.id, idLow))
-        .run();
-      db()
-        .update(tracks)
-        .set({ play_count: 99 })
-        .where(eq(tracks.id, idHigh))
-        .run();
-      expect(tracksDb.getTopTracks(1)[0].title).to.equal("High");
-    });
-    it("getRecentlyPlayed filters last_played not null", () => {
-      const id = upsertTrack(db(), mpdTrack({ file: "a/rp.mp3" }));
-      expect(tracksDb.getRecentlyPlayed(10)).to.deep.equal([]);
-      db()
-        .update(tracks)
-        .set({ last_played: "2020-01-01 00:00:00" })
-        .where(eq(tracks.id, id))
-        .run();
-      expect(tracksDb.getRecentlyPlayed(10)).to.have.length(1);
-    });
-    it("getTracksForDiscovery empty lists → []", () => {
-      upsertTrack(db(), mpdTrack({ file: "a/d1.mp3" }));
-      expect(tracksDb.getTracksForDiscovery([], [], 10)).to.deep.equal([]);
-    });
-    it("getTracksForDiscovery filters play_count <3 or null", () => {
-      const aid = findOrCreateArtist(db(), "DiscArtist");
-      const al = findOrCreateAlbum(db(), "DiscAl", aid);
-      const idHigh = db()
-        .insert(tracks)
-        .values({
-          file: "a/highDisc.mp3",
-          title: "HighDisc",
-          artist_id: aid,
-          album_id: al,
-          play_count: 10,
-        })
-        .run().lastInsertRowid as number;
-      const idLow = db()
-        .insert(tracks)
-        .values({
-          file: "a/lowDisc.mp3",
-          title: "LowDisc",
-          artist_id: aid,
-          album_id: al,
-          play_count: 1,
-        })
-        .run().lastInsertRowid as number;
-      // Need genre linkage for discovery — use genre
-      const gid = findOrCreateGenre(db(), "Rock");
-      db()
-        .update(tracks)
-        .set({ genre_id: gid })
-        .where(eq(tracks.id, idLow))
-        .run();
-      db()
-        .update(tracks)
-        .set({ genre_id: gid })
-        .where(eq(tracks.id, idHigh))
-        .run();
-      const res = tracksDb.getTracksForDiscovery(["Rock"], [], 10);
-      expect(res.some((t) => t.id === idLow)).to.be.true;
-      expect(res.some((t) => t.id === idHigh)).to.be.false;
-    });
-    it("getTopGenres / getTopGenre / getTopArtists", () => {
-      const gidRock = findOrCreateGenre(db(), "Rock");
-      const gidPop = findOrCreateGenre(db(), "Pop");
-      const aid = findOrCreateArtist(db(), "TopArtist");
-      const al1 = findOrCreateAlbum(db(), "TopAl1", aid);
-      const al2 = findOrCreateAlbum(db(), "TopAl2", aid);
-      const id1 = db()
-        .insert(tracks)
-        .values({
-          file: "a/tg1.mp3",
-          title: "TG1",
-          artist_id: aid,
-          album_id: al1,
-          genre_id: gidRock,
-          play_count: 10,
-        })
-        .run().lastInsertRowid as number;
-      const id2 = db()
-        .insert(tracks)
-        .values({
-          file: "a/tg2.mp3",
-          title: "TG2",
-          artist_id: aid,
-          album_id: al2,
-          genre_id: gidPop,
-          play_count: 1,
-        })
-        .run().lastInsertRowid as number;
-      void id1;
-      void id2;
-      expect(tracksDb.getTopGenres(1)[0]).to.equal("Rock");
-      expect(tracksDb.getTopGenre()).to.equal("Rock");
-      const topArtists = tracksDb.getTopArtists(1);
-      expect(topArtists[0].name).to.equal("TopArtist");
-      expect(topArtists[0].total).to.equal(11);
-    });
-    it("getTopGenre returns null when no data", () => {
-      expect(tracksDb.getTopGenre()).to.be.null;
     });
     it("getTracksByGenre with limit", () => {
       upsertTrack(

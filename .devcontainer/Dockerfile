@@ -28,8 +28,8 @@ RUN mkdir -p /home/node/.local/share && \
     cp -r /root/.local/share/pnpm /home/node/.local/share/ && \
     chown -R node:node /home/node/.local
 
-# Install Opencode
-RUN curl -fsSL https://opencode.ai/install | bash
+# Install Opencode 2 (the legacy /install script only installs 1.x)
+RUN curl -fsSL https://opencode.ai/v2/install | bash
 
 # Install node-gyp (required for drizzle-kit, to build better-sqllite)
 RUN apt-get update && apt-get install -y python3 make g++ build-essential && npm install -g node-gyp

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { profileSettingsDb } from "@repo/db";
-import { playerSchemas, sessionSchemas, systemSchemas } from "@repo/types";
+import { playerSchemas, systemSchemas } from "@repo/types";
 import { asyncHandler } from "@middleware/asyncHandler";
 import { resolvePlayerRouter } from "@services/player/playerRouter.js";
 import { LockedError } from "../middleware/errorHandler.js";
@@ -74,7 +74,7 @@ export const unifiedPlayHandler = asyncHandler(
       );
       throw err;
     }
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -104,7 +104,7 @@ export const unifiedPauseHandler = asyncHandler(
       );
       throw err;
     }
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -134,7 +134,7 @@ export const unifiedResumeHandler = asyncHandler(
       );
       throw err;
     }
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -160,7 +160,7 @@ export const unifiedNextHandler = asyncHandler(
       );
       throw err;
     }
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -190,7 +190,7 @@ export const unifiedPreviousHandler = asyncHandler(
       );
       throw err;
     }
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -222,7 +222,7 @@ export const unifiedSeekHandler = asyncHandler(
       );
       throw err;
     }
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -248,13 +248,13 @@ export const unifiedAddToQueueHandler = asyncHandler(
       },
     );
     await router().forSession(sid).addToQueue(file);
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
 export const unifiedRemoveFromQueueHandler = asyncHandler(
   async (req: Request, res: Response) => {
-    const { pos } = sessionSchemas.queuePos.parse(req.params);
+    const { pos } = playerSchemas.queuePos.parse(req.params);
     const sid = req.sessionId as string;
     getLogService().pushLog(
       "debug",
@@ -265,25 +265,7 @@ export const unifiedRemoveFromQueueHandler = asyncHandler(
       },
     );
     await router().forSession(sid).removeFromQueue(pos);
-    res.json({ success: true });
-  },
-);
-
-export const unifiedMoveQueueHandler = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { from, to } = playerSchemas.moveQueue.parse(req.body);
-    const sid = req.sessionId as string;
-    getLogService().pushLog(
-      "debug",
-      `[Session ${fmtSid(sid)}][${router().getMode(sid)}] moveQueue ${from}→${to}`,
-      {
-        sessionId: fmtSid(sid),
-        from,
-        to,
-      },
-    );
-    await router().forSession(sid).moveQueueItem(from, to);
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -300,7 +282,7 @@ export const unifiedPlayPositionHandler = asyncHandler(
       },
     );
     await router().forSession(sid).playPosition(pos);
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -318,7 +300,7 @@ export const unifiedSetVolumeHandler = asyncHandler(
     );
     // Browser volume is stored per-profile in PlayerRouter; MPD delegates to engine
     await router().setVolume(sid, volume);
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -410,7 +392,9 @@ export const unifiedSetOutputModeHandler = asyncHandler(
           warning: result.warning,
         },
       );
-      throw new LockedError(result.warning ?? "MPD locked by another session");
+      throw new LockedError(
+        result.warning ?? "Audio output is in use by another session",
+      );
     }
     getLogService().pushLog(
       "info",
@@ -437,7 +421,7 @@ export const unifiedEnableRandomHandler = asyncHandler(
       },
     );
     await router().forSession(sid).enableRandom(enabled);
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );
 
@@ -454,6 +438,6 @@ export const unifiedEnableRepeatHandler = asyncHandler(
       },
     );
     await router().forSession(sid).enableRepeat(enabled);
-    res.json({ success: true });
+    res.json(router().getStatus(sid));
   },
 );

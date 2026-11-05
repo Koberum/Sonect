@@ -1,16 +1,8 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { readAppVersion } from "../utils/appVersion.js";
-import { checkTool } from "../utils/utils.js";
 import type { LogService } from "../utils/logService.js";
-import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager.js";
-import type {
-  SystemStatus,
-  AudioDevice,
-  CpuTimes,
-  HardwareUsage,
-} from "@repo/types/system";
+import type { AudioDevice, CpuTimes, HardwareUsage } from "@repo/types/system";
 
 export interface SoundPaths {
   /** Root of the ALSA proc tree, e.g. /proc/asound. */
@@ -52,10 +44,8 @@ function readTextFile(filePath: string): string | null {
 }
 
 export interface SystemServiceInterface {
-  getSystemStatus(): SystemStatus;
   getHardwareUsage(): HardwareUsage;
   detectAudioDevices(): AudioDevice[];
-  checkTool(name: string): boolean;
 }
 
 export class SystemServiceImpl implements SystemServiceInterface {
@@ -64,10 +54,7 @@ export class SystemServiceImpl implements SystemServiceInterface {
   private readonly paths: SoundPaths;
   private warnedNoAudioDevices = false;
 
-  constructor(
-    private readonly mpdConnectionManager: MpdConnectionManager,
-    options: SystemServiceOptions = {},
-  ) {
+  constructor(options: SystemServiceOptions = {}) {
     this.logService = options.logService;
     this.paths = options.paths ?? DEFAULT_SOUND_PATHS;
   }
@@ -128,32 +115,6 @@ export class SystemServiceImpl implements SystemServiceInterface {
       },
       uptime: os.uptime(),
     };
-  }
-
-  public getSystemStatus(): SystemStatus {
-    const tools = {
-      aplay: this.checkTool("aplay"),
-      lsusb: this.checkTool("lsusb"),
-      systemctl: this.checkTool("systemctl"),
-      mpd: this.checkTool("mpd"),
-    };
-
-    const cards = this.detectAudioDevices();
-
-    return {
-      tools,
-      audio: {
-        available: cards.length > 0,
-        cards,
-      },
-      mpdConnected: this.mpdConnectionManager.connected,
-      setupCompleted: [],
-      version: readAppVersion(),
-    };
-  }
-
-  public checkTool(name: string): boolean {
-    return checkTool(name);
   }
 
   /**

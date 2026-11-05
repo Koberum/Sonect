@@ -76,14 +76,18 @@ describe("admin profile routes", () => {
     const { cookie } = await createTestSession("admin", "Admin");
     const target = await createTestSession("user", "Target");
     const before = profilesDb.getById(target.id)?.password_hash;
-    expect(authSessionsDb.countByProfile(target.id)).to.equal(1);
+    expect(authSessionsDb.countActiveByProfile(target.id, Date.now())).to.equal(
+      1,
+    );
 
     const res = await request(makeApp())
       .post(`/profiles/${target.id}/password`)
       .set("Cookie", cookie)
       .send({ password: "newpassword123" });
     expect(res.status).to.equal(204);
-    expect(authSessionsDb.countByProfile(target.id)).to.equal(0);
+    expect(authSessionsDb.countActiveByProfile(target.id, Date.now())).to.equal(
+      0,
+    );
     const after = profilesDb.getById(target.id)?.password_hash;
     expect(after).to.be.a("string");
     expect(after).to.not.equal(before);

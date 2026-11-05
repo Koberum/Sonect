@@ -4,6 +4,7 @@ import {
   ChevronDown,
   Copy,
   FolderPlus,
+  FolderSearch,
   HardDrive,
   Loader2,
   Plus,
@@ -17,8 +18,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ItemGroup } from "@/components/ui/item";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,7 +38,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -43,6 +46,7 @@ import type { DetectedLibrary, StorageSource } from "@/features/system/api";
 import { LibrariesForm } from "./libraries-form";
 import { DetectedLibraryRow, RegisteredLibraryRow } from "./library-rows";
 import type { LibrarySourceFormValues } from "./library-source-form";
+import { SyncCard } from "@/features/sync/components/sync-card";
 
 function composeSnippet(target?: DetectedLibrary): string {
   return `services:
@@ -74,7 +78,6 @@ export function LibrariesTab() {
 
   const sources = sourcesQuery.data ?? [];
   const detected = (detectedQuery.data ?? []).filter((l) => !l.registered);
-  const hasError = sourcesQuery.isError || detectedQuery.isError;
 
   const openAddDialog = () => {
     setEditingId(null);
@@ -165,13 +168,8 @@ export function LibrariesTab() {
     }
   };
 
-  const retry = () => {
-    if (sourcesQuery.isError) void sourcesQuery.refetch();
-    if (detectedQuery.isError) void detectedQuery.refetch();
-  };
-
   const skeleton = (
-    <div className="space-y-2" aria-hidden="true">
+    <div className="flex flex-col gap-2" aria-hidden="true">
       {[0, 1, 2].map((i) => (
         <Skeleton key={i} className="h-16 w-full rounded-lg" />
       ))}
@@ -179,84 +177,140 @@ export function LibrariesTab() {
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("settings.libraries.title", "Libraries")}</CardTitle>
-        <CardDescription>
-          {t(
-            "settings.libraries.description",
-            "Folders bind-mounted into the container and indexed by Sonect.",
-          )}
-        </CardDescription>
-        <CardAction>
-          <Button onClick={openAddDialog}>
-            <Plus />
-            {t("settings.libraries.addManual", "Add manually")}
-          </Button>
-        </CardAction>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {hasError && (
-          <div
-            role="alert"
-            className="border-destructive/50 bg-destructive/10 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
-          >
-            <p className="text-destructive text-sm">
-              {t("settings.libraries.loadError", "Couldn't load libraries")}
-            </p>
-            <Button variant="outline" size="sm" onClick={retry}>
-              {t("common.retry", "Retry")}
-            </Button>
-          </div>
-        )}
+    <div className="flex flex-col gap-6">
+      <SyncCard />
 
-        <section className="space-y-3">
-          {sourcesQuery.isPending ? (
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("settings.libraries.title", "Libraries")}</CardTitle>
+          <CardDescription>
+            {t(
+              "settings.libraries.description",
+              "Folders bind-mounted into the container and indexed by Sonect.",
+            )}
+          </CardDescription>
+          <CardAction>
+            <Button onClick={openAddDialog}>
+              <Plus />
+              {t("settings.libraries.addManual", "Add manually")}
+            </Button>
+          </CardAction>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {sourcesQuery.isError ? (
+            <Alert
+              variant="destructive"
+              className="flex flex-wrap items-center justify-between gap-3"
+            >
+              <AlertDescription>
+                {t("settings.libraries.loadError", "Couldn't load libraries")}
+              </AlertDescription>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void sourcesQuery.refetch()}
+              >
+                {t("common.retry", "Retry")}
+              </Button>
+            </Alert>
+          ) : sourcesQuery.isPending ? (
             skeleton
           ) : sources.length === 0 ? (
-            hasError ? null : (
-              <EmptyState
-                icon={FolderPlus}
-                title={t(
-                  "settings.libraries.noSources",
-                  "No libraries configured",
-                )}
-                description={t(
-                  "settings.libraries.noSourcesDescription",
-                  "Bind-mount a folder into the container, then register it here.",
-                )}
-                action={
-                  <Button variant="outline" onClick={openAddDialog}>
-                    <Plus />
-                    {t("settings.libraries.addManual", "Add manually")}
-                  </Button>
-                }
-              />
-            )
+            <EmptyState
+              icon={FolderPlus}
+              title={t(
+                "settings.libraries.noSources",
+                "No libraries configured",
+              )}
+              description={t(
+                "settings.libraries.noSourcesDescription",
+                "Bind-mount a folder into the container, then register it here.",
+              )}
+              action={
+                <Button variant="outline" onClick={openAddDialog}>
+                  <Plus />
+                  {t("settings.libraries.addManual", "Add manually")}
+                </Button>
+              }
+              className="py-6"
+            />
           ) : (
-            sources.map((src) => (
-              <RegisteredLibraryRow
-                key={src.id}
-                source={src}
-                isRefreshing={
-                  refreshMut.isPending && refreshMut.variables === src.id
-                }
-                onRefresh={() => handleRefreshStats(src.id)}
-                onEdit={() => startEdit(src)}
-                onDelete={() =>
-                  setDeletingSource({ id: src.id, name: src.name })
-                }
-              />
-            ))
+            <ItemGroup>
+              {sources.map((src) => (
+                <RegisteredLibraryRow
+                  key={src.id}
+                  source={src}
+                  isRefreshing={
+                    refreshMut.isPending && refreshMut.variables === src.id
+                  }
+                  onRefresh={() => handleRefreshStats(src.id)}
+                  onEdit={() => startEdit(src)}
+                  onDelete={() =>
+                    setDeletingSource({ id: src.id, name: src.name })
+                  }
+                />
+              ))}
+            </ItemGroup>
           )}
-        </section>
+        </CardContent>
 
-        <section className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="flex items-center gap-2 text-sm font-medium">
-              <HardDrive className="text-muted-foreground size-4" />
-              {t("settings.libraries.detected", "Detected libraries")}
-            </h2>
+        <LibrariesForm
+          key={editingId ?? "new"}
+          open={formOpen}
+          onOpenChange={setFormOpen}
+          onSave={handleSave}
+          initialValues={editingSource}
+          editingId={editingId}
+        />
+
+        <AlertDialog
+          open={deletingSource !== null}
+          onOpenChange={(open) => {
+            if (!open && !deleteMut.isPending) {
+              setDeletingSource(null);
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {t("settings.libraries.deleteTitle", "Delete Library?")}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {t("settings.libraries.deleteConfirm", {
+                  name: deletingSource?.name ?? "",
+                  defaultValue:
+                    'Are you sure you want to delete "{{name}}"? This cannot be undone.',
+                })}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleteMut.isPending}>
+                {t("common.cancel", "Cancel")}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (deletingSource) void handleDelete(deletingSource.id);
+                }}
+                disabled={deleteMut.isPending}
+                className={buttonVariants({ variant: "destructive" })}
+              >
+                {deleteMut.isPending && <Loader2 className="animate-spin" />}
+                {t("settings.libraries.deleteButton", "Delete")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <HardDrive className="text-muted-foreground size-4" />
+            {t("settings.libraries.detected", "Detected libraries")}
+          </CardTitle>
+          <CardAction>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -278,20 +332,41 @@ export function LibrariesTab() {
                 {t("settings.libraries.refreshDetected", "Refresh list")}
               </TooltipContent>
             </Tooltip>
-          </div>
-          {detectedQuery.isPending ? (
+          </CardAction>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {detectedQuery.isError ? (
+            <Alert
+              variant="destructive"
+              className="flex flex-wrap items-center justify-between gap-3"
+            >
+              <AlertDescription>
+                {t(
+                  "settings.libraries.loadDetectedError",
+                  "Couldn't load detected folders",
+                )}
+              </AlertDescription>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void detectedQuery.refetch()}
+              >
+                {t("common.retry", "Retry")}
+              </Button>
+            </Alert>
+          ) : detectedQuery.isPending ? (
             skeleton
           ) : detected.length === 0 ? (
-            hasError ? null : (
-              <p className="text-muted-foreground text-sm">
-                {t(
-                  "settings.libraries.noDetected",
-                  "No folders detected under the music directory.",
-                )}
-              </p>
-            )
+            <EmptyState
+              icon={FolderSearch}
+              title={t(
+                "settings.libraries.noDetected",
+                "No folders detected under the music directory.",
+              )}
+              className="py-6"
+            />
           ) : (
-            <div className="space-y-2">
+            <ItemGroup>
               {detected.map((lib) => (
                 <DetectedLibraryRow
                   key={lib.path}
@@ -307,112 +382,63 @@ export function LibrariesTab() {
                   onCompute={() => handleComputeStats(lib)}
                 />
               ))}
-            </div>
+            </ItemGroup>
           )}
-        </section>
 
-        <div className="rounded-lg border">
-          <button
-            type="button"
-            className="flex w-full items-center justify-between gap-2 p-3 text-left text-sm font-medium"
-            onClick={() => setSnippetOpen((open) => !open)}
-            aria-expanded={snippetOpen}
-          >
-            {t("settings.libraries.snippetTitle", "How to add more folders")}
-            <ChevronDown
-              className={cn(
-                "text-muted-foreground size-4 transition-transform",
-                snippetOpen && "rotate-180",
-              )}
-            />
-          </button>
-          {snippetOpen && (
-            <div className="space-y-2 border-t p-3">
-              <p className="text-muted-foreground text-xs">
-                {t(
-                  "settings.libraries.snippetHint",
-                  "The host bind-mounts a folder into the container; register it here.",
+          <div className="rounded-lg border">
+            <button
+              type="button"
+              className="flex w-full items-center justify-between gap-2 p-3 text-left text-sm font-medium"
+              onClick={() => setSnippetOpen((open) => !open)}
+              aria-expanded={snippetOpen}
+            >
+              {t("settings.libraries.snippetTitle", "How to add more folders")}
+              <ChevronDown
+                className={cn(
+                  "text-muted-foreground size-4 transition-transform",
+                  snippetOpen && "rotate-180",
                 )}
-              </p>
-              <div className="flex items-start gap-2">
-                <pre className="bg-muted flex-1 overflow-x-auto rounded-md p-3 font-mono text-xs">
-                  {composeSnippet(detected[0])}
-                </pre>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="bare"
-                      size="icon-sm"
-                      onClick={copySnippet}
-                      aria-label={t(
+              />
+            </button>
+            {snippetOpen && (
+              <div className="flex flex-col gap-2 border-t p-3">
+                <p className="text-muted-foreground text-xs">
+                  {t(
+                    "settings.libraries.snippetHint",
+                    "The host bind-mounts a folder into the container; register it here.",
+                  )}
+                </p>
+                <div className="flex items-start gap-2">
+                  <pre className="bg-muted flex-1 overflow-x-auto rounded-md p-3 font-mono text-xs">
+                    {composeSnippet(detected[0])}
+                  </pre>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="bare"
+                        size="icon-sm"
+                        onClick={copySnippet}
+                        aria-label={t(
+                          "settings.libraries.copySnippet",
+                          "Copy compose snippet",
+                        )}
+                      >
+                        <Copy />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {t(
                         "settings.libraries.copySnippet",
                         "Copy compose snippet",
                       )}
-                    >
-                      <Copy />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {t(
-                      "settings.libraries.copySnippet",
-                      "Copy compose snippet",
-                    )}
-                  </TooltipContent>
-                </Tooltip>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      </CardContent>
-
-      <LibrariesForm
-        key={editingId ?? "new"}
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        onSave={handleSave}
-        initialValues={editingSource}
-        editingId={editingId}
-      />
-
-      <AlertDialog
-        open={deletingSource !== null}
-        onOpenChange={(open) => {
-          if (!open && !deleteMut.isPending) {
-            setDeletingSource(null);
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("settings.libraries.deleteTitle", "Delete Library?")}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("settings.libraries.deleteConfirm", {
-                name: deletingSource?.name ?? "",
-                defaultValue:
-                  'Are you sure you want to delete "{{name}}"? This cannot be undone.',
-              })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMut.isPending}>
-              {t("common.cancel", "Cancel")}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                if (deletingSource) void handleDelete(deletingSource.id);
-              }}
-              disabled={deleteMut.isPending}
-              className={buttonVariants({ variant: "destructive" })}
-            >
-              {deleteMut.isPending && <Loader2 className="animate-spin" />}
-              {t("settings.libraries.deleteButton", "Delete")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </Card>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

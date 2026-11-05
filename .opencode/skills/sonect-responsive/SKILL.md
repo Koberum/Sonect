@@ -60,13 +60,13 @@ Sonect uses **Tailwind CSS 4** with a mobile-first breakpoint system. Every UI c
 
 **Rule**: `min-w-{size}` prevents cards from shrinking too small. `flex-1` allows them to grow. The combination gives a clean wrap without gaps.
 
-### Album artwork
+### Media cards
 
 ```tsx
-<AlbumArtwork aspectRatio="square" className="w-full" />
+<AlbumCard album={album} className="w-full" />
 ```
 
-Album art uses `aspectRatio="square"` — the `w-full` ensures it fills its grid cell. On mobile with `grid-cols-2`, each card gets ~half the screen width.
+`AlbumCard`, `ArtistCard`, `TrackCard` and `PlaylistCard` share `MediaCard` (square artwork, hover like/actions, artist + year). In grids pass `className="w-full"` so the card fills its cell; in Dashboard carousels pass a fixed `w-44 shrink-0`. Grids use `grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6`.
 
 ---
 
@@ -74,7 +74,7 @@ Album art uses `aspectRatio="square"` — the `w-full` ensures it fills its grid
 
 1. **No horizontal overflow** — the app shell clamps overflow (`MainLayout` root uses `overflow-hidden`); no fixed-width containers wider than the viewport. If a scrollable horizontal area is intentional (Dashboard scrollable rows), use `ScrollArea` with hidden scrollbar styling.
 2. **Touch targets ≥ 44px** — Buttons, icon buttons, links must be at least 44×44px on touch devices. Use `min-h-11 min-w-11` or `p-3` if needed.
-3. **Bottom player bar** — Fixed at bottom, slides up with `translate-y-full`/`translate-y-0`. Ensure content above it is not obscured (the player pushes content up when visible).
+3. **Bottom player bar** — a flex footer of the content column (to the right of the sidebar on desktop, full width on mobile), not fixed; `main` scrolls above it and its bottom padding clears the bar.
 4. **Sidebar** — Hidden by default on mobile, toggleable via hamburger button. Uses slide animation. Never show sidebar as a permanent overlay on mobile.
 5. **Text truncation** — Long album/track titles use `truncate` or lines clamping. Never let text push layout horizontally.
 6. **Margins and padding** — All pages use `PageTitle` component which provides `mb-6` bottom spacing. Do not add ad-hoc margin-top to first content element — the spacing is already there.
@@ -82,16 +82,16 @@ Album art uses `aspectRatio="square"` — the `w-full` ensures it fills its grid
 
 ---
 
-## Playwright verification workflow
+## Manual verification workflow
 
-Before declaring a frontend change done, verify at 3 viewports using the Playwright MCP server (`playwright_browser_*` tools — see the `sonect-playwright` skill; `playwright` is not a workspace dependency, so do not write `import { chromium } from "playwright"` scripts):
+Before declaring a frontend change done, verify at 3 viewports with the browser's responsive mode (the frontend dev server must be running on `http://localhost:5173`):
 
-1. `browser_navigate` to `http://localhost:5173/PATH` (frontend dev server must be running)
-2. For each viewport — `browser_resize(375, 812)`, `browser_resize(768, 1024)`, `browser_resize(1280, 800)`:
-   - `browser_evaluate`: `document.documentElement.scrollWidth > document.documentElement.clientWidth` → horizontal overflow
-   - `browser_take_screenshot` for the visual check
+1. Open the affected route.
+2. For each viewport — 375×812 (mobile), 768×1024 (tablet), 1280×800 (desktop):
+   - In the DevTools console run `document.documentElement.scrollWidth > document.documentElement.clientWidth` → must be `false` (no horizontal overflow)
+   - Visually check the layout
 
-Check each screenshot for:
+Check each viewport for:
 
 - No horizontal scrollbar
 - All content visible and not cut off
@@ -113,4 +113,4 @@ Check each screenshot for:
 - [ ] Text truncation applied where needed (titles, descriptions)
 - [ ] Sidebar hidden by default on mobile
 - [ ] Player bar does not obscure content
-- [ ] Screenshots taken at all 3 breakpoints
+- [ ] Checked at all 3 breakpoints

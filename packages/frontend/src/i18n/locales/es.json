@@ -1,6 +1,5 @@
 {
   "dashboard": {
-    "title": "Escuchar Ahora",
     "recentlyPlayedAlbums": "Álbumes Reproducidos Recientemente",
     "recentlyPlayedArtists": "Artistas Reproducidos Recientemente",
     "recentlyPlayed": "Reproducido Recientemente",
@@ -11,23 +10,41 @@
     "trackCount": "{{count}} pistas",
     "trackCount_one": "{{count}} pista"
   },
-  "sidebar": {
-    "discover": "Descubrir",
-    "listenNow": "Escuchar Ahora",
+  "nav": {
+    "label": "Secciones",
+    "home": "Inicio",
     "library": "Biblioteca",
-    "artists": "Artistas",
-    "statistics": "Estadísticas",
-    "playlists": "Listas",
-    "refreshLibrary": "Actualizar Biblioteca",
-    "refreshingLibrary": "Actualizando...",
+    "settings": "Ajustes",
+    "back": "Atrás",
+    "forward": "Adelante",
+    "collapse": "Contraer barra lateral",
+    "expand": "Expandir barra lateral"
+  },
+  "home": {
+    "title": "Inicio",
+    "tabs": {
+      "listen": "Escuchar Ahora",
+      "playlists": "Listas",
+      "liked": "Canciones que te gustan"
+    }
+  },
+  "library": {
+    "title": "Biblioteca",
+    "tabs": {
+      "albums": "Álbumes",
+      "artists": "Artistas",
+      "genres": "Géneros",
+      "statistics": "Estadísticas"
+    }
+  },
+  "sidebar": {
     "toggleSidebar": "Alternar barra lateral"
   },
   "artists": {
     "title": "Artistas",
     "titleSingle": "Artista",
-    "noAlbums": "No se encontraron álbumes",
-    "noArtists": "No se encontraron artistas",
-    "description": "Explora tu música por artista"
+    "goToArtist": "Ir al artista",
+    "noArtists": "No se encontraron artistas"
   },
   "artist": {
     "description": "Explora álbumes y pistas de este artista",
@@ -44,8 +61,6 @@
     "goToAlbum": "Ir al Álbum"
   },
   "statistics": {
-    "title": "Estadísticas de la Biblioteca",
-    "description": "Resumen de tu biblioteca de música",
     "totalTracks": "Canciones Totales",
     "totalArtists": "Artistas",
     "totalAlbums": "Álbumes",
@@ -68,16 +83,16 @@
   },
   "player": {
     "title": "Reproduciendo ahora",
-    "outputMpd": "Salida MPD",
+    "outputSpeakers": "Altavoces",
     "outputDevices": "Salida",
     "thisDevice": "Este navegador",
     "remoteDevice": "Otro navegador",
     "outputModeError": "Error al cambiar el modo de salida",
     "tapToPlay": "Toca para reproducir",
-    "mpdError": "Error de reproducción MPD: {{error}}",
+    "playbackErrorDetail": "Error de reproducción: {{error}}",
     "playbackError": "No se puede reproducir esta pista",
-    "mpdLocked": "MPD bloqueado",
-    "outputModeLocked": "Salida MPD bloqueada por otra sesión"
+    "outputInUse": "En uso por otra sesión",
+    "outputInUseByOther": "La salida de audio está en uso por otra sesión"
   },
   "theme": {
     "light": "Claro",
@@ -85,20 +100,26 @@
     "system": "Sistema"
   },
   "sync": {
-    "syncingCovers": "Sincronizando carátulas...",
-    "syncingTracks": "Sincronizando pistas...",
-    "scanningMpd": "Escaneando...",
-    "updatingMpd": "Actualizando MPD...",
-    "complete": "Sincronización completa"
+    "title": "Sincronización de biblioteca",
+    "preparing": "Preparando...",
+    "readingTracks": "Leyendo pistas...",
+    "readingCovers": "Sincronizando carátulas...",
+    "scanningLibrary": "Actualizando biblioteca...",
+    "complete": "Sincronización completa",
+    "failed": "Error de sincronización",
+    "cardDescription": "Mantén tu catálogo al día con los archivos de tus bibliotecas.",
+    "runningDescription": "La biblioteca se está actualizando. Las listas se refrescan automáticamente.",
+    "syncNow": "Sincronizar ahora",
+    "syncing": "Sincronizando...",
+    "retry": "Reintentar",
+    "idle": "No hay sincronización en curso.",
+    "openDetails": "Mostrar detalles de sincronización",
+    "stepOf": "Paso {{current}} de {{total}}"
   },
   "language": {
     "en": "English",
     "es": "Español",
     "it": "Italiano"
-  },
-  "breadcrumb": {
-    "home": "Inicio",
-    "playlists": "Listas"
   },
   "contextMenu": {
     "addToPlaylist": "Agregar a la Lista",
@@ -111,6 +132,7 @@
   },
   "search": {
     "placeholder": "Buscar",
+    "genres": "Géneros",
     "artists": "Artistas",
     "albums": "Álbumes",
     "tracks": "Pistas",
@@ -122,6 +144,10 @@
   },
   "playlist": {
     "new": "Nueva Lista",
+    "open": "Abrir lista",
+    "defaultName": "Mi lista",
+    "dropToCreate": "Suelta aquí para crear una lista",
+    "dropHint": "Arrastra una canción sobre una lista para añadirla.",
     "edit": "Editar Lista",
     "save": "Guardar",
     "create": "Crear",
@@ -142,23 +168,24 @@
     "trackAddError": "Error al agregar pista",
     "trackRemoved": "Pista eliminada de la lista",
     "trackRemovedError": "Error al eliminar pista",
-    "removeTrack": "Eliminar pista"
+    "removeTrack": "Eliminar pista",
+    "createError": "No se pudo crear la lista",
+    "loadError": "No se pudieron cargar tus listas.",
+    "listCount_one": "{{count}} lista",
+    "listCount_other": "{{count}} listas",
+    "emptyListTitle": "Aún no hay listas",
+    "emptyListDescription": "Crea una lista para empezar a guardar pistas."
   },
   "albums": {
-    "title": "Álbumes",
-    "description": "Explora todos los álbumes de tu biblioteca",
     "sortTitle": "Título",
     "sortYear": "Año",
     "sortRecent": "Agregados Recientemente",
     "noAlbums": "No se encontraron álbumes"
   },
   "tracks": {
-    "title": "Pistas",
-    "description": "Explora todas las pistas de tu biblioteca",
     "noTracks": "No se encontraron pistas"
   },
   "liked": {
-    "title": "Canciones que te gustan",
     "description": "Las canciones que te gustan",
     "count_one": "{{count}} canción",
     "count_other": "{{count}} canciones",
@@ -174,7 +201,6 @@
     "updateError": "No se pudo actualizar este me gusta."
   },
   "genres": {
-    "title": "Géneros",
     "description": "Explora música por género",
     "trackCount_one": "{{count}} pista",
     "trackCount_other": "{{count}} pistas",
@@ -185,7 +211,6 @@
     "tracks": "Pistas"
   },
   "common": {
-    "appName": "Sonect",
     "cover": "Carátula",
     "cancel": "Cancelar",
     "retry": "Reintentar",
@@ -193,20 +218,11 @@
     "saving": "Guardando...",
     "deleting": "Eliminando...",
     "collageImage": "Imagen de collage {{index}}",
-    "loading": "Cargando...",
-    "close": "Cerrar"
-  },
-  "status": {
-    "backendUnreachable": "No se puede conectar al servidor — reconectando...",
-    "backendOnline": "Conexión restablecida",
-    "networkUnknown": "Estado de red no disponible",
-    "networkDisconnected": "Red desconectada",
-    "networkNoDns": "Conectado a la red, DNS no disponible",
-    "networkConnected": "Conectado a la red"
+    "close": "Cerrar",
+    "more": "Más acciones"
   },
   "settings": {
     "title": "Ajustes",
-    "description": "Configura tu sistema",
     "tabs": {
       "audio": "Audio",
       "playback": "Reproducción",
@@ -232,7 +248,7 @@
       "crossfadeLabel": "Fundido",
       "seconds": "{{seconds}} s",
       "hint": "Superpone el final de una pista con el inicio de la siguiente. Pon 0 para desactivarlo.",
-      "mpdHint": "En MPD, el valor se aplica mientras este perfil tiene la salida MPD. MPD solo puede hacer fundido entre pistas con el mismo formato de audio.",
+      "outputHint": "Al reproducir en altavoces, el valor se aplica mientras este perfil tenga la salida de audio. El fundido requiere que ambas pistas compartan el mismo formato de audio.",
       "save": "Guardar",
       "saving": "Guardando...",
       "saved": "Ajustes de reproducción guardados",
@@ -287,27 +303,32 @@
       "formDescription": "Registra una carpeta que esté montada en el contenedor.",
       "required": "Obligatorio",
       "loadError": "No se pudieron cargar las bibliotecas",
+      "loadDetectedError": "No se pudieron cargar las carpetas detectadas",
       "addedToast": "Biblioteca añadida"
     },
     "appearance": {
+      "description": "Personaliza el aspecto y el idioma de Sonect.",
       "theme": "Tema",
       "themeDescription": "Elige tu tema preferido",
       "language": "Idioma",
       "languageDescription": "Elige tu idioma preferido"
     },
     "debug": {
-      "mpdStatus": "Estado de MPD",
-      "mpdStatusDescription": "Verifica y controla el demonio MPD.",
-      "checkMpd": "Verificar MPD",
+      "system": "Sistema",
+      "systemDescription": "Estado del motor de audio y uso del hardware.",
+      "engineStatus": "Motor de audio",
+      "engineStatusDescription": "Verifica el estado del motor de audio.",
+      "checkEngine": "Verificar estado",
       "checking": "Verificando...",
-      "mpdRunning": "MPD está ejecutándose",
-      "mpdStopped": "MPD está detenido",
+      "engineRunning": "El motor de audio está en ejecución",
+      "engineStopped": "El motor de audio está detenido",
       "environment": "Entorno",
       "environmentDescription": "Valores de configuración de compilación y tiempo de ejecución.",
       "version": "Versión",
-      "versionUnavailable": "No disponible",
+      "dangerZone": "Zona de peligro",
+      "dangerZoneDescription": "Las acciones aquí restablecen partes de la configuración y no se pueden deshacer.",
       "hardware": {
-        "loading": "Cargando estadísticas del sistema...",
+        "title": "Hardware",
         "cpu": "CPU",
         "cores": "{{count}} núcleos",
         "loadAvg": "Carga prom:",
@@ -316,9 +337,8 @@
         "processRss": "RSS del proceso",
         "uptime": "Tiempo activo"
       },
-      "checkError": "Error al verificar el estado de MPD",
+      "checkError": "Error al verificar el estado del motor de audio",
       "setup": "Asistente de configuración",
-      "setupDescription": "Restablece el asistente de configuración para que vuelva a aparecer en la próxima carga.",
       "resetSetup": "Restablecer asistente",
       "resetSetupConfirmTitle": "¿Restablecer el asistente de configuración?",
       "resetSetupConfirm": "Esto marcará cada paso de configuración como incompleto y el asistente volverá a aparecer en la próxima carga de página.",
@@ -354,7 +374,6 @@
     "roleAdmin": "Administrador",
     "roleUser": "Usuario",
     "resetPassword": "Restablecer contraseña",
-    "resetPasswordTitle": "Restablecer contraseña",
     "resetPasswordDescription": "Establece una nueva contraseña para {{name}}. Sus sesiones activas se cerrarán.",
     "resetPasswordDone": "Contraseña restablecida",
     "resetPasswordError": "No se pudo restablecer la contraseña",
@@ -366,11 +385,9 @@
     "bootstrapSubmit": "Crear administrador",
     "bootstrapCreating": "Creando...",
     "bootstrapError": "No se pudo crear el administrador",
-    "lastAdmin": "El último administrador no se puede eliminar ni degradar",
-    "sessionsInvalidated": "Las sesiones activas se cerraron"
+    "lastAdmin": "El último administrador no se puede eliminar ni degradar"
   },
   "profile": {
-    "title": "¿Quién está escuchando?",
     "change": "Cambiar perfil",
     "switch": "Cambiar perfil",
     "select": "Seleccionar",
@@ -379,7 +396,6 @@
     "createTitle": "Crear perfil",
     "createDescription": "Elige un nombre, un color, una contraseña y un rol para el nuevo perfil",
     "namePlaceholder": "Nombre del perfil",
-    "rename": "Renombrar",
     "editTitle": "Editar perfil",
     "editDescription": "Actualiza el nombre, el color y el rol de este perfil, o restablece su contraseña",
     "save": "Guardar",
@@ -387,7 +403,6 @@
     "delete": "Eliminar",
     "deleteTitle": "Eliminar perfil",
     "deleteMessage": "¿Eliminar el perfil \"{{name}}\"? Esta acción no se puede deshacer.",
-    "lastProfile": "El último perfil no se puede eliminar",
     "retry": "Intentar de nuevo",
     "errors": {
       "load": "No se pudieron cargar los perfiles",
@@ -408,8 +423,7 @@
       "addSourceSubmit": "Crear y continuar",
       "creating": "Creando...",
       "confirmTitle": "Biblioteca agregada",
-      "confirmDescription": "Hemos validado la carpeta y escaneado tus archivos de música.",
-      "confirmContinue": "Continuar"
+      "confirmDescription": "Hemos validado la carpeta y escaneado tus archivos de música."
     },
     "audio": {
       "applyAndContinue": "Aplicar y continuar"

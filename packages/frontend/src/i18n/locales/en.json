@@ -1,6 +1,5 @@
 {
   "dashboard": {
-    "title": "Listen Now",
     "recentlyPlayedAlbums": "Recently Played Albums",
     "recentlyPlayedArtists": "Recently Played Artists",
     "recentlyPlayed": "Recently Played",
@@ -11,23 +10,41 @@
     "trackCount": "{{count}} tracks",
     "trackCount_one": "{{count}} track"
   },
-  "sidebar": {
-    "discover": "Discover",
-    "listenNow": "Listen Now",
+  "nav": {
+    "label": "Sections",
+    "home": "Home",
     "library": "Library",
-    "artists": "Artists",
-    "statistics": "Statistics",
-    "playlists": "Playlists",
-    "refreshLibrary": "Refresh Library",
-    "refreshingLibrary": "Refreshing...",
+    "settings": "Settings",
+    "back": "Back",
+    "forward": "Forward",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar"
+  },
+  "home": {
+    "title": "Home",
+    "tabs": {
+      "listen": "Listen Now",
+      "playlists": "Playlists",
+      "liked": "Liked Songs"
+    }
+  },
+  "library": {
+    "title": "Library",
+    "tabs": {
+      "albums": "Albums",
+      "artists": "Artists",
+      "genres": "Genres",
+      "statistics": "Statistics"
+    }
+  },
+  "sidebar": {
     "toggleSidebar": "Toggle sidebar"
   },
   "artists": {
     "title": "Artists",
     "titleSingle": "Artist",
-    "noAlbums": "No Albums found",
-    "noArtists": "No artists found",
-    "description": "Browse your music by artist"
+    "goToArtist": "Go to Artist",
+    "noArtists": "No artists found"
   },
   "artist": {
     "description": "Browse albums and tracks by this artist",
@@ -44,8 +61,6 @@
     "goToAlbum": "Go to Album"
   },
   "statistics": {
-    "title": "Library Statistics",
-    "description": "Overview of your music library",
     "totalTracks": "Total Songs",
     "totalArtists": "Artists",
     "totalAlbums": "Albums",
@@ -68,16 +83,16 @@
   },
   "player": {
     "title": "Now Playing",
-    "outputMpd": "MPD Output",
+    "outputSpeakers": "Speakers",
     "outputDevices": "Output",
     "thisDevice": "This browser",
     "remoteDevice": "Other browser",
     "outputModeError": "Failed to switch output mode",
     "tapToPlay": "Tap to play",
-    "mpdError": "MPD playback error: {{error}}",
+    "playbackErrorDetail": "Playback error: {{error}}",
     "playbackError": "Unable to play this track",
-    "mpdLocked": "MPD locked",
-    "outputModeLocked": "MPD output locked by another session"
+    "outputInUse": "In use by another session",
+    "outputInUseByOther": "Audio output is in use by another session"
   },
   "theme": {
     "light": "Light",
@@ -85,20 +100,26 @@
     "system": "System"
   },
   "sync": {
-    "syncingCovers": "Syncing covers...",
-    "syncingTracks": "Syncing tracks...",
-    "scanningMpd": "Scanning...",
-    "updatingMpd": "Updating MPD...",
-    "complete": "Sync complete"
+    "title": "Library sync",
+    "preparing": "Preparing...",
+    "readingTracks": "Reading tracks...",
+    "readingCovers": "Syncing covers...",
+    "scanningLibrary": "Updating library...",
+    "complete": "Sync complete",
+    "failed": "Sync failed",
+    "cardDescription": "Keep your catalog up to date with the files in your libraries.",
+    "runningDescription": "The library is being updated. Lists refresh automatically.",
+    "syncNow": "Sync now",
+    "syncing": "Syncing...",
+    "retry": "Retry",
+    "idle": "No sync in progress.",
+    "openDetails": "Show sync details",
+    "stepOf": "Step {{current}} of {{total}}"
   },
   "language": {
     "en": "English",
     "es": "Español",
     "it": "Italiano"
-  },
-  "breadcrumb": {
-    "home": "Home",
-    "playlists": "Playlists"
   },
   "contextMenu": {
     "addToPlaylist": "Add to Playlist",
@@ -111,6 +132,7 @@
   },
   "search": {
     "placeholder": "Search",
+    "genres": "Genres",
     "artists": "Artists",
     "albums": "Albums",
     "tracks": "Tracks",
@@ -122,6 +144,10 @@
   },
   "playlist": {
     "new": "New Playlist",
+    "open": "Open Playlist",
+    "defaultName": "My playlist",
+    "dropToCreate": "Drop here to create a playlist",
+    "dropHint": "Drag a song onto a playlist to add it.",
     "edit": "Edit Playlist",
     "save": "Save",
     "create": "Create",
@@ -142,23 +168,24 @@
     "trackAddError": "Failed to add track",
     "trackRemoved": "Track removed from playlist",
     "trackRemovedError": "Failed to remove track",
-    "removeTrack": "Remove track"
+    "removeTrack": "Remove track",
+    "createError": "Failed to create playlist",
+    "loadError": "Could not load your playlists.",
+    "listCount_one": "{{count}} playlist",
+    "listCount_other": "{{count}} playlists",
+    "emptyListTitle": "No playlists yet",
+    "emptyListDescription": "Create a playlist to start collecting tracks."
   },
   "albums": {
-    "title": "Albums",
-    "description": "Browse all albums in your library",
     "sortTitle": "Title",
     "sortYear": "Year",
     "sortRecent": "Recently Added",
     "noAlbums": "No albums found"
   },
   "tracks": {
-    "title": "Tracks",
-    "description": "Browse all tracks in your library",
     "noTracks": "No tracks found"
   },
   "liked": {
-    "title": "Liked Songs",
     "description": "Songs you've liked",
     "count_one": "{{count}} song",
     "count_other": "{{count}} songs",
@@ -174,7 +201,6 @@
     "updateError": "Could not update this like."
   },
   "genres": {
-    "title": "Genres",
     "description": "Browse music by genre",
     "trackCount_one": "{{count}} track",
     "trackCount_other": "{{count}} tracks",
@@ -185,7 +211,6 @@
     "tracks": "Tracks"
   },
   "common": {
-    "appName": "Sonect",
     "cover": "Cover",
     "cancel": "Cancel",
     "retry": "Retry",
@@ -193,20 +218,11 @@
     "saving": "Saving...",
     "deleting": "Deleting...",
     "collageImage": "Collage image {{index}}",
-    "loading": "Loading...",
-    "close": "Close"
-  },
-  "status": {
-    "backendUnreachable": "Cannot reach server — reconnecting...",
-    "backendOnline": "Connection restored",
-    "networkUnknown": "Network status unavailable",
-    "networkDisconnected": "Network disconnected",
-    "networkNoDns": "Connected to network, DNS unavailable",
-    "networkConnected": "Connected to network"
+    "close": "Close",
+    "more": "More actions"
   },
   "settings": {
     "title": "Settings",
-    "description": "Configure your system",
     "tabs": {
       "audio": "Audio",
       "playback": "Playback",
@@ -232,7 +248,7 @@
       "crossfadeLabel": "Crossfade",
       "seconds": "{{seconds}} s",
       "hint": "Overlap the end of one track with the start of the next. Set to 0 to disable.",
-      "mpdHint": "For MPD, the value applies while this profile owns the MPD output. MPD can only crossfade tracks with the same audio format.",
+      "outputHint": "When playing on speakers, the value applies while this profile owns the audio output. Crossfade requires both tracks to share the same audio format.",
       "save": "Save",
       "saving": "Saving...",
       "saved": "Playback settings saved",
@@ -287,27 +303,32 @@
       "formDescription": "Register a folder that is bind-mounted into the container.",
       "required": "Required",
       "loadError": "Couldn't load libraries",
+      "loadDetectedError": "Couldn't load detected folders",
       "addedToast": "Library added"
     },
     "appearance": {
+      "description": "Customize how Sonect looks and reads for you.",
       "theme": "Theme",
       "themeDescription": "Choose your preferred theme",
       "language": "Language",
       "languageDescription": "Choose your preferred language"
     },
     "debug": {
-      "mpdStatus": "MPD Status",
-      "mpdStatusDescription": "Check and control the MPD daemon.",
-      "checkMpd": "Check MPD Status",
+      "system": "System",
+      "systemDescription": "Audio engine status and hardware usage.",
+      "engineStatus": "Audio engine",
+      "engineStatusDescription": "Check the status of the audio engine.",
+      "checkEngine": "Check status",
       "checking": "Checking...",
-      "mpdRunning": "MPD is running",
-      "mpdStopped": "MPD is stopped",
+      "engineRunning": "Audio engine is running",
+      "engineStopped": "Audio engine is stopped",
       "environment": "Environment",
       "environmentDescription": "Build and runtime configuration values.",
       "version": "Version",
-      "versionUnavailable": "Unavailable",
+      "dangerZone": "Danger zone",
+      "dangerZoneDescription": "Actions here reset parts of the setup and cannot be undone.",
       "hardware": {
-        "loading": "Loading hardware stats...",
+        "title": "Hardware",
         "cpu": "CPU",
         "cores": "{{count}} cores",
         "loadAvg": "Load avg:",
@@ -316,9 +337,8 @@
         "processRss": "Process RSS",
         "uptime": "Uptime"
       },
-      "checkError": "Failed to check MPD status",
+      "checkError": "Failed to check audio engine status",
       "setup": "Setup wizard",
-      "setupDescription": "Reset the setup wizard so it appears again on the next load.",
       "resetSetup": "Reset setup wizard",
       "resetSetupConfirmTitle": "Reset the setup wizard?",
       "resetSetupConfirm": "This will mark every setup step as incomplete and the wizard will appear again on the next page load.",
@@ -354,7 +374,6 @@
     "roleAdmin": "Administrator",
     "roleUser": "User",
     "resetPassword": "Reset password",
-    "resetPasswordTitle": "Reset password",
     "resetPasswordDescription": "Set a new password for {{name}}. Their active sessions will be signed out.",
     "resetPasswordDone": "Password reset",
     "resetPasswordError": "Could not reset the password",
@@ -366,11 +385,9 @@
     "bootstrapSubmit": "Create administrator",
     "bootstrapCreating": "Creating...",
     "bootstrapError": "Could not create the administrator",
-    "lastAdmin": "The last administrator cannot be removed or demoted",
-    "sessionsInvalidated": "Active sessions were signed out"
+    "lastAdmin": "The last administrator cannot be removed or demoted"
   },
   "profile": {
-    "title": "Who's listening?",
     "change": "Change profile",
     "switch": "Switch profile",
     "select": "Select",
@@ -379,7 +396,6 @@
     "createTitle": "Create profile",
     "createDescription": "Choose a name, color, password, and role for the new profile",
     "namePlaceholder": "Profile name",
-    "rename": "Rename",
     "editTitle": "Edit profile",
     "editDescription": "Update this profile's name, color, and role, or reset its password",
     "save": "Save",
@@ -387,7 +403,6 @@
     "delete": "Delete",
     "deleteTitle": "Delete profile",
     "deleteMessage": "Delete the profile \"{{name}}\"? This cannot be undone.",
-    "lastProfile": "The last profile cannot be deleted",
     "retry": "Try again",
     "errors": {
       "load": "Could not load profiles",
@@ -408,8 +423,7 @@
       "addSourceSubmit": "Create & Continue",
       "creating": "Creating...",
       "confirmTitle": "Library added",
-      "confirmDescription": "We validated the folder and scanned your music files.",
-      "confirmContinue": "Continue"
+      "confirmDescription": "We validated the folder and scanned your music files."
     },
     "audio": {
       "applyAndContinue": "Apply & Continue"

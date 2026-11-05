@@ -13,73 +13,82 @@ import {
 } from "./api";
 
 export const playlistQueries = {
-  list: () =>
+  list: (profileId: string) =>
     queryOptions({
-      queryKey: qk.playlists.list(),
+      queryKey: qk.playlists.list(profileId),
       queryFn: ({ signal }) => getPlaylists(signal),
+      enabled: !!profileId,
       staleTime: 30_000,
     }),
 
-  detail: (id: number) =>
+  detail: (profileId: string, id: number) =>
     queryOptions({
-      queryKey: qk.playlists.detail(id),
+      queryKey: qk.playlists.detail(profileId, id),
       queryFn: ({ signal }) => getPlaylist(id, signal),
-      enabled: !!id,
+      enabled: !!profileId && !!id,
       staleTime: 30_000,
     }),
 };
 
 export const playlistMutations = {
-  create: () =>
+  create: (profileId: string) =>
     mutationOptions({
       mutationFn: (vars: { name: string; description?: string }) =>
         createPlaylist(vars.name, vars.description),
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: qk.playlists.list() });
+        queryClient.invalidateQueries({
+          queryKey: qk.playlists.list(profileId),
+        });
       },
     }),
 
-  update: () =>
+  update: (profileId: string) =>
     mutationOptions({
       mutationFn: (vars: {
         id: number;
         data: { name?: string; description?: string };
       }) => updatePlaylist(vars.id, vars.data),
       onSuccess: (_data, vars) => {
-        queryClient.invalidateQueries({ queryKey: qk.playlists.list() });
         queryClient.invalidateQueries({
-          queryKey: qk.playlists.detail(vars.id),
+          queryKey: qk.playlists.list(profileId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: qk.playlists.detail(profileId, vars.id),
         });
       },
     }),
 
-  delete: () =>
+  delete: (profileId: string) =>
     mutationOptions({
       mutationFn: (id: number) => deletePlaylist(id),
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: qk.playlists.list() });
+        queryClient.invalidateQueries({
+          queryKey: qk.playlists.list(profileId),
+        });
       },
     }),
 
-  addTrack: () =>
+  addTrack: (profileId: string) =>
     mutationOptions({
       mutationFn: (vars: { playlistId: number; trackId: number }) =>
         addTrackToPlaylist(vars.playlistId, vars.trackId),
       onSuccess: (_data, vars) => {
         queryClient.invalidateQueries({
-          queryKey: qk.playlists.detail(vars.playlistId),
+          queryKey: qk.playlists.detail(profileId, vars.playlistId),
         });
-        queryClient.invalidateQueries({ queryKey: qk.playlists.list() });
+        queryClient.invalidateQueries({
+          queryKey: qk.playlists.list(profileId),
+        });
       },
     }),
 
-  removeTrack: () =>
+  removeTrack: (profileId: string) =>
     mutationOptions({
       mutationFn: (vars: { playlistId: number; ptId: number }) =>
         removeTrackFromPlaylist(vars.playlistId, vars.ptId),
       onSuccess: (_data, vars) => {
         queryClient.invalidateQueries({
-          queryKey: qk.playlists.detail(vars.playlistId),
+          queryKey: qk.playlists.detail(profileId, vars.playlistId),
         });
       },
     }),

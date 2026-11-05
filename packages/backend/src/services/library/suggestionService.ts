@@ -35,9 +35,13 @@ export class SuggestionService implements SuggestionServiceInterface {
   }
 
   private _getRecentlyPlayedArtists(profileId: string, limit = 10): Artist[] {
-    return playHistoryDb.recentArtists(profileId, limit).map((artist) => ({
+    const artists = playHistoryDb.recentArtists(profileId, limit);
+    const previews = albumsDb.getCoverPreviewsForArtists(
+      artists.map((artist) => artist.id),
+    );
+    return artists.map((artist) => ({
       ...artist,
-      coverPreviews: albumsDb.getCoverPreviews(artist.id, 4),
+      coverPreviews: previews.get(artist.id) ?? [],
     }));
   }
 

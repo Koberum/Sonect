@@ -1,5 +1,5 @@
 export { PlayTrackError } from "./errors";
-export type { MPDTrack, MPDQueuedTrack, MPDEntity, MPDEntityType } from "./mpd";
+export type { MPDTrack } from "./mpd";
 export type {
   DBTrack,
   DBAlbum,
@@ -16,11 +16,6 @@ export type StorageSource = DBStorageSource;
 
 export type PlaybackState = "play" | "pause" | "stop";
 export type OutputMode = "mpd" | "browser";
-
-export type NetworkStatus = {
-  connected: boolean;
-  dnsReachable: boolean;
-};
 
 export type PlaybackStatus = {
   state: PlaybackState;
@@ -42,12 +37,15 @@ export type PlaybackStatus = {
   buffering?: boolean;
   seekSeq?: number;
   crossfade?: number;
+  /** Identity of the engine instance that produced this status. */
+  epoch?: string;
+  /** Monotonic status revision within an epoch. */
+  revision?: number;
 };
 
 export type PlaybackSettings = {
   crossfadeSeconds: number;
 };
-
 
 /**
  * Playback facts reported by the active browser engine. The browser is the
@@ -59,6 +57,10 @@ export type PlayerReport = {
   elapsed?: number;
   event?: "playing" | "paused" | "ended" | "advance" | "waiting";
   trackId?: number;
+  /** Engine epoch the report belongs to (stale reports are ignored). */
+  epoch?: string;
+  /** Track that actually ended, used to fence in-flight advance reports. */
+  fromTrackId?: number;
 };
 
 export type QueuedTrack = {

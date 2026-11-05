@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { createTestDb } from "@tests/helpers/db.js";
-import { track, artist, album } from "@tests/factories/index.js";
+import { track, artist, album, genre } from "@tests/factories/index.js";
 import { CatalogServiceImpl } from "@services/library/catalogService.js";
 
 describe("CatalogService extras (trophy)", () => {
@@ -42,11 +42,23 @@ describe("CatalogService extras (trophy)", () => {
       const res = catalog.searchTracks("resultartist");
       expect(res.artists.map((ar) => ar.name)).to.deep.equal(["ResultArtist"]);
     });
+    it("includes matching genres", () => {
+      genre.create({ name: "Techno" }, 8);
+      genre.create({ name: "Tech House" }, 9);
+      genre.create({ name: "Jazz" }, 10);
+
+      const res = catalog.searchTracks("tech");
+      expect(res.genres.map((g) => g.name)).to.deep.equal([
+        "Tech House",
+        "Techno",
+      ]);
+    });
     it("returns empty arrays when no match", () => {
       const res = catalog.searchTracks("nopeXYZ");
       expect(res.artists).to.deep.equal([]);
       expect(res.albums).to.deep.equal([]);
       expect(res.tracks).to.deep.equal([]);
+      expect(res.genres).to.deep.equal([]);
     });
   });
 
