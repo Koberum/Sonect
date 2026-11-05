@@ -53,7 +53,7 @@ export function DebugTab() {
     } catch {
       setMpdStatus({
         running: false,
-        error: t("settings.debug.checkError", "Failed to check MPD status"),
+        error: t("settings.debug.checkError"),
       });
     } finally {
       setMpdChecking(false);
@@ -76,9 +76,9 @@ export function DebugTab() {
                 <Server />
               </ItemMedia>
               <ItemContent className="min-w-0">
-                <ItemTitle>{t("settings.debug.mpdStatus")}</ItemTitle>
+                <ItemTitle>{t("settings.debug.engineStatus")}</ItemTitle>
                 <ItemDescription>
-                  {t("settings.debug.mpdStatusDescription")}
+                  {t("settings.debug.engineStatusDescription")}
                 </ItemDescription>
               </ItemContent>
               <ItemActions className="basis-full justify-end sm:basis-auto">
@@ -87,8 +87,8 @@ export function DebugTab() {
                     variant={mpdStatus.running ? "default" : "destructive"}
                   >
                     {mpdStatus.running
-                      ? t("settings.debug.mpdRunning")
-                      : t("settings.debug.mpdStopped")}
+                      ? t("settings.debug.engineRunning")
+                      : t("settings.debug.engineStopped")}
                     {mpdStatus.error ? ` (${mpdStatus.error})` : ""}
                   </Badge>
                 )}
@@ -101,7 +101,7 @@ export function DebugTab() {
                   {mpdChecking && <Loader2 className="animate-spin" />}
                   {mpdChecking
                     ? t("settings.debug.checking")
-                    : t("settings.debug.checkMpd")}
+                    : t("settings.debug.checkEngine")}
                 </Button>
               </ItemActions>
             </Item>

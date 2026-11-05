@@ -445,7 +445,7 @@ export class PlayerRouter extends EventEmitter {
         );
         return {
           success: false,
-          warning: `MPD locked by ${acquired.owner ?? "another session"}`,
+          warning: "Audio output is in use by another session",
         };
       }
       this.applyMpdCrossfade(rec.crossfade);

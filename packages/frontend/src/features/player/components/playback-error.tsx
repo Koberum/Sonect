@@ -24,7 +24,7 @@ export function PlaybackErrorNotice({
     >
       <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
       <p className="min-w-0 text-xs leading-5 break-words">
-        {t("player.mpdError", { error })}
+        {t("player.playbackErrorDetail", { error })}
       </p>
     </div>
   );

@@ -105,7 +105,7 @@ export function PlaybackTab() {
                 <FieldDescription>
                   <span className="block">{t("settings.playback.hint")}</span>
                   <span className="mt-1 block">
-                    {t("settings.playback.mpdHint")}
+                    {t("settings.playback.outputHint")}
                   </span>
                 </FieldDescription>
               </Field>

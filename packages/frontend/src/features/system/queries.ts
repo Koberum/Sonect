@@ -139,6 +139,7 @@ export const systemMutations = {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: qk.system.audioDevices() });
         queryClient.invalidateQueries({ queryKey: qk.system.audioStatus() });
+        queryClient.invalidateQueries({ queryKey: qk.system.outputMode() });
       },
     }),
 };

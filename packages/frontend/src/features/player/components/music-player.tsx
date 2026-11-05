@@ -162,11 +162,7 @@ export default function MusicPlayer() {
     } catch (err) {
       setOutputMode(prev);
       if (err instanceof ApiError && err.status === 423) {
-        toast.error(
-          t("player.outputModeLocked", {
-            defaultValue: "MPD output locked by another session",
-          }),
-        );
+        toast.error(t("player.outputInUseByOther"));
       } else {
         toast.error(t("player.outputModeError"));
       }
@@ -307,9 +303,7 @@ export default function MusicPlayer() {
             <OutputSelector
               currentMode={outputMode}
               onModeChange={handleOutputModeChange}
-              deviceName={null}
-              mpdOwner={mpdOwner}
-              mySid={mySid}
+              deviceName={outputModeData?.deviceName ?? null}
               disabledMpd={isMpdLockedForMe}
               activeDeviceId={activeDeviceId}
               activeDeviceName={activeDeviceName}

@@ -392,7 +392,9 @@ export const unifiedSetOutputModeHandler = asyncHandler(
           warning: result.warning,
         },
       );
-      throw new LockedError(result.warning ?? "MPD locked by another session");
+      throw new LockedError(
+        result.warning ?? "Audio output is in use by another session",
+      );
     }
     getLogService().pushLog(
       "info",

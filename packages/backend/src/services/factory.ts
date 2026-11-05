@@ -95,7 +95,15 @@ export function initializeServices(): void {
     _logService,
   );
 
-  _mpdConfigService = new MpdConfigServiceImpl(_mpdConnectionManager);
+  _systemService = new SystemServiceImpl({ logService: _logService });
+
+  _mpdConfigService = new MpdConfigServiceImpl(
+    _mpdConnectionManager,
+    undefined,
+    (card, fallback) =>
+      _systemService.detectAudioDevices().find((device) => device.card === card)
+        ?.description ?? fallback,
+  );
 
   _playerService = new PlayerServiceImpl(
     _logService,
@@ -120,10 +128,6 @@ export function initializeServices(): void {
     _catalogSyncOrchestrator,
     libraryStatsService,
   );
-
-  _systemService = new SystemServiceImpl({
-    logService: _logService,
-  });
 
   _playlistService = new PlaylistServiceImpl(_mpdConnectionManager);
 

@@ -13,7 +13,7 @@ export function getSyncPhaseMeta(progress: LibrarySyncProgress): SyncPhaseMeta {
     case "scan-started":
       return { labelKey: "sync.preparing", step: 1, determinate: false };
     case "mpd":
-      return { labelKey: "sync.updatingMpd", step: 1, determinate: false };
+      return { labelKey: "sync.scanningLibrary", step: 1, determinate: false };
     case "covers":
       return { labelKey: "sync.readingCovers", step: 3, determinate: true };
     case "tracks":

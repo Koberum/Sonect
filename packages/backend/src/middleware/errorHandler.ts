@@ -66,7 +66,7 @@ export class NotFoundError extends Error {
 export class LockedError extends Error {
   statusCode = 423;
 
-  constructor(message = "MPD output locked by another session") {
+  constructor(message = "Audio output is in use by another session") {
     super(message);
     this.name = "LockedError";
   }

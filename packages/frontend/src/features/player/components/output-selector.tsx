@@ -21,8 +21,6 @@ interface OutputSelectorProps {
   onModeChange: (mode: OutputMode) => void;
   deviceName: string | null;
   disabled?: boolean;
-  mpdOwner?: string | null;
-  mySid?: string;
   disabledMpd?: boolean;
   activeDeviceId?: string | null;
   activeDeviceName?: string | null;
@@ -35,7 +33,6 @@ export function OutputSelector({
   onModeChange,
   deviceName,
   disabled,
-  mpdOwner,
   disabledMpd,
   activeDeviceId,
   activeDeviceName,
@@ -88,24 +85,20 @@ export function OutputSelector({
             setOpen(false);
           }}
         >
-          <DropdownMenuRadioItem
-            value="mpd"
-            disabled={!!disabledMpd}
-            title={
-              disabledMpd
-                ? `MPD locked by ${mpdOwner?.slice(0, 8) ?? "another session"}`
-                : undefined
-            }
-          >
+          <DropdownMenuRadioItem value="mpd" disabled={!!disabledMpd}>
             <span className="flex items-center gap-2">
               <Speaker className="size-4 shrink-0" />
               <span className="flex flex-col">
                 <span className="text-sm leading-none">
-                  {deviceName || t("player.outputMpd")}
+                  {t("player.outputSpeakers")}
                 </span>
                 {disabledMpd ? (
                   <span className="text-muted-foreground text-xs leading-none">
-                    {t("player.mpdLocked")}
+                    {t("player.outputInUse")}
+                  </span>
+                ) : deviceName ? (
+                  <span className="text-muted-foreground text-xs leading-none">
+                    {deviceName}
                   </span>
                 ) : null}
               </span>
