@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.1.6](https://github.com/Koberum/Sonect/compare/sonect-v0.1.5...sonect-v0.1.6) (2026-11-05)
+
+
+### Features
+
+* **frontend:** add an animated collapsed sidebar rail ([b6f7c3f](https://github.com/Koberum/Sonect/commit/b6f7c3f001beaaacdb78b3ce1ff35839e3cee4d9))
+* **frontend:** add library sync card and floating indicator ([a05288f](https://github.com/Koberum/Sonect/commit/a05288f85759949f819bbe446e924a6653fb9f9b))
+* **frontend:** add progress primitive and sync phase helpers ([a3289df](https://github.com/Koberum/Sonect/commit/a3289dfb0e0eb958fbbcb2b2ad31ee030f8bda1d))
+* **frontend:** auto-collapse the sidebar on compact widths ([7bbda1b](https://github.com/Koberum/Sonect/commit/7bbda1b43f608bfbf69f1cd63ab0f33904ab2da3))
+* **frontend:** create a playlist by dropping a track on the drop zone ([da806e8](https://github.com/Koberum/Sonect/commit/da806e8f447cea5cd3509ad9a6bb07a9ae577bc3))
+* **frontend:** drag tracks onto a playlist slide-over panel ([14f664a](https://github.com/Koberum/Sonect/commit/14f664a023fcf7c31a52edaa60a844948346d5ca))
+* **frontend:** make section tabs in-page state instead of routes ([a61dac2](https://github.com/Koberum/Sonect/commit/a61dac25d8f7456b0c7cdab91258ae9daf2509dd))
+* **frontend:** move profile switcher to the sidebar footer ([0632d45](https://github.com/Koberum/Sonect/commit/0632d45c97518bb9dc24d2e32bd8b61ddbed144b))
+* **frontend:** move the avatar into the toolbar and widen search ([08a181a](https://github.com/Koberum/Sonect/commit/08a181a1386f80a4247e423b83d6b39475e8d36f))
+* **frontend:** narrow full-height sidebar and dock the player beside it ([444daa0](https://github.com/Koberum/Sonect/commit/444daa00aae99058783f3434a15b60ca94e09b5f))
+* **frontend:** reorganize navigation into Home, Library and Settings ([63a48bb](https://github.com/Koberum/Sonect/commit/63a48bbc052d2cbc506a272b65a1b772e8f53514))
+* **frontend:** reorganize settings and setup UI ([e40f841](https://github.com/Koberum/Sonect/commit/e40f841e72042f4a3da46466405c237631310aad))
+* **frontend:** replace the top bar with a per-section toolbar ([5d2f4e3](https://github.com/Koberum/Sonect/commit/5d2f4e3cb7c06af7044e2f8351c888264d854ba1))
+* **frontend:** track sync state and invalidate catalog queries ([c0c4d2a](https://github.com/Koberum/Sonect/commit/c0c4d2a59470502a0f8afc0e9c86f7be5b04e839))
+* **frontend:** unify album, artist, playlist and track cards ([68d7ab2](https://github.com/Koberum/Sonect/commit/68d7ab252959978b53fedf11e52ed1a3b2db741a))
+* **player:** fence playback state with an epoch and return status from commands ([6156d4e](https://github.com/Koberum/Sonect/commit/6156d4e79c7cd954ad398496d7f011ade373b159))
+* scope playlists to the signed-in profile ([0520f8f](https://github.com/Koberum/Sonect/commit/0520f8f16580aead075e0f7fc1de2a70620850ea))
+* **search:** show matching genres as badges in global search ([4d61d1e](https://github.com/Koberum/Sonect/commit/4d61d1e22660453707330c742a986555be652f16))
+
+
+### Bug Fixes
+
+* **frontend:** anchor toasts above the player ([24f8633](https://github.com/Koberum/Sonect/commit/24f863320ea243b0646f727ebb6637900c73ff57))
+* **frontend:** let settings use the full content width ([b201e84](https://github.com/Koberum/Sonect/commit/b201e843911a8bf3789aa039c4663dff5149e9e8))
+
+
+### Performance Improvements
+
+* **db:** batch artist cover previews ([0f41466](https://github.com/Koberum/Sonect/commit/0f41466e22406356fc83b6274172a66f8ae988bb))
+
 ## [0.1.5](https://github.com/Koberum/Sonect/compare/sonect-v0.1.4...sonect-v0.1.5) (2026-10-30)
 
 
