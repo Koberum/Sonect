@@ -98,7 +98,7 @@ export const searchHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const q = (req.query.q as string) || "";
     if (!q.trim()) {
-      res.json({ artists: [], albums: [], tracks: [] });
+      res.json({ artists: [], albums: [], tracks: [], genres: [] });
       return;
     }
     const results = getCatalogService().searchTracks(q);

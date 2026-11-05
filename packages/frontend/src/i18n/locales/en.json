@@ -132,6 +132,7 @@
   },
   "search": {
     "placeholder": "Search",
+    "genres": "Genres",
     "artists": "Artists",
     "albums": "Albums",
     "tracks": "Tracks",

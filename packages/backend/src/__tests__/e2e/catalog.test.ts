@@ -46,6 +46,7 @@ describe("Catalog e2e (supertest + real seeded DB)", () => {
     expect(res.body.tracks).to.be.an("array");
     expect(res.body.tracks.length).to.equal(1);
     expect(res.body.tracks[0].title).to.equal("E2EUniqueTitle999");
+    expect(res.body.genres).to.be.an("array");
   });
 
   it("GET /catalog/search?q= empty returns empty arrays", async () => {
@@ -57,6 +58,7 @@ describe("Catalog e2e (supertest + real seeded DB)", () => {
     expect(res.body.artists).to.deep.equal([]);
     expect(res.body.albums).to.deep.equal([]);
     expect(res.body.tracks).to.deep.equal([]);
+    expect(res.body.genres).to.deep.equal([]);
   });
 
   it("varies on Origin without allowing an untrusted origin", async () => {

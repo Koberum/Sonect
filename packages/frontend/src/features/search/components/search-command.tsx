@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Search, MicVocal, Loader2, History } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { getCoverPath } from "@/lib/utils";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
 import type { TrackWithRelations, Album, Artist } from "@repo/types/catalog";
@@ -21,8 +22,9 @@ import {
   saveRecentSearch,
 } from "@/features/search/recent-searches";
 
-type SectionType = "artists" | "albums" | "tracks" | "recent";
-type SearchItem = Artist | Album | TrackWithRelations | string;
+type SectionType = "genres" | "artists" | "albums" | "tracks" | "recent";
+type GenreItem = { kind: "genre"; name: string };
+type SearchItem = Artist | Album | TrackWithRelations | GenreItem | string;
 
 export function SearchCommand() {
   const { t } = useTranslation();
@@ -69,6 +71,8 @@ export function SearchCommand() {
 
   const getSectionLabel = (type: SectionType): string => {
     switch (type) {
+      case "genres":
+        return t("search.genres");
       case "artists":
         return t("search.artists");
       case "albums":
@@ -107,6 +111,11 @@ export function SearchCommand() {
       }
 
       rememberQuery();
+      if ("kind" in item) {
+        navigate(`/library/genres/${encodeURIComponent(item.name)}`);
+        closeSearch();
+        return;
+      }
       if ("file" in item) {
         handlePlayTrack(item as TrackWithRelations);
       } else if ("artist_name" in item && !("name" in item)) {
@@ -125,6 +134,11 @@ export function SearchCommand() {
   if (showRecents) {
     sections.push({ type: "recent", items: recentSearches });
   } else if (results) {
+    if (results.genres.length > 0)
+      sections.push({
+        type: "genres",
+        items: results.genres.map((g) => ({ kind: "genre", name: g.name })),
+      });
     if (results.artists.length > 0)
       sections.push({ type: "artists", items: results.artists.slice(0, 5) });
     if (results.albums.length > 0)
@@ -275,128 +289,163 @@ export function SearchCommand() {
 
       {!loading && (
         <div className="p-2">
-          {sections.map((section) => (
-            <div key={section.type} className="mb-2">
-              <p className="text-muted-foreground px-2 py-1 text-xs font-semibold uppercase">
-                {getSectionLabel(section.type)}
-              </p>
-              {section.items.map((item) => {
-                const idx = globalIdx++;
-                const isSelected = idx === selectedIndex;
-                if (typeof item === "string") {
-                  return (
-                    <div
-                      key={item}
-                      data-index={idx}
-                      className={`flex cursor-pointer items-center gap-3 rounded-sm px-2 py-2 text-sm transition-colors ${
-                        isSelected ? "bg-accent/50" : "hover:bg-accent/50"
-                      }`}
-                      onClick={() => activateItem(item)}
-                      onMouseEnter={() => setSelectedIndex(idx)}
-                    >
-                      <History className="text-muted-foreground size-4 shrink-0" />
-                      <span className="truncate">{item}</span>
-                    </div>
-                  );
-                }
-                if ("file" in item) {
-                  const track = item as TrackWithRelations;
-                  return (
-                    <div
-                      key={track.id}
-                      data-index={idx}
-                      draggable
-                      onDragStart={(event) => {
-                        setTrackDragData(event.dataTransfer, track.id);
-                        startDrag(track.id);
-                      }}
-                      onDragEnd={endDrag}
-                      className={`group flex cursor-pointer items-center gap-3 rounded-sm px-2 py-2 text-sm transition-colors ${
-                        isSelected ? "bg-accent/50" : "hover:bg-accent/50"
-                      }`}
-                      onClick={() => activateItem(track)}
-                      onMouseEnter={() => setSelectedIndex(idx)}
-                    >
-                      <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded">
-                        <img
-                          src={getCoverPath(track.cover_path)}
-                          alt=""
-                          className="h-full w-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.src = "/default_cover.png";
-                          }}
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium">{track.title}</p>
-                        <p className="text-muted-foreground truncate text-xs">
-                          {track.artist_name}
-                        </p>
-                      </div>
-                      <LikeButton trackId={track.id} />
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddToQueue(track);
-                        }}
+          {sections.map((section) => {
+            if (section.type === "genres") {
+              return (
+                <div
+                  key={section.type}
+                  role="group"
+                  aria-label={t("search.genres")}
+                  className="mb-2 flex flex-wrap gap-2 px-2 py-1"
+                >
+                  {section.items.map((item) => {
+                    const idx = globalIdx++;
+                    const isSelected = idx === selectedIndex;
+                    const genre = item as GenreItem;
+                    return (
+                      <Badge
+                        key={genre.name}
+                        asChild
+                        variant={isSelected ? "default" : "secondary"}
+                        className="cursor-pointer"
                       >
-                        {t("search.addToQueue")}
-                      </Button>
-                    </div>
-                  );
-                }
-                if ("artist_name" in item && !("name" in item)) {
-                  const album = item as Album;
+                        <button
+                          type="button"
+                          data-index={idx}
+                          onClick={() => activateItem(item)}
+                          onMouseEnter={() => setSelectedIndex(idx)}
+                        >
+                          {genre.name}
+                        </button>
+                      </Badge>
+                    );
+                  })}
+                </div>
+              );
+            }
+            return (
+              <div key={section.type} className="mb-2">
+                <p className="text-muted-foreground px-2 py-1 text-xs font-semibold uppercase">
+                  {getSectionLabel(section.type)}
+                </p>
+                {section.items.map((item) => {
+                  const idx = globalIdx++;
+                  const isSelected = idx === selectedIndex;
+                  if (typeof item === "string") {
+                    return (
+                      <div
+                        key={item}
+                        data-index={idx}
+                        className={`flex cursor-pointer items-center gap-3 rounded-sm px-2 py-2 text-sm transition-colors ${
+                          isSelected ? "bg-accent/50" : "hover:bg-accent/50"
+                        }`}
+                        onClick={() => activateItem(item)}
+                        onMouseEnter={() => setSelectedIndex(idx)}
+                      >
+                        <History className="text-muted-foreground size-4 shrink-0" />
+                        <span className="truncate">{item}</span>
+                      </div>
+                    );
+                  }
+                  if ("file" in item) {
+                    const track = item as TrackWithRelations;
+                    return (
+                      <div
+                        key={track.id}
+                        data-index={idx}
+                        draggable
+                        onDragStart={(event) => {
+                          setTrackDragData(event.dataTransfer, track.id);
+                          startDrag(track.id);
+                        }}
+                        onDragEnd={endDrag}
+                        className={`group flex cursor-pointer items-center gap-3 rounded-sm px-2 py-2 text-sm transition-colors ${
+                          isSelected ? "bg-accent/50" : "hover:bg-accent/50"
+                        }`}
+                        onClick={() => activateItem(track)}
+                        onMouseEnter={() => setSelectedIndex(idx)}
+                      >
+                        <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded">
+                          <img
+                            src={getCoverPath(track.cover_path)}
+                            alt=""
+                            className="h-full w-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = "/default_cover.png";
+                            }}
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium">{track.title}</p>
+                          <p className="text-muted-foreground truncate text-xs">
+                            {track.artist_name}
+                          </p>
+                        </div>
+                        <LikeButton trackId={track.id} />
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToQueue(track);
+                          }}
+                        >
+                          {t("search.addToQueue")}
+                        </Button>
+                      </div>
+                    );
+                  }
+                  if ("artist_name" in item && !("name" in item)) {
+                    const album = item as Album;
+                    return (
+                      <div
+                        key={album.id}
+                        data-index={idx}
+                        className={`flex cursor-pointer items-center gap-3 rounded-sm px-2 py-2 text-sm transition-colors ${
+                          isSelected ? "bg-accent/50" : "hover:bg-accent/50"
+                        }`}
+                        onClick={() => activateItem(album)}
+                        onMouseEnter={() => setSelectedIndex(idx)}
+                      >
+                        <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded">
+                          <img
+                            src={getCoverPath(album.cover_path)}
+                            alt=""
+                            className="h-full w-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = "/default_cover.png";
+                            }}
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="truncate">{album.title}</span>
+                          <span className="text-muted-foreground ml-2 text-xs">
+                            {album.artist_name}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  const artist = item as Artist;
                   return (
                     <div
-                      key={album.id}
+                      key={artist.id}
                       data-index={idx}
                       className={`flex cursor-pointer items-center gap-3 rounded-sm px-2 py-2 text-sm transition-colors ${
                         isSelected ? "bg-accent/50" : "hover:bg-accent/50"
                       }`}
-                      onClick={() => activateItem(album)}
+                      onClick={() => activateItem(artist)}
                       onMouseEnter={() => setSelectedIndex(idx)}
                     >
-                      <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded">
-                        <img
-                          src={getCoverPath(album.cover_path)}
-                          alt=""
-                          className="h-full w-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.src = "/default_cover.png";
-                          }}
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="truncate">{album.title}</span>
-                        <span className="text-muted-foreground ml-2 text-xs">
-                          {album.artist_name}
-                        </span>
-                      </div>
+                      <MicVocal className="text-muted-foreground h-4 w-4" />
+                      <span>{artist.name}</span>
                     </div>
                   );
-                }
-                const artist = item as Artist;
-                return (
-                  <div
-                    key={artist.id}
-                    data-index={idx}
-                    className={`flex cursor-pointer items-center gap-3 rounded-sm px-2 py-2 text-sm transition-colors ${
-                      isSelected ? "bg-accent/50" : "hover:bg-accent/50"
-                    }`}
-                    onClick={() => activateItem(artist)}
-                    onMouseEnter={() => setSelectedIndex(idx)}
-                  >
-                    <MicVocal className="text-muted-foreground h-4 w-4" />
-                    <span>{artist.name}</span>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+                })}
+              </div>
+            );
+          })}
 
           {trimmedQuery.length < MIN_QUERY_LENGTH &&
             recentSearches.length === 0 && (
@@ -410,7 +459,8 @@ export function SearchCommand() {
             results &&
             results.artists.length === 0 &&
             results.albums.length === 0 &&
-            results.tracks.length === 0 && (
+            results.tracks.length === 0 &&
+            results.genres.length === 0 && (
               <div className="text-muted-foreground flex items-center justify-center py-8 text-sm">
                 {t("search.noResults")}
               </div>

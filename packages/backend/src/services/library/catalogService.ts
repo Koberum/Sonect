@@ -140,7 +140,8 @@ export class CatalogServiceImpl implements CatalogService {
     }));
     const albums = albumsDb.search(q);
     const tracks = tracksDb.search(query);
-    return { artists, albums, tracks };
+    const genres = genresDb.search(q);
+    return { artists, albums, tracks, genres };
   }
 
   public getLibraryStats(): LibraryStats {

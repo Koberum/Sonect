@@ -132,6 +132,7 @@
   },
   "search": {
     "placeholder": "Cerca",
+    "genres": "Generi",
     "artists": "Artisti",
     "albums": "Album",
     "tracks": "Brani",

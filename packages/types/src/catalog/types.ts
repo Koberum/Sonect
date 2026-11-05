@@ -2,6 +2,7 @@ import {
   DBTrack,
   DBAlbum,
   DBArtist,
+  DBGenre,
   DBGenreWithCounts,
   DBPlaylist,
   DBTrackWithRelations,
@@ -69,6 +70,7 @@ export type SearchResults = {
   artists: Artist[];
   albums: Album[];
   tracks: TrackWithRelations[];
+  genres: DBGenre[];
 };
 
 export interface LikedTracksPage {

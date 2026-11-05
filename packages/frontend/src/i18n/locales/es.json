@@ -132,6 +132,7 @@
   },
   "search": {
     "placeholder": "Buscar",
+    "genres": "Géneros",
     "artists": "Artistas",
     "albums": "Álbumes",
     "tracks": "Pistas",
