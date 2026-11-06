@@ -73,98 +73,100 @@ export function FullPagePlayer() {
   if (!trackPlayed) return null;
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="px-6 pt-2 pb-4">
-        <h1 className="text-center text-sm font-semibold">
-          {t("player.title")}
-        </h1>
-      </div>
-
-      <PlaybackErrorNotice
-        error={playbackStatus.error}
-        className="mx-6 rounded-lg"
-      />
-
-      <div className="flex justify-center px-6">
-        <img
-          src={getCoverPath(trackPlayed.cover_path)}
-          alt={trackPlayed.title}
-          className="aspect-square w-[60vw] max-w-[300px] rounded-xl object-cover shadow-lg"
-          onError={(e) => {
-            e.currentTarget.src = "/default_cover.png";
-          }}
-        />
-      </div>
-
-      <div className="flex items-center justify-center gap-2 px-6 pt-4 pb-2">
-        <div className="min-w-0 text-center">
-          <h2 className="truncate text-lg font-semibold">
-            {trackPlayed.title}
-          </h2>
-          <p className="text-muted-foreground truncate text-sm">
-            {trackPlayed.artist_name}
-            {trackPlayed.album_title
-              ? ` \u00b7 ${trackPlayed.album_title}`
-              : ""}
-          </p>
+    <div className="flex h-full flex-col overflow-y-auto pb-2">
+      <div className="flex shrink-0 flex-col">
+        <div className="px-6 pt-2 pb-4">
+          <h1 className="text-center text-sm font-semibold">
+            {t("player.title")}
+          </h1>
         </div>
-        <LikeButton
-          trackId={trackPlayed.id ?? playbackStatus.track?.id ?? null}
+
+        <PlaybackErrorNotice
+          error={playbackStatus.error}
+          className="mx-6 rounded-lg"
         />
+
+        <div className="flex justify-center px-6">
+          <img
+            src={getCoverPath(trackPlayed.cover_path)}
+            alt={trackPlayed.title}
+            className="aspect-square w-[60vw] max-w-[300px] rounded-xl object-cover shadow-lg"
+            onError={(e) => {
+              e.currentTarget.src = "/default_cover.png";
+            }}
+          />
+        </div>
+
+        <div className="flex items-center justify-center gap-2 px-6 pt-4 pb-2">
+          <div className="min-w-0 text-center">
+            <h2 className="truncate text-lg font-semibold">
+              {trackPlayed.title}
+            </h2>
+            <p className="text-muted-foreground truncate text-sm">
+              {trackPlayed.artist_name}
+              {trackPlayed.album_title
+                ? ` \u00b7 ${trackPlayed.album_title}`
+                : ""}
+            </p>
+          </div>
+          <LikeButton
+            trackId={trackPlayed.id ?? playbackStatus.track?.id ?? null}
+          />
+        </div>
+
+        <div className="px-6 py-2">
+          <PlaybackWaveform
+            elapsed={displayElapsed}
+            duration={playbackStatus.duration}
+            trackId={trackPlayed.id ?? playbackStatus.track?.id ?? null}
+            className="w-full"
+          />
+        </div>
+
+        <div className="flex justify-center px-6 py-2">
+          <PlaybackControls
+            playbackStatus={playbackStatus}
+            playTrack={() => {
+              if (trackPlayed) {
+                void playSong(trackPlayed).then(applyPlaybackStatus);
+              }
+            }}
+            pauseTrack={() => {
+              void pauseSong().then(applyPlaybackStatus);
+            }}
+            resumeTrack={() => {
+              void resumeSong().then(applyPlaybackStatus);
+            }}
+            nextTrack={() => {
+              void nextTrack().then(applyPlaybackStatus);
+            }}
+            previousTrack={() => {
+              void previousTrack().then(applyPlaybackStatus);
+            }}
+            setRandom={(enabled) => doToggle(() => setRandom(enabled))}
+            setRepeat={(enabled) => doToggle(() => setRepeat(enabled))}
+          />
+        </div>
+
+        <div className="flex items-center justify-center gap-2 px-6 py-2">
+          <OutputSelector
+            currentMode={outputMode}
+            onModeChange={changeOutputMode}
+            deviceName={deviceName}
+            disabledMpd={isMpdLockedForMe}
+            activeDeviceId={activeDeviceId}
+            activeDeviceName={activeDeviceName}
+            activeDeviceType={activeDeviceType}
+            myDeviceId={myDeviceId}
+          />
+          <VolumeControls
+            volume={isActiveBrowser ? volume : playbackStatus.volume}
+            onVolumeCommit={isActiveBrowser ? setVolume : undefined}
+          />
+        </div>
       </div>
 
-      <div className="px-6 py-2">
-        <PlaybackWaveform
-          elapsed={displayElapsed}
-          duration={playbackStatus.duration}
-          trackId={trackPlayed.id ?? playbackStatus.track?.id ?? null}
-          className="w-full"
-        />
-      </div>
-
-      <div className="flex justify-center px-6 py-2">
-        <PlaybackControls
-          playbackStatus={playbackStatus}
-          playTrack={() => {
-            if (trackPlayed) {
-              void playSong(trackPlayed).then(applyPlaybackStatus);
-            }
-          }}
-          pauseTrack={() => {
-            void pauseSong().then(applyPlaybackStatus);
-          }}
-          resumeTrack={() => {
-            void resumeSong().then(applyPlaybackStatus);
-          }}
-          nextTrack={() => {
-            void nextTrack().then(applyPlaybackStatus);
-          }}
-          previousTrack={() => {
-            void previousTrack().then(applyPlaybackStatus);
-          }}
-          setRandom={(enabled) => doToggle(() => setRandom(enabled))}
-          setRepeat={(enabled) => doToggle(() => setRepeat(enabled))}
-        />
-      </div>
-
-      <div className="flex items-center justify-center gap-2 px-6 py-2">
-        <OutputSelector
-          currentMode={outputMode}
-          onModeChange={changeOutputMode}
-          deviceName={deviceName}
-          disabledMpd={isMpdLockedForMe}
-          activeDeviceId={activeDeviceId}
-          activeDeviceName={activeDeviceName}
-          activeDeviceType={activeDeviceType}
-          myDeviceId={myDeviceId}
-        />
-        <VolumeControls
-          volume={isActiveBrowser ? volume : playbackStatus.volume}
-          onVolumeCommit={isActiveBrowser ? setVolume : undefined}
-        />
-      </div>
-
-      <div className="mt-2 flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="mt-2 flex min-h-24 flex-1 flex-col overflow-hidden">
         <div className="px-6 pb-2">
           <h3 className="text-sm font-semibold">{t("queue.upNext")}</h3>
         </div>
@@ -222,7 +224,7 @@ export function FullPagePlayer() {
                   <Button
                     variant="bare"
                     size="icon-sm"
-                    className="text-muted-foreground hover:text-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                    className="text-muted-foreground hover:text-foreground"
                     onClick={(e) => handleRemove(e, track.pos)}
                     aria-label={t("queue.remove")}
                   >

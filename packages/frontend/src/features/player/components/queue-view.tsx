@@ -59,6 +59,7 @@ export function QueueView({ currentTrackFile }: QueueViewProps) {
         <Button
           variant="bare"
           size="icon"
+          aria-label={t("queue.upNext")}
           className="text-muted-foreground hover:text-foreground"
         >
           <ListMusic className="h-5 w-5" />

@@ -5,6 +5,7 @@ import {
   Popover,
 } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
+import { useTranslation } from "react-i18next";
 import { setVolume } from "@/features/player/api";
 import {
   Volume1Icon,
@@ -25,8 +26,9 @@ export default function VolumeControls({
   volume,
   onVolumeCommit,
 }: VolumeControlsProps) {
+  const { t } = useTranslation();
   const [localVolume, setLocalVolume] = useState(volume);
-  const isMobile = useMediaQuery({ maxWidth: 767 });
+  const isMobile = useMediaQuery({ maxWidth: 767.98 });
 
   useEffect(() => {
     setLocalVolume(volume);
@@ -66,6 +68,7 @@ export default function VolumeControls({
         <Button
           variant="bare"
           size="icon"
+          aria-label={t("player.volume")}
           className="text-muted-foreground hover:text-foreground"
         >
           {getVolumeIcon()}
@@ -79,6 +82,7 @@ export default function VolumeControls({
           max={100}
           step={1}
           orientation="vertical"
+          aria-label={t("player.volume")}
           onValueChange={(newVolumes) => handleVolumeChange(newVolumes[0])}
           onValueCommit={(newVolumes) => handleVolumeCommit(newVolumes[0])}
           className="h-40"
@@ -90,6 +94,7 @@ export default function VolumeControls({
       <Button
         variant="bare"
         size="icon"
+        aria-label={t("player.volume")}
         className="text-muted-foreground hover:text-foreground"
         onClick={handleMute}
       >
@@ -101,6 +106,7 @@ export default function VolumeControls({
         min={0}
         max={100}
         step={1}
+        aria-label={t("player.volume")}
         onValueChange={(newVolumes) => handleVolumeChange(newVolumes[0])}
         onValueCommit={(newVolumes) => handleVolumeCommit(newVolumes[0])}
         className="w-20"

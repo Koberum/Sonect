@@ -47,10 +47,13 @@ no subscriptions, no limits.
   genre, playlist, search, queue, now playing) adds a song to the signed-in
   profile's Liked Songs. Liked Songs has Play All and Shuffle and is scoped per
   household member; the old flat Tracks page is gone.
-- **Three-section navigation** — the sidebar has Home, Library, and Settings,
-  each opening a page with horizontal tabs: Home holds Listen Now, Playlists,
-  and Liked Songs; Library holds Albums, Artists, Genres, and Statistics;
-  Settings (admins) holds Audio, Playback, Libraries, Appearance, and Debug.
+- **Three-section navigation** — the desktop sidebar has Home, Library, and
+  Settings, each opening a page with horizontal tabs: Home holds Listen Now,
+  Playlists, and Liked Songs; Library holds Albums, Artists, Genres, and
+  Statistics; Settings (admins) holds Audio, Playback, Libraries, Appearance,
+  and Debug. Below 768px an icon-only bottom nav (Player, Library, Home,
+  Settings) switches between the full player at `/player` and the sections;
+  the compact player bar is desktop-only.
 - **Playlists** — create and browse them from Home → Playlists. Playlists are
   private per profile (same names allowed across profiles). Drag any track onto
   the right-hand playlist panel to add it, or use "Add to playlist" in the

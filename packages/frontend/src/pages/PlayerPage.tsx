@@ -10,7 +10,7 @@ import { FullPagePlayer } from "@/features/player/components/full-page-player";
 export default function PlayerPage() {
   const { t } = useTranslation();
   const { trackPlayed } = usePlaybackContext();
-  const isMobile = useMediaQuery({ maxWidth: 767 });
+  const isMobile = useMediaQuery({ maxWidth: 767.98 });
 
   if (!isMobile) return <Navigate to="/home" replace />;
 

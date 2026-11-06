@@ -18,7 +18,7 @@ export function AutoplayNotice() {
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 fixed bottom-36 left-1/2 z-[60] -translate-x-1/2">
+    <div className="animate-in fade-in slide-in-from-bottom-4 fixed bottom-36 left-1/2 z-[60] -translate-x-1/2 md:bottom-24">
       <Button onClick={play} className="rounded-full shadow-lg">
         <Play />
         {t("player.tapToPlay")}

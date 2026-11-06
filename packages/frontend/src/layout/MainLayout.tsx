@@ -16,8 +16,8 @@ import { cn } from "@/lib/utils";
 
 export default function MainLayout() {
   const { pathname } = useLocation();
-  const isPlayerRoute = pathname === "/player";
-  const isMobile = useMediaQuery({ maxWidth: 767 });
+  const isPlayerRoute = pathname === "/player" || pathname === "/player/";
+  const isMobile = useMediaQuery({ maxWidth: 767.98 });
   const isCompactSidebar = useMediaQuery({ minWidth: 768, maxWidth: 1279 });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem("sonect.sidebar.collapsed") === "1",

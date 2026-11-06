@@ -24,7 +24,7 @@ export function SyncIndicator() {
   const { t } = useTranslation();
   const { isAdmin } = useAuth();
   const { syncProgress } = usePlaybackContext();
-  const isMobile = useMediaQuery({ maxWidth: 767 });
+  const isMobile = useMediaQuery({ maxWidth: 767.98 });
 
   if (!isAdmin || !syncProgress) return null;
 

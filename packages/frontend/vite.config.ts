@@ -21,7 +21,19 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/player": "http://localhost:3000",
+      "/player": {
+        target: "http://localhost:3000",
+        bypass(req) {
+          // `/player` is both the mobile player page and the playback API
+          // prefix. Document navigations must load the SPA, not the API.
+          if (
+            req.method === "GET" &&
+            req.headers.accept?.includes("text/html")
+          ) {
+            return "/index.html";
+          }
+        },
+      },
       "/catalog": "http://localhost:3000",
       "/playlists": "http://localhost:3000",
       "/covers": "http://localhost:3000",

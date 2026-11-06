@@ -67,6 +67,7 @@ export function OutputSelector({
           variant="bare"
           size="sm"
           disabled={disabled}
+          aria-label={t("player.outputDevices")}
           className="text-muted-foreground hover:text-foreground gap-1 text-xs"
         >
           <Speaker className="h-4 w-4" />

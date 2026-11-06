@@ -1,4 +1,5 @@
 import type { PlaybackStatus } from "@repo/types";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   PauseIcon,
@@ -32,6 +33,7 @@ export function PlaybackControls({
   setRepeat,
   className,
 }: PlaybackControls): React.ReactElement {
+  const { t } = useTranslation();
   const btnBase =
     "text-muted-foreground hover:text-foreground transition-colors p-1";
   const btnActive = "text-primary hover:text-primary";
@@ -49,6 +51,7 @@ export function PlaybackControls({
           variant="bare"
           size="icon-sm"
           className={playbackStatus.random ? btnActive : btnBase}
+          aria-label={t("player.shuffle")}
           onClick={() => {
             setRandom(!playbackStatus.random);
           }}
@@ -60,6 +63,7 @@ export function PlaybackControls({
           variant="bare"
           size="icon-sm"
           className={btnBase}
+          aria-label={t("player.previous")}
           onClick={previousTrack}
         >
           <SkipBackIcon className="size-5" />
@@ -69,6 +73,11 @@ export function PlaybackControls({
           variant="default"
           size="icon-sm"
           className="rounded-full transition-opacity hover:opacity-85"
+          aria-label={
+            playbackStatus.state === "play"
+              ? t("player.pause")
+              : t("player.play")
+          }
           onClick={handleMain}
         >
           {playbackStatus.state === "play" ? (
@@ -82,6 +91,7 @@ export function PlaybackControls({
           variant="bare"
           size="icon-sm"
           className={btnBase}
+          aria-label={t("player.next")}
           onClick={nextTrack}
         >
           <SkipForwardIcon className="size-5" />
@@ -91,6 +101,7 @@ export function PlaybackControls({
           variant="bare"
           size="icon-sm"
           className={playbackStatus.repeat ? btnActive : btnBase}
+          aria-label={t("player.repeat")}
           onClick={() => {
             setRepeat(!playbackStatus.repeat);
           }}
