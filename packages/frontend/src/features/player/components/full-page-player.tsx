@@ -25,13 +25,9 @@ import { qk } from "@/lib/queryKeys";
 import PlayStatus from "./play-status";
 import { PlaybackErrorNotice } from "./playback-error";
 import { LikeButton } from "@/features/liked/components/like-button";
-
-interface FullPagePlayerProps {
-  displayElapsed: number;
-  browserVolume: number;
-  browserSetVolume: (vol: number) => void;
-  open?: boolean;
-}
+import { usePlayerEngine } from "../player-engine-context";
+import { useOutputMode } from "../useOutputMode";
+import { OutputSelector } from "./output-selector";
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -39,17 +35,24 @@ function formatDuration(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function FullPagePlayer({
-  displayElapsed,
-  browserVolume,
-  browserSetVolume,
-  open = true,
-}: FullPagePlayerProps) {
+export function FullPagePlayer() {
   const { t } = useTranslation();
-  const { trackPlayed, playbackStatus, outputMode, applyPlaybackStatus } =
-    usePlaybackContext();
+  const {
+    trackPlayed,
+    playbackStatus,
+    applyPlaybackStatus,
+    activeDeviceId,
+    activeDeviceName,
+    activeDeviceType,
+    myDeviceId,
+  } = usePlaybackContext();
+  const { isActiveBrowser, displayElapsed, volume, setVolume } =
+    usePlayerEngine();
+  const { outputMode, deviceName, isMpdLockedForMe, changeOutputMode } =
+    useOutputMode();
   const qc = useQueryClient();
-  const { data: queue = [] } = useQuery(playerQueries.queue(open));
+  const { data: queue = [] } = useQuery(playerQueries.queue());
+
   const doToggle = (fn: () => Promise<PlaybackStatus>) =>
     fn().then(applyPlaybackStatus);
 
@@ -72,9 +75,9 @@ export function FullPagePlayer({
   return (
     <div className="flex h-full flex-col">
       <div className="px-6 pt-2 pb-4">
-        <h2 className="text-center text-sm font-semibold">
+        <h1 className="text-center text-sm font-semibold">
           {t("player.title")}
-        </h2>
+        </h1>
       </div>
 
       <PlaybackErrorNotice
@@ -95,9 +98,9 @@ export function FullPagePlayer({
 
       <div className="flex items-center justify-center gap-2 px-6 pt-4 pb-2">
         <div className="min-w-0 text-center">
-          <h3 className="truncate text-lg font-semibold">
+          <h2 className="truncate text-lg font-semibold">
             {trackPlayed.title}
-          </h3>
+          </h2>
           <p className="text-muted-foreground truncate text-sm">
             {trackPlayed.artist_name}
             {trackPlayed.album_title
@@ -116,7 +119,6 @@ export function FullPagePlayer({
           duration={playbackStatus.duration}
           trackId={trackPlayed.id ?? playbackStatus.track?.id ?? null}
           className="w-full"
-          outputMode={outputMode}
         />
       </div>
 
@@ -142,24 +144,29 @@ export function FullPagePlayer({
           }}
           setRandom={(enabled) => doToggle(() => setRandom(enabled))}
           setRepeat={(enabled) => doToggle(() => setRepeat(enabled))}
-          showAllControls
         />
       </div>
 
-      <div className="flex justify-center px-6 py-2">
+      <div className="flex items-center justify-center gap-2 px-6 py-2">
+        <OutputSelector
+          currentMode={outputMode}
+          onModeChange={changeOutputMode}
+          deviceName={deviceName}
+          disabledMpd={isMpdLockedForMe}
+          activeDeviceId={activeDeviceId}
+          activeDeviceName={activeDeviceName}
+          activeDeviceType={activeDeviceType}
+          myDeviceId={myDeviceId}
+        />
         <VolumeControls
-          volume={
-            outputMode === "browser" ? browserVolume : playbackStatus.volume
-          }
-          onVolumeCommit={
-            outputMode === "browser" ? browserSetVolume : undefined
-          }
+          volume={isActiveBrowser ? volume : playbackStatus.volume}
+          onVolumeCommit={isActiveBrowser ? setVolume : undefined}
         />
       </div>
 
       <div className="mt-2 flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="px-6 pb-2">
-          <h4 className="text-sm font-semibold">{t("queue.upNext")}</h4>
+          <h3 className="text-sm font-semibold">{t("queue.upNext")}</h3>
         </div>
         <ScrollArea className="min-h-0 flex-1">
           <div className="space-y-0 px-3">
@@ -168,7 +175,7 @@ export function FullPagePlayer({
               return (
                 <div
                   key={`${track.mpdId}-${track.pos}`}
-                  className={`group hover:bg-accent/50 flex cursor-pointer items-center gap-2 overflow-hidden rounded-md px-3 py-2 transition-colors`}
+                  className="group hover:bg-accent/50 flex cursor-pointer items-center gap-2 overflow-hidden rounded-md px-3 py-2 transition-colors"
                   onClick={() => !isCurrent && handlePlay(track.pos)}
                 >
                   <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded">

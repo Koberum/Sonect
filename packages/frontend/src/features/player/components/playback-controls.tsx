@@ -19,7 +19,6 @@ type PlaybackControls = {
   setRandom(status: boolean): void;
   setRepeat(status: boolean): void;
   className?: string;
-  showAllControls?: boolean;
 };
 
 export function PlaybackControls({
@@ -32,12 +31,10 @@ export function PlaybackControls({
   setRandom,
   setRepeat,
   className,
-  showAllControls,
 }: PlaybackControls): React.ReactElement {
   const btnBase =
     "text-muted-foreground hover:text-foreground transition-colors p-1";
   const btnActive = "text-primary hover:text-primary";
-  const showAlways = showAllControls ? "" : "hidden md:block";
 
   const handleMain = () => {
     if (playbackStatus.state === "play") return pauseTrack();
@@ -51,7 +48,7 @@ export function PlaybackControls({
         <Button
           variant="bare"
           size="icon-sm"
-          className={`${showAlways} ${playbackStatus.random ? btnActive : btnBase}`}
+          className={playbackStatus.random ? btnActive : btnBase}
           onClick={() => {
             setRandom(!playbackStatus.random);
           }}
@@ -62,7 +59,7 @@ export function PlaybackControls({
         <Button
           variant="bare"
           size="icon-sm"
-          className={`${showAlways} ${btnBase}`}
+          className={btnBase}
           onClick={previousTrack}
         >
           <SkipBackIcon className="size-5" />
@@ -84,7 +81,7 @@ export function PlaybackControls({
         <Button
           variant="bare"
           size="icon-sm"
-          className={`${showAlways} ${btnBase}`}
+          className={btnBase}
           onClick={nextTrack}
         >
           <SkipForwardIcon className="size-5" />
@@ -93,7 +90,7 @@ export function PlaybackControls({
         <Button
           variant="bare"
           size="icon-sm"
-          className={`${showAlways} ${playbackStatus.repeat ? btnActive : btnBase}`}
+          className={playbackStatus.repeat ? btnActive : btnBase}
           onClick={() => {
             setRepeat(!playbackStatus.repeat);
           }}

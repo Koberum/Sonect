@@ -14,6 +14,7 @@
     "label": "Sezioni",
     "home": "Home",
     "library": "Libreria",
+    "player": "Riproduzione",
     "settings": "Impostazioni",
     "back": "Indietro",
     "forward": "Avanti",
@@ -36,9 +37,6 @@
       "genres": "Generi",
       "statistics": "Statistiche"
     }
-  },
-  "sidebar": {
-    "toggleSidebar": "Mostra/nascondi barra laterale"
   },
   "artists": {
     "title": "Artisti",
@@ -83,6 +81,9 @@
   },
   "player": {
     "title": "In riproduzione",
+    "nothingPlaying": "Nessun brano in riproduzione",
+    "nothingPlayingDescription": "Scegli un brano da Home o Libreria per iniziare ad ascoltare.",
+    "playbackPosition": "Posizione di riproduzione",
     "outputSpeakers": "Altoparlanti",
     "outputDevices": "Uscita",
     "thisDevice": "Questo browser",

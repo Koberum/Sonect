@@ -14,6 +14,7 @@
     "label": "Sections",
     "home": "Home",
     "library": "Library",
+    "player": "Player",
     "settings": "Settings",
     "back": "Back",
     "forward": "Forward",
@@ -36,9 +37,6 @@
       "genres": "Genres",
       "statistics": "Statistics"
     }
-  },
-  "sidebar": {
-    "toggleSidebar": "Toggle sidebar"
   },
   "artists": {
     "title": "Artists",
@@ -83,6 +81,9 @@
   },
   "player": {
     "title": "Now Playing",
+    "nothingPlaying": "Nothing playing",
+    "nothingPlayingDescription": "Pick a track from Home or Library to start listening.",
+    "playbackPosition": "Playback position",
     "outputSpeakers": "Speakers",
     "outputDevices": "Output",
     "thisDevice": "This browser",

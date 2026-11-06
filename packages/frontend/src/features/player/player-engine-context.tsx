@@ -1,0 +1,207 @@
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import { usePlaybackContext } from "@/components/playback-context";
+import { usePlayerSocket } from "@/components/ws-provider";
+import { useBrowserAudio } from "@/lib/useBrowserAudio";
+import type { PlayerReport } from "@repo/types";
+
+type PlayerEngineContextValue = {
+  isActiveBrowser: boolean;
+  displayElapsed: number;
+  autoplayBlocked: boolean;
+  volume: number;
+  setVolume: (volume: number) => void;
+  play: () => void;
+};
+
+const PlayerEngineContext = createContext<PlayerEngineContextValue | null>(
+  null,
+);
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function usePlayerEngine(): PlayerEngineContextValue {
+  const value = useContext(PlayerEngineContext);
+  if (!value) {
+    throw new Error("usePlayerEngine must be used inside PlayerEngineProvider");
+  }
+  return value;
+}
+
+/**
+ * Owns the single browser audio engine and mirrors server playback state into
+ * it. Mounted by MainLayout so playback survives route and viewport changes.
+ * The compact desktop player and the mobile full player are only views.
+ */
+export function PlayerEngineProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const {
+    trackPlayed,
+    setTrackPlayed,
+    playbackStatus,
+    outputMode,
+    activeDeviceId,
+    myDeviceId,
+  } = usePlaybackContext();
+  const { t } = useTranslation();
+  const { sendReport } = usePlayerSocket();
+
+  const lastAnchorRef = useRef({ time: 0, elapsed: 0 });
+  const lastSeekSeqRef = useRef(0);
+  const lastEpochRef = useRef<string | undefined>(undefined);
+  const [interpolatedElapsed, setInterpolatedElapsed] = useState(0);
+
+  const browserAudio = useBrowserAudio({
+    onReport: (report: PlayerReport) => sendReport(report),
+    onError: () => toast.error(t("player.playbackError")),
+  });
+  const {
+    startTrack,
+    play,
+    pause,
+    seek,
+    preloadTrack,
+    setCrossfade,
+    volume,
+    setVolume,
+    autoplayBlocked,
+  } = browserAudio;
+
+  // Only the active browser device renders audio.
+  const isActiveBrowser =
+    outputMode === "browser" &&
+    (!activeDeviceId || activeDeviceId === myDeviceId);
+
+  // Browser mode: mirror the server's queue/state into the local engine. The
+  // engine owns timing, so the UI only follows `currentTime`, never a clock.
+  useEffect(() => {
+    if (!isActiveBrowser) {
+      pause();
+      return;
+    }
+
+    const track = playbackStatus.track;
+    if (track?.id) {
+      startTrack(
+        track.id,
+        `/stream/${track.id}`,
+        playbackStatus.elapsed || 0,
+        playbackStatus.epoch,
+        playbackStatus.revision ?? 0,
+      );
+    }
+
+    if (playbackStatus.state === "play") {
+      play();
+    } else {
+      pause();
+    }
+  }, [playbackStatus, isActiveBrowser, startTrack, play, pause]);
+
+  // A remote seek (other device) bumps seekSeq. Local reports never do, so the
+  // active browser does not fight its own position.
+  useEffect(() => {
+    if (!isActiveBrowser || playbackStatus.state === "stop") return;
+    if (playbackStatus.epoch !== lastEpochRef.current) {
+      lastEpochRef.current = playbackStatus.epoch;
+      lastSeekSeqRef.current = playbackStatus.seekSeq ?? 0;
+      return;
+    }
+    const seq = playbackStatus.seekSeq ?? 0;
+    if (seq === lastSeekSeqRef.current) return;
+    lastSeekSeqRef.current = seq;
+    seek(playbackStatus.elapsed);
+  }, [
+    isActiveBrowser,
+    playbackStatus.seekSeq,
+    playbackStatus.elapsed,
+    playbackStatus.state,
+    playbackStatus.epoch,
+    seek,
+  ]);
+
+  useEffect(() => {
+    setCrossfade(playbackStatus.crossfade ?? 0);
+  }, [playbackStatus.crossfade, setCrossfade]);
+
+  // Preload the upcoming track on the standby deck so the transition is
+  // instant and the backend can expose nextTrackId ahead of time.
+  useEffect(() => {
+    if (!isActiveBrowser) return;
+    const nextId = playbackStatus.nextTrackId;
+    const currentId = playbackStatus.track?.id;
+    if (nextId && nextId !== currentId) {
+      preloadTrack(nextId, `/stream/${nextId}`);
+    }
+  }, [
+    isActiveBrowser,
+    playbackStatus.nextTrackId,
+    playbackStatus.track?.id,
+    preloadTrack,
+  ]);
+
+  // Track change detection feeds the shared "now playing" track.
+  useEffect(() => {
+    if (playbackStatus.track && playbackStatus.track.id !== trackPlayed?.id) {
+      setTrackPlayed(playbackStatus.track);
+    }
+  }, [playbackStatus.track, trackPlayed, setTrackPlayed]);
+
+  // The active browser reads the real audio clock; only passive/MPD devices
+  // need to interpolate between server updates.
+  useEffect(() => {
+    if (isActiveBrowser) return;
+    if (playbackStatus.state !== "play" || playbackStatus.buffering) {
+      setInterpolatedElapsed(playbackStatus.elapsed);
+      return;
+    }
+
+    lastAnchorRef.current = {
+      time: Date.now(),
+      elapsed: playbackStatus.elapsed,
+    };
+    setInterpolatedElapsed(playbackStatus.elapsed);
+
+    const id = setInterval(() => {
+      const now = Date.now();
+      const delta = (now - lastAnchorRef.current.time) / 1000;
+      lastAnchorRef.current.time = now;
+      lastAnchorRef.current.elapsed += delta;
+      setInterpolatedElapsed(lastAnchorRef.current.elapsed);
+    }, 250);
+
+    return () => clearInterval(id);
+  }, [playbackStatus, isActiveBrowser]);
+
+  const displayElapsed = isActiveBrowser
+    ? browserAudio.currentTime
+    : interpolatedElapsed;
+
+  const value = useMemo(
+    () => ({
+      isActiveBrowser,
+      displayElapsed,
+      autoplayBlocked,
+      volume,
+      setVolume,
+      play,
+    }),
+    [isActiveBrowser, displayElapsed, autoplayBlocked, volume, setVolume, play],
+  );
+
+  return (
+    <PlayerEngineContext.Provider value={value}>
+      {children}
+    </PlayerEngineContext.Provider>
+  );
+}

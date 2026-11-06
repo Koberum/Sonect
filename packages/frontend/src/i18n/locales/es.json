@@ -14,6 +14,7 @@
     "label": "Secciones",
     "home": "Inicio",
     "library": "Biblioteca",
+    "player": "Reproductor",
     "settings": "Ajustes",
     "back": "Atrás",
     "forward": "Adelante",
@@ -36,9 +37,6 @@
       "genres": "Géneros",
       "statistics": "Estadísticas"
     }
-  },
-  "sidebar": {
-    "toggleSidebar": "Alternar barra lateral"
   },
   "artists": {
     "title": "Artistas",
@@ -83,6 +81,9 @@
   },
   "player": {
     "title": "Reproduciendo ahora",
+    "nothingPlaying": "Nada en reproducción",
+    "nothingPlayingDescription": "Elige una pista de Inicio o Biblioteca para empezar a escuchar.",
+    "playbackPosition": "Posición de reproducción",
     "outputSpeakers": "Altavoces",
     "outputDevices": "Salida",
     "thisDevice": "Este navegador",

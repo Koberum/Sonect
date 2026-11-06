@@ -26,7 +26,7 @@ export default function VolumeControls({
   onVolumeCommit,
 }: VolumeControlsProps) {
   const [localVolume, setLocalVolume] = useState(volume);
-  const isMobile = useMediaQuery({ maxWidth: 768 });
+  const isMobile = useMediaQuery({ maxWidth: 767 });
 
   useEffect(() => {
     setLocalVolume(volume);

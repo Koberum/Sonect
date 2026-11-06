@@ -20,7 +20,6 @@ import {
 
 export interface SidebarProps {
   className?: string;
-  toggleSidebar(open: boolean): void;
   collapsed?: boolean;
   collapsible?: boolean;
   onToggleCollapse?(): void;
@@ -35,7 +34,6 @@ interface SidebarItem {
 
 export function Sidebar({
   className,
-  toggleSidebar,
   collapsed = false,
   collapsible = false,
   onToggleCollapse,
@@ -89,11 +87,6 @@ export function Sidebar({
       : []),
   ];
 
-  const handleNavigation = (path: string) => {
-    navigate(path);
-    toggleSidebar(false);
-  };
-
   const isActive = (match: string) =>
     pathname === match || pathname.startsWith(`${match}/`);
 
@@ -108,7 +101,6 @@ export function Sidebar({
         {!collapsed ? (
           <Link
             to="/home"
-            onClick={() => toggleSidebar(false)}
             className="focus-visible:ring-ring rounded-md focus-visible:ring-2 focus-visible:outline-none"
           >
             <img src={logoSrc} alt="Sonect" className="h-8 w-auto" />
@@ -140,7 +132,7 @@ export function Sidebar({
           const button = (
             <Button
               key={href}
-              onClick={() => handleNavigation(href)}
+              onClick={() => navigate(href)}
               variant={isActive(match) ? "secondary" : "ghost"}
               className={cn(
                 "w-full",

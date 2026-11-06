@@ -1,8 +1,8 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import { goToPosition } from "@/features/player/api";
 import { formatTime } from "@/lib/utils";
-import type { OutputMode } from "@repo/types";
 import { Waveform } from "@/components/waveform";
 import { useQuery } from "@tanstack/react-query";
 import { playerQueries } from "@/features/player/queries";
@@ -12,7 +12,6 @@ type PlaybackWaveformProps = {
   duration: number;
   trackId: number | null;
   className?: string;
-  outputMode?: OutputMode;
 };
 
 export function PlaybackWaveform({
@@ -20,9 +19,8 @@ export function PlaybackWaveform({
   duration,
   trackId,
   className,
-  outputMode: _outputMode = "mpd",
 }: PlaybackWaveformProps): React.ReactElement {
-  void _outputMode;
+  const { t } = useTranslation();
   const { data: waveform } = useQuery(playerQueries.waveform(trackId));
   const hasWaveform =
     waveform != null &&
@@ -36,7 +34,7 @@ export function PlaybackWaveform({
 
   return (
     <div className={`flex w-full items-center gap-2 ${className ?? ""}`}>
-      <span className="hidden font-mono text-xs tabular-nums md:flex">
+      <span className="flex font-mono text-xs tabular-nums">
         {formatTime(display)}
       </span>
 
@@ -53,7 +51,7 @@ export function PlaybackWaveform({
             void goToPosition(v);
           }}
           className="group relative -my-2 flex flex-1 touch-none items-center py-2 select-none"
-          aria-label="Playback position"
+          aria-label={t("player.playbackPosition")}
           style={{ minWidth: 0 }}
         >
           <SliderPrimitive.Track className="relative h-5 w-full grow overflow-hidden rounded-sm">
@@ -79,7 +77,7 @@ export function PlaybackWaveform({
             void goToPosition(v);
           }}
           className="group relative -my-4 flex flex-1 touch-none items-center py-4 select-none"
-          aria-label="Playback position"
+          aria-label={t("player.playbackPosition")}
         >
           <SliderPrimitive.Track className="bg-border relative h-1.5 w-full grow overflow-hidden rounded-full">
             <SliderPrimitive.Range className="bg-primary absolute h-full" />
@@ -88,7 +86,7 @@ export function PlaybackWaveform({
         </SliderPrimitive.Root>
       )}
 
-      <span className="hidden font-mono text-xs tabular-nums md:flex">
+      <span className="flex font-mono text-xs tabular-nums">
         {formatTime(duration)}
       </span>
     </div>
