@@ -14,6 +14,7 @@
     "label": "Sezioni",
     "home": "Home",
     "library": "Libreria",
+    "playlists": "Playlist",
     "player": "Riproduzione",
     "queue": "Coda",
     "settings": "Impostazioni",
@@ -26,7 +27,6 @@
     "title": "Home",
     "tabs": {
       "listen": "Ascolta Ora",
-      "playlists": "Playlist",
       "liked": "Preferiti"
     }
   },
@@ -163,6 +163,7 @@
     "noResults": "Nessun risultato trovato"
   },
   "playlist": {
+    "title": "Playlist",
     "new": "Nuova Playlist",
     "open": "Apri playlist",
     "defaultName": "La mia playlist",

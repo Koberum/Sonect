@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ListMusic, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { playlistQueries } from "@/features/playlists/queries";
 import { CreatePlaylistDialog } from "@/features/playlists/components/create-playlist-dialog";
@@ -24,15 +25,16 @@ export default function Playlists() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-muted-foreground text-sm">
-          {t("playlist.listCount", { count: playlists.length })}
-        </p>
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus />
-          {t("playlist.new")}
-        </Button>
-      </div>
+      <PageHeader
+        title={t("playlist.title")}
+        description={t("playlist.listCount", { count: playlists.length })}
+        actions={
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus />
+            {t("playlist.new")}
+          </Button>
+        }
+      />
 
       {isPending ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

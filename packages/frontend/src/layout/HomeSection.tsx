@@ -7,7 +7,6 @@ import { useAuth } from "@/features/auth/auth-context";
 import { likedQueries } from "@/features/liked/queries";
 
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
-const Playlists = lazy(() => import("@/pages/Playlists"));
 const LikedSongs = lazy(() => import("@/pages/LikedSongs"));
 
 export function HomeSection() {
@@ -20,11 +19,6 @@ export function HomeSection() {
       id: "listen",
       labelKey: "home.tabs.listen",
       content: <Dashboard />,
-    },
-    {
-      id: "playlists",
-      labelKey: "home.tabs.playlists",
-      content: <Playlists />,
     },
     {
       id: "liked",

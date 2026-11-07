@@ -6,6 +6,7 @@ import {
   AudioLines,
   Library,
   ListMusic,
+  ListOrdered,
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
@@ -77,10 +78,16 @@ export function Sidebar({
       icon: Library,
     },
     {
+      href: "/playlists",
+      match: "/playlists",
+      labelKey: "nav.playlists",
+      icon: ListMusic,
+    },
+    {
       href: "/queue",
       match: "/queue",
       labelKey: "nav.queue",
-      icon: ListMusic,
+      icon: ListOrdered,
     },
     ...(isAdmin
       ? [

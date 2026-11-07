@@ -20,7 +20,7 @@ export function PlaylistCard({ playlist, className }: PlaylistCardProps) {
   const trackCount = playlist.trackCount;
 
   const openPlaylist = () => {
-    void navigate(`/home/playlists/${playlist.id}`);
+    void navigate(`/playlists/${playlist.id}`);
   };
 
   return (

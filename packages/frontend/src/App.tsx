@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useParams } from "react-router-dom";
 import MainLayout from "./layout/MainLayout";
 import { ThemeProvider } from "./components/theme-provider";
 import { AuthProvider } from "./features/auth/auth-context";
@@ -29,6 +29,7 @@ const LibrarySection = lazy(() =>
 );
 const PlayerPage = lazy(() => import("./pages/PlayerPage"));
 const QueuePage = lazy(() => import("./pages/QueuePage"));
+const PlaylistsPage = lazy(() => import("./pages/Playlists"));
 const PlaylistDetail = lazy(() => import("./pages/PlaylistDetail"));
 const AlbumPage = lazy(() => import("./pages/AlbumTracks"));
 const ArtistAlbums = lazy(() =>
@@ -50,6 +51,11 @@ type LegacyTabRedirectProps = { to: string; tab: string };
 
 function LegacyTabRedirect({ to, tab }: LegacyTabRedirectProps) {
   return <Navigate to={to} state={{ tab }} replace />;
+}
+
+function LegacyPlaylistRedirect() {
+  const { id } = useParams();
+  return <Navigate to={id ? `/playlists/${id}` : "/playlists"} replace />;
 }
 
 export default function App() {
@@ -92,12 +98,13 @@ export default function App() {
                       <Route path="player" element={<PlayerPage />} />
                       <Route path="queue" element={<QueuePage />} />
 
-                      <Route path="home" element={<HomeSection />}>
-                        <Route
-                          path="playlists/:id"
-                          element={<PlaylistDetail />}
-                        />
-                      </Route>
+                      <Route path="home" element={<HomeSection />} />
+
+                      <Route path="playlists" element={<PlaylistsPage />} />
+                      <Route
+                        path="playlists/:id"
+                        element={<PlaylistDetail />}
+                      />
 
                       <Route path="library" element={<LibrarySection />}>
                         <Route path="albums/:id" element={<AlbumPage />} />
@@ -124,9 +131,11 @@ export default function App() {
                       />
                       <Route
                         path="home/playlists"
-                        element={
-                          <LegacyTabRedirect to="/home" tab="playlists" />
-                        }
+                        element={<Navigate to="/playlists" replace />}
+                      />
+                      <Route
+                        path="home/playlists/:id"
+                        element={<LegacyPlaylistRedirect />}
                       />
                       <Route
                         path="home/liked"

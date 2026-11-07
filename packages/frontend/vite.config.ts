@@ -35,7 +35,19 @@ export default defineConfig({
         },
       },
       "/catalog": "http://localhost:3000",
-      "/playlists": "http://localhost:3000",
+      "/playlists": {
+        target: "http://localhost:3000",
+        bypass(req) {
+          // `/playlists` is both the playlists page and the API prefix.
+          // Document navigations must load the SPA, not the API.
+          if (
+            req.method === "GET" &&
+            req.headers.accept?.includes("text/html")
+          ) {
+            return "/index.html";
+          }
+        },
+      },
       "/covers": "http://localhost:3000",
       "/waveforms": "http://localhost:3000",
       "/stream": "http://localhost:3000",

@@ -96,6 +96,23 @@ app.get(["/player", "/player/"], (req, res, next) => {
   res.sendFile(index);
 });
 
+// `/playlists` is both the top-level playlists page and the playlist API
+// prefix. Only document navigations get the SPA shell; API calls (including
+// fetch's default `Accept: */*`) keep going through the authenticated router.
+app.get(
+  ["/playlists", "/playlists/", "/playlists/{*path}"],
+  (req, res, next) => {
+    if (!req.headers.accept?.includes("text/html")) return next();
+    const dist =
+      process.env.FRONTEND_DIST ||
+      path.resolve(process.cwd(), "@frontend/dist");
+    const index = path.join(dist, "index.html");
+    if (!fs.existsSync(index)) return next();
+    getLogService().pushLog("debug", `SPA fallback: ${req.path}`);
+    res.sendFile(index);
+  },
+);
+
 app.use(apiPaths, authenticate);
 
 app.use(
