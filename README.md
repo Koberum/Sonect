@@ -47,17 +47,21 @@ no subscriptions, no limits.
   genre, playlist, search, queue, now playing) adds a song to the signed-in
   profile's Liked Songs. Liked Songs has Play All and Shuffle and is scoped per
   household member; the old flat Tracks page is gone.
-- **Section navigation** — the desktop sidebar has Home, Library, Queue, and
-  Settings. Home holds Listen Now, Playlists, and Liked Songs; Library holds
-  Albums, Artists, Genres, and Statistics; Queue is the sortable per-profile
-  play queue; Settings (admins) holds Audio, Playback, Libraries, Appearance,
-  and Debug. Below 768px an icon-only bottom nav (Player, Library, Queue, Home,
-  Settings) switches between the full player at `/player` and the sections;
-  the compact player bar is desktop-only.
-- **Playlists** — create and browse them from Home → Playlists. Playlists are
-  private per profile (same names allowed across profiles). Drag any track onto
-  the right-hand playlist panel to add it, or use "Add to playlist" in the
-  three-dot track menu (touch and keyboard).
+- **Section navigation** — the desktop sidebar has Discover, Library, Playlists,
+  Queue, and Settings. Discover (`/discover`) holds Listen Now and Liked Songs;
+  Library holds Albums, Artists, Genres, and Statistics; Playlists (`/playlists`)
+  is the dedicated per-profile playlist list, with each playlist at
+  `/playlists/:id`; Queue is the sortable per-profile play queue; Settings
+  (admins) holds Audio, Playback, Libraries, Appearance, and Debug. Below 768px
+  an icon-only bottom nav (Player, Queue, centered Search, Discover, Settings)
+  switches between the full player at `/player` and the sections; Library,
+  Playlists, and the profile switcher are not in the mobile nav, and the top
+  toolbar (history, search, profile) is desktop-only. The compact player bar is
+  desktop-only.
+- **Playlists** — create and browse them from the Playlists section
+  (`/playlists`). Playlists are private per profile (same names allowed across
+  profiles). Drag any track onto the right-hand playlist panel to add it, or use
+  "Add to playlist" in the three-dot track menu (touch and keyboard).
 - **Dashboard per profile** — Recently played albums, artists, and tracks, top
   tracks, suggestions, and the genre mix are all personal. Listening history is
   recorded separately per household member (MPD plays count for the profile
@@ -281,6 +285,12 @@ All `/player`, `/catalog`, `/playlists`, `/likes`, `/dashboard`, `/covers`,
 `/auth/state`, `/auth/profiles`, `/auth/login`, and `/auth/bootstrap` (while no
 admin exists) are public; the remaining `/system/*` routes, `/profiles/*`, and
 `POST /catalog/scan` are admin-only.
+
+`/playlists` is both the Playlists page (document requests with
+`Accept: text/html`) and the playlist API prefix; in development Vite bypasses
+the proxy for document navigation, and in production the backend serves the SPA
+shell before the authenticated `/playlists` router. API calls with `Accept: */*`
+or `application/json` keep reaching the API.
 
 | Method | Path                                     | Description                                                                                                                                                                                                                                        |
 | ------ | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
