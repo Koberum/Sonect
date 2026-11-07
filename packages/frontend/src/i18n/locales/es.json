@@ -152,6 +152,7 @@
   },
   "search": {
     "placeholder": "Buscar",
+    "open": "Buscar",
     "genres": "Géneros",
     "artists": "Artistas",
     "albums": "Álbumes",

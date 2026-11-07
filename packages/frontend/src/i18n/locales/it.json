@@ -152,6 +152,7 @@
   },
   "search": {
     "placeholder": "Cerca",
+    "open": "Cerca",
     "genres": "Generi",
     "artists": "Artisti",
     "albums": "Album",

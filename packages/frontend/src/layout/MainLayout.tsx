@@ -12,6 +12,7 @@ import { useMediaQuery } from "react-responsive";
 import { Toaster } from "@/components/ui/sonner";
 import { SyncIndicator } from "@/features/sync/components/sync-indicator";
 import { PlaylistDropProvider } from "@/features/playlists/components/playlist-drop-provider";
+import { SearchCommand } from "@/features/search/components/search-command";
 import { cn } from "@/lib/utils";
 
 export default function MainLayout() {
@@ -22,6 +23,7 @@ export default function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem("sonect.sidebar.collapsed") === "1",
   );
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const toggleCollapse = () => setSidebarCollapsed((collapsed) => !collapsed);
   const collapsed = isCompactSidebar || sidebarCollapsed;
 
@@ -31,6 +33,10 @@ export default function MainLayout() {
       sidebarCollapsed ? "1" : "0",
     );
   }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    setMobileSearchOpen(false);
+  }, [pathname]);
 
   return (
     <PlaylistDropProvider>
@@ -66,7 +72,7 @@ export default function MainLayout() {
                 <main className="no-scrollbar flex-1 overflow-y-auto">
                   <div className="px-4 pt-4 pb-12 sm:px-4 lg:px-8">
                     <SetupGuard>
-                      <SectionToolbar />
+                      {!isMobile && <SectionToolbar />}
                       <Suspense fallback={<SectionContentSkeleton />}>
                         <Outlet />
                       </Suspense>
@@ -76,7 +82,16 @@ export default function MainLayout() {
               )}
 
               {!isMobile && <MusicPlayer />}
-              {isMobile && <MobileNav />}
+              {isMobile && (
+                <MobileNav onSearch={() => setMobileSearchOpen(true)} />
+              )}
+              {isMobile && (
+                <SearchCommand
+                  variant="overlay"
+                  open={mobileSearchOpen}
+                  onOpenChange={setMobileSearchOpen}
+                />
+              )}
               <Toaster />
             </div>
           </div>

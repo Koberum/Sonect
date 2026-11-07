@@ -1,4 +1,10 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Search, MicVocal, Loader2, History } from "lucide-react";
@@ -26,7 +32,18 @@ type SectionType = "genres" | "artists" | "albums" | "tracks" | "recent";
 type GenreItem = { kind: "genre"; name: string };
 type SearchItem = Artist | Album | TrackWithRelations | GenreItem | string;
 
-export function SearchCommand() {
+export interface SearchCommandProps {
+  /** `overlay` is the mobile-only full-screen search rendered by MainLayout. */
+  variant?: "toolbar" | "overlay";
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function SearchCommand({
+  variant = "toolbar",
+  open,
+  onOpenChange,
+}: SearchCommandProps = {}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { play, addToQueue } = usePlayTrack();
@@ -37,7 +54,15 @@ export function SearchCommand() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [overlayOpen, setOverlayOpen] = useState(false);
+  const [internalOverlayOpen, setInternalOverlayOpen] = useState(false);
+  const overlayOpen = open ?? internalOverlayOpen;
+  const setOverlayOpen = useCallback(
+    (next: boolean) => {
+      if (open === undefined) setInternalOverlayOpen(next);
+      onOpenChange?.(next);
+    },
+    [open, onOpenChange],
+  );
   const [showDropdown, setShowDropdown] = useState(false);
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query, 350);
@@ -90,14 +115,14 @@ export function SearchCommand() {
       setOverlayOpen(false);
       setShowDropdown(false);
     },
-    [play],
+    [play, setOverlayOpen],
   );
 
   const closeSearch = useCallback(() => {
     setOverlayOpen(false);
     setShowDropdown(false);
     setQuery("");
-  }, []);
+  }, [setOverlayOpen]);
 
   const activateItem = useCallback(
     (item: SearchItem) => {
@@ -166,19 +191,19 @@ export function SearchCommand() {
           inputRef.current?.focus();
           setShowDropdown(true);
         } else {
-          setOverlayOpen((prev) => !prev);
+          setOverlayOpen(!overlayOpen);
         }
       }
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isDesktop]);
+  }, [isDesktop, overlayOpen, setOverlayOpen]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (overlayOpen) {
       refreshRecentSearches();
       setSelectedIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 100);
+      inputRef.current?.focus();
     } else {
       setQuery("");
     }
@@ -225,6 +250,7 @@ export function SearchCommand() {
     selectedIndex,
     flatItems,
     activateItem,
+    setOverlayOpen,
   ]);
 
   useEffect(() => {
@@ -470,6 +496,41 @@ export function SearchCommand() {
     </div>
   );
 
+  const overlay = (
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-4">
+      <div
+        className="fixed inset-0 bg-black/80"
+        onClick={() => setOverlayOpen(false)}
+      />
+      <div className="bg-background relative z-50 w-full max-w-xl rounded-lg border shadow-2xl">
+        <div className="flex items-center justify-between px-3">
+          <div className="flex flex-1 items-center">
+            <Search className="mr-2 h-4 w-4 shrink-0" />
+            <Input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t("search.placeholder")}
+              className="border-0 shadow-none focus-visible:ring-0"
+            />
+          </div>
+          <kbd
+            className="cursor-pointer rounded border px-1.5 font-mono text-xs"
+            onClick={() => setOverlayOpen(false)}
+          >
+            ESC
+          </kbd>
+        </div>
+
+        {renderResults()}
+      </div>
+    </div>
+  );
+
+  if (variant === "overlay") {
+    return overlayOpen ? overlay : null;
+  }
+
   if (isDesktop) {
     return (
       <div className="relative w-full" ref={containerRef}>
@@ -511,34 +572,5 @@ export function SearchCommand() {
     );
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-4">
-      <div
-        className="fixed inset-0 bg-black/80"
-        onClick={() => setOverlayOpen(false)}
-      />
-      <div className="bg-background relative z-50 w-full max-w-xl rounded-lg border shadow-2xl">
-        <div className="flex items-center justify-between px-3">
-          <div className="flex flex-1 items-center">
-            <Search className="mr-2 h-4 w-4 shrink-0" />
-            <Input
-              ref={inputRef}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t("search.placeholder")}
-              className="border-0 shadow-none focus-visible:ring-0"
-            />
-          </div>
-          <kbd
-            className="cursor-pointer rounded border px-1.5 font-mono text-xs"
-            onClick={() => setOverlayOpen(false)}
-          >
-            ESC
-          </kbd>
-        </div>
-
-        {renderResults()}
-      </div>
-    </div>
-  );
+  return overlay;
 }
