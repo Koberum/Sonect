@@ -566,4 +566,49 @@ export class SessionPlayer extends EventEmitter {
     }
     this.emitStateChanged();
   }
+
+  moveInQueue(from: number, to: number): void {
+    const length = this.queueInternal.length;
+    if (from < 0 || to < 0 || from >= length || to >= length || from === to) {
+      return;
+    }
+
+    const [moved] = this.queueInternal.splice(from, 1);
+    this.queueInternal.splice(to, 0, moved);
+
+    if (this.indexInternal === from) {
+      this.indexInternal = to;
+    } else if (from < this.indexInternal && to >= this.indexInternal) {
+      this.indexInternal -= 1;
+    } else if (from > this.indexInternal && to <= this.indexInternal) {
+      this.indexInternal += 1;
+    }
+
+    this.log(
+      "debug",
+      `[Session ${this.sessionId.slice(0, 8)}][browser] moveInQueue ${from}→${to}`,
+      {
+        sessionId: this.sessionId.slice(0, 8),
+        from,
+        to,
+      },
+    );
+    this.emitStateChanged();
+  }
+
+  clearQueue(): void {
+    this.queueInternal = [];
+    this.indexInternal = -1;
+    this.position = 0;
+    this.stateInternal = "stop";
+    this.bufferingInternal = false;
+    this.log(
+      "debug",
+      `[Session ${this.sessionId.slice(0, 8)}][browser] clearQueue`,
+      {
+        sessionId: this.sessionId.slice(0, 8),
+      },
+    );
+    this.emitStateChanged();
+  }
 }

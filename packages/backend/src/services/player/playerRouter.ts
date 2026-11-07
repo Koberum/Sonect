@@ -166,6 +166,12 @@ export class PlayerRouter extends EventEmitter {
       async removeFromQueue(pos: number): Promise<void> {
         this.p.removeFromQueue(pos);
       }
+      async moveInQueue(from: number, to: number): Promise<void> {
+        this.p.moveInQueue(from, to);
+      }
+      async clearQueue(): Promise<void> {
+        this.p.clearQueue();
+      }
       async setVolume(_volume: number): Promise<void> {}
       async enableRandom(_enabled: boolean): Promise<void> {}
       async enableRepeat(_enabled: boolean): Promise<void> {}

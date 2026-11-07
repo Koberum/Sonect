@@ -17,6 +17,10 @@ export const playerSchemas = {
       .int("pos must be an integer")
       .min(0, "pos must be >= 0"),
   }),
+  moveQueueItem: z.object({
+    from: z.number().int("from must be an integer").min(0, "from must be >= 0"),
+    to: z.number().int("to must be an integer").min(0, "to must be >= 0"),
+  }),
   addToQueue: z.object({
     file: z.string().min(1, "file is required"),
   }),

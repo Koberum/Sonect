@@ -269,6 +269,39 @@ export const unifiedRemoveFromQueueHandler = asyncHandler(
   },
 );
 
+export const unifiedMoveInQueueHandler = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { from, to } = playerSchemas.moveQueueItem.parse(req.body);
+    const sid = req.sessionId as string;
+    getLogService().pushLog(
+      "debug",
+      `[Session ${fmtSid(sid)}][${router().getMode(sid)}] moveInQueue ${from}→${to}`,
+      {
+        sessionId: fmtSid(sid),
+        from,
+        to,
+      },
+    );
+    await router().forSession(sid).moveInQueue(from, to);
+    res.json(router().getStatus(sid));
+  },
+);
+
+export const unifiedClearQueueHandler = asyncHandler(
+  async (req: Request, res: Response) => {
+    const sid = req.sessionId as string;
+    getLogService().pushLog(
+      "debug",
+      `[Session ${fmtSid(sid)}][${router().getMode(sid)}] clearQueue`,
+      {
+        sessionId: fmtSid(sid),
+      },
+    );
+    await router().forSession(sid).clearQueue();
+    res.json(router().getStatus(sid));
+  },
+);
+
 export const unifiedPlayPositionHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { pos } = playerSchemas.playPosition.parse(req.body);
