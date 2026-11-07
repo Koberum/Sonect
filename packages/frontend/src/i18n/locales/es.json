@@ -15,6 +15,7 @@
     "home": "Inicio",
     "library": "Biblioteca",
     "player": "Reproductor",
+    "queue": "Cola",
     "settings": "Ajustes",
     "back": "Atrás",
     "forward": "Adelante",
@@ -74,8 +75,19 @@
     "percentOfLibrary": "{{percent}}% de la biblioteca"
   },
   "queue": {
-    "upNext": "A continuación",
+    "title": "Cola",
     "remove": "Eliminar de la cola",
+    "reorder": "Reordenar pista",
+    "dragHint": "Arrastra para reordenar",
+    "empty": "Tu cola está vacía",
+    "emptyDescription": "Reproduce un álbum o añade pistas para crear una cola.",
+    "clear": "Vaciar cola",
+    "clearConfirmTitle": "¿Vaciar la cola?",
+    "clearConfirmDescription": "Esto elimina todas las pistas de la cola.",
+    "cleared": "Cola vaciada",
+    "clearError": "No se pudo vaciar la cola",
+    "moveError": "No se pudo reordenar la cola",
+    "removeError": "No se pudo eliminar la pista",
     "tracksInQueue_one": "{{count}} pista en cola",
     "tracksInQueue_other": "{{count}} pistas en cola"
   },

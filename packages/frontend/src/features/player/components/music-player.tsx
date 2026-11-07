@@ -15,7 +15,6 @@ import { PlaybackControls } from "./playback-controls";
 import { PlaybackErrorNotice } from "./playback-error";
 import { PlaybackWaveform } from "./playback-waveform";
 import { PlayedTrack } from "./playback-track";
-import { QueueView } from "./queue-view";
 import { OutputSelector } from "./output-selector";
 import VolumeControls from "./volume-controls";
 
@@ -66,7 +65,6 @@ export default function MusicPlayer() {
           />
         </div>
         <div className="flex flex-1 items-center justify-end gap-2 pr-4">
-          <QueueView currentTrackFile={playbackStatus.track?.file} />
           <OutputSelector
             currentMode={outputMode}
             onModeChange={changeOutputMode}

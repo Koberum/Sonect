@@ -20,6 +20,7 @@ type PlaybackControls = {
   setRandom(status: boolean): void;
   setRepeat(status: boolean): void;
   className?: string;
+  size?: "default" | "large";
 };
 
 export function PlaybackControls({
@@ -32,8 +33,12 @@ export function PlaybackControls({
   setRandom,
   setRepeat,
   className,
+  size = "default",
 }: PlaybackControls): React.ReactElement {
   const { t } = useTranslation();
+  const isLarge = size === "large";
+  const actionSize = isLarge ? "icon-lg" : "icon-sm";
+  const mainIcon = isLarge ? "size-7" : "size-5";
   const btnBase =
     "text-muted-foreground hover:text-foreground transition-colors p-1";
   const btnActive = "text-primary hover:text-primary";
@@ -46,10 +51,14 @@ export function PlaybackControls({
 
   return (
     <div className={className}>
-      <div className="flex items-center gap-2">
+      <div
+        className={
+          isLarge ? "flex items-center gap-3" : "flex items-center gap-2"
+        }
+      >
         <Button
           variant="bare"
-          size="icon-sm"
+          size={actionSize}
           className={playbackStatus.random ? btnActive : btnBase}
           aria-label={t("player.shuffle")}
           onClick={() => {
@@ -61,7 +70,7 @@ export function PlaybackControls({
 
         <Button
           variant="bare"
-          size="icon-sm"
+          size={actionSize}
           className={btnBase}
           aria-label={t("player.previous")}
           onClick={previousTrack}
@@ -71,8 +80,12 @@ export function PlaybackControls({
 
         <Button
           variant="default"
-          size="icon-sm"
-          className="rounded-full transition-opacity hover:opacity-85"
+          size={isLarge ? "icon-lg" : "icon-sm"}
+          className={
+            isLarge
+              ? "size-14 rounded-full transition-opacity hover:opacity-85"
+              : "rounded-full transition-opacity hover:opacity-85"
+          }
           aria-label={
             playbackStatus.state === "play"
               ? t("player.pause")
@@ -81,15 +94,15 @@ export function PlaybackControls({
           onClick={handleMain}
         >
           {playbackStatus.state === "play" ? (
-            <PauseIcon className="size-5" fill="currentColor" />
+            <PauseIcon className={mainIcon} fill="currentColor" />
           ) : (
-            <PlayIcon className="size-5" fill="currentColor" />
+            <PlayIcon className={mainIcon} fill="currentColor" />
           )}
         </Button>
 
         <Button
           variant="bare"
-          size="icon-sm"
+          size={actionSize}
           className={btnBase}
           aria-label={t("player.next")}
           onClick={nextTrack}
@@ -99,7 +112,7 @@ export function PlaybackControls({
 
         <Button
           variant="bare"
-          size="icon-sm"
+          size={actionSize}
           className={playbackStatus.repeat ? btnActive : btnBase}
           aria-label={t("player.repeat")}
           onClick={() => {

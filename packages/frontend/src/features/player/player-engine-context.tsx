@@ -150,12 +150,19 @@ export function PlayerEngineProvider({
     preloadTrack,
   ]);
 
-  // Track change detection feeds the shared "now playing" track.
+  // Track change detection feeds the shared "now playing" track. A stopped,
+  // empty queue clears it so the mobile player shows its empty state.
   useEffect(() => {
-    if (playbackStatus.track && playbackStatus.track.id !== trackPlayed?.id) {
-      setTrackPlayed(playbackStatus.track);
+    if (playbackStatus.track) {
+      if (playbackStatus.track.id !== trackPlayed?.id) {
+        setTrackPlayed(playbackStatus.track);
+      }
+      return;
     }
-  }, [playbackStatus.track, trackPlayed, setTrackPlayed]);
+    if (playbackStatus.state === "stop" && trackPlayed) {
+      setTrackPlayed(null);
+    }
+  }, [playbackStatus.track, playbackStatus.state, trackPlayed, setTrackPlayed]);
 
   // The active browser reads the real audio clock; only passive/MPD devices
   // need to interpolate between server updates.

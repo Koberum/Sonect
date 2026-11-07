@@ -14,23 +14,25 @@ export default function PlayerPage() {
 
   if (!isMobile) return <Navigate to="/home" replace />;
 
-  if (!trackPlayed) {
-    return (
-      <div className="flex h-full items-center justify-center px-6">
-        <h1 className="sr-only">{t("player.title")}</h1>
-        <EmptyState
-          icon={Disc3}
-          title={t("player.nothingPlaying")}
-          description={t("player.nothingPlayingDescription")}
-          action={
-            <Button asChild variant="outline" size="sm">
-              <Link to="/home">{t("nav.home")}</Link>
-            </Button>
-          }
-        />
-      </div>
-    );
-  }
-
-  return <FullPagePlayer />;
+  return (
+    <>
+      <h1 className="sr-only">{t("player.title")}</h1>
+      {trackPlayed ? (
+        <FullPagePlayer />
+      ) : (
+        <div className="flex h-full items-center justify-center px-6">
+          <EmptyState
+            icon={Disc3}
+            title={t("player.nothingPlaying")}
+            description={t("player.nothingPlayingDescription")}
+            action={
+              <Button asChild variant="outline" size="sm">
+                <Link to="/home">{t("nav.home")}</Link>
+              </Button>
+            }
+          />
+        </div>
+      )}
+    </>
+  );
 }

@@ -20,11 +20,13 @@ import { useMediaQuery } from "react-responsive";
 interface VolumeControlsProps {
   volume: number;
   onVolumeCommit?: (volume: number) => void;
+  fullWidth?: boolean;
 }
 
 export default function VolumeControls({
   volume,
   onVolumeCommit,
+  fullWidth = false,
 }: VolumeControlsProps) {
   const { t } = useTranslation();
   const [localVolume, setLocalVolume] = useState(volume);
@@ -61,6 +63,33 @@ export default function VolumeControls({
     if (localVolume <= 66) return <Volume1Icon className="h-5 w-5" />;
     return <Volume2Icon className="h-5 w-5" />;
   };
+
+  if (fullWidth) {
+    return (
+      <div className="flex w-full items-center gap-3">
+        <Slider
+          defaultValue={[localVolume]}
+          value={[localVolume]}
+          min={0}
+          max={100}
+          step={1}
+          aria-label={t("player.volume")}
+          onValueChange={(newVolumes) => handleVolumeChange(newVolumes[0])}
+          onValueCommit={(newVolumes) => handleVolumeCommit(newVolumes[0])}
+          className="flex-1"
+        />
+        <Button
+          variant="bare"
+          size="icon"
+          aria-label={t("player.volume")}
+          className="text-muted-foreground hover:text-foreground shrink-0"
+          onClick={handleMute}
+        >
+          {getVolumeIcon()}
+        </Button>
+      </div>
+    );
+  }
 
   return isMobile ? (
     <Popover>

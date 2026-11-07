@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { AudioLines, Disc3, Library, Settings } from "lucide-react";
+import { AudioLines, Disc3, Library, ListMusic, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/features/auth/auth-context";
@@ -19,6 +19,7 @@ export function MobileNav() {
   const items: NavItem[] = [
     { href: "/player", labelKey: "nav.player", icon: Disc3 },
     { href: "/library", labelKey: "nav.library", icon: Library },
+    { href: "/queue", labelKey: "nav.queue", icon: ListMusic },
     { href: "/home", labelKey: "nav.home", icon: AudioLines },
     ...(isAdmin
       ? [{ href: "/settings", labelKey: "nav.settings", icon: Settings }]

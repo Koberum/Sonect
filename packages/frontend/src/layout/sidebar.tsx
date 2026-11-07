@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   AudioLines,
   Library,
+  ListMusic,
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
@@ -74,6 +75,12 @@ export function Sidebar({
       match: "/library",
       labelKey: "nav.library",
       icon: Library,
+    },
+    {
+      href: "/queue",
+      match: "/queue",
+      labelKey: "nav.queue",
+      icon: ListMusic,
     },
     ...(isAdmin
       ? [

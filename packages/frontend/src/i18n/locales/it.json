@@ -15,6 +15,7 @@
     "home": "Home",
     "library": "Libreria",
     "player": "Riproduzione",
+    "queue": "Coda",
     "settings": "Impostazioni",
     "back": "Indietro",
     "forward": "Avanti",
@@ -74,8 +75,19 @@
     "percentOfLibrary": "{{percent}}% della libreria"
   },
   "queue": {
-    "upNext": "Prossimi",
+    "title": "Coda",
     "remove": "Rimuovi dalla coda",
+    "reorder": "Riordina brano",
+    "dragHint": "Trascina per riordinare",
+    "empty": "La tua coda è vuota",
+    "emptyDescription": "Riproduci un album o aggiungi brani per creare una coda.",
+    "clear": "Svuota coda",
+    "clearConfirmTitle": "Svuotare la coda?",
+    "clearConfirmDescription": "Questo rimuove tutti i brani dalla coda.",
+    "cleared": "Coda svuotata",
+    "clearError": "Impossibile svuotare la coda",
+    "moveError": "Impossibile riordinare la coda",
+    "removeError": "Impossibile rimuovere il brano",
     "tracksInQueue_one": "{{count}} brano in coda",
     "tracksInQueue_other": "{{count}} brani in coda"
   },

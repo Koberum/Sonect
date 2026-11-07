@@ -28,6 +28,7 @@ const LibrarySection = lazy(() =>
   })),
 );
 const PlayerPage = lazy(() => import("./pages/PlayerPage"));
+const QueuePage = lazy(() => import("./pages/QueuePage"));
 const PlaylistDetail = lazy(() => import("./pages/PlaylistDetail"));
 const AlbumPage = lazy(() => import("./pages/AlbumTracks"));
 const ArtistAlbums = lazy(() =>
@@ -89,6 +90,7 @@ export default function App() {
                     >
                       <Route index element={<Navigate to="/home" replace />} />
                       <Route path="player" element={<PlayerPage />} />
+                      <Route path="queue" element={<QueuePage />} />
 
                       <Route path="home" element={<HomeSection />}>
                         <Route

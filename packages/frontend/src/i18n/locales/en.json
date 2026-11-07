@@ -15,6 +15,7 @@
     "home": "Home",
     "library": "Library",
     "player": "Player",
+    "queue": "Queue",
     "settings": "Settings",
     "back": "Back",
     "forward": "Forward",
@@ -74,8 +75,19 @@
     "percentOfLibrary": "{{percent}}% of library"
   },
   "queue": {
-    "upNext": "Up Next",
+    "title": "Queue",
     "remove": "Remove from queue",
+    "reorder": "Reorder track",
+    "dragHint": "Drag to reorder",
+    "empty": "Your queue is empty",
+    "emptyDescription": "Play an album or add tracks to start a queue.",
+    "clear": "Clear queue",
+    "clearConfirmTitle": "Clear the queue?",
+    "clearConfirmDescription": "This removes every track from the queue.",
+    "cleared": "Queue cleared",
+    "clearError": "Could not clear the queue",
+    "moveError": "Could not reorder the queue",
+    "removeError": "Could not remove the track",
     "tracksInQueue_one": "{{count}} track in queue",
     "tracksInQueue_other": "{{count}} tracks in queue"
   },

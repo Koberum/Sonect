@@ -46,6 +46,18 @@ export function playQueueItem(pos: number): Promise<PlaybackStatus> {
 export function removeFromQueue(pos: number): Promise<PlaybackStatus> {
   return apiFetch("/player/queue/" + pos, { method: "DELETE" });
 }
+export function moveQueueItem(
+  from: number,
+  to: number,
+): Promise<PlaybackStatus> {
+  return apiFetch("/player/queue/move", {
+    method: "PATCH",
+    body: { from, to },
+  });
+}
+export function clearQueue(): Promise<PlaybackStatus> {
+  return apiFetch("/player/queue", { method: "DELETE" });
+}
 export function addToQueue(file: string): Promise<PlaybackStatus> {
   return apiFetch("/player/queue", { method: "POST", body: { file } });
 }
