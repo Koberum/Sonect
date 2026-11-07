@@ -12,7 +12,7 @@
   },
   "nav": {
     "label": "Secciones",
-    "home": "Inicio",
+    "discover": "Descubrir",
     "library": "Biblioteca",
     "playlists": "Listas",
     "player": "Reproductor",
@@ -23,8 +23,8 @@
     "collapse": "Contraer barra lateral",
     "expand": "Expandir barra lateral"
   },
-  "home": {
-    "title": "Inicio",
+  "discover": {
+    "title": "Descubrir",
     "tabs": {
       "listen": "Escuchar Ahora",
       "liked": "Canciones que te gustan"

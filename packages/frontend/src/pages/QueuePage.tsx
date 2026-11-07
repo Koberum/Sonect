@@ -189,7 +189,7 @@ export default function QueuePage() {
           description={t("queue.emptyDescription")}
           action={
             <Button asChild variant="outline" size="sm">
-              <Link to="/home">{t("nav.home")}</Link>
+              <Link to="/discover">{t("nav.discover")}</Link>
             </Button>
           }
         />

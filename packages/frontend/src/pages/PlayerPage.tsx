@@ -12,7 +12,7 @@ export default function PlayerPage() {
   const { trackPlayed } = usePlaybackContext();
   const isMobile = useMediaQuery({ maxWidth: 767.98 });
 
-  if (!isMobile) return <Navigate to="/home" replace />;
+  if (!isMobile) return <Navigate to="/discover" replace />;
 
   return (
     <>
@@ -27,7 +27,7 @@ export default function PlayerPage() {
             description={t("player.nothingPlayingDescription")}
             action={
               <Button asChild variant="outline" size="sm">
-                <Link to="/home">{t("nav.home")}</Link>
+                <Link to="/discover">{t("nav.discover")}</Link>
               </Button>
             }
           />

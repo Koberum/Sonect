@@ -19,8 +19,10 @@ const Devtools = lazy(() =>
   })),
 );
 
-const HomeSection = lazy(() =>
-  import("./layout/HomeSection").then((m) => ({ default: m.HomeSection })),
+const DiscoverSection = lazy(() =>
+  import("./layout/DiscoverSection").then((m) => ({
+    default: m.DiscoverSection,
+  })),
 );
 const LibrarySection = lazy(() =>
   import("./layout/LibrarySection").then((m) => ({
@@ -94,11 +96,14 @@ export default function App() {
                         </AuthGuard>
                       }
                     >
-                      <Route index element={<Navigate to="/home" replace />} />
+                      <Route
+                        index
+                        element={<Navigate to="/discover" replace />}
+                      />
                       <Route path="player" element={<PlayerPage />} />
                       <Route path="queue" element={<QueuePage />} />
 
-                      <Route path="home" element={<HomeSection />} />
+                      <Route path="discover" element={<DiscoverSection />} />
 
                       <Route path="playlists" element={<PlaylistsPage />} />
                       <Route
@@ -126,8 +131,14 @@ export default function App() {
 
                       {/* Legacy tab URLs: tabs are in-page state now. */}
                       <Route
+                        path="home"
+                        element={<Navigate to="/discover" replace />}
+                      />
+                      <Route
                         path="home/listen"
-                        element={<LegacyTabRedirect to="/home" tab="listen" />}
+                        element={
+                          <LegacyTabRedirect to="/discover" tab="listen" />
+                        }
                       />
                       <Route
                         path="home/playlists"
@@ -139,7 +150,9 @@ export default function App() {
                       />
                       <Route
                         path="home/liked"
-                        element={<LegacyTabRedirect to="/home" tab="liked" />}
+                        element={
+                          <LegacyTabRedirect to="/discover" tab="liked" />
+                        }
                       />
                       <Route
                         path="library/albums"

@@ -66,9 +66,9 @@ export function Sidebar({
 
   const items: SidebarItem[] = [
     {
-      href: "/home",
-      match: "/home",
-      labelKey: "nav.home",
+      href: "/discover",
+      match: "/discover",
+      labelKey: "nav.discover",
       icon: AudioLines,
     },
     {
@@ -114,7 +114,7 @@ export function Sidebar({
       >
         {!collapsed ? (
           <Link
-            to="/home"
+            to="/discover"
             className="focus-visible:ring-ring rounded-md focus-visible:ring-2 focus-visible:outline-none"
           >
             <img src={logoSrc} alt="Sonect" className="h-8 w-auto" />

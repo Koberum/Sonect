@@ -20,7 +20,7 @@ export function MobileNav() {
     { href: "/player", labelKey: "nav.player", icon: Disc3 },
     { href: "/library", labelKey: "nav.library", icon: Library },
     { href: "/queue", labelKey: "nav.queue", icon: ListMusic },
-    { href: "/home", labelKey: "nav.home", icon: AudioLines },
+    { href: "/discover", labelKey: "nav.discover", icon: AudioLines },
     ...(isAdmin
       ? [{ href: "/settings", labelKey: "nav.settings", icon: Settings }]
       : []),

@@ -12,7 +12,7 @@
   },
   "nav": {
     "label": "Sezioni",
-    "home": "Home",
+    "discover": "Scopri",
     "library": "Libreria",
     "playlists": "Playlist",
     "player": "Riproduzione",
@@ -23,8 +23,8 @@
     "collapse": "Comprimi barra laterale",
     "expand": "Espandi barra laterale"
   },
-  "home": {
-    "title": "Home",
+  "discover": {
+    "title": "Scopri",
     "tabs": {
       "listen": "Ascolta Ora",
       "liked": "Preferiti"
