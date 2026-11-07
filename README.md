@@ -47,11 +47,11 @@ no subscriptions, no limits.
   genre, playlist, search, queue, now playing) adds a song to the signed-in
   profile's Liked Songs. Liked Songs has Play All and Shuffle and is scoped per
   household member; the old flat Tracks page is gone.
-- **Three-section navigation** — the desktop sidebar has Home, Library, and
-  Settings, each opening a page with horizontal tabs: Home holds Listen Now,
-  Playlists, and Liked Songs; Library holds Albums, Artists, Genres, and
-  Statistics; Settings (admins) holds Audio, Playback, Libraries, Appearance,
-  and Debug. Below 768px an icon-only bottom nav (Player, Library, Home,
+- **Section navigation** — the desktop sidebar has Home, Library, Queue, and
+  Settings. Home holds Listen Now, Playlists, and Liked Songs; Library holds
+  Albums, Artists, Genres, and Statistics; Queue is the sortable per-profile
+  play queue; Settings (admins) holds Audio, Playback, Libraries, Appearance,
+  and Debug. Below 768px an icon-only bottom nav (Player, Library, Queue, Home,
   Settings) switches between the full player at `/player` and the sections;
   the compact player bar is desktop-only.
 - **Playlists** — create and browse them from Home → Playlists. Playlists are
@@ -304,6 +304,10 @@ admin exists) are public; the remaining `/system/*` routes, `/profiles/*`, and
 | POST   | `/player/previous`                       | Previous track (per-profile)                                                                                                                                                                                                                       |
 | POST   | `/player/seek`                           | Seek to position (per-profile)                                                                                                                                                                                                                     |
 | GET    | `/player/queue`                          | Queue for this profile (browser: shared per profile, MPD: shared global)                                                                                                                                                                           |
+| POST   | `/player/queue`                          | Add a track to the queue (`{file}`)                                                                                                                                                                                                                |
+| PATCH  | `/player/queue/move`                     | Reorder the queue (`{from,to}`)                                                                                                                                                                                                                    |
+| DELETE | `/player/queue/:pos`                     | Remove one queue position                                                                                                                                                                                                                          |
+| DELETE | `/player/queue`                          | Clear the queue                                                                                                                                                                                                                                    |
 | PUT    | `/player/output-mode`                    | Switch `browser`↔`mpd` (per-profile, `mpd` locked → 423 if busy; `browser` with `X-Device-Id` hands off to that browser)                                                                                                                           |
 | PATCH  | `/player/volume`                         | Set volume (per-profile; browser stored in-memory and broadcast to active device)                                                                                                                                                                  |
 | GET    | `/stream/:trackId`                       | Stream an audio track by database ID (progressive HTTP Range incl. suffix, HEAD, ETag/Last-Modified)                                                                                                                                               |
