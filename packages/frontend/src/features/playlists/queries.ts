@@ -90,6 +90,9 @@ export const playlistMutations = {
         queryClient.invalidateQueries({
           queryKey: qk.playlists.detail(profileId, vars.playlistId),
         });
+        queryClient.invalidateQueries({
+          queryKey: qk.playlists.list(profileId),
+        });
       },
     }),
 

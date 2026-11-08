@@ -34,6 +34,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { usePlaybackContext } from "@/components/playback-context";
+import { useAuth } from "@/features/auth/auth-context";
 import { QueueTrackRow } from "@/features/queue/components/queue-track-row";
 import {
   clearQueue,
@@ -57,15 +58,13 @@ function reorderTracks(
 
 export default function QueuePage() {
   const { t } = useTranslation();
+  const { profile } = useAuth();
+  const profileId = profile?.id ?? "";
+  const queueKey = qk.player.queue(profileId);
   const { playbackStatus, applyPlaybackStatus } = usePlaybackContext();
   const qc = useQueryClient();
   const [isDragging, setIsDragging] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
-
-  const { data: queue = [], isPending } = useQuery({
-    ...playerQueries.queue(),
-    refetchInterval: isDragging ? false : 10_000,
-  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -78,61 +77,71 @@ export default function QueuePage() {
     mutationFn: ({ from, to }: { from: number; to: number }) =>
       moveQueueItem(from, to),
     onMutate: async ({ from, to }) => {
-      await qc.cancelQueries({ queryKey: qk.player.queue() });
-      const previous = qc.getQueryData<QueuedTrack[]>(qk.player.queue());
+      await qc.cancelQueries({ queryKey: queueKey });
+      const previous = qc.getQueryData<QueuedTrack[]>(queueKey);
       if (previous) {
-        qc.setQueryData(qk.player.queue(), reorderTracks(previous, from, to));
+        qc.setQueryData(queueKey, reorderTracks(previous, from, to));
       }
       return { previous };
     },
     onError: (_error, _variables, context) => {
       if (context?.previous) {
-        qc.setQueryData(qk.player.queue(), context.previous);
+        qc.setQueryData(queueKey, context.previous);
       }
       toast.error(t("queue.moveError"));
     },
     onSuccess: (status) => applyPlaybackStatus(status),
-    onSettled: () => qc.invalidateQueries({ queryKey: qk.player.queue() }),
+    onSettled: () => qc.invalidateQueries({ queryKey: queueKey }),
   });
 
   const removeMutation = useMutation({
     mutationFn: (pos: number) => removeFromQueue(pos),
     onMutate: async (pos) => {
-      await qc.cancelQueries({ queryKey: qk.player.queue() });
-      const previous = qc.getQueryData<QueuedTrack[]>(qk.player.queue());
+      await qc.cancelQueries({ queryKey: queueKey });
+      const previous = qc.getQueryData<QueuedTrack[]>(queueKey);
       if (previous) {
         const next = previous
           .filter((track) => track.pos !== pos)
           .map((track, index) => ({ ...track, pos: index }));
-        qc.setQueryData(qk.player.queue(), next);
+        qc.setQueryData(queueKey, next);
       }
       return { previous };
     },
     onError: (_error, _pos, context) => {
       if (context?.previous) {
-        qc.setQueryData(qk.player.queue(), context.previous);
+        qc.setQueryData(queueKey, context.previous);
       }
       toast.error(t("queue.removeError"));
     },
     onSuccess: (status) => applyPlaybackStatus(status),
-    onSettled: () => qc.invalidateQueries({ queryKey: qk.player.queue() }),
+    onSettled: () => qc.invalidateQueries({ queryKey: queueKey }),
   });
 
   const clearMutation = useMutation({
     mutationFn: () => clearQueue(),
     onSuccess: (status) => {
       applyPlaybackStatus(status);
-      qc.setQueryData(qk.player.queue(), []);
+      qc.setQueryData(queueKey, []);
       toast.success(t("queue.cleared"));
     },
     onError: () => toast.error(t("queue.clearError")),
-    onSettled: () => qc.invalidateQueries({ queryKey: qk.player.queue() }),
+    onSettled: () => qc.invalidateQueries({ queryKey: queueKey }),
+  });
+
+  const queueMutationPending =
+    moveMutation.isPending ||
+    removeMutation.isPending ||
+    clearMutation.isPending;
+
+  const { data: queue = [], isPending } = useQuery({
+    ...playerQueries.queue(profileId),
+    refetchInterval: isDragging || queueMutationPending ? false : 10_000,
   });
 
   const handlePlay = async (pos: number) => {
     try {
       applyPlaybackStatus(await playQueueItem(pos));
-      await qc.invalidateQueries({ queryKey: qk.player.queue() });
+      await qc.invalidateQueries({ queryKey: queueKey });
     } catch {
       toast.error(t("player.playbackError"));
     }

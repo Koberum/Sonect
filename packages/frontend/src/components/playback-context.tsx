@@ -76,9 +76,10 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     return getDeviceType();
   });
   const { isAuthenticated, profile } = useAuth();
+  const profileId = profile?.id ?? "";
   const { data: outputModeData } = useQuery({
-    ...playerQueries.outputMode(),
-    enabled: isAuthenticated,
+    ...playerQueries.outputMode(profileId),
+    enabled: isAuthenticated && !!profileId,
   });
   const hydratedModeRef = useRef(false);
   const [lastTrack, setLastTrack] = useState<TrackWithRelations | null>(null);

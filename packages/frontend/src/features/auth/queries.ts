@@ -30,8 +30,11 @@ export const authQueries = {
 
 export function clearProfileScopedQueries(): void {
   queryClient.removeQueries({ queryKey: qk.dashboardRoot() });
-  queryClient.removeQueries({ queryKey: qk.player.queue() });
-  queryClient.removeQueries({ queryKey: qk.player.outputMode() });
+  queryClient.removeQueries({ queryKey: qk.player.queueRoot() });
+  queryClient.removeQueries({ queryKey: qk.player.settingsRoot() });
+  queryClient.removeQueries({ queryKey: qk.player.outputModeRoot() });
+  queryClient.removeQueries({ queryKey: qk.likedRoot() });
+  queryClient.removeQueries({ queryKey: qk.playlistsRoot() });
 }
 
 function setAuthenticated(profile: AuthProfile): void {

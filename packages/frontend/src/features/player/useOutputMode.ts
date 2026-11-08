@@ -17,8 +17,9 @@ import { setOutputMode as apiSetOutputMode } from "./api";
 export function useOutputMode() {
   const { outputMode, setOutputMode } = usePlaybackContext();
   const { profile } = useAuth();
+  const profileId = profile?.id ?? "";
   const { t } = useTranslation();
-  const { data } = useQuery(playerQueries.outputMode());
+  const { data } = useQuery(playerQueries.outputMode(profileId));
 
   const mpdOwner = data?.mpdOwner ?? null;
   const isMpdLockedForMe =
@@ -29,11 +30,14 @@ export function useOutputMode() {
     setOutputMode(mode);
     try {
       await apiSetOutputMode(mode);
-      queryClient.invalidateQueries({ queryKey: qk.player.queue() });
-      queryClient.invalidateQueries({ queryKey: qk.player.outputMode() });
+      queryClient.invalidateQueries({ queryKey: qk.player.queueRoot() });
+      queryClient.invalidateQueries({ queryKey: qk.player.outputModeRoot() });
     } catch (error) {
       setOutputMode(previous);
       if (error instanceof ApiError && error.status === 423) {
+        queryClient.invalidateQueries({
+          queryKey: qk.player.outputModeRoot(),
+        });
         toast.error(t("player.outputInUseByOther"));
       } else {
         toast.error(t("player.outputModeError"));

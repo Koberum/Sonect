@@ -22,12 +22,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/features/auth/auth-context";
 import { playerMutations, playerQueries } from "@/features/player/queries";
 
 export function PlaybackTab() {
   const { t } = useTranslation();
-  const settingsQuery = useQuery(playerQueries.settings());
-  const saveMut = useMutation(playerMutations.setSettings());
+  const { profile } = useAuth();
+  const profileId = profile?.id ?? "";
+  const settingsQuery = useQuery(playerQueries.settings(profileId));
+  const saveMut = useMutation(playerMutations.setSettings(profileId));
   const [crossfade, setCrossfade] = useState(0);
   const [dirty, setDirty] = useState(false);
 
@@ -38,6 +41,7 @@ export function PlaybackTab() {
   }, [settingsQuery.data, dirty]);
 
   const handleSave = async () => {
+    if (!profileId) return;
     try {
       await saveMut.mutateAsync(crossfade);
       setDirty(false);

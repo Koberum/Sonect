@@ -1,6 +1,8 @@
 export const qk = {
   dashboardRoot: () => ["dashboard"] as const,
   dashboard: (profileId: string) => ["dashboard", profileId] as const,
+  playlistsRoot: () => ["playlists"] as const,
+  likedRoot: () => ["liked"] as const,
   catalog: {
     root: () => ["catalog"] as const,
     albumsInfinite: (sort: string) =>
@@ -30,10 +32,14 @@ export const qk = {
     list: (profileId: string) => ["liked", "list", profileId] as const,
   },
   player: {
-    queue: () => ["player", "queue"] as const,
+    queueRoot: () => ["player", "queue"] as const,
+    queue: (profileId: string) => ["player", "queue", profileId] as const,
     waveform: (trackId: number) => ["player", "waveform", trackId] as const,
-    settings: () => ["player", "settings"] as const,
-    outputMode: () => ["player", "outputMode"] as const,
+    settingsRoot: () => ["player", "settings"] as const,
+    settings: (profileId: string) => ["player", "settings", profileId] as const,
+    outputModeRoot: () => ["player", "outputMode"] as const,
+    outputMode: (profileId: string) =>
+      ["player", "outputMode", profileId] as const,
   },
   system: {
     audioDevices: () => ["system", "audio", "devices"] as const,
