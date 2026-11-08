@@ -128,7 +128,7 @@ export class CatalogServiceImpl implements CatalogService {
 
   public searchTracks(query: string): SearchResults {
     const q = query.toLowerCase();
-    const matchedArtists = artistsDb.search(q, undefined, {
+    const matchedArtists = artistsDb.search(q, 5, {
       withAlbumsOnly: true,
     });
     const previews = albumsDb.getCoverPreviewsForArtists(
@@ -138,9 +138,9 @@ export class CatalogServiceImpl implements CatalogService {
       ...artist,
       coverPreviews: previews.get(artist.id) ?? [],
     }));
-    const albums = albumsDb.search(q);
-    const tracks = tracksDb.search(query);
-    const genres = genresDb.search(q);
+    const albums = albumsDb.search(q, 5);
+    const tracks = tracksDb.search(query, 10);
+    const genres = genresDb.search(q, 5);
     return { artists, albums, tracks, genres };
   }
 
