@@ -16,6 +16,8 @@ import {
 
 import { useEffect, useState } from "react";
 import { useMediaQuery } from "react-responsive";
+import { usePlaybackContext } from "@/components/playback-context";
+import { usePlayerEngine } from "../player-engine-context";
 
 interface VolumeControlsProps {
   volume: number;
@@ -141,5 +143,26 @@ export default function VolumeControls({
         className="w-20"
       />
     </div>
+  );
+}
+
+/**
+ * Player-aware volume control: the active browser commits to its local engine,
+ * passive devices and MPD commit through the shared player API.
+ */
+export function PlayerVolumeControls({
+  fullWidth = false,
+}: {
+  fullWidth?: boolean;
+}) {
+  const { playbackStatus } = usePlaybackContext();
+  const { isActiveBrowser, volume, setVolume } = usePlayerEngine();
+
+  return (
+    <VolumeControls
+      volume={isActiveBrowser ? volume : playbackStatus.volume}
+      onVolumeCommit={isActiveBrowser ? setVolume : undefined}
+      fullWidth={fullWidth}
+    />
   );
 }

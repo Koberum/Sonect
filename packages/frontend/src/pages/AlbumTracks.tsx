@@ -3,16 +3,13 @@ import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "react-i18next";
 import { useParams, Link } from "react-router-dom";
 import { getCoverPath } from "@/lib/utils";
-import { Table, TableBody } from "@/components/ui/table";
 import { Library } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
-import { TrackRow } from "@/features/tracks/components/track-row";
-import { TrackTableHeader } from "@/features/tracks/components/track-table-header";
+import { TrackTable } from "@/features/tracks/components/track-table";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
-import type { TrackWithRelations } from "@repo/types/catalog";
 import {
   deriveAlbumMetadata,
   formatAlbumDuration,
@@ -121,26 +118,11 @@ export default function AlbumPage() {
       />
       <Separator className="my-4" />
       <div className="relative">
-        {isPending ? (
-          <div className="space-y-2">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full rounded-lg" />
-            ))}
-          </div>
-        ) : (
-          <Table>
-            <TrackTableHeader />
-            <TableBody>
-              {tracks.map((track: TrackWithRelations, index) => (
-                <TrackRow
-                  key={track.id}
-                  track={track}
-                  number={track.track_number ?? index + 1}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        <TrackTable
+          tracks={tracks}
+          isPending={isPending}
+          getNumber={(track, index) => track.track_number ?? index + 1}
+        />
       </div>
     </>
   );

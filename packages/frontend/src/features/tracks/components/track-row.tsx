@@ -6,7 +6,8 @@ import { usePlaybackContext } from "@/components/playback-context";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { useTrackDrag } from "@/features/playlists/playlist-drop-context";
 import { setTrackDragData } from "@/features/playlists/track-drag";
-import { cn, formatTime, getCoverPath } from "@/lib/utils";
+import { cn, getCoverPath } from "@/lib/utils";
+import { formatTime } from "@/lib/format";
 
 interface TrackRowProps {
   track: TrackWithRelations;

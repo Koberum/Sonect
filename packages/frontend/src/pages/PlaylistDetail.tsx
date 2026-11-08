@@ -7,7 +7,6 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody } from "@/components/ui/table";
 import { Trash2, Play, Edit3, ListMusic } from "lucide-react";
 import type { PlaylistTrack } from "@repo/types/catalog";
 import { toast } from "sonner";
@@ -41,8 +40,7 @@ import {
   playlistQueries,
   playlistMutations,
 } from "@/features/playlists/queries";
-import { TrackRow } from "@/features/tracks/components/track-row";
-import { TrackTableHeader } from "@/features/tracks/components/track-table-header";
+import { TrackTable } from "@/features/tracks/components/track-table";
 
 export default function PlaylistDetail() {
   const { t } = useTranslation();
@@ -267,22 +265,14 @@ export default function PlaylistDetail() {
       <Separator className="my-4" />
 
       {playlist.tracks.length > 0 ? (
-        <Table>
-          <TrackTableHeader />
-          <TableBody>
-            {playlist.tracks.map((track, index) => (
-              <TrackRow
-                key={track.pt_id ?? track.id}
-                track={track}
-                number={index + 1}
-                showCover
-                onPlay={() => void handlePlay(track)}
-                onRemove={() => void handleRemoveTrack(track.pt_id)}
-                removeLabel={t("playlist.removeTrack")}
-              />
-            ))}
-          </TableBody>
-        </Table>
+        <TrackTable<PlaylistTrack>
+          tracks={playlist.tracks}
+          getKey={(track) => track.pt_id ?? track.id}
+          showCover
+          onPlay={(track) => void handlePlay(track)}
+          onRemove={(track) => void handleRemoveTrack(track.pt_id)}
+          removeLabel={t("playlist.removeTrack")}
+        />
       ) : (
         <EmptyState icon={ListMusic} title={t("playlist.emptyDescription")} />
       )}

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
 import { useNavigate } from "react-router-dom";
 import { EmptyState } from "@/components/ui/empty-state";
+import { MediaGrid } from "@/features/catalog/components/media-grid";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   SelectableRow,
@@ -20,17 +21,17 @@ export default function Genres() {
   return (
     <div>
       {isPending ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <MediaGrid className="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-24 w-full rounded-xl" />
           ))}
-        </div>
+        </MediaGrid>
       ) : (
         <>
           {genres.length === 0 && (
             <EmptyState icon={Music} title={t("genres.noGenres")} />
           )}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <MediaGrid className="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4">
             {genres.map((g) => (
               <SelectableRow
                 key={g.id}
@@ -61,7 +62,7 @@ export default function Genres() {
                 </div>
               </SelectableRow>
             ))}
-          </div>
+          </MediaGrid>
         </>
       )}
     </div>

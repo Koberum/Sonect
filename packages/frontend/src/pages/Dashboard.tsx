@@ -1,17 +1,30 @@
 import { useTranslation } from "react-i18next";
+import { useEffect, type ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/auth-context";
 import { usePlaybackContext } from "@/components/playback-context";
-import { useEffect } from "react";
 import { AlbumCard } from "@/features/catalog/components/media-card/album-card";
 import { ArtistCard } from "@/features/catalog/components/media-card/artist-card";
 import { TrackCard } from "@/features/catalog/components/media-card/track-card";
-import { ScrollBar, ScrollArea } from "@/components/ui/scroll-area";
+import { MediaCarousel } from "@/features/catalog/components/media-carousel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { systemQueries } from "@/features/system/queries";
 import { qk } from "@/lib/queryKeys";
+
+function CarouselSection<T>({
+  title,
+  items,
+  renderItem,
+}: {
+  title: string;
+  items: T[] | undefined;
+  renderItem: (item: T) => ReactNode;
+}) {
+  if (!items?.length) return null;
+  return <MediaCarousel title={title}>{items.map(renderItem)}</MediaCarousel>;
+}
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -33,127 +46,69 @@ export default function Dashboard() {
 
   if (isPending && !data) {
     return (
-      <div>
-        <div className="space-y-8">
-          {Array.from({ length: 3 }).map((_, section) => (
-            <div key={section} className="space-y-2">
-              <Skeleton className="h-4 w-40" />
-              <div className="flex gap-4 overflow-hidden">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <Skeleton
-                    key={i}
-                    className="aspect-square w-44 shrink-0 rounded-lg"
-                  />
-                ))}
-              </div>
+      <div className="space-y-8">
+        {Array.from({ length: 3 }).map((_, section) => (
+          <div key={section} className="space-y-2">
+            <Skeleton className="h-4 w-40" />
+            <div className="flex gap-4 overflow-hidden">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <Skeleton
+                  key={index}
+                  className="aspect-square w-44 shrink-0 rounded-lg"
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     );
   }
 
   return (
     <div>
-      {data?.recentlyPlayedAlbums && data.recentlyPlayedAlbums.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-muted-foreground mb-2 text-sm font-medium tracking-wider uppercase">
-            {t("dashboard.recentlyPlayedAlbums")}
-          </h2>
-          <ScrollArea type="always" className="w-full">
-            <div className="flex gap-4 pb-4">
-              {data.recentlyPlayedAlbums.map((album) => (
-                <AlbumCard
-                  key={album.id}
-                  album={album}
-                  className="w-44 shrink-0"
-                />
-              ))}
-            </div>
-            <ScrollBar orientation="horizontal" className="hidden" />
-          </ScrollArea>
-        </div>
-      )}
+      <CarouselSection
+        title={t("dashboard.recentlyPlayedAlbums")}
+        items={data?.recentlyPlayedAlbums}
+        renderItem={(album) => (
+          <AlbumCard key={album.id} album={album} className="w-44 shrink-0" />
+        )}
+      />
 
-      {data?.recentlyPlayedArtists && data.recentlyPlayedArtists.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-muted-foreground mb-2 text-sm font-medium tracking-wider uppercase">
-            {t("dashboard.recentlyPlayedArtists")}
-          </h2>
-          <ScrollArea type="always" className="w-full">
-            <div className="flex gap-4 pb-4">
-              {data.recentlyPlayedArtists.map((artist) => (
-                <ArtistCard
-                  key={artist.id}
-                  artist={artist}
-                  className="w-44 shrink-0"
-                />
-              ))}
-            </div>
-            <ScrollBar orientation="horizontal" className="hidden" />
-          </ScrollArea>
-        </div>
-      )}
+      <CarouselSection
+        title={t("dashboard.recentlyPlayedArtists")}
+        items={data?.recentlyPlayedArtists}
+        renderItem={(artist) => (
+          <ArtistCard
+            key={artist.id}
+            artist={artist}
+            className="w-44 shrink-0"
+          />
+        )}
+      />
 
-      {data?.recentlyPlayed && data.recentlyPlayed.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-muted-foreground mb-2 text-sm font-medium tracking-wider uppercase">
-            {t("dashboard.recentlyPlayed")}
-          </h2>
-          <ScrollArea type="always" className="w-full">
-            <div className="flex gap-4 pb-4">
-              {data.recentlyPlayed.map((track) => (
-                <TrackCard
-                  key={track.id}
-                  track={track}
-                  className="w-44 shrink-0"
-                />
-              ))}
-            </div>
-            <ScrollBar orientation="horizontal" className="hidden" />
-          </ScrollArea>
-        </div>
-      )}
+      <CarouselSection
+        title={t("dashboard.recentlyPlayed")}
+        items={data?.recentlyPlayed}
+        renderItem={(track) => (
+          <TrackCard key={track.id} track={track} className="w-44 shrink-0" />
+        )}
+      />
 
-      {data?.topTracks && data.topTracks.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-muted-foreground mb-2 text-sm font-medium tracking-wider uppercase">
-            {t("dashboard.topTracks")}
-          </h2>
-          <ScrollArea type="always" className="w-full">
-            <div className="flex gap-4 pb-4">
-              {data.topTracks.map((track) => (
-                <TrackCard
-                  key={track.id}
-                  track={track}
-                  className="w-44 shrink-0"
-                />
-              ))}
-            </div>
-            <ScrollBar orientation="horizontal" className="hidden" />
-          </ScrollArea>
-        </div>
-      )}
+      <CarouselSection
+        title={t("dashboard.topTracks")}
+        items={data?.topTracks}
+        renderItem={(track) => (
+          <TrackCard key={track.id} track={track} className="w-44 shrink-0" />
+        )}
+      />
 
-      {data?.suggestedTracks && data.suggestedTracks.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-muted-foreground mb-2 text-sm font-medium tracking-wider uppercase">
-            {t("dashboard.suggestedForYou")}
-          </h2>
-          <ScrollArea type="always" className="w-full">
-            <div className="flex gap-4 pb-4">
-              {data.suggestedTracks.map((track) => (
-                <TrackCard
-                  key={track.id}
-                  track={track}
-                  className="w-44 shrink-0"
-                />
-              ))}
-            </div>
-            <ScrollBar orientation="horizontal" className="hidden" />
-          </ScrollArea>
-        </div>
-      )}
+      <CarouselSection
+        title={t("dashboard.suggestedForYou")}
+        items={data?.suggestedTracks}
+        renderItem={(track) => (
+          <TrackCard key={track.id} track={track} className="w-44 shrink-0" />
+        )}
+      />
 
       {data?.genreQuickMix && data.genreQuickMix.tracks.length > 0 && (
         <div className="mb-8">

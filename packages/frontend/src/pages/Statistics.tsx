@@ -14,22 +14,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { catalogQueries } from "@/features/catalog/queries";
-
-function formatDuration(seconds: number): string {
-  if (seconds === 0) return "0m";
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
-}
-
-function formatAvgDuration(seconds: number): string {
-  if (seconds === 0) return "0s";
-  const minutes = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  if (minutes > 0) return `${minutes}m ${secs}s`;
-  return `${secs}s`;
-}
+import { formatAvgDuration, formatDuration } from "@/lib/format";
 
 function formatDate(
   isoString: string | null,

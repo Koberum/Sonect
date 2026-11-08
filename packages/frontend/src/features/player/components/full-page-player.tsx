@@ -1,41 +1,16 @@
-import type { PlaybackStatus } from "@repo/types";
 import { PlaybackControls } from "./playback-controls";
 import { PlaybackWaveform } from "./playback-waveform";
 import { usePlaybackContext } from "@/components/playback-context";
 import { getCoverPath } from "@/lib/utils";
-import {
-  playSong,
-  pauseSong,
-  resumeSong,
-  nextTrack,
-  previousTrack,
-  setRandom,
-  setRepeat,
-} from "@/features/player/api";
-import VolumeControls from "./volume-controls";
 import { PlaybackErrorNotice } from "./playback-error";
 import { LikeButton } from "@/features/liked/components/like-button";
 import { usePlayerEngine } from "../player-engine-context";
-import { useOutputMode } from "../useOutputMode";
 import { OutputSelector } from "./output-selector";
+import { PlayerVolumeControls } from "./volume-controls";
 
 export function FullPagePlayer() {
-  const {
-    trackPlayed,
-    playbackStatus,
-    applyPlaybackStatus,
-    activeDeviceId,
-    activeDeviceName,
-    activeDeviceType,
-    myDeviceId,
-  } = usePlaybackContext();
-  const { isActiveBrowser, displayElapsed, volume, setVolume } =
-    usePlayerEngine();
-  const { outputMode, deviceName, isMpdLockedForMe, changeOutputMode } =
-    useOutputMode();
-
-  const doToggle = (fn: () => Promise<PlaybackStatus>) =>
-    fn().then(applyPlaybackStatus);
+  const { trackPlayed, playbackStatus } = usePlaybackContext();
+  const { displayElapsed } = usePlayerEngine();
 
   if (!trackPlayed) return null;
 
@@ -63,16 +38,7 @@ export function FullPagePlayer() {
           <LikeButton
             trackId={trackPlayed.id ?? playbackStatus.track?.id ?? null}
           />
-          <OutputSelector
-            currentMode={outputMode}
-            onModeChange={changeOutputMode}
-            deviceName={deviceName}
-            disabledMpd={isMpdLockedForMe}
-            activeDeviceId={activeDeviceId}
-            activeDeviceName={activeDeviceName}
-            activeDeviceType={activeDeviceType}
-            myDeviceId={myDeviceId}
-          />
+          <OutputSelector />
         </div>
 
         <PlaybackErrorNotice
@@ -115,35 +81,13 @@ export function FullPagePlayer() {
         <div className="flex shrink-0 justify-center">
           <PlaybackControls
             playbackStatus={playbackStatus}
-            playTrack={() => {
-              if (trackPlayed) {
-                void playSong(trackPlayed).then(applyPlaybackStatus);
-              }
-            }}
-            pauseTrack={() => {
-              void pauseSong().then(applyPlaybackStatus);
-            }}
-            resumeTrack={() => {
-              void resumeSong().then(applyPlaybackStatus);
-            }}
-            nextTrack={() => {
-              void nextTrack().then(applyPlaybackStatus);
-            }}
-            previousTrack={() => {
-              void previousTrack().then(applyPlaybackStatus);
-            }}
-            setRandom={(enabled) => doToggle(() => setRandom(enabled))}
-            setRepeat={(enabled) => doToggle(() => setRepeat(enabled))}
+            track={trackPlayed}
             size="large"
           />
         </div>
 
         <div className="w-full shrink-0">
-          <VolumeControls
-            volume={isActiveBrowser ? volume : playbackStatus.volume}
-            onVolumeCommit={isActiveBrowser ? setVolume : undefined}
-            fullWidth
-          />
+          <PlayerVolumeControls fullWidth />
         </div>
       </div>
     </div>

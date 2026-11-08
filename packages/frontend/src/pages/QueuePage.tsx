@@ -32,7 +32,7 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { usePlaybackContext } from "@/components/playback-context";
 import { QueueTrackRow } from "@/features/queue/components/queue-track-row";
 import {
@@ -177,11 +177,11 @@ export default function QueuePage() {
       />
 
       {isPending ? (
-        <div className="space-y-1" aria-hidden>
-          {Array.from({ length: 6 }).map((_, index) => (
-            <Skeleton key={index} className="h-14 w-full rounded-lg" />
-          ))}
-        </div>
+        <ListSkeleton
+          rows={6}
+          className="space-y-1"
+          itemClassName="h-14 w-full rounded-lg"
+        />
       ) : queue.length === 0 ? (
         <EmptyState
           icon={ListMusic}

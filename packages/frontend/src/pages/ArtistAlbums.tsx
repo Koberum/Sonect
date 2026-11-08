@@ -1,4 +1,5 @@
 import { AlbumCard } from "@/features/catalog/components/media-card/album-card";
+import { MediaGrid } from "@/features/catalog/components/media-grid";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -47,11 +48,11 @@ export function ArtistAlbums() {
         description={t("artist.description")}
       />
       {isPending ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <MediaGrid>
           {Array.from({ length: 12 }).map((_, i) => (
             <Skeleton key={i} className="aspect-square w-full rounded-lg" />
           ))}
-        </div>
+        </MediaGrid>
       ) : (
         <>
           <SortTabs
@@ -63,11 +64,11 @@ export function ArtistAlbums() {
           {sortedAlbums.length === 0 ? (
             <EmptyState icon={Disc3} title={t("albums.noAlbums")} />
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            <MediaGrid>
               {sortedAlbums.map((album) => (
                 <AlbumCard key={album.id} album={album} className="w-full" />
               ))}
-            </div>
+            </MediaGrid>
           )}
         </>
       )}

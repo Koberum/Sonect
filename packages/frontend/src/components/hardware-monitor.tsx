@@ -2,19 +2,10 @@ import { useTranslation } from "react-i18next";
 import { Cpu, MemoryStick } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { systemQueries } from "@/features/system/queries";
-import { formatBytes } from "@/lib/format";
+import { formatBytes, formatUptime } from "@/lib/format";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-
-function formatUptime(seconds: number): string {
-  const d = Math.floor(seconds / 86400);
-  const h = Math.floor((seconds % 86400) / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (d > 0) return `${d}d ${h}h ${m}m`;
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m`;
-}
 
 export function HardwareMonitor() {
   const { t } = useTranslation();

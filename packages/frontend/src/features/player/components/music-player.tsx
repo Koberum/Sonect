@@ -1,41 +1,15 @@
-import {
-  nextTrack,
-  pauseSong,
-  playSong,
-  previousTrack,
-  resumeSong,
-  setRandom,
-  setRepeat,
-} from "@/features/player/api";
 import { usePlaybackContext } from "@/components/playback-context";
-import type { PlaybackStatus } from "@repo/types";
 import { usePlayerEngine } from "../player-engine-context";
-import { useOutputMode } from "../useOutputMode";
 import { PlaybackControls } from "./playback-controls";
 import { PlaybackErrorNotice } from "./playback-error";
 import { PlaybackWaveform } from "./playback-waveform";
 import { PlayedTrack } from "./playback-track";
 import { OutputSelector } from "./output-selector";
-import VolumeControls from "./volume-controls";
+import { PlayerVolumeControls } from "./volume-controls";
 
 export default function MusicPlayer() {
-  const {
-    trackPlayed,
-    playbackStatus,
-    applyPlaybackStatus,
-    activeDeviceId,
-    activeDeviceName,
-    activeDeviceType,
-    myDeviceId,
-  } = usePlaybackContext();
-  const { isActiveBrowser, displayElapsed, volume, setVolume } =
-    usePlayerEngine();
-  const { outputMode, deviceName, isMpdLockedForMe, changeOutputMode } =
-    useOutputMode();
-
-  const run = (action: () => Promise<PlaybackStatus>) => {
-    void action().then(applyPlaybackStatus);
-  };
+  const { trackPlayed, playbackStatus } = usePlaybackContext();
+  const { displayElapsed } = usePlayerEngine();
 
   return (
     <div className="bg-card border-border relative z-30 shrink-0 border-t">
@@ -47,15 +21,7 @@ export default function MusicPlayer() {
         <div className="flex flex-1 flex-col items-center gap-2">
           <PlaybackControls
             playbackStatus={playbackStatus}
-            playTrack={() => {
-              if (trackPlayed) run(() => playSong(trackPlayed));
-            }}
-            pauseTrack={() => run(() => pauseSong())}
-            resumeTrack={() => run(() => resumeSong())}
-            nextTrack={() => run(() => nextTrack())}
-            previousTrack={() => run(() => previousTrack())}
-            setRandom={(enabled) => run(() => setRandom(enabled))}
-            setRepeat={(enabled) => run(() => setRepeat(enabled))}
+            track={trackPlayed}
           />
           <PlaybackWaveform
             elapsed={displayElapsed}
@@ -65,20 +31,8 @@ export default function MusicPlayer() {
           />
         </div>
         <div className="flex flex-1 items-center justify-end gap-2 pr-4">
-          <OutputSelector
-            currentMode={outputMode}
-            onModeChange={changeOutputMode}
-            deviceName={deviceName}
-            disabledMpd={isMpdLockedForMe}
-            activeDeviceId={activeDeviceId}
-            activeDeviceName={activeDeviceName}
-            activeDeviceType={activeDeviceType}
-            myDeviceId={myDeviceId}
-          />
-          <VolumeControls
-            volume={isActiveBrowser ? volume : playbackStatus.volume}
-            onVolumeCommit={isActiveBrowser ? setVolume : undefined}
-          />
+          <OutputSelector />
+          <PlayerVolumeControls />
         </div>
       </div>
     </div>

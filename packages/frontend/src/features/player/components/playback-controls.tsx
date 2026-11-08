@@ -1,4 +1,5 @@
 import type { PlaybackStatus } from "@repo/types";
+import type { Track } from "@repo/types/catalog";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,33 +10,24 @@ import {
   SkipForwardIcon,
   RepeatIcon,
 } from "lucide-react";
+import { usePlayerCommands } from "../usePlayerCommands";
 
-type PlaybackControls = {
+type PlaybackControlsProps = {
   playbackStatus: PlaybackStatus;
-  playTrack(): void;
-  pauseTrack(): void;
-  resumeTrack(): void;
-  nextTrack(): void;
-  previousTrack(): void;
-  setRandom(status: boolean): void;
-  setRepeat(status: boolean): void;
+  track?: Track | null;
   className?: string;
   size?: "default" | "large";
 };
 
 export function PlaybackControls({
   playbackStatus,
-  playTrack,
-  pauseTrack,
-  resumeTrack,
-  nextTrack,
-  previousTrack,
-  setRandom,
-  setRepeat,
+  track,
   className,
   size = "default",
-}: PlaybackControls): React.ReactElement {
+}: PlaybackControlsProps): React.ReactElement {
   const { t } = useTranslation();
+  const { play, pause, resume, next, previous, toggleRandom, toggleRepeat } =
+    usePlayerCommands();
   const isLarge = size === "large";
   const actionSize = isLarge ? "icon-lg" : "icon-sm";
   const mainIcon = isLarge ? "size-7" : "size-5";
@@ -44,9 +36,9 @@ export function PlaybackControls({
   const btnActive = "text-primary hover:text-primary";
 
   const handleMain = () => {
-    if (playbackStatus.state === "play") return pauseTrack();
-    if (playbackStatus.state === "pause") return resumeTrack();
-    return playTrack();
+    if (playbackStatus.state === "play") return pause();
+    if (playbackStatus.state === "pause") return resume();
+    return play(track ?? playbackStatus.track);
   };
 
   return (
@@ -62,7 +54,7 @@ export function PlaybackControls({
           className={playbackStatus.random ? btnActive : btnBase}
           aria-label={t("player.shuffle")}
           onClick={() => {
-            setRandom(!playbackStatus.random);
+            toggleRandom(!playbackStatus.random);
           }}
         >
           <ShuffleIcon className="size-5" />
@@ -73,7 +65,7 @@ export function PlaybackControls({
           size={actionSize}
           className={btnBase}
           aria-label={t("player.previous")}
-          onClick={previousTrack}
+          onClick={previous}
         >
           <SkipBackIcon className="size-5" />
         </Button>
@@ -105,7 +97,7 @@ export function PlaybackControls({
           size={actionSize}
           className={btnBase}
           aria-label={t("player.next")}
-          onClick={nextTrack}
+          onClick={next}
         >
           <SkipForwardIcon className="size-5" />
         </Button>
@@ -116,7 +108,7 @@ export function PlaybackControls({
           className={playbackStatus.repeat ? btnActive : btnBase}
           aria-label={t("player.repeat")}
           onClick={() => {
-            setRepeat(!playbackStatus.repeat);
+            toggleRepeat(!playbackStatus.repeat);
           }}
         >
           <RepeatIcon className="size-5" />

@@ -3,12 +3,11 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { AlbumCard } from "@/features/catalog/components/media-card/album-card";
+import { MediaGrid } from "@/features/catalog/components/media-grid";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody } from "@/components/ui/table";
 import { Disc3, Music } from "lucide-react";
-import { TrackRow } from "@/features/tracks/components/track-row";
-import { TrackTableHeader } from "@/features/tracks/components/track-table-header";
+import { TrackTable } from "@/features/tracks/components/track-table";
 import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
 
@@ -57,28 +56,20 @@ export default function GenreDetail() {
           {albums.length === 0 && (
             <EmptyState icon={Disc3} title={t("albums.noAlbums")} />
           )}
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <MediaGrid>
             {albums.map((album) => (
               <AlbumCard key={album.id} album={album} className="w-full" />
             ))}
-          </div>
+          </MediaGrid>
         </TabsContent>
         <TabsContent value="tracks" className="mt-4">
           {tracks.length === 0 && (
             <EmptyState icon={Music} title={t("tracks.noTracks")} />
           )}
-          <Table>
-            <TrackTableHeader />
-            <TableBody>
-              {tracks.map((track, index) => (
-                <TrackRow
-                  key={track.id}
-                  track={track}
-                  number={track.track_number ?? index + 1}
-                />
-              ))}
-            </TableBody>
-          </Table>
+          <TrackTable
+            tracks={tracks}
+            getNumber={(track, index) => track.track_number ?? index + 1}
+          />
         </TabsContent>
       </Tabs>
     </div>

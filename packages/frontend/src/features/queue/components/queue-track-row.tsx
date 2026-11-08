@@ -6,7 +6,8 @@ import type { QueuedTrack } from "@repo/types";
 import { Button } from "@/components/ui/button";
 import { LikeButton } from "@/features/liked/components/like-button";
 import PlayStatus from "@/features/player/components/play-status";
-import { cn, formatTime, getCoverPath } from "@/lib/utils";
+import { cn, getCoverPath } from "@/lib/utils";
+import { formatTime } from "@/lib/format";
 
 interface QueueTrackRowProps {
   track: QueuedTrack;

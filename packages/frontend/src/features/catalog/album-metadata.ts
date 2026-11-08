@@ -1,4 +1,5 @@
 import type { Album, TrackWithRelations } from "@repo/types/catalog";
+import { parseYear } from "@/lib/utils";
 
 export type AlbumMetadata = {
   year?: number;
@@ -9,10 +10,10 @@ export type AlbumMetadata = {
   sourceNames: string[];
 };
 
-function parseYear(value: string | undefined): number | undefined {
-  const match = value?.match(/\b(\d{4})\b/);
-  if (!match) return undefined;
-  const year = Number(match[1]);
+function parseYearNumber(value?: string): number | undefined {
+  const raw = parseYear(value);
+  if (!raw) return undefined;
+  const year = Number(raw);
   return Number.isFinite(year) && year > 0 ? year : undefined;
 }
 
@@ -28,7 +29,7 @@ export function deriveAlbumMetadata(
   tracks: TrackWithRelations[],
 ): AlbumMetadata {
   const trackYears = tracks
-    .map((track) => parseYear(track.date))
+    .map((track) => parseYearNumber(track.date))
     .filter((year): year is number => year !== undefined);
 
   const genres = tracks

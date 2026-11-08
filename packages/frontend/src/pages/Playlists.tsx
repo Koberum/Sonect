@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PlaylistCard } from "@/features/catalog/components/media-card/playlist-card";
+import { MediaGrid } from "@/features/catalog/components/media-grid";
 import { useQuery } from "@tanstack/react-query";
 import { ListMusic, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { QueryError } from "@/components/ui/query-error";
 import { Skeleton } from "@/components/ui/skeleton";
 import { playlistQueries } from "@/features/playlists/queries";
 import { CreatePlaylistDialog } from "@/features/playlists/components/create-playlist-dialog";
@@ -43,12 +45,10 @@ export default function Playlists() {
           ))}
         </div>
       ) : isError ? (
-        <div className="border-destructive/40 bg-destructive/5 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
-          <p className="text-destructive text-sm">{t("playlist.loadError")}</p>
-          <Button variant="outline" size="sm" onClick={() => void refetch()}>
-            {t("common.retry")}
-          </Button>
-        </div>
+        <QueryError
+          message={t("playlist.loadError")}
+          onRetry={() => void refetch()}
+        />
       ) : playlists.length === 0 ? (
         <EmptyState
           icon={ListMusic}
@@ -62,7 +62,7 @@ export default function Playlists() {
           }
         />
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <MediaGrid>
           {playlists.map((playlist) => (
             <PlaylistCard
               key={playlist.id}
@@ -70,7 +70,7 @@ export default function Playlists() {
               className="w-full"
             />
           ))}
-        </div>
+        </MediaGrid>
       )}
 
       <CreatePlaylistDialog open={createOpen} onOpenChange={setCreateOpen} />

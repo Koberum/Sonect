@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import { goToPosition } from "@/features/player/api";
-import { formatTime } from "@/lib/utils";
+import { formatTime } from "@/lib/format";
 import { Waveform } from "@/components/waveform";
 import { useQuery } from "@tanstack/react-query";
 import { playerQueries } from "@/features/player/queries";

@@ -10,40 +10,27 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Speaker, Laptop, Smartphone } from "lucide-react";
-import type { OutputMode } from "@repo/types";
 import { useTranslation } from "react-i18next";
 import { getDeviceName, getDeviceType } from "@/lib/deviceId";
+import { usePlaybackContext } from "@/components/playback-context";
+import { useOutputMode } from "../useOutputMode";
 
 type DeviceValue = "mpd" | "this-browser" | "remote-browser";
 
-interface OutputSelectorProps {
-  currentMode: OutputMode;
-  onModeChange: (mode: OutputMode) => void;
-  deviceName: string | null;
-  disabled?: boolean;
-  disabledMpd?: boolean;
-  activeDeviceId?: string | null;
-  activeDeviceName?: string | null;
-  activeDeviceType?: string | null;
-  myDeviceId?: string;
-}
-
-export function OutputSelector({
-  currentMode,
-  onModeChange,
-  deviceName,
-  disabled,
-  disabledMpd,
-  activeDeviceId,
-  activeDeviceName,
-  activeDeviceType,
-  myDeviceId,
-}: OutputSelectorProps) {
+/**
+ * Output picker shared by both player views. It reads the profile's mode,
+ * configured speaker name and active browser device from the player state.
+ */
+export function OutputSelector({ disabled }: { disabled?: boolean }) {
   const { t } = useTranslation();
+  const { activeDeviceId, activeDeviceName, activeDeviceType, myDeviceId } =
+    usePlaybackContext();
+  const { outputMode, deviceName, isMpdLockedForMe, changeOutputMode } =
+    useOutputMode();
   const [open, setOpen] = useState(false);
 
   const isPlayingElsewhere =
-    currentMode === "browser" &&
+    outputMode === "browser" &&
     !!activeDeviceId &&
     activeDeviceId !== myDeviceId;
 
@@ -54,7 +41,7 @@ export function OutputSelector({
   const RemoteBrowserIcon = remoteType === "mobile" ? Smartphone : Laptop;
 
   const selectedValue: DeviceValue =
-    currentMode === "mpd"
+    outputMode === "mpd"
       ? "mpd"
       : isPlayingElsewhere
         ? "remote-browser"
@@ -80,20 +67,20 @@ export function OutputSelector({
           value={selectedValue}
           onValueChange={(val) => {
             const v = val as DeviceValue;
-            if (v === "mpd") onModeChange("mpd");
-            else if (v === "this-browser") onModeChange("browser");
+            if (v === "mpd") changeOutputMode("mpd");
+            else if (v === "this-browser") changeOutputMode("browser");
             // remote-browser is disabled (highlight only)
             setOpen(false);
           }}
         >
-          <DropdownMenuRadioItem value="mpd" disabled={!!disabledMpd}>
+          <DropdownMenuRadioItem value="mpd" disabled={isMpdLockedForMe}>
             <span className="flex items-center gap-2">
               <Speaker className="size-4 shrink-0" />
               <span className="flex flex-col">
                 <span className="text-sm leading-none">
                   {t("player.outputSpeakers")}
                 </span>
-                {disabledMpd ? (
+                {isMpdLockedForMe ? (
                   <span className="text-muted-foreground text-xs leading-none">
                     {t("player.outputInUse")}
                   </span>
