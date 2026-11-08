@@ -6,7 +6,6 @@ import { PlaybackErrorNotice } from "./playback-error";
 import { LikeButton } from "@/features/liked/components/like-button";
 import { usePlayerEngine } from "../player-engine-context";
 import { OutputSelector } from "./output-selector";
-import { PlayerVolumeControls } from "./volume-controls";
 
 export function FullPagePlayer() {
   const { trackPlayed, playbackStatus } = usePlaybackContext();
@@ -84,10 +83,6 @@ export function FullPagePlayer() {
             track={trackPlayed}
             size="large"
           />
-        </div>
-
-        <div className="w-full shrink-0">
-          <PlayerVolumeControls fullWidth />
         </div>
       </div>
     </div>
