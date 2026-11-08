@@ -1,5 +1,3 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useMediaQuery } from "react-responsive";
 import { useTranslation } from "react-i18next";
 import { Check, Laptop, Smartphone, Speaker } from "lucide-react";
 import { RadioGroup as RadioGroupPrimitive } from "radix-ui";
@@ -11,12 +9,11 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { getDeviceName, getDeviceType } from "@/lib/deviceId";
+import { useHoverPopover } from "@/hooks/useHoverPopover";
 import { usePlaybackContext } from "@/components/playback-context";
 import { useOutputMode } from "../useOutputMode";
 
 type DeviceValue = "mpd" | "this-browser" | "remote-browser";
-
-const HOVER_CLOSE_DELAY_MS = 300;
 
 type OutputSelectorProps = {
   /**
@@ -46,58 +43,15 @@ export function OutputSelector({ placement = "bar" }: OutputSelectorProps) {
     usePlaybackContext();
   const { outputMode, deviceName, isMpdLockedForMe, changeOutputMode } =
     useOutputMode();
-  const canHover = useMediaQuery({
-    query: "(hover: hover) and (pointer: fine)",
-  });
-
-  const [open, setOpen] = useState(false);
-  const anchorRef = useRef<HTMLButtonElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const openedByHoverRef = useRef(false);
-
-  const clearCloseTimer = useCallback(() => {
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-  }, []);
-
-  const close = useCallback(() => {
-    clearCloseTimer();
-    openedByHoverRef.current = false;
-    setOpen(false);
-  }, [clearCloseTimer]);
-
-  const scheduleClose = useCallback(() => {
-    clearCloseTimer();
-    closeTimerRef.current = setTimeout(() => {
-      closeTimerRef.current = null;
-      // Keep a click-pinned popover open while keyboard focus is inside it.
-      if (contentRef.current?.contains(document.activeElement)) return;
-      openedByHoverRef.current = false;
-      setOpen(false);
-    }, HOVER_CLOSE_DELAY_MS);
-  }, [clearCloseTimer]);
-
-  const openFromHover = useCallback(() => {
-    clearCloseTimer();
-    openedByHoverRef.current = true;
-    setOpen(true);
-  }, [clearCloseTimer]);
-
-  const handleTriggerClick = useCallback(() => {
-    if (openedByHoverRef.current) {
-      // Hover already opened it: a click pins it and moves keyboard focus into
-      // the device list instead of closing it again on hybrid pointers.
-      openedByHoverRef.current = false;
-      contentRef.current?.querySelector<HTMLElement>('[role="radio"]')?.focus();
-      return;
-    }
-    setOpen((current) => !current);
-  }, []);
-
-  useEffect(() => () => clearCloseTimer(), [clearCloseTimer]);
+  const {
+    open,
+    close,
+    anchorRef,
+    contentRef,
+    triggerProps,
+    contentProps,
+    onOpenChange,
+  } = useHoverPopover();
 
   const isPlayingElsewhere =
     outputMode === "browser" &&
@@ -144,17 +98,7 @@ export function OutputSelector({ placement = "bar" }: OutputSelectorProps) {
   }
 
   return (
-    <Popover
-      open={open}
-      onOpenChange={(next) => {
-        if (next) {
-          clearCloseTimer();
-          setOpen(true);
-        } else {
-          close();
-        }
-      }}
-    >
+    <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverAnchor asChild>
         <Button
           ref={anchorRef}
@@ -165,9 +109,7 @@ export function OutputSelector({ placement = "bar" }: OutputSelectorProps) {
           aria-haspopup="dialog"
           aria-expanded={open}
           className="text-muted-foreground hover:text-foreground"
-          onClick={handleTriggerClick}
-          onMouseEnter={canHover ? openFromHover : undefined}
-          onMouseLeave={canHover ? scheduleClose : undefined}
+          {...triggerProps}
         >
           <Speaker />
         </Button>
@@ -179,25 +121,7 @@ export function OutputSelector({ placement = "bar" }: OutputSelectorProps) {
         align="end"
         sideOffset={placement === "page" ? 8 : 32}
         aria-label={t("player.outputDevices")}
-        onOpenAutoFocus={(event) => {
-          if (openedByHoverRef.current) event.preventDefault();
-        }}
-        onPointerDownOutside={(event) => {
-          const target = event.target as Node | null;
-          if (target && anchorRef.current?.contains(target)) {
-            event.preventDefault();
-          }
-        }}
-        onFocusOutside={(event) => {
-          const target = event.target as Node | null;
-          if (target && anchorRef.current?.contains(target)) {
-            event.preventDefault();
-          }
-        }}
-        onMouseEnter={canHover ? clearCloseTimer : undefined}
-        onMouseLeave={canHover ? scheduleClose : undefined}
-        onFocus={clearCloseTimer}
-        onBlur={scheduleClose}
+        {...contentProps}
         className="w-64 p-2"
       >
         <div className="text-muted-foreground px-2 py-1.5 text-xs font-medium">
