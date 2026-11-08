@@ -77,7 +77,7 @@ export function QueueTrackRow({
           alt=""
           loading="lazy"
           onError={(event) => {
-            event.currentTarget.src = "/default_cover.png";
+            event.currentTarget.src = "/default_cover.webp";
           }}
           className="h-10 w-10 shrink-0 rounded-md object-cover"
         />

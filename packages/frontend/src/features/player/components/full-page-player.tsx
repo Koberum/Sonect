@@ -27,7 +27,7 @@ export function FullPagePlayer() {
           alt=""
           className="h-full w-full scale-110 object-cover opacity-50 blur-2xl saturate-150"
           onError={(e) => {
-            e.currentTarget.src = "/default_cover.png";
+            e.currentTarget.src = "/default_cover.webp";
           }}
         />
         <div className="from-background/15 via-background/50 to-background/85 absolute inset-0 bg-gradient-to-b" />
@@ -52,7 +52,7 @@ export function FullPagePlayer() {
             alt={trackPlayed.title}
             className="aspect-square w-[min(100%,calc(100dvh-23rem))] rounded-xl object-cover shadow-2xl"
             onError={(e) => {
-              e.currentTarget.src = "/default_cover.png";
+              e.currentTarget.src = "/default_cover.webp";
             }}
           />
         </div>

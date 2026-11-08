@@ -15,7 +15,7 @@ export function PlayedTrack({ track }: PlaybackTrack): React.ReactElement {
       alt={track.title}
       loading="lazy"
       onError={(e) => {
-        e.currentTarget.src = "/default_cover.png";
+        e.currentTarget.src = "/default_cover.webp";
       }}
       className="aspect-square size-12 shrink-0 rounded-md object-cover"
     />

@@ -62,7 +62,7 @@ export function TrackRow({
               alt=""
               className="h-8 w-8 shrink-0 rounded-sm object-cover"
               onError={(event) => {
-                event.currentTarget.src = "/default_cover.png";
+                event.currentTarget.src = "/default_cover.webp";
               }}
             />
           )}

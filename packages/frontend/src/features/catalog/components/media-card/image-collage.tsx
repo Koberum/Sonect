@@ -20,7 +20,12 @@ export function ImageCollage({ images, aspectRatio = "square" }: CollageProps) {
         <img
           src={images[0]}
           alt={t("common.cover")}
+          loading="lazy"
+          decoding="async"
           className={cn("h-full w-full object-cover", hoverStyles)}
+          onError={(event) => {
+            event.currentTarget.src = "/default_cover.webp";
+          }}
         />
       </div>
     );
@@ -41,7 +46,12 @@ export function ImageCollage({ images, aspectRatio = "square" }: CollageProps) {
           key={index}
           src={src}
           alt={t("common.collageImage", { index: index + 1 })}
+          loading="lazy"
+          decoding="async"
           className="h-full w-full object-cover transition-all group-hover:brightness-75"
+          onError={(event) => {
+            event.currentTarget.src = "/default_cover.webp";
+          }}
         />
       ))}
     </div>

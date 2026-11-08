@@ -9,7 +9,7 @@ export function getCoverPath(cover_path?: string) {
   if (cover_path) {
     return `${import.meta.env.VITE_BACKEND_URL ?? ""}${import.meta.env.VITE_COVER_PATH ?? "/covers"}/${cover_path}`;
   }
-  return "/default_cover.png";
+  return "/default_cover.webp";
 }
 
 /** Extract a 4-digit year from an MPD/ID3 date such as "2021-05-01". */

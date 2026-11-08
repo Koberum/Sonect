@@ -42,7 +42,7 @@ function Cover({ src }: { src?: string }) {
         alt=""
         className="h-full w-full object-cover"
         onError={(event) => {
-          event.currentTarget.src = "/default_cover.png";
+          event.currentTarget.src = "/default_cover.webp";
         }}
       />
     </div>

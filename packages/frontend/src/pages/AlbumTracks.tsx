@@ -84,7 +84,7 @@ export default function AlbumPage() {
               alt={album.title}
               className="size-24 rounded-lg object-cover shadow-sm sm:size-32 lg:size-40"
               onError={(e) => {
-                e.currentTarget.src = "/default_cover.png";
+                e.currentTarget.src = "/default_cover.webp";
               }}
             />
           ) : (
