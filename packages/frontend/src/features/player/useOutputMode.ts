@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/auth-context";
 import { usePlaybackContext } from "@/components/playback-context";
-import { systemQueries } from "@/features/system/queries";
+import { playerQueries } from "./queries";
 import { ApiError } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { qk } from "@/lib/queryKeys";
@@ -18,7 +18,7 @@ export function useOutputMode() {
   const { outputMode, setOutputMode } = usePlaybackContext();
   const { profile } = useAuth();
   const { t } = useTranslation();
-  const { data } = useQuery(systemQueries.outputMode());
+  const { data } = useQuery(playerQueries.outputMode());
 
   const mpdOwner = data?.mpdOwner ?? null;
   const isMpdLockedForMe =
@@ -30,7 +30,7 @@ export function useOutputMode() {
     try {
       await apiSetOutputMode(mode);
       queryClient.invalidateQueries({ queryKey: qk.player.queue() });
-      queryClient.invalidateQueries({ queryKey: qk.system.outputMode() });
+      queryClient.invalidateQueries({ queryKey: qk.player.outputMode() });
     } catch (error) {
       setOutputMode(previous);
       if (error instanceof ApiError && error.status === 423) {

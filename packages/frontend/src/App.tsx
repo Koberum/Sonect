@@ -51,6 +51,20 @@ function PageLoader() {
 
 type LegacyTabRedirectProps = { to: string; tab: string };
 
+const LEGACY_TAB_REDIRECTS: (LegacyTabRedirectProps & { path: string })[] = [
+  { path: "home/listen", to: "/discover", tab: "listen" },
+  { path: "home/liked", to: "/discover", tab: "liked" },
+  { path: "library/albums", to: "/library", tab: "albums" },
+  { path: "library/artists", to: "/library", tab: "artists" },
+  { path: "library/genres", to: "/library", tab: "genres" },
+  { path: "library/statistics", to: "/library", tab: "statistics" },
+  { path: "settings/audio", to: "/settings", tab: "audio" },
+  { path: "settings/playback", to: "/settings", tab: "playback" },
+  { path: "settings/libraries", to: "/settings", tab: "libraries" },
+  { path: "settings/appearance", to: "/settings", tab: "appearance" },
+  { path: "settings/debug", to: "/settings", tab: "debug" },
+];
+
 function LegacyTabRedirect({ to, tab }: LegacyTabRedirectProps) {
   return <Navigate to={to} state={{ tab }} replace />;
 }
@@ -135,12 +149,6 @@ export default function App() {
                         element={<Navigate to="/discover" replace />}
                       />
                       <Route
-                        path="home/listen"
-                        element={
-                          <LegacyTabRedirect to="/discover" tab="listen" />
-                        }
-                      />
-                      <Route
                         path="home/playlists"
                         element={<Navigate to="/playlists" replace />}
                       />
@@ -148,66 +156,13 @@ export default function App() {
                         path="home/playlists/:id"
                         element={<LegacyPlaylistRedirect />}
                       />
-                      <Route
-                        path="home/liked"
-                        element={
-                          <LegacyTabRedirect to="/discover" tab="liked" />
-                        }
-                      />
-                      <Route
-                        path="library/albums"
-                        element={
-                          <LegacyTabRedirect to="/library" tab="albums" />
-                        }
-                      />
-                      <Route
-                        path="library/artists"
-                        element={
-                          <LegacyTabRedirect to="/library" tab="artists" />
-                        }
-                      />
-                      <Route
-                        path="library/genres"
-                        element={
-                          <LegacyTabRedirect to="/library" tab="genres" />
-                        }
-                      />
-                      <Route
-                        path="library/statistics"
-                        element={
-                          <LegacyTabRedirect to="/library" tab="statistics" />
-                        }
-                      />
-                      <Route
-                        path="settings/audio"
-                        element={
-                          <LegacyTabRedirect to="/settings" tab="audio" />
-                        }
-                      />
-                      <Route
-                        path="settings/playback"
-                        element={
-                          <LegacyTabRedirect to="/settings" tab="playback" />
-                        }
-                      />
-                      <Route
-                        path="settings/libraries"
-                        element={
-                          <LegacyTabRedirect to="/settings" tab="libraries" />
-                        }
-                      />
-                      <Route
-                        path="settings/appearance"
-                        element={
-                          <LegacyTabRedirect to="/settings" tab="appearance" />
-                        }
-                      />
-                      <Route
-                        path="settings/debug"
-                        element={
-                          <LegacyTabRedirect to="/settings" tab="debug" />
-                        }
-                      />
+                      {LEGACY_TAB_REDIRECTS.map(({ path, to, tab }) => (
+                        <Route
+                          key={path}
+                          path={path}
+                          element={<LegacyTabRedirect to={to} tab={tab} />}
+                        />
+                      ))}
                     </Route>
                   </Routes>
                 </Suspense>

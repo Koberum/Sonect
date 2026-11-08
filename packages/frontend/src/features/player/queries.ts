@@ -2,6 +2,7 @@ import { mutationOptions, queryOptions } from "@tanstack/react-query";
 import { qk } from "@/lib/queryKeys";
 import { queryClient } from "@/lib/queryClient";
 import {
+  getOutputMode,
   getPlaybackSettings,
   getQueue,
   getWaveform,
@@ -22,6 +23,12 @@ export const playerQueries = {
     queryOptions({
       queryKey: qk.player.settings(),
       queryFn: ({ signal }) => getPlaybackSettings(signal),
+      staleTime: 60_000,
+    }),
+  outputMode: () =>
+    queryOptions({
+      queryKey: qk.player.outputMode(),
+      queryFn: ({ signal }) => getOutputMode(signal),
       staleTime: 60_000,
     }),
   waveform: (trackId: number | null | undefined) =>

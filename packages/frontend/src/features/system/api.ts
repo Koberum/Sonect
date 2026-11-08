@@ -1,5 +1,4 @@
 import { apiFetch } from "@/lib/api";
-import type { OutputMode } from "@repo/types";
 import type { DashboardData } from "@repo/types/catalog";
 
 export interface AudioDevice {
@@ -174,15 +173,6 @@ export interface HardwareUsage {
 
 export function getHardwareUsage(signal?: AbortSignal): Promise<HardwareUsage> {
   return apiFetch("/system/hardware/usage", { signal });
-}
-
-export function getOutputMode(signal?: AbortSignal): Promise<{
-  mode: OutputMode;
-  deviceName: string | null;
-  mpdOwner?: string | null;
-  activeDeviceId?: string | null;
-}> {
-  return apiFetch("/player/output-mode", { signal });
 }
 
 export function getDashboard(signal?: AbortSignal): Promise<DashboardData> {

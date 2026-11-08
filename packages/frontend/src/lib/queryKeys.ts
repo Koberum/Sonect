@@ -33,6 +33,7 @@ export const qk = {
     queue: () => ["player", "queue"] as const,
     waveform: (trackId: number) => ["player", "waveform", trackId] as const,
     settings: () => ["player", "settings"] as const,
+    outputMode: () => ["player", "outputMode"] as const,
   },
   system: {
     audioDevices: () => ["system", "audio", "devices"] as const,
@@ -40,7 +41,6 @@ export const qk = {
     storageSources: () => ["system", "storage", "sources"] as const,
     detectedLibraries: () => ["system", "storage", "detected"] as const,
     hardwareUsage: () => ["system", "hardware", "usage"] as const,
-    outputMode: () => ["system", "outputMode"] as const,
   },
   profiles: {
     list: () => ["profiles", "list"] as const,

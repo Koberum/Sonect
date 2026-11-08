@@ -7,30 +7,25 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Search, MicVocal, Loader2, History } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { getCoverPath } from "@/lib/utils";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
-import type { TrackWithRelations, Album, Artist } from "@repo/types/catalog";
+import type { TrackWithRelations } from "@repo/types/catalog";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "react-responsive";
 import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
-import { LikeButton } from "@/features/liked/components/like-button";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useAuth } from "@/features/auth/auth-context";
-import { useTrackDrag } from "@/features/playlists/playlist-drop-context";
-import { setTrackDragData } from "@/features/playlists/track-drag";
-import {
-  loadRecentSearches,
-  saveRecentSearch,
-} from "@/features/search/recent-searches";
+import type {
+  GenreItem,
+  SearchItem,
+  SearchSection,
+} from "@/features/search/search-types";
+import { useRecentSearches } from "@/features/search/use-recent-searches";
+import { SearchResults } from "./search-results";
 
-type SectionType = "genres" | "artists" | "albums" | "tracks" | "recent";
-type GenreItem = { kind: "genre"; name: string };
-type SearchItem = Artist | Album | TrackWithRelations | GenreItem | string;
+const MIN_QUERY_LENGTH = 2;
 
 export interface SearchCommandProps {
   /** `overlay` is the mobile-only full-screen search rendered by MainLayout. */
@@ -48,7 +43,6 @@ export function SearchCommand({
   const navigate = useNavigate();
   const { play, addToQueue } = usePlayTrack();
   const { profile } = useAuth();
-  const { startDrag, endDrag } = useTrackDrag();
   const profileId = profile?.id ?? "";
   const isDesktop = useMediaQuery({ minWidth: 768 });
   const inputRef = useRef<HTMLInputElement>(null);
@@ -67,10 +61,8 @@ export function SearchCommand({
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query, 350);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [recentSearches, setRecentSearches] = useState<string[]>(() =>
-    loadRecentSearches(profileId),
-  );
-  const MIN_QUERY_LENGTH = 2;
+  const { recentSearches, refresh, remember } = useRecentSearches(profileId);
+
   const trimmedQuery = query.trim();
   const showRecents = trimmedQuery.length === 0 && recentSearches.length > 0;
 
@@ -80,34 +72,10 @@ export function SearchCommand({
     enabled,
   });
 
-  useEffect(() => {
-    setRecentSearches(loadRecentSearches(profileId));
-  }, [profileId]);
-
-  const refreshRecentSearches = useCallback(() => {
-    setRecentSearches(loadRecentSearches(profileId));
-  }, [profileId]);
-
   const rememberQuery = useCallback(() => {
-    const term = query.trim();
-    if (term.length < MIN_QUERY_LENGTH) return;
-    setRecentSearches(saveRecentSearch(profileId, term));
-  }, [profileId, query]);
-
-  const getSectionLabel = (type: SectionType): string => {
-    switch (type) {
-      case "genres":
-        return t("search.genres");
-      case "artists":
-        return t("search.artists");
-      case "albums":
-        return t("search.albums");
-      case "tracks":
-        return t("search.tracks");
-      case "recent":
-        return t("search.recentSearches");
-    }
-  };
+    if (trimmedQuery.length < MIN_QUERY_LENGTH) return;
+    remember(trimmedQuery);
+  }, [remember, trimmedQuery]);
 
   const handlePlayTrack = useCallback(
     async (track: TrackWithRelations) => {
@@ -130,7 +98,7 @@ export function SearchCommand({
         setQuery(item);
         setSelectedIndex(0);
         setShowDropdown(true);
-        setRecentSearches(saveRecentSearch(profileId, item));
+        remember(item);
         inputRef.current?.focus();
         return;
       }
@@ -142,19 +110,19 @@ export function SearchCommand({
         return;
       }
       if ("file" in item) {
-        handlePlayTrack(item as TrackWithRelations);
+        void handlePlayTrack(item as TrackWithRelations);
       } else if ("artist_name" in item && !("name" in item)) {
-        navigate(`/library/albums/${(item as Album).id}`);
+        navigate(`/library/albums/${item.id}`);
         closeSearch();
       } else {
-        navigate(`/library/artists/${(item as Artist).id}`);
+        navigate(`/library/artists/${item.id}`);
         closeSearch();
       }
     },
-    [handlePlayTrack, navigate, closeSearch, rememberQuery, profileId],
+    [handlePlayTrack, navigate, closeSearch, rememberQuery, remember],
   );
 
-  const sections: { type: SectionType; items: SearchItem[] }[] = [];
+  const sections: SearchSection[] = [];
 
   if (showRecents) {
     sections.push({ type: "recent", items: recentSearches });
@@ -162,7 +130,10 @@ export function SearchCommand({
     if (results.genres.length > 0)
       sections.push({
         type: "genres",
-        items: results.genres.map((g) => ({ kind: "genre", name: g.name })),
+        items: results.genres.map((genre): GenreItem => ({
+          kind: "genre",
+          name: genre.name,
+        })),
       });
     if (results.artists.length > 0)
       sections.push({ type: "artists", items: results.artists.slice(0, 5) });
@@ -172,7 +143,7 @@ export function SearchCommand({
       sections.push({ type: "tracks", items: results.tracks.slice(0, 10) });
   }
 
-  const flatItems = sections.flatMap((s) => s.items);
+  const flatItems = sections.flatMap((section) => section.items);
   const totalItems = flatItems.length;
 
   useEffect(() => {
@@ -184,9 +155,9 @@ export function SearchCommand({
   }, [totalItems, selectedIndex]);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-        e.preventDefault();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "k") {
+        event.preventDefault();
         if (isDesktop) {
           inputRef.current?.focus();
           setShowDropdown(true);
@@ -201,13 +172,13 @@ export function SearchCommand({
 
   useLayoutEffect(() => {
     if (overlayOpen) {
-      refreshRecentSearches();
+      refresh();
       setSelectedIndex(0);
       inputRef.current?.focus();
     } else {
       setQuery("");
     }
-  }, [overlayOpen, refreshRecentSearches]);
+  }, [overlayOpen, refresh]);
 
   useEffect(() => {
     if (!showDropdown) {
@@ -217,22 +188,22 @@ export function SearchCommand({
 
   useEffect(() => {
     if (!showDropdown && !overlayOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
         if (totalItems === 0) return;
-        setSelectedIndex((prev) => Math.min(prev + 1, totalItems - 1));
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
+        setSelectedIndex((previous) => Math.min(previous + 1, totalItems - 1));
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
         if (totalItems === 0) return;
-        setSelectedIndex((prev) => Math.max(prev - 1, 0));
-      } else if (e.key === "Enter" && totalItems > 0) {
-        if ((e.target as HTMLElement | null)?.closest("button")) return;
-        e.preventDefault();
+        setSelectedIndex((previous) => Math.max(previous - 1, 0));
+      } else if (event.key === "Enter" && totalItems > 0) {
+        if ((event.target as HTMLElement | null)?.closest("button")) return;
+        event.preventDefault();
         const item = flatItems[selectedIndex];
         if (item) activateItem(item);
-      } else if (e.key === "Escape") {
-        e.preventDefault();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
         if (overlayOpen) {
           setOverlayOpen(false);
         } else {
@@ -254,18 +225,18 @@ export function SearchCommand({
   ]);
 
   useEffect(() => {
-    const el = listRef.current?.querySelector(
+    const element = listRef.current?.querySelector(
       `[data-index="${selectedIndex}"]`,
     );
-    el?.scrollIntoView({ block: "nearest" });
+    element?.scrollIntoView({ block: "nearest" });
   }, [selectedIndex]);
 
   useEffect(() => {
     if (!showDropdown) return;
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent) => {
       if (
         containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
+        !containerRef.current.contains(event.target as Node)
       ) {
         setShowDropdown(false);
       }
@@ -274,8 +245,6 @@ export function SearchCommand({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showDropdown]);
 
-  let globalIdx = 0;
-
   const handleAddToQueue = async (track: TrackWithRelations) => {
     rememberQuery();
     await addToQueue(track.file);
@@ -283,8 +252,8 @@ export function SearchCommand({
     setShowDropdown(false);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
     setQuery(value);
     const length = value.trim().length;
     if (length >= MIN_QUERY_LENGTH) {
@@ -297,203 +266,29 @@ export function SearchCommand({
   };
 
   const handleInputFocus = () => {
-    const recents = loadRecentSearches(profileId);
-    setRecentSearches(recents);
     const length = query.trim().length;
-    if (length >= MIN_QUERY_LENGTH || (length === 0 && recents.length > 0)) {
+    if (
+      length >= MIN_QUERY_LENGTH ||
+      (length === 0 && recentSearches.length > 0)
+    ) {
       setShowDropdown(true);
     }
   };
 
-  const renderResults = () => (
-    <div className="no-scrollbar max-h-[60vh] overflow-y-auto" ref={listRef}>
-      {loading && trimmedQuery.length >= MIN_QUERY_LENGTH && (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
-        </div>
-      )}
-
-      {!loading && (
-        <div className="p-2">
-          {sections.map((section) => {
-            if (section.type === "genres") {
-              return (
-                <div
-                  key={section.type}
-                  role="group"
-                  aria-label={t("search.genres")}
-                  className="mb-2 flex flex-wrap gap-2 px-2 py-1"
-                >
-                  {section.items.map((item) => {
-                    const idx = globalIdx++;
-                    const isSelected = idx === selectedIndex;
-                    const genre = item as GenreItem;
-                    return (
-                      <Badge
-                        key={genre.name}
-                        asChild
-                        variant={isSelected ? "default" : "secondary"}
-                        className="cursor-pointer"
-                      >
-                        <button
-                          type="button"
-                          data-index={idx}
-                          onClick={() => activateItem(item)}
-                          onMouseEnter={() => setSelectedIndex(idx)}
-                        >
-                          {genre.name}
-                        </button>
-                      </Badge>
-                    );
-                  })}
-                </div>
-              );
-            }
-            return (
-              <div key={section.type} className="mb-2">
-                <p className="text-muted-foreground px-2 py-1 text-xs font-semibold uppercase">
-                  {getSectionLabel(section.type)}
-                </p>
-                {section.items.map((item) => {
-                  const idx = globalIdx++;
-                  const isSelected = idx === selectedIndex;
-                  if (typeof item === "string") {
-                    return (
-                      <div
-                        key={item}
-                        data-index={idx}
-                        className={`flex cursor-pointer items-center gap-3 rounded-sm px-2 py-2 text-sm transition-colors ${
-                          isSelected ? "bg-accent/50" : "hover:bg-accent/50"
-                        }`}
-                        onClick={() => activateItem(item)}
-                        onMouseEnter={() => setSelectedIndex(idx)}
-                      >
-                        <History className="text-muted-foreground size-4 shrink-0" />
-                        <span className="truncate">{item}</span>
-                      </div>
-                    );
-                  }
-                  if ("file" in item) {
-                    const track = item as TrackWithRelations;
-                    return (
-                      <div
-                        key={track.id}
-                        data-index={idx}
-                        draggable
-                        onDragStart={(event) => {
-                          setTrackDragData(event.dataTransfer, track.id);
-                          startDrag(track.id);
-                        }}
-                        onDragEnd={endDrag}
-                        className={`group flex cursor-pointer items-center gap-3 rounded-sm px-2 py-2 text-sm transition-colors ${
-                          isSelected ? "bg-accent/50" : "hover:bg-accent/50"
-                        }`}
-                        onClick={() => activateItem(track)}
-                        onMouseEnter={() => setSelectedIndex(idx)}
-                      >
-                        <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded">
-                          <img
-                            src={getCoverPath(track.cover_path)}
-                            alt=""
-                            className="h-full w-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.src = "/default_cover.png";
-                            }}
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium">{track.title}</p>
-                          <p className="text-muted-foreground truncate text-xs">
-                            {track.artist_name}
-                          </p>
-                        </div>
-                        <LikeButton trackId={track.id} />
-                        <Button
-                          variant="ghost"
-                          size="xs"
-                          className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAddToQueue(track);
-                          }}
-                        >
-                          {t("search.addToQueue")}
-                        </Button>
-                      </div>
-                    );
-                  }
-                  if ("artist_name" in item && !("name" in item)) {
-                    const album = item as Album;
-                    return (
-                      <div
-                        key={album.id}
-                        data-index={idx}
-                        className={`flex cursor-pointer items-center gap-3 rounded-sm px-2 py-2 text-sm transition-colors ${
-                          isSelected ? "bg-accent/50" : "hover:bg-accent/50"
-                        }`}
-                        onClick={() => activateItem(album)}
-                        onMouseEnter={() => setSelectedIndex(idx)}
-                      >
-                        <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded">
-                          <img
-                            src={getCoverPath(album.cover_path)}
-                            alt=""
-                            className="h-full w-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.src = "/default_cover.png";
-                            }}
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <span className="truncate">{album.title}</span>
-                          <span className="text-muted-foreground ml-2 text-xs">
-                            {album.artist_name}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  }
-                  const artist = item as Artist;
-                  return (
-                    <div
-                      key={artist.id}
-                      data-index={idx}
-                      className={`flex cursor-pointer items-center gap-3 rounded-sm px-2 py-2 text-sm transition-colors ${
-                        isSelected ? "bg-accent/50" : "hover:bg-accent/50"
-                      }`}
-                      onClick={() => activateItem(artist)}
-                      onMouseEnter={() => setSelectedIndex(idx)}
-                    >
-                      <MicVocal className="text-muted-foreground h-4 w-4" />
-                      <span>{artist.name}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-
-          {trimmedQuery.length < MIN_QUERY_LENGTH &&
-            recentSearches.length === 0 && (
-              <div className="text-muted-foreground flex items-center justify-center py-8 text-sm">
-                {t("search.startTyping")}
-              </div>
-            )}
-
-          {trimmedQuery.length >= MIN_QUERY_LENGTH &&
-            !loading &&
-            results &&
-            results.artists.length === 0 &&
-            results.albums.length === 0 &&
-            results.tracks.length === 0 &&
-            results.genres.length === 0 && (
-              <div className="text-muted-foreground flex items-center justify-center py-8 text-sm">
-                {t("search.noResults")}
-              </div>
-            )}
-        </div>
-      )}
-    </div>
+  const resultsView = (
+    <SearchResults
+      sections={sections}
+      selectedIndex={selectedIndex}
+      loading={loading}
+      trimmedQuery={trimmedQuery}
+      results={results}
+      minQueryLength={MIN_QUERY_LENGTH}
+      recentSearchCount={recentSearches.length}
+      onActivate={activateItem}
+      onHover={setSelectedIndex}
+      onAddToQueue={handleAddToQueue}
+      listRef={listRef}
+    />
   );
 
   const overlay = (
@@ -509,7 +304,7 @@ export function SearchCommand({
             <Input
               ref={inputRef}
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(event) => setQuery(event.target.value)}
               placeholder={t("search.placeholder")}
               className="border-0 shadow-none focus-visible:ring-0"
             />
@@ -522,7 +317,7 @@ export function SearchCommand({
           </kbd>
         </div>
 
-        {renderResults()}
+        {resultsView}
       </div>
     </div>
   );
@@ -554,7 +349,7 @@ export function SearchCommand({
         </div>
         {showDropdown && (
           <div className="bg-background absolute top-full right-0 left-0 z-50 mt-4 rounded-md border shadow-lg">
-            {renderResults()}
+            {resultsView}
           </div>
         )}
       </div>

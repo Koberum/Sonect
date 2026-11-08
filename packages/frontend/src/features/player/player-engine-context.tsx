@@ -45,14 +45,8 @@ export function PlayerEngineProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const {
-    trackPlayed,
-    setTrackPlayed,
-    playbackStatus,
-    outputMode,
-    activeDeviceId,
-    myDeviceId,
-  } = usePlaybackContext();
+  const { playbackStatus, outputMode, activeDeviceId, myDeviceId } =
+    usePlaybackContext();
   const { t } = useTranslation();
   const { sendReport } = usePlayerSocket();
 
@@ -150,19 +144,9 @@ export function PlayerEngineProvider({
     preloadTrack,
   ]);
 
-  // Track change detection feeds the shared "now playing" track. A stopped,
-  // empty queue clears it so the mobile player shows its empty state.
-  useEffect(() => {
-    if (playbackStatus.track) {
-      if (playbackStatus.track.id !== trackPlayed?.id) {
-        setTrackPlayed(playbackStatus.track);
-      }
-      return;
-    }
-    if (playbackStatus.state === "stop" && trackPlayed) {
-      setTrackPlayed(null);
-    }
-  }, [playbackStatus.track, playbackStatus.state, trackPlayed, setTrackPlayed]);
+  // Track change detection feeds the shared "now playing" track. The context
+  // derives trackPlayed from playbackStatus.track, so a stopped, empty queue
+  // automatically clears it and the mobile player shows its empty state.
 
   // The active browser reads the real audio clock; only passive/MPD devices
   // need to interpolate between server updates.
