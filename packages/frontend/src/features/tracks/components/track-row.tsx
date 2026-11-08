@@ -50,8 +50,12 @@ export function TrackRow({
       >
         {isPlaying ? <PlayStatus className="justify-center" /> : (number ?? "")}
       </TableCell>
-      <TableCell onClick={handlePlay} className="w-full max-w-0">
-        <div className="flex min-w-0 items-center gap-2">
+      <TableCell className="w-full max-w-0">
+        <button
+          type="button"
+          onClick={handlePlay}
+          className="focus-visible:ring-ring flex w-full min-w-0 items-center gap-2 rounded-sm text-left focus-visible:ring-2 focus-visible:outline-none"
+        >
           {showCover && (
             <img
               src={getCoverPath(track.cover_path)}
@@ -75,7 +79,7 @@ export function TrackRow({
               {track.artist_name || "-"}
             </p>
           </div>
-        </div>
+        </button>
       </TableCell>
       <TableCell
         onClick={handlePlay}

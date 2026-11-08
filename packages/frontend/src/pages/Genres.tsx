@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { EmptyState } from "@/components/ui/empty-state";
 import { QueryError } from "@/components/ui/query-error";
 import { MediaGrid } from "@/features/catalog/components/media-grid";
@@ -16,7 +16,6 @@ import { Music, Disc3 } from "lucide-react";
 
 export default function Genres() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const {
     data: genres = [],
     isPending,
@@ -48,11 +47,11 @@ export default function Genres() {
                 key={g.id}
                 asChild
                 className="bg-card gap-4 rounded-xl p-4 shadow-sm"
-                onClick={() =>
-                  navigate(`/library/genres/${encodeURIComponent(g.name)}`)
-                }
               >
-                <div>
+                <Link
+                  to={`/library/genres/${encodeURIComponent(g.name)}`}
+                  className="focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none"
+                >
                   <SelectableRowIcon className="bg-primary/10 [&_svg]:text-primary h-12 w-12 rounded-full">
                     <Music className="h-6 w-6" />
                   </SelectableRowIcon>
@@ -70,7 +69,7 @@ export default function Genres() {
                       </span>
                     </SelectableRowDescription>
                   </div>
-                </div>
+                </Link>
               </SelectableRow>
             ))}
           </MediaGrid>

@@ -295,7 +295,12 @@ export function SearchCommand({
         className="fixed inset-0 bg-black/80"
         onClick={() => setOverlayOpen(false)}
       />
-      <div className="bg-background relative z-50 w-full max-w-xl rounded-lg border shadow-2xl">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("search.open")}
+        className="bg-background relative z-50 w-full max-w-xl rounded-lg border shadow-2xl"
+      >
         <div className="flex items-center justify-between px-3">
           <div className="flex flex-1 items-center">
             <Search className="mr-2 h-4 w-4 shrink-0" />
@@ -304,6 +309,7 @@ export function SearchCommand({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t("search.placeholder")}
+              aria-label={t("search.placeholder")}
               className="border-0 shadow-none focus-visible:ring-0"
             />
           </div>
@@ -339,6 +345,7 @@ export function SearchCommand({
             onChange={handleInputChange}
             onFocus={handleInputFocus}
             placeholder={t("search.placeholder")}
+            aria-label={t("search.placeholder")}
             className="flex-1 bg-transparent outline-none"
           />
           <kbd className="bg-muted pointer-events-none rounded border px-1.5 font-mono text-xs">

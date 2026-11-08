@@ -53,6 +53,7 @@ export function PlaybackControls({
           size={actionSize}
           className={playbackStatus.random ? btnActive : btnBase}
           aria-label={t("player.shuffle")}
+          aria-pressed={playbackStatus.random}
           onClick={() => {
             toggleRandom(!playbackStatus.random);
           }}
@@ -107,6 +108,7 @@ export function PlaybackControls({
           size={actionSize}
           className={playbackStatus.repeat ? btnActive : btnBase}
           aria-label={t("player.repeat")}
+          aria-pressed={playbackStatus.repeat}
           onClick={() => {
             toggleRepeat(!playbackStatus.repeat);
           }}

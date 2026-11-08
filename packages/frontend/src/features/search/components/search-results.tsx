@@ -81,7 +81,7 @@ function TrackResultRow({
       <Button
         variant="ghost"
         size="xs"
-        className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+        className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 max-md:opacity-100"
         onClick={(event) => {
           event.stopPropagation();
           onAddToQueue(track);
