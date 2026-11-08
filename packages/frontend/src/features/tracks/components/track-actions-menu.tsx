@@ -124,6 +124,7 @@ export function TrackActionsMenu({
   return (
     <span
       data-track-actions
+      role="presentation"
       className="contents"
       onClick={stopRowActivation}
       onPointerDown={stopRowActivation}

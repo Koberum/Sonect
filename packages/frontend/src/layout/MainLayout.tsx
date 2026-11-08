@@ -9,6 +9,7 @@ import { SetupGuard } from "@/components/setup-guard";
 import { Suspense, useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { useMediaQuery } from "react-responsive";
+import { useTranslation } from "react-i18next";
 import { Toaster } from "@/components/ui/sonner";
 import { SyncIndicator } from "@/features/sync/components/sync-indicator";
 import { PlaylistDropProvider } from "@/features/playlists/components/playlist-drop-provider";
@@ -17,6 +18,7 @@ import { cn } from "@/lib/utils";
 
 export default function MainLayout() {
   const { pathname } = useLocation();
+  const { t } = useTranslation();
   const isPlayerRoute = pathname === "/player" || pathname === "/player/";
   const isMobile = useMediaQuery({ maxWidth: 767.98 });
   const isCompactSidebar = useMediaQuery({ minWidth: 768, maxWidth: 1279 });
@@ -37,6 +39,23 @@ export default function MainLayout() {
   useEffect(() => {
     setMobileSearchOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const section = pathname.startsWith("/library")
+      ? "library"
+      : pathname.startsWith("/playlists")
+        ? "playlists"
+        : pathname.startsWith("/player")
+          ? "player"
+          : pathname.startsWith("/queue")
+            ? "queue"
+            : pathname.startsWith("/settings")
+              ? "settings"
+              : pathname.startsWith("/discover")
+                ? "discover"
+                : null;
+    document.title = section ? `Sonect · ${t(`nav.${section}`)}` : "Sonect";
+  }, [pathname, t]);
 
   return (
     <PlaylistDropProvider>

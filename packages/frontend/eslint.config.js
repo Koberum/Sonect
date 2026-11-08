@@ -4,6 +4,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 import pluginQuery from "@tanstack/eslint-plugin-query";
+import jsxA11y from "eslint-plugin-jsx-a11y";
 import { defineConfig, globalIgnores } from "eslint/config";
 
 export default defineConfig([
@@ -15,6 +16,7 @@ export default defineConfig([
       tseslint.configs.recommendedTypeChecked, // Changed to type-checked
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
+      jsxA11y.flatConfigs.recommended,
       ...pluginQuery.configs["flat/recommended"],
     ],
     languageOptions: {
@@ -26,7 +28,14 @@ export default defineConfig([
       },
     },
     rules: {
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-explicit-any": "error",
+      // Dialogs use Radix focus management; initial focus on the first field is
+      // intentional for these short forms.
+      "jsx-a11y/no-autofocus": "off",
+      // Combobox rows and drag surfaces handle keyboard input at their parent
+      // container; keep these visible while the remaining patterns are migrated.
+      "jsx-a11y/click-events-have-key-events": "warn",
+      "jsx-a11y/no-static-element-interactions": "warn",
       "react-hooks/set-state-in-effect": "off",
       "no-console": ["warn", { allow: ["warn", "error"] }],
       "@typescript-eslint/no-misused-promises": [

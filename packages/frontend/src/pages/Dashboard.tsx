@@ -129,33 +129,37 @@ export default function Dashboard() {
               genre: data.genreQuickMix.genre,
             })}
           </h2>
-          <div
-            className="from-primary/15 to-primary/5 flex cursor-pointer items-center justify-between rounded-lg bg-gradient-to-br p-6"
-            onClick={() =>
-              data.genreQuickMix!.tracks[0]?.file &&
-              play(data.genreQuickMix!.tracks[0])
-            }
-          >
-            <div>
-              <p className="text-lg font-semibold">
-                {data.genreQuickMix.genre}
-              </p>
-              <p className="text-muted-foreground text-sm">
-                {t("dashboard.trackCount", {
-                  count: data.genreQuickMix.tracks.length,
-                })}
-              </p>
+          <div className="relative">
+            <button
+              type="button"
+              aria-label={t("dashboard.playMix")}
+              className="focus-visible:ring-ring absolute inset-0 z-0 cursor-pointer rounded-lg focus-visible:ring-2 focus-visible:outline-none"
+              onClick={() =>
+                data.genreQuickMix!.tracks[0]?.file &&
+                play(data.genreQuickMix!.tracks[0])
+              }
+            />
+            <div className="from-primary/15 to-primary/5 pointer-events-none relative z-10 flex w-full items-center justify-between rounded-lg bg-gradient-to-br p-6">
+              <div>
+                <p className="text-lg font-semibold">
+                  {data.genreQuickMix.genre}
+                </p>
+                <p className="text-muted-foreground text-sm">
+                  {t("dashboard.trackCount", {
+                    count: data.genreQuickMix.tracks.length,
+                  })}
+                </p>
+              </div>
+              <Button
+                className="pointer-events-auto rounded-full px-6"
+                onClick={() => {
+                  if (data.genreQuickMix!.tracks[0]?.file)
+                    play(data.genreQuickMix!.tracks[0]);
+                }}
+              >
+                {t("dashboard.playMix")}
+              </Button>
             </div>
-            <Button
-              className="rounded-full px-6"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (data.genreQuickMix!.tracks[0]?.file)
-                  play(data.genreQuickMix!.tracks[0]);
-              }}
-            >
-              {t("dashboard.playMix")}
-            </Button>
           </div>
         </div>
       )}
