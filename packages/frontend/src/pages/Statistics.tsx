@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryError } from "@/components/ui/query-error";
 import { useTranslation } from "react-i18next";
 import {
   AlbumIcon,
@@ -50,9 +51,14 @@ function StatCard({ title, value, icon, description }: StatCardProps) {
 
 export function Statistics() {
   const { t } = useTranslation();
-  const { data: stats, isPending } = useQuery(catalogQueries.stats());
+  const {
+    data: stats,
+    isPending,
+    isError,
+    refetch,
+  } = useQuery(catalogQueries.stats());
 
-  if (isPending || !stats) {
+  if (isPending) {
     return (
       <div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -61,6 +67,15 @@ export function Statistics() {
           ))}
         </div>
       </div>
+    );
+  }
+
+  if (isError || !stats) {
+    return (
+      <QueryError
+        message={t("common.loadError")}
+        onRetry={() => void refetch()}
+      />
     );
   }
 

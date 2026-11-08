@@ -1,6 +1,7 @@
 import { ArtistCard } from "@/features/catalog/components/media-card/artist-card";
 import { MediaGrid } from "@/features/catalog/components/media-grid";
 import { EmptyState } from "@/components/ui/empty-state";
+import { QueryError } from "@/components/ui/query-error";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "react-i18next";
 import { useInfiniteQuery } from "@tanstack/react-query";
@@ -11,8 +12,15 @@ import { UserRound } from "lucide-react";
 export function Artists() {
   const { t } = useTranslation();
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
-    useInfiniteQuery(catalogQueries.artistsInfinite());
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isPending,
+    isError,
+    refetch,
+  } = useInfiniteQuery(catalogQueries.artistsInfinite());
 
   const artists = data?.pages.flatMap((p) => p.items) ?? [];
   const sentinelRef = useInfiniteScroll({
@@ -28,6 +36,13 @@ export function Artists() {
           Array.from({ length: 12 }).map((_, i) => (
             <Skeleton key={i} className="aspect-square w-full rounded-lg" />
           ))
+        ) : isError ? (
+          <div className="col-span-full">
+            <QueryError
+              message={t("common.loadError")}
+              onRetry={() => void refetch()}
+            />
+          </div>
         ) : artists.length === 0 ? (
           <div className="col-span-full">
             <EmptyState icon={UserRound} title={t("artists.noArtists")} />

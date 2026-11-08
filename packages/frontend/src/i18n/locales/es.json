@@ -233,8 +233,15 @@
     "albums": "Álbumes",
     "tracks": "Pistas"
   },
+  "notFound": {
+    "title": "Página no encontrada",
+    "description": "La página que buscas no existe o se ha movido.",
+    "back": "Ir a Descubrir"
+  },
   "common": {
     "cover": "Carátula",
+    "loadError": "No se pudo cargar esta página.",
+    "errorDescription": "Algo salió mal al mostrar esta página. Recarga para intentarlo de nuevo.",
     "cancel": "Cancelar",
     "retry": "Reintentar",
     "continue": "Continuar",

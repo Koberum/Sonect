@@ -1,5 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { QueryError } from "@/components/ui/query-error";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { AlbumCard } from "@/features/catalog/components/media-card/album-card";
@@ -15,11 +16,21 @@ export default function GenreDetail() {
   const { t } = useTranslation();
   const { genre } = useParams<{ genre: string }>();
 
-  const { data: albums = [], isPending: albumsPending } = useQuery({
+  const {
+    data: albums = [],
+    isPending: albumsPending,
+    isError: albumsError,
+    refetch: refetchAlbums,
+  } = useQuery({
     ...catalogQueries.albumsByGenre(genre ?? ""),
     enabled: !!genre,
   });
-  const { data: tracks = [], isPending: tracksPending } = useQuery({
+  const {
+    data: tracks = [],
+    isPending: tracksPending,
+    isError: tracksError,
+    refetch: refetchTracks,
+  } = useQuery({
     ...catalogQueries.tracksByGenre(genre ?? ""),
     enabled: !!genre,
   });
@@ -27,6 +38,11 @@ export default function GenreDetail() {
   if (!genre) return null;
 
   const isPending = albumsPending || tracksPending;
+  const isError = albumsError || tracksError;
+  const retry = () => {
+    void refetchAlbums();
+    void refetchTracks();
+  };
   if (isPending) {
     return (
       <div>
@@ -36,6 +52,18 @@ export default function GenreDetail() {
             <Skeleton key={i} className="h-12 w-full rounded-lg" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div>
+        <PageHeader title={genre} description={t("genres.description")} />
+        <QueryError
+          message={t("common.loadError")}
+          onRetry={() => void retry()}
+        />
       </div>
     );
   }

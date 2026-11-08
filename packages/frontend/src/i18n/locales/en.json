@@ -233,8 +233,15 @@
     "albums": "Albums",
     "tracks": "Tracks"
   },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you're looking for doesn't exist or was moved.",
+    "back": "Go to Discover"
+  },
   "common": {
     "cover": "Cover",
+    "loadError": "Couldn't load this page.",
+    "errorDescription": "Something went wrong while rendering this page. Reload to try again.",
     "cancel": "Cancel",
     "retry": "Retry",
     "continue": "Continue",

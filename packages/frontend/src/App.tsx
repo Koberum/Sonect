@@ -2,6 +2,8 @@ import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate, useParams } from "react-router-dom";
 import MainLayout from "./layout/MainLayout";
 import { ThemeProvider } from "./components/theme-provider";
+import { ErrorBoundary } from "./components/error-boundary";
+import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./features/auth/auth-context";
 import { AuthGuard } from "./features/auth/auth-guard";
 import { AdminGuard } from "./features/auth/admin-guard";
@@ -84,88 +86,94 @@ export default function App() {
           <PlaybackProvider>
             <WebSocketProvider>
               <TooltipProvider>
-                <Suspense fallback={<PageLoader />}>
-                  <Routes>
-                    <Route
-                      path="/login"
-                      element={
-                        <AuthGuard>
-                          <LoginPage />
-                        </AuthGuard>
-                      }
-                    />
-                    <Route
-                      path="/setup"
-                      element={
-                        <AuthGuard>
-                          <SetupWizard />
-                        </AuthGuard>
-                      }
-                    />
-                    <Route
-                      path="/"
-                      element={
-                        <AuthGuard>
-                          <MainLayout />
-                        </AuthGuard>
-                      }
-                    >
+                <ErrorBoundary>
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
                       <Route
-                        index
-                        element={<Navigate to="/discover" replace />}
-                      />
-                      <Route path="player" element={<PlayerPage />} />
-                      <Route path="queue" element={<QueuePage />} />
-
-                      <Route path="discover" element={<DiscoverSection />} />
-
-                      <Route path="playlists" element={<PlaylistsPage />} />
-                      <Route
-                        path="playlists/:id"
-                        element={<PlaylistDetail />}
-                      />
-
-                      <Route path="library" element={<LibrarySection />}>
-                        <Route path="albums/:id" element={<AlbumPage />} />
-                        <Route
-                          path="artists/:artistId"
-                          element={<ArtistAlbums />}
-                        />
-                        <Route path="genres/:genre" element={<GenreDetail />} />
-                      </Route>
-
-                      <Route
-                        path="settings"
+                        path="/login"
                         element={
-                          <AdminGuard>
-                            <Settings />
-                          </AdminGuard>
+                          <AuthGuard>
+                            <LoginPage />
+                          </AuthGuard>
                         }
                       />
-
-                      {/* Legacy tab URLs: tabs are in-page state now. */}
                       <Route
-                        path="home"
-                        element={<Navigate to="/discover" replace />}
+                        path="/setup"
+                        element={
+                          <AuthGuard>
+                            <SetupWizard />
+                          </AuthGuard>
+                        }
                       />
                       <Route
-                        path="home/playlists"
-                        element={<Navigate to="/playlists" replace />}
-                      />
-                      <Route
-                        path="home/playlists/:id"
-                        element={<LegacyPlaylistRedirect />}
-                      />
-                      {LEGACY_TAB_REDIRECTS.map(({ path, to, tab }) => (
+                        path="/"
+                        element={
+                          <AuthGuard>
+                            <MainLayout />
+                          </AuthGuard>
+                        }
+                      >
                         <Route
-                          key={path}
-                          path={path}
-                          element={<LegacyTabRedirect to={to} tab={tab} />}
+                          index
+                          element={<Navigate to="/discover" replace />}
                         />
-                      ))}
-                    </Route>
-                  </Routes>
-                </Suspense>
+                        <Route path="player" element={<PlayerPage />} />
+                        <Route path="queue" element={<QueuePage />} />
+
+                        <Route path="discover" element={<DiscoverSection />} />
+
+                        <Route path="playlists" element={<PlaylistsPage />} />
+                        <Route
+                          path="playlists/:id"
+                          element={<PlaylistDetail />}
+                        />
+
+                        <Route path="library" element={<LibrarySection />}>
+                          <Route path="albums/:id" element={<AlbumPage />} />
+                          <Route
+                            path="artists/:artistId"
+                            element={<ArtistAlbums />}
+                          />
+                          <Route
+                            path="genres/:genre"
+                            element={<GenreDetail />}
+                          />
+                        </Route>
+
+                        <Route
+                          path="settings"
+                          element={
+                            <AdminGuard>
+                              <Settings />
+                            </AdminGuard>
+                          }
+                        />
+
+                        {/* Legacy tab URLs: tabs are in-page state now. */}
+                        <Route
+                          path="home"
+                          element={<Navigate to="/discover" replace />}
+                        />
+                        <Route
+                          path="home/playlists"
+                          element={<Navigate to="/playlists" replace />}
+                        />
+                        <Route
+                          path="home/playlists/:id"
+                          element={<LegacyPlaylistRedirect />}
+                        />
+                        {LEGACY_TAB_REDIRECTS.map(({ path, to, tab }) => (
+                          <Route
+                            key={path}
+                            path={path}
+                            element={<LegacyTabRedirect to={to} tab={tab} />}
+                          />
+                        ))}
+                        <Route path="*" element={<NotFound />} />
+                      </Route>
+                    </Routes>
+                  </Suspense>
+                </ErrorBoundary>
               </TooltipProvider>
             </WebSocketProvider>
           </PlaybackProvider>

@@ -32,6 +32,7 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { QueryError } from "@/components/ui/query-error";
 import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { usePlaybackContext } from "@/components/playback-context";
 import { useAuth } from "@/features/auth/auth-context";
@@ -133,7 +134,12 @@ export default function QueuePage() {
     removeMutation.isPending ||
     clearMutation.isPending;
 
-  const { data: queue = [], isPending } = useQuery({
+  const {
+    data: queue = [],
+    isPending,
+    isError,
+    refetch,
+  } = useQuery({
     ...playerQueries.queue(profileId),
     refetchInterval: isDragging || queueMutationPending ? false : 10_000,
   });
@@ -190,6 +196,11 @@ export default function QueuePage() {
           rows={6}
           className="space-y-1"
           itemClassName="h-14 w-full rounded-lg"
+        />
+      ) : isError ? (
+        <QueryError
+          message={t("common.loadError")}
+          onRetry={() => void refetch()}
         />
       ) : queue.length === 0 ? (
         <EmptyState

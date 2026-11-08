@@ -5,6 +5,7 @@ import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { useAuth } from "@/features/auth/auth-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
+import { QueryError } from "@/components/ui/query-error";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Trash2, Play, Edit3, ListMusic } from "lucide-react";
@@ -50,10 +51,16 @@ export default function PlaylistDetail() {
   const { profile } = useAuth();
   const profileId = profile?.id ?? "";
   const pid = id ? parseInt(id, 10) : 0;
+  const validId = Number.isInteger(pid) && pid > 0;
 
-  const { data: playlist, isPending } = useQuery({
+  const {
+    data: playlist,
+    isPending,
+    isError,
+    refetch,
+  } = useQuery({
     ...playlistQueries.detail(profileId, pid),
-    enabled: !!pid && !!profileId,
+    enabled: validId && !!profileId,
   });
 
   const updateMut = useMutation(playlistMutations.update(profileId));
@@ -124,6 +131,24 @@ export default function PlaylistDetail() {
       toast.error(t("playlist.updateError"));
     }
   };
+
+  if (!validId) {
+    return (
+      <QueryError
+        message={t("playlist.loadError")}
+        onRetry={() => void navigate("/playlists")}
+      />
+    );
+  }
+
+  if (isError) {
+    return (
+      <QueryError
+        message={t("playlist.loadError")}
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
   if (isPending) {
     return (

@@ -5,6 +5,7 @@ import { useParams, Link } from "react-router-dom";
 import { getCoverPath } from "@/lib/utils";
 import { Library } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryError } from "@/components/ui/query-error";
 import { PageHeader } from "@/components/ui/page-header";
 import { TrackTable } from "@/features/tracks/components/track-table";
 import { Badge } from "@/components/ui/badge";
@@ -18,15 +19,30 @@ import {
 export default function AlbumPage() {
   const { t, i18n } = useTranslation();
   const { id } = useParams();
-  const { data: album, isPending: albumPending } = useQuery({
+  const {
+    data: album,
+    isPending: albumPending,
+    isError: albumError,
+    refetch: refetchAlbum,
+  } = useQuery({
     ...catalogQueries.album(id ?? ""),
     enabled: !!id,
   });
-  const { data: tracks = [], isPending: tracksPending } = useQuery({
+  const {
+    data: tracks = [],
+    isPending: tracksPending,
+    isError: tracksError,
+    refetch: refetchTracks,
+  } = useQuery({
     ...catalogQueries.tracksByAlbum(id ?? ""),
     enabled: !!id,
   });
   const isPending = albumPending || tracksPending;
+  const isError = albumError || tracksError;
+  const retry = () => {
+    void refetchAlbum();
+    void refetchTracks();
+  };
 
   const metadata = useMemo(
     () => deriveAlbumMetadata(album, tracks),
@@ -47,6 +63,15 @@ export default function AlbumPage() {
     Boolean(metadata.genre) ||
     metadata.formats.length > 0 ||
     metadata.sourceNames.length > 0;
+
+  if (isError && !album) {
+    return (
+      <QueryError
+        message={t("common.loadError")}
+        onRetry={() => void retry()}
+      />
+    );
+  }
 
   return (
     <>
@@ -118,11 +143,18 @@ export default function AlbumPage() {
       />
       <Separator className="my-4" />
       <div className="relative">
-        <TrackTable
-          tracks={tracks}
-          isPending={isPending}
-          getNumber={(track, index) => track.track_number ?? index + 1}
-        />
+        {isError ? (
+          <QueryError
+            message={t("common.loadError")}
+            onRetry={() => void retry()}
+          />
+        ) : (
+          <TrackTable
+            tracks={tracks}
+            isPending={isPending}
+            getNumber={(track, index) => track.track_number ?? index + 1}
+          />
+        )}
       </div>
     </>
   );

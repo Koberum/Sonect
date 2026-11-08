@@ -8,6 +8,7 @@ import { ArtistCard } from "@/features/catalog/components/media-card/artist-card
 import { TrackCard } from "@/features/catalog/components/media-card/track-card";
 import { MediaCarousel } from "@/features/catalog/components/media-carousel";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryError } from "@/components/ui/query-error";
 import { Button } from "@/components/ui/button";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { systemQueries } from "@/features/system/queries";
@@ -34,7 +35,9 @@ export default function Dashboard() {
   const { play } = usePlayTrack();
   const qc = useQueryClient();
 
-  const { data, isPending } = useQuery(systemQueries.dashboard(profileId));
+  const { data, isPending, isError, refetch } = useQuery(
+    systemQueries.dashboard(profileId),
+  );
 
   useEffect(() => {
     if (!playbackStatus.track?.id || !profileId) return;
@@ -43,6 +46,15 @@ export default function Dashboard() {
       refetchType: "none",
     });
   }, [playbackStatus.track?.id, profileId, qc]);
+
+  if (isError) {
+    return (
+      <QueryError
+        message={t("common.loadError")}
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
   if (isPending && !data) {
     return (

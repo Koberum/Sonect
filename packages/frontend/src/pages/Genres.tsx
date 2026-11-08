@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
 import { useNavigate } from "react-router-dom";
 import { EmptyState } from "@/components/ui/empty-state";
+import { QueryError } from "@/components/ui/query-error";
 import { MediaGrid } from "@/features/catalog/components/media-grid";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -16,7 +17,12 @@ import { Music, Disc3 } from "lucide-react";
 export default function Genres() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { data: genres = [], isPending } = useQuery(catalogQueries.genres());
+  const {
+    data: genres = [],
+    isPending,
+    isError,
+    refetch,
+  } = useQuery(catalogQueries.genres());
 
   return (
     <div>
@@ -26,6 +32,11 @@ export default function Genres() {
             <Skeleton key={i} className="h-24 w-full rounded-xl" />
           ))}
         </MediaGrid>
+      ) : isError ? (
+        <QueryError
+          message={t("common.loadError")}
+          onRetry={() => void refetch()}
+        />
       ) : (
         <>
           {genres.length === 0 && (

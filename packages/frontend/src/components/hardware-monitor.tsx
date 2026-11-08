@@ -6,10 +6,24 @@ import { formatBytes, formatUptime } from "@/lib/format";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryError } from "@/components/ui/query-error";
 
 export function HardwareMonitor() {
   const { t } = useTranslation();
-  const { data: usage } = useQuery(systemQueries.hardwareUsage(true));
+  const {
+    data: usage,
+    isError,
+    refetch,
+  } = useQuery(systemQueries.hardwareUsage(true));
+
+  if (isError) {
+    return (
+      <QueryError
+        message={t("common.loadError")}
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
   if (!usage) {
     return (

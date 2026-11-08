@@ -233,8 +233,15 @@
     "albums": "Album",
     "tracks": "Brani"
   },
+  "notFound": {
+    "title": "Pagina non trovata",
+    "description": "La pagina che cerchi non esiste o è stata spostata.",
+    "back": "Vai a Scopri"
+  },
   "common": {
     "cover": "Copertina",
+    "loadError": "Impossibile caricare questa pagina.",
+    "errorDescription": "Qualcosa è andato storto durante il rendering di questa pagina. Ricarica per riprovare.",
     "cancel": "Annulla",
     "retry": "Riprova",
     "continue": "Continua",
