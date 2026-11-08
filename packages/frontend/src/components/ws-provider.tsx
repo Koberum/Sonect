@@ -39,6 +39,7 @@ export function usePlayerSocket(): PlayerSocketContextValue {
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const {
     applyPlaybackStatus,
+    applyRouterStatus,
     setSyncProgress,
     setSyncError,
     setWsConnected,
@@ -203,6 +204,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           if (type === "player-status" || type === undefined) {
             const status = data as unknown as PlaybackStatus;
             applyPlaybackStatus({ ...defaultPlayerState, ...status });
+            applyRouterStatus(status);
             if (status.mode === "browser" || status.mode === "mpd") {
               setOutputMode(status.mode);
             }
@@ -258,6 +260,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     profileId,
     queryClient,
     applyPlaybackStatus,
+    applyRouterStatus,
     setSyncProgress,
     setSyncError,
     setWsConnected,

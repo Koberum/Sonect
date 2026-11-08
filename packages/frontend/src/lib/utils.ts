@@ -14,7 +14,8 @@ export function getCoverPath(cover_path?: string) {
 
 /** Extract a 4-digit year from an MPD/ID3 date such as "2021-05-01". */
 export function parseYear(date?: string): string | undefined {
-  return date?.match(/\b(\d{4})\b/)?.[1];
+  if (!date) return undefined;
+  return date.match(/\b(\d{4})\b/)?.[1] ?? date.match(/^(\d{4})/)?.[1];
 }
 
 /** Shared hover effect classes for album/track/artist artwork */

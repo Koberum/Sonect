@@ -16,7 +16,12 @@ export function useAudioOutput({ onConfigured }: UseAudioOutputOptions = {}) {
   const { t } = useTranslation();
   const devicesQuery = useQuery(systemQueries.audioDevices());
   const { data: devices = [] } = devicesQuery;
-  const { data: audioStatus } = useQuery(systemQueries.audioStatus());
+  const audioStatusQuery = useQuery({
+    ...systemQueries.audioStatus(),
+    // The current output can change between visits (setup re-run, hotplug).
+    staleTime: 0,
+  });
+  const { data: audioStatus } = audioStatusQuery;
   const [selected, setSelected] = useState("");
   const userSelected = useRef(false);
   const configureMut = useMutation(systemMutations.configureAudio());
@@ -66,8 +71,11 @@ export function useAudioOutput({ onConfigured }: UseAudioOutputOptions = {}) {
     select,
     apply,
     loading: configureMut.isPending,
-    isPending: devicesQuery.isPending,
-    isError: devicesQuery.isError,
-    refetch: devicesQuery.refetch,
+    isPending: devicesQuery.isPending || audioStatusQuery.isPending,
+    isError: devicesQuery.isError || audioStatusQuery.isError,
+    refetch: () => {
+      void devicesQuery.refetch();
+      void audioStatusQuery.refetch();
+    },
   };
 }

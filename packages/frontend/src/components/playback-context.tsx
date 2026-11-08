@@ -13,10 +13,18 @@ import {
   useRef,
   useState,
 } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/features/auth/auth-context";
+import { playerQueries } from "@/features/player/queries";
 import { getDeviceId, getDeviceName, getDeviceType } from "@/lib/deviceId";
 import { defaultPlayerState } from "@/lib/playbackState";
 
 export type SyncProgress = LibrarySyncProgress;
+
+type RouterStatus = Pick<
+  PlaybackStatus,
+  "activeDeviceId" | "activeDeviceName" | "activeDeviceType" | "mode"
+>;
 
 type PlaybackContextType = {
   playbackStatus: PlaybackStatus;
@@ -25,6 +33,7 @@ type PlaybackContextType = {
   syncError: string | null;
   wsConnected: boolean;
   applyPlaybackStatus: (status: PlaybackStatus) => void;
+  applyRouterStatus: (status: RouterStatus) => void;
   setSyncProgress: (progress: SyncProgress | null) => void;
   setSyncError: (error: string | null) => void;
   outputMode: OutputMode;
@@ -66,10 +75,40 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return "desktop";
     return getDeviceType();
   });
+  const { isAuthenticated, profile } = useAuth();
+  const { data: outputModeData } = useQuery({
+    ...playerQueries.outputMode(),
+    enabled: isAuthenticated,
+  });
+  const hydratedModeRef = useRef(false);
+  const [lastTrack, setLastTrack] = useState<TrackWithRelations | null>(null);
 
   useEffect(() => {
     localStorage.setItem("outputMode", outputMode);
   }, [outputMode]);
+
+  // Re-hydrate the mode for each profile (the query is cleared on switch).
+  useEffect(() => {
+    hydratedModeRef.current = false;
+  }, [profile?.id]);
+
+  // Hydrate the mode from REST once, so a fresh browser knows the backend's
+  // per-profile mode before the first WebSocket status arrives.
+  useEffect(() => {
+    if (hydratedModeRef.current || !outputModeData?.mode) return;
+    hydratedModeRef.current = true;
+    setOutputMode(outputModeData.mode);
+  }, [outputModeData?.mode]);
+
+  // Keep the last known track while a transient status omits it (for example a
+  // failed MPD currentsong read). A stop clears it.
+  useEffect(() => {
+    if (playbackStatus.track) {
+      setLastTrack(playbackStatus.track);
+    } else if (playbackStatus.state === "stop") {
+      setLastTrack(null);
+    }
+  }, [playbackStatus.track, playbackStatus.state]);
 
   // Statuses can arrive from the WS broadcast and from command responses.
   // Apply them in (epoch, revision) order so a slower response cannot roll
@@ -92,9 +131,47 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
     setPlaybackStatus(status);
   }, []);
 
+  // Router-owned fields change without an engine revision bump (browser output
+  // handoff, active-device release), so they must bypass the revision dedupe.
+  const applyRouterStatus = useCallback((status: RouterStatus) => {
+    setPlaybackStatus((previous) => {
+      const next: PlaybackStatus = {
+        ...previous,
+        activeDeviceId:
+          status.activeDeviceId === undefined
+            ? previous.activeDeviceId
+            : status.activeDeviceId,
+        activeDeviceName:
+          status.activeDeviceName === undefined
+            ? previous.activeDeviceName
+            : status.activeDeviceName,
+        activeDeviceType:
+          status.activeDeviceType === undefined
+            ? previous.activeDeviceType
+            : status.activeDeviceType,
+        mode:
+          status.mode === "browser" || status.mode === "mpd"
+            ? status.mode
+            : previous.mode,
+      };
+
+      if (
+        next.activeDeviceId === previous.activeDeviceId &&
+        next.activeDeviceName === previous.activeDeviceName &&
+        next.activeDeviceType === previous.activeDeviceType &&
+        next.mode === previous.mode
+      ) {
+        return previous;
+      }
+      return next;
+    });
+  }, []);
+
   // Everything below is derived from the single status object; there is no
   // second copy to keep in sync with the backend.
-  const trackPlayed = playbackStatus.track ?? null;
+  const trackPlayed =
+    playbackStatus.track ??
+    (playbackStatus.state === "stop" ? null : lastTrack);
   const activeDeviceId = playbackStatus.activeDeviceId ?? null;
   const activeDeviceName = playbackStatus.activeDeviceName ?? null;
   const activeDeviceType = playbackStatus.activeDeviceType ?? null;
@@ -104,6 +181,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       playbackStatus,
       trackPlayed,
       applyPlaybackStatus,
+      applyRouterStatus,
       syncProgress,
       syncError,
       wsConnected,
@@ -123,6 +201,7 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
       playbackStatus,
       trackPlayed,
       applyPlaybackStatus,
+      applyRouterStatus,
       syncProgress,
       syncError,
       wsConnected,

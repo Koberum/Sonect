@@ -266,11 +266,9 @@ export function SearchCommand({
   };
 
   const handleInputFocus = () => {
+    const recents = refresh();
     const length = query.trim().length;
-    if (
-      length >= MIN_QUERY_LENGTH ||
-      (length === 0 && recentSearches.length > 0)
-    ) {
+    if (length >= MIN_QUERY_LENGTH || (length === 0 && recents.length > 0)) {
       setShowDropdown(true);
     }
   };

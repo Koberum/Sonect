@@ -15,7 +15,9 @@ export function useRecentSearches(profileId: string) {
   }, [profileId]);
 
   const refresh = useCallback(() => {
-    setRecentSearches(loadRecentSearches(profileId));
+    const next = loadRecentSearches(profileId);
+    setRecentSearches(next);
+    return next;
   }, [profileId]);
 
   const remember = useCallback(
