@@ -65,7 +65,29 @@ After making changes:
 
 1. `pnpm lint` — must pass with zero errors
 2. `pnpm build` — must compile with zero errors (strict TypeScript)
-3. `pnpm backend:test` — must pass (backend only has tests currently)
+3. `pnpm backend:test` — backend suite (Mocha/Chai/Sinon/Supertest)
+4. `pnpm frontend:test` — frontend suite (Vitest)
+
+## Verifica frontend
+
+C'è una sola app frontend nel monorepo:
+
+| Package    | Comando dev         | URL                     | Dipendenze                                                |
+| ---------- | ------------------- | ----------------------- | --------------------------------------------------------- |
+| `frontend` | `pnpm frontend:dev` | <http://localhost:5173> | Backend su `:3000`; `pnpm dev` per avviare tutto lo stack |
+
+- `pnpm frontend:dev` esegue `pnpm --filter frontend dev` (`vite --host`); la porta è 5173 (default Vite).
+- Il backend serve auth, catalogo, streaming e WebSocket sulla porta 3000; si avvia con `pnpm backend:dev`. Per lo stack completo usa `pnpm dev`, che precompila `@repo/types` e `@repo/db` prima di avviare i watcher.
+- Vite fa proxy di `/auth`, `/catalog`, `/player`, `/playlists`, `/likes`, `/dashboard`, `/covers`, `/stream`, `/waveforms`, `/system`, `/profiles` e `/ws` verso `http://localhost:3000`.
+- Non esiste un task `turbo run dev`: `turbo.json` definisce solo `build`, `lint` e `test`; lo script root `dev` usa `concurrently`.
+- Playwright MCP (`playwright` in `opencode.json`, config del browser in `.opencode/playwright-mcp.json`) gira in headless Chromium a 1440×900. Usa i suoi tool per aprire l'URL, leggere lo snapshot di accessibilità, fare screenshot e controllare console e network.
+- `.opencode/playwright-mcp.json` passa `--disable-software-rasterizer` a Chromium: senza questo flag gli screenshot headless vanno in timeout in questo container. Non rimuoverlo.
+- Il browser Playwright si installa una volta dalla root con `pnpm dlx @playwright/mcp@latest install-browser chromium`; non aggiungere Playwright alle dipendenze dei package. Gli output finiscono in `.playwright-mcp/` (gitignored).
+
+Regole:
+
+- Dopo ogni modifica alla UI, avvia solo l'app interessata: `pnpm frontend:dev` per modifiche solo frontend. Avvia anche il backend (o `pnpm dev`) solo se la pagina richiede API/auth/streaming.
+- Verifica la modifica a 375px, 768px e 1280px prima di dichiararla completata (vedi anche "Verification steps").
 
 ## Environment variables (packages/backend/.env)
 
