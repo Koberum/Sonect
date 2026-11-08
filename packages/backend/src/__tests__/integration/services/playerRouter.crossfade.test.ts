@@ -118,6 +118,10 @@ describe("PlayerRouter crossfade", () => {
     expect(router.getStatus(profileId).crossfade).to.equal(6);
   });
 
+  it("starts browser sessions at 65% volume", () => {
+    expect(router.getStatus(profileId).volume).to.equal(65);
+  });
+
   it("gives MPD statuses a stable epoch and a monotonic revision", async () => {
     await router.setMode(profileId, "mpd");
 

@@ -158,19 +158,11 @@ export function PlayerVolumeControls({
 }: {
   fullWidth?: boolean;
 }) {
-  const { t } = useTranslation();
-  const { playbackStatus, applyPlaybackStatus } = usePlaybackContext();
+  const { playbackStatus } = usePlaybackContext();
   const { isActiveBrowser, volume, setVolume } = usePlayerEngine();
 
   const commitVolume = (nextVolume: number) => {
-    const previousVolume = volume;
     setVolume(nextVolume);
-    void persistVolume(nextVolume)
-      .then(applyPlaybackStatus)
-      .catch(() => {
-        setVolume(previousVolume);
-        toast.error(t("player.volumeError"));
-      });
   };
 
   return (

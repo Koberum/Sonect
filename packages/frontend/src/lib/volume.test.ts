@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_VOLUME,
   clampVolume,
+  hasVolumePreference,
   loadVolumePreference,
   resolveVolumeIcon,
   saveVolumePreference,
@@ -65,6 +66,7 @@ describe("volume preference storage", () => {
       muted: true,
       lastVolume: 42,
     });
+    expect(hasVolumePreference(storage)).toBe(true);
   });
 
   it("clamps stored values and ignores corrupt JSON", () => {

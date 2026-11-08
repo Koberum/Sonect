@@ -73,6 +73,19 @@ export function loadVolumePreference(
   }
 }
 
+export function hasVolumePreference(
+  storage: Storage | undefined = typeof localStorage === "undefined"
+    ? undefined
+    : localStorage,
+): boolean {
+  if (!storage) return false;
+  try {
+    return storage.getItem(VOLUME_STORAGE_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
 export function saveVolumePreference(
   preference: VolumePreference,
   storage: Storage | undefined = typeof localStorage === "undefined"
