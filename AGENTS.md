@@ -29,6 +29,8 @@ pnpm backend:start      # Start production build (node dist/bundle.cjs)
 pnpm backend:test       # Run backend tests (Mocha/Chai/Sinon/Supertest)
 pnpm backend:test:watch # Backend tests in watch mode
 pnpm backend:test:coverage # Backend test coverage report (c8)
+pnpm frontend:test      # Run frontend tests (Vitest)
+pnpm frontend:test:watch # Frontend tests in watch mode (from packages/frontend)
 pnpm db:generate        # Generate a new SQL migration from tables.ts (drizzle-kit)
 pnpm db:migrate         # Apply pending migrations to DB_PATH (dev convenience)
 pnpm db:migrate-reset   # Wipe + re-apply migrations; prompts, --force skips
@@ -336,6 +338,7 @@ sonect (single image, ENTRYPOINT /init)
 - Use **Sinon stubs + dynamic `import()`** when a module must be imported after stubs are set up (see route tests).
 - **Route tests** build a minimal Express app via a local `makeApp()` helper and manually add `errorHandler` middleware.
 - Before adding new test files, check existing patterns in `__tests__/` for consistency.
+- **Frontend tests** live next to the code as `packages/frontend/src/**/*.test.ts` and run with **Vitest** (`pnpm frontend:test`) in a Node environment; `vitest.config.ts` provides the `@/` alias. Do not assume a browser DOM: mock `Audio`, `AudioContext` and other browser globals explicitly. Current coverage targets the browser audio deck state machine, the player report buffer, profile-scoped query keys/cleanup and catalog-sync invalidation. Add a regression test with every player or cache fix; CI runs `pnpm --filter frontend test`.
 
 ## Architecture notes
 

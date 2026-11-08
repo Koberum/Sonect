@@ -433,6 +433,7 @@ pnpm build          # Compile all packages (turbo-cached)
 pnpm lint           # Lint all packages (turbo-cached)
 pnpm dev            # Run all packages' dev servers in parallel (not cached)
 pnpm backend:test   # Run backend tests (fresh run, not cached)
+pnpm frontend:test  # Run frontend tests (Vitest, fresh run, not cached)
 pnpm backend:bundle # Bundle backend for production
 pnpm frontend:build # Build frontend for production
 pnpm db:generate    # Generate a new SQL migration from the schema (drizzle-kit)

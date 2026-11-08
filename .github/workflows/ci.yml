@@ -54,5 +54,8 @@ jobs:
           VITE_COVER_PATH: /covers
           VITE_DEBUG: "false"
 
+      - name: Frontend tests
+        run: pnpm --filter frontend test
+
       - name: Backend tests
         run: pnpm --filter backend test
