@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { QueryError } from "@/components/ui/query-error";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Trash2, Play, Edit3, ListMusic } from "lucide-react";
 import type { PlaylistTrack } from "@repo/types/catalog";
 import { toast } from "sonner";
@@ -32,6 +33,7 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -219,6 +221,9 @@ export default function PlaylistDetail() {
               <SheetContent side="right">
                 <SheetHeader>
                   <SheetTitle>{t("playlist.edit")}</SheetTitle>
+                  <SheetDescription>
+                    {t("playlist.editDescription")}
+                  </SheetDescription>
                 </SheetHeader>
                 <form
                   onSubmit={(e) => {
@@ -227,17 +232,29 @@ export default function PlaylistDetail() {
                   }}
                   className="mt-6 space-y-4"
                 >
-                  <Input
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    placeholder={t("playlist.namePlaceholder")}
-                    autoFocus
-                  />
-                  <Input
-                    value={editDesc}
-                    onChange={(e) => setEditDesc(e.target.value)}
-                    placeholder={t("playlist.descriptionPlaceholder")}
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="playlist-edit-name">
+                      {t("playlist.nameLabel")}
+                    </Label>
+                    <Input
+                      id="playlist-edit-name"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder={t("playlist.namePlaceholder")}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="playlist-edit-description">
+                      {t("playlist.descriptionLabel")}
+                    </Label>
+                    <Input
+                      id="playlist-edit-description"
+                      value={editDesc}
+                      onChange={(e) => setEditDesc(e.target.value)}
+                      placeholder={t("playlist.descriptionPlaceholder")}
+                    />
+                  </div>
                   <Button
                     type="submit"
                     className="w-full"

@@ -7,6 +7,7 @@ import { PasswordField } from "@/components/ui/password-field";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -66,6 +67,9 @@ export function ChangePasswordDialog({
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{t("auth.changePassword")}</DialogTitle>
+          <DialogDescription>
+            {t("auth.changePasswordDescription")}
+          </DialogDescription>
         </DialogHeader>
         <form
           className="flex flex-col gap-4"
