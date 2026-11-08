@@ -360,7 +360,7 @@ sonect (single image, ENTRYPOINT /init)
 - Use **Sinon stubs + dynamic `import()`** when a module must be imported after stubs are set up (see route tests).
 - **Route tests** build a minimal Express app via a local `makeApp()` helper and manually add `errorHandler` middleware.
 - Before adding new test files, check existing patterns in `__tests__/` for consistency.
-- **Frontend tests** live next to the code as `packages/frontend/src/**/*.test.ts` and run with **Vitest** (`pnpm frontend:test`) in a Node environment; `vitest.config.ts` provides the `@/` alias. Do not assume a browser DOM: mock `Audio`, `AudioContext` and other browser globals explicitly. Current coverage targets the browser audio deck state machine, the player report buffer, profile-scoped query keys/cleanup and catalog-sync invalidation. Add a regression test with every player or cache fix; CI runs `pnpm --filter frontend test`.
+- **Frontend tests** live next to the code as `packages/frontend/src/**/*.test.ts(x)` and run with **Vitest** (`pnpm frontend:test`) in a Node environment; `vitest.config.ts` provides the `@/` alias. Do not assume a browser DOM: mock `Audio`, `AudioContext` and other browser globals explicitly. Component tests opt into jsdom with `/** @vitest-environment jsdom */` and use `src/test/render.tsx` (`renderWithProviders`, which supplies i18n and TanStack Query). Current coverage targets the browser audio deck state machine, the player report buffer, profile-scoped query keys/cleanup, catalog-sync invalidation, the error boundary/404 and card interaction semantics. Add a regression test with every player, cache or component fix; CI runs `pnpm --filter frontend test`.
 
 ## Architecture notes
 
