@@ -114,6 +114,9 @@
     "playbackError": "Unable to play this track",
     "commandError": "Playback command failed",
     "queueError": "Couldn't add to the queue",
+    "queueBulkError": "Couldn't add the tracks to the queue",
+    "queuePartial_one": "{{count}} track couldn't be added",
+    "queuePartial_other": "{{count}} tracks couldn't be added",
     "outputInUse": "In use by another session",
     "outputInUseByOther": "Audio output is in use by another session"
   },

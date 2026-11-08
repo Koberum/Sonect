@@ -114,6 +114,9 @@
     "playbackError": "No se puede reproducir esta pista",
     "commandError": "Error al ejecutar la orden de reproducción",
     "queueError": "No se pudo añadir a la cola",
+    "queueBulkError": "No se pudieron añadir las pistas a la cola",
+    "queuePartial_one": "No se pudo añadir {{count}} pista",
+    "queuePartial_other": "No se pudieron añadir {{count}} pistas",
     "outputInUse": "En uso por otra sesión",
     "outputInUseByOther": "La salida de audio está en uso por otra sesión"
   },

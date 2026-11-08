@@ -9,7 +9,7 @@ import { usePlayTrack } from "@/features/player/usePlayTrack";
  * (album and artist cards). The loader is responsible for any caching.
  */
 export function useCollectionActions(loadTracks: () => Promise<Track[]>) {
-  const { play, addToQueue } = usePlayTrack();
+  const { play, addManyToQueue } = usePlayTrack();
   const { t } = useTranslation();
 
   const playFirst = useCallback(async () => {
@@ -29,11 +29,8 @@ export function useCollectionActions(loadTracks: () => Promise<Track[]>) {
       toast.error(t("common.loadError"));
       return;
     }
-    // Enqueue sequentially so the server preserves collection order.
-    for (const track of tracks) {
-      await addToQueue(track.file);
-    }
-  }, [loadTracks, addToQueue, t]);
+    await addManyToQueue(tracks.map((track) => track.file));
+  }, [loadTracks, addManyToQueue, t]);
 
   return { playFirst, enqueueAll };
 }

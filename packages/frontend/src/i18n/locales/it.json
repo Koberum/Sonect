@@ -114,6 +114,9 @@
     "playbackError": "Impossibile riprodurre questo brano",
     "commandError": "Errore durante il comando di riproduzione",
     "queueError": "Impossibile aggiungere alla coda",
+    "queueBulkError": "Impossibile aggiungere i brani alla coda",
+    "queuePartial_one": "Impossibile aggiungere {{count}} brano",
+    "queuePartial_other": "Impossibile aggiungere {{count}} brani",
     "outputInUse": "In uso da un'altra sessione",
     "outputInUseByOther": "L'uscita audio è in uso da un'altra sessione"
   },

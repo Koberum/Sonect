@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { profileSettingsDb } from "@repo/db";
 import { playerSchemas, systemSchemas } from "@repo/types";
+import type { BulkQueueResult } from "@repo/types";
 import { asyncHandler } from "@middleware/asyncHandler";
 import { resolvePlayerRouter } from "@services/player/playerRouter.js";
 import { LockedError } from "../middleware/errorHandler.js";
@@ -249,6 +250,43 @@ export const unifiedAddToQueueHandler = asyncHandler(
     );
     await router().forSession(sid).addToQueue(file);
     res.json(router().getStatus(sid));
+  },
+);
+
+export const unifiedAddManyToQueueHandler = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { files } = playerSchemas.addManyToQueue.parse(req.body);
+    const sid = req.sessionId as string;
+    const engine = router().forSession(sid);
+    const failed: Array<{ file: string; error: string }> = [];
+    let added = 0;
+
+    // Keep the request order: playlists mirror it, and MPD appends in command
+    // order. A broken file must not discard the files that were already queued.
+    for (const file of files) {
+      try {
+        await engine.addToQueue(file);
+        added += 1;
+      } catch (error) {
+        failed.push({
+          file,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    getLogService().pushLog(
+      failed.length > 0 ? "warn" : "debug",
+      `[Session ${fmtSid(sid)}][${router().getMode(sid)}] addManyToQueue ${added}/${files.length}`,
+      { sessionId: fmtSid(sid), added, failed: failed.length },
+    );
+
+    const result: BulkQueueResult = {
+      status: router().getStatus(sid),
+      added,
+      failed,
+    };
+    res.status(failed.length > 0 && added === 0 ? 422 : 200).json(result);
   },
 );
 

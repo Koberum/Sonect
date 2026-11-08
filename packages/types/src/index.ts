@@ -47,6 +47,12 @@ export type PlaybackSettings = {
   crossfadeSeconds: number;
 };
 
+export type BulkQueueResult = {
+  status: PlaybackStatus;
+  added: number;
+  failed: Array<{ file: string; error: string }>;
+};
+
 /**
  * Playback facts reported by the active browser engine. The browser is the
  * source of truth for timing in browser mode, so the backend mirrors these

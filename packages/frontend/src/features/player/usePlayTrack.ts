@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import {
   playSong,
   addToQueue as unifiedAddToQueue,
+  addManyToQueue as requestAddManyToQueue,
 } from "@/features/player/api";
 import { usePlaybackContext } from "@/components/playback-context";
 import type { Track } from "@repo/types/catalog";
@@ -38,5 +39,26 @@ export function usePlayTrack() {
     [t],
   );
 
-  return { play, addToQueue };
+  const addManyToQueue = useCallback(
+    async (files: string[]) => {
+      if (files.length === 0) return;
+      try {
+        const result = await requestAddManyToQueue(files);
+        applyPlaybackStatus(result.status);
+        if (result.failed.length > 0) {
+          toast.warning(
+            t("player.queuePartial", { count: result.failed.length }),
+            { id: QUEUE_ERROR_TOAST_ID },
+          );
+        }
+      } catch {
+        toast.error(t("player.queueBulkError"), {
+          id: QUEUE_ERROR_TOAST_ID,
+        });
+      }
+    },
+    [applyPlaybackStatus, t],
+  );
+
+  return { play, addToQueue, addManyToQueue };
 }

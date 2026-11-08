@@ -4,6 +4,7 @@ import type {
   PlaybackStatus,
   QueuedTrack,
   OutputMode,
+  BulkQueueResult,
 } from "@repo/types";
 import type { Track } from "@repo/types/catalog";
 
@@ -60,6 +61,9 @@ export function clearQueue(): Promise<PlaybackStatus> {
 }
 export function addToQueue(file: string): Promise<PlaybackStatus> {
   return apiFetch("/player/queue", { method: "POST", body: { file } });
+}
+export function addManyToQueue(files: string[]): Promise<BulkQueueResult> {
+  return apiFetch("/player/queue/bulk", { method: "POST", body: { files } });
 }
 export function getOutputMode(signal?: AbortSignal): Promise<{
   mode: OutputMode;

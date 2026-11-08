@@ -11,6 +11,7 @@ import {
   unifiedSeekHandler,
   unifiedGetQueueHandler,
   unifiedAddToQueueHandler,
+  unifiedAddManyToQueueHandler,
   unifiedRemoveFromQueueHandler,
   unifiedMoveInQueueHandler,
   unifiedClearQueueHandler,
@@ -36,6 +37,7 @@ router.post("/next", unifiedNextHandler);
 router.post("/previous", unifiedPreviousHandler);
 router.post("/seek", unifiedSeekHandler);
 router.post("/queue", unifiedAddToQueueHandler);
+router.post("/queue/bulk", unifiedAddManyToQueueHandler);
 router.patch("/queue/move", unifiedMoveInQueueHandler);
 router.delete("/queue", unifiedClearQueueHandler);
 router.delete("/queue/:pos", unifiedRemoveFromQueueHandler);

@@ -24,6 +24,12 @@ export const playerSchemas = {
   addToQueue: z.object({
     file: z.string().min(1, "file is required"),
   }),
+  addManyToQueue: z.object({
+    files: z
+      .array(z.string().min(1, "file is required"))
+      .min(1, "files must not be empty")
+      .max(500, "at most 500 files can be queued at once"),
+  }),
   volume: z.object({
     volume: z
       .number()
