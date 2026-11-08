@@ -1,4 +1,6 @@
 import { useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import type { PlaybackStatus } from "@repo/types";
 import type { Track } from "@repo/types/catalog";
 import { usePlaybackContext } from "@/components/playback-context";
@@ -18,12 +20,15 @@ import {
  */
 export function usePlayerCommands() {
   const { applyPlaybackStatus } = usePlaybackContext();
+  const { t } = useTranslation();
 
   const run = useCallback(
     (action: () => Promise<PlaybackStatus>) => {
-      void action().then(applyPlaybackStatus);
+      void action()
+        .then(applyPlaybackStatus)
+        .catch(() => toast.error(t("player.commandError")));
     },
-    [applyPlaybackStatus],
+    [applyPlaybackStatus, t],
   );
 
   const play = useCallback(

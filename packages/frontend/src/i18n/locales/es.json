@@ -112,6 +112,8 @@
     "tapToPlay": "Toca para reproducir",
     "playbackErrorDetail": "Error de reproducción: {{error}}",
     "playbackError": "No se puede reproducir esta pista",
+    "commandError": "Error al ejecutar la orden de reproducción",
+    "queueError": "No se pudo añadir a la cola",
     "outputInUse": "En uso por otra sesión",
     "outputInUseByOther": "La salida de audio está en uso por otra sesión"
   },

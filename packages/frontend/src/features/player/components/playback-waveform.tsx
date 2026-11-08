@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import { goToPosition } from "@/features/player/api";
 import { formatTime } from "@/lib/format";
@@ -48,7 +49,9 @@ export function PlaybackWaveform({
           onValueChange={([v]) => setPreview(v)}
           onValueCommit={([v]) => {
             setPreview(null);
-            void goToPosition(v);
+            void goToPosition(v).catch(() =>
+              toast.error(t("player.commandError")),
+            );
           }}
           className="group relative -my-2 flex flex-1 touch-none items-center py-2 select-none"
           aria-label={t("player.playbackPosition")}
@@ -74,7 +77,9 @@ export function PlaybackWaveform({
           onValueChange={([v]) => setPreview(v)}
           onValueCommit={([v]) => {
             setPreview(null);
-            void goToPosition(v);
+            void goToPosition(v).catch(() =>
+              toast.error(t("player.commandError")),
+            );
           }}
           className="group relative -my-4 flex flex-1 touch-none items-center py-4 select-none"
           aria-label={t("player.playbackPosition")}

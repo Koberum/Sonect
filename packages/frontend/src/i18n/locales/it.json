@@ -112,6 +112,8 @@
     "tapToPlay": "Tocca per riprodurre",
     "playbackErrorDetail": "Errore di riproduzione: {{error}}",
     "playbackError": "Impossibile riprodurre questo brano",
+    "commandError": "Errore durante il comando di riproduzione",
+    "queueError": "Impossibile aggiungere alla coda",
     "outputInUse": "In uso da un'altra sessione",
     "outputInUseByOther": "L'uscita audio è in uso da un'altra sessione"
   },

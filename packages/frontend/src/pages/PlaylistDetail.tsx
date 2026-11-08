@@ -66,7 +66,10 @@ export default function PlaylistDetail() {
   const updateMut = useMutation(playlistMutations.update(profileId));
   const deleteMut = useMutation(playlistMutations.delete(profileId));
   const removeTrackMut = useMutation(playlistMutations.removeTrack(profileId));
-  const loadMut = useMutation(playlistMutations.load());
+  const loadMut = useMutation({
+    ...playlistMutations.load(),
+    onError: () => toast.error(t("player.commandError")),
+  });
 
   const [editOpen, setEditOpen] = useState(false);
   const [editName, setEditName] = useState("");
@@ -89,7 +92,11 @@ export default function PlaylistDetail() {
 
   const handlePlayAll = useCallback(async () => {
     if (!playlist || playlist.tracks.length === 0) return;
-    await loadMut.mutateAsync(playlist.id);
+    try {
+      await loadMut.mutateAsync(playlist.id);
+    } catch {
+      // The mutation's onError already surfaces a localized toast.
+    }
   }, [playlist, loadMut]);
 
   const handleDelete = async () => {

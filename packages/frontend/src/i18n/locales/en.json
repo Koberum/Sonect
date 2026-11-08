@@ -112,6 +112,8 @@
     "tapToPlay": "Tap to play",
     "playbackErrorDetail": "Playback error: {{error}}",
     "playbackError": "Unable to play this track",
+    "commandError": "Playback command failed",
+    "queueError": "Couldn't add to the queue",
     "outputInUse": "In use by another session",
     "outputInUseByOther": "Audio output is in use by another session"
   },
