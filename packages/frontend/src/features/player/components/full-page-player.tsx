@@ -37,7 +37,7 @@ export function FullPagePlayer() {
           <LikeButton
             trackId={trackPlayed.id ?? playbackStatus.track?.id ?? null}
           />
-          <OutputSelector />
+          <OutputSelector placement="page" />
         </div>
 
         <PlaybackErrorNotice
