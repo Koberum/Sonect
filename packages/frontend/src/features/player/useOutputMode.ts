@@ -19,7 +19,13 @@ export function useOutputMode() {
   const { profile } = useAuth();
   const profileId = profile?.id ?? "";
   const { t } = useTranslation();
-  const { data } = useQuery(playerQueries.outputMode(profileId));
+  const { data } = useQuery({
+    ...playerQueries.outputMode(profileId),
+    // Another profile may release the MPD lock while this view stays open.
+    staleTime: 0,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+  });
 
   const mpdOwner = data?.mpdOwner ?? null;
   const isMpdLockedForMe =
