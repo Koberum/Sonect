@@ -129,6 +129,13 @@ export function PlayerEngineProvider({
     setCrossfade(playbackStatus.crossfade ?? 0);
   }, [playbackStatus.crossfade, setCrossfade]);
 
+  // The server volume is authoritative for the active browser too; this keeps
+  // reloads and volume changes from other devices in sync with the engine.
+  useEffect(() => {
+    if (!isActiveBrowser) return;
+    setVolume(playbackStatus.volume);
+  }, [isActiveBrowser, playbackStatus.volume, setVolume]);
+
   // Preload the upcoming track on the standby deck so the transition is
   // instant and the backend can expose nextTrackId ahead of time.
   useEffect(() => {

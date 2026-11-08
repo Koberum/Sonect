@@ -103,6 +103,7 @@
     "next": "Pista siguiente",
     "repeat": "Repetir",
     "volume": "Volumen",
+    "volumeError": "Error al cambiar el volumen",
     "outputSpeakers": "Altavoces",
     "outputDevices": "Salida",
     "thisDevice": "Este navegador",

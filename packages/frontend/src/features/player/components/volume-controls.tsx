@@ -6,7 +6,8 @@ import {
 } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
 import { useTranslation } from "react-i18next";
-import { setVolume } from "@/features/player/api";
+import { toast } from "sonner";
+import { setVolume as persistVolume } from "@/features/player/api";
 import {
   Volume1Icon,
   Volume2Icon,
@@ -46,7 +47,9 @@ export default function VolumeControls({
     if (onVolumeCommit) {
       onVolumeCommit(newVolume);
     } else {
-      setVolume(newVolume);
+      void persistVolume(newVolume).catch(() =>
+        toast.error(t("player.volumeError")),
+      );
     }
   };
 
@@ -55,7 +58,7 @@ export default function VolumeControls({
     if (onVolumeCommit) {
       onVolumeCommit(0);
     } else {
-      setVolume(0);
+      void persistVolume(0).catch(() => toast.error(t("player.volumeError")));
     }
   };
 
@@ -155,13 +158,25 @@ export function PlayerVolumeControls({
 }: {
   fullWidth?: boolean;
 }) {
-  const { playbackStatus } = usePlaybackContext();
+  const { t } = useTranslation();
+  const { playbackStatus, applyPlaybackStatus } = usePlaybackContext();
   const { isActiveBrowser, volume, setVolume } = usePlayerEngine();
+
+  const commitVolume = (nextVolume: number) => {
+    const previousVolume = volume;
+    setVolume(nextVolume);
+    void persistVolume(nextVolume)
+      .then(applyPlaybackStatus)
+      .catch(() => {
+        setVolume(previousVolume);
+        toast.error(t("player.volumeError"));
+      });
+  };
 
   return (
     <VolumeControls
       volume={isActiveBrowser ? volume : playbackStatus.volume}
-      onVolumeCommit={isActiveBrowser ? setVolume : undefined}
+      onVolumeCommit={isActiveBrowser ? commitVolume : undefined}
       fullWidth={fullWidth}
     />
   );

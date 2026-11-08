@@ -11,6 +11,7 @@ import { usePlaybackContext, type SyncProgress } from "./playback-context";
 import { defaultPlayerState } from "@/lib/playbackState";
 import type { PlaybackStatus, PlayerReport } from "@repo/types";
 import { getDeviceId, getDeviceName, getDeviceType } from "@/lib/deviceId";
+import { PlayerReportBuffer } from "@/lib/playerReportBuffer";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   invalidateCatalogAfterSync,
@@ -47,14 +48,20 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   } = usePlaybackContext();
 
   const wsRef = useRef<WebSocket | null>(null);
+  const reportBufferRef = useRef(new PlayerReportBuffer());
 
   const sendReport = useCallback((report: PlayerReport) => {
     const ws = wsRef.current;
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      reportBufferRef.current.push(report);
+      return;
+    }
     try {
       ws.send(JSON.stringify({ type: "player-report", ...report }));
     } catch {
-      // socket may close between the check and the send
+      // The socket may close between the check and the send; keep the fact
+      // for the next connection instead of losing the transition.
+      reportBufferRef.current.push(report);
     }
   }, []);
   const socketValue = useMemo(() => ({ sendReport }), [sendReport]);
@@ -75,6 +82,10 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     if (!profileId) return;
 
     let lastSyncInvalidationKey: string | null = null;
+
+    // Report facts belong to the profile that produced them; never replay them
+    // into another profile's socket.
+    reportBufferRef.current.clear();
 
     // Guard: each profile gets its own isolated socket. Tear down any previous
     // socket *before* opening the new one so we never have two live streams
@@ -142,6 +153,20 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }
         setWsConnected(true);
         reconnectAttempt = 0;
+
+        const pending = reportBufferRef.current.drain();
+        for (let index = 0; index < pending.length; index += 1) {
+          try {
+            nextWs.send(
+              JSON.stringify({ type: "player-report", ...pending[index] }),
+            );
+          } catch {
+            for (const report of pending.slice(index)) {
+              reportBufferRef.current.push(report);
+            }
+            break;
+          }
+        }
       };
 
       nextWs.onmessage = (event) => {

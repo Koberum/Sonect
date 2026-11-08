@@ -103,6 +103,7 @@
     "next": "Brano successivo",
     "repeat": "Ripeti",
     "volume": "Volume",
+    "volumeError": "Errore nel cambio del volume",
     "outputSpeakers": "Altoparlanti",
     "outputDevices": "Uscita",
     "thisDevice": "Questo browser",

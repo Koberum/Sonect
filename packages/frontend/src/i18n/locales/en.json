@@ -103,6 +103,7 @@
     "next": "Next track",
     "repeat": "Repeat",
     "volume": "Volume",
+    "volumeError": "Failed to change volume",
     "outputSpeakers": "Speakers",
     "outputDevices": "Output",
     "thisDevice": "This browser",
