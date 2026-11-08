@@ -4,7 +4,6 @@ import {
   ChevronDown,
   Copy,
   FolderPlus,
-  FolderSearch,
   HardDrive,
   Loader2,
   Plus,
@@ -40,12 +39,12 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { systemQueries, systemMutations } from "@/features/system/queries";
 import type { DetectedLibrary, StorageSource } from "@/features/system/api";
 import { LibrariesForm } from "./libraries-form";
-import { DetectedLibraryRow, RegisteredLibraryRow } from "./library-rows";
+import { DetectedLibrariesList } from "./detected-libraries-list";
+import { RegisteredLibraryRow } from "./library-rows";
 import type { LibrarySourceFormValues } from "./library-source-form";
+import { useLibraries } from "./use-libraries";
 import { SyncCard } from "@/features/sync/components/sync-card";
 
 function composeSnippet(target?: DetectedLibrary): string {
@@ -57,13 +56,17 @@ function composeSnippet(target?: DetectedLibrary): string {
 
 export function LibrariesTab() {
   const { t } = useTranslation();
-  const sourcesQuery = useQuery(systemQueries.storageSources());
-  const detectedQuery = useQuery(systemQueries.detectedLibraries());
-  const createMut = useMutation(systemMutations.createStorageSource());
-  const updateMut = useMutation(systemMutations.updateStorageSource());
-  const deleteMut = useMutation(systemMutations.deleteStorageSource());
-  const refreshMut = useMutation(systemMutations.refreshStorageStats());
-  const computeMut = useMutation(systemMutations.computeStorageStats());
+  const {
+    sourcesQuery,
+    detectedQuery,
+    sources,
+    detected,
+    createMut,
+    updateMut,
+    deleteMut,
+    refreshMut,
+    computeMut,
+  } = useLibraries();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -75,9 +78,6 @@ export function LibrariesTab() {
     name: string;
   } | null>(null);
   const [snippetOpen, setSnippetOpen] = useState(false);
-
-  const sources = sourcesQuery.data ?? [];
-  const detected = (detectedQuery.data ?? []).filter((l) => !l.registered);
 
   const openAddDialog = () => {
     setEditingId(null);
@@ -335,55 +335,21 @@ export function LibrariesTab() {
           </CardAction>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          {detectedQuery.isError ? (
-            <Alert
-              variant="destructive"
-              className="flex flex-wrap items-center justify-between gap-3"
-            >
-              <AlertDescription>
-                {t(
-                  "settings.libraries.loadDetectedError",
-                  "Couldn't load detected folders",
-                )}
-              </AlertDescription>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => void detectedQuery.refetch()}
-              >
-                {t("common.retry", "Retry")}
-              </Button>
-            </Alert>
-          ) : detectedQuery.isPending ? (
-            skeleton
-          ) : detected.length === 0 ? (
-            <EmptyState
-              icon={FolderSearch}
-              title={t(
-                "settings.libraries.noDetected",
-                "No folders detected under the music directory.",
-              )}
-              className="py-6"
-            />
-          ) : (
-            <ItemGroup>
-              {detected.map((lib) => (
-                <DetectedLibraryRow
-                  key={lib.path}
-                  lib={lib}
-                  isAdding={
-                    createMut.isPending &&
-                    createMut.variables?.path === lib.path
-                  }
-                  isComputing={
-                    computeMut.isPending && computeMut.variables === lib.path
-                  }
-                  onAdd={() => handleAddDetected(lib)}
-                  onCompute={() => handleComputeStats(lib)}
-                />
-              ))}
-            </ItemGroup>
-          )}
+          <DetectedLibrariesList
+            libraries={detected}
+            isPending={detectedQuery.isPending}
+            isError={detectedQuery.isError}
+            onRetry={() => void detectedQuery.refetch()}
+            isAdding={(library) =>
+              createMut.isPending && createMut.variables?.path === library.path
+            }
+            isComputing={(library) =>
+              computeMut.isPending && computeMut.variables === library.path
+            }
+            onAdd={(library) => void handleAddDetected(library)}
+            onCompute={(library) => void handleComputeStats(library)}
+            skeletonRows={3}
+          />
 
           <div className="rounded-lg border">
             <button

@@ -17,24 +17,18 @@ export type { LibrarySourceFormValues };
 type LibrarySourceFormState = ReturnType<typeof useLibrarySourceForm>;
 
 interface LibrarySourceFormProps {
-  editingId?: number | null;
-  form: LibrarySourceFormState["form"];
-  setForm: LibrarySourceFormState["setForm"];
-  errors: LibrarySourceFormState["errors"];
-  handleFieldBlur: LibrarySourceFormState["handleFieldBlur"];
+  formState: LibrarySourceFormState;
   formId?: string;
   onSubmit?: () => void;
 }
 
 export function LibrarySourceForm({
-  form,
-  setForm,
-  errors,
-  handleFieldBlur,
+  formState,
   formId = "library-source-form",
   onSubmit,
 }: LibrarySourceFormProps) {
   const { t } = useTranslation();
+  const { form, setForm, errors, handleFieldBlur } = formState;
 
   return (
     <form

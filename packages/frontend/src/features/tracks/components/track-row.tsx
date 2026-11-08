@@ -4,8 +4,7 @@ import PlayStatus from "@/features/player/components/play-status";
 import { TrackActionsMenu } from "@/features/tracks/components/track-actions-menu";
 import { usePlaybackContext } from "@/components/playback-context";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
-import { useTrackDrag } from "@/features/playlists/playlist-drop-context";
-import { setTrackDragData } from "@/features/playlists/track-drag";
+import { useTrackDragHandlers } from "@/features/playlists/use-track-drag-handlers";
 import { cn, getCoverPath } from "@/lib/utils";
 import { formatTime } from "@/lib/format";
 
@@ -28,7 +27,7 @@ export function TrackRow({
 }: TrackRowProps) {
   const { trackPlayed } = usePlaybackContext();
   const { play } = usePlayTrack();
-  const { startDrag, endDrag } = useTrackDrag();
+  const dragHandlers = useTrackDragHandlers<HTMLTableRowElement>(track.id);
   const isPlaying = trackPlayed?.id === track.id;
 
   const handlePlay = () => {
@@ -38,17 +37,12 @@ export function TrackRow({
 
   return (
     <TableRow
-      draggable
+      {...dragHandlers}
       aria-current={isPlaying ? "true" : undefined}
       className={cn(
         "group h-12 cursor-pointer",
         isPlaying && "bg-primary/10 hover:bg-primary/15",
       )}
-      onDragStart={(event) => {
-        setTrackDragData(event.dataTransfer, track.id);
-        startDrag(track.id);
-      }}
-      onDragEnd={endDrag}
     >
       <TableCell
         onClick={handlePlay}

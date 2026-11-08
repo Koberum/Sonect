@@ -3,8 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { PasswordField } from "@/components/ui/password-field";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/features/auth/auth-context";
+import { usePasswordValidation } from "@/features/auth/use-password-validation";
 
 type ChangePasswordDialogProps = {
   open: boolean;
@@ -25,6 +25,7 @@ export function ChangePasswordDialog({
 }: ChangePasswordDialogProps) {
   const { t } = useTranslation();
   const { changePassword } = useAuth();
+  const { validateNewPassword } = usePasswordValidation();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -42,12 +43,9 @@ export function ChangePasswordDialog({
 
   const handleSubmit = async (): Promise<void> => {
     if (!currentPassword || !newPassword || pending) return;
-    if (newPassword.length < 8) {
-      setError(t("auth.passwordTooShort"));
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError(t("auth.passwordsDoNotMatch"));
+    const validationError = validateNewPassword(newPassword, confirmPassword);
+    if (validationError) {
+      setError(validationError);
       return;
     }
     setPending(true);
@@ -76,41 +74,26 @@ export function ChangePasswordDialog({
             void handleSubmit();
           }}
         >
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="current-password">
-              {t("auth.currentPassword")}
-            </Label>
-            <Input
-              id="current-password"
-              type="password"
-              value={currentPassword}
-              onChange={(event) => setCurrentPassword(event.target.value)}
-              autoComplete="current-password"
-              autoFocus
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="new-password">{t("auth.newPassword")}</Label>
-            <Input
-              id="new-password"
-              type="password"
-              value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
-              autoComplete="new-password"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="confirm-password">
-              {t("auth.confirmPassword")}
-            </Label>
-            <Input
-              id="confirm-password"
-              type="password"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              autoComplete="new-password"
-            />
-          </div>
+          <PasswordField
+            id="current-password"
+            label={t("auth.currentPassword")}
+            value={currentPassword}
+            onChange={setCurrentPassword}
+            autoComplete="current-password"
+            autoFocus
+          />
+          <PasswordField
+            id="new-password"
+            label={t("auth.newPassword")}
+            value={newPassword}
+            onChange={setNewPassword}
+          />
+          <PasswordField
+            id="confirm-password"
+            label={t("auth.confirmPassword")}
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+          />
           {error && (
             <p role="alert" className="text-destructive text-sm">
               {error}

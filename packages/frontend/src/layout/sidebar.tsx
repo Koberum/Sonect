@@ -14,6 +14,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/features/auth/auth-context";
+import { isNavItemActive, type NavItem } from "@/layout/nav-items";
 import {
   Tooltip,
   TooltipContent,
@@ -25,13 +26,6 @@ export interface SidebarProps {
   collapsed?: boolean;
   collapsible?: boolean;
   onToggleCollapse?(): void;
-}
-
-interface SidebarItem {
-  href: string;
-  match: string;
-  labelKey: string;
-  icon: typeof AudioLines;
 }
 
 export function Sidebar({
@@ -64,28 +58,24 @@ export function Sidebar({
       ? "/sonect-logo-dark.svg"
       : "/sonect-logo-light.svg";
 
-  const items: SidebarItem[] = [
+  const items: NavItem[] = [
     {
       href: "/discover",
-      match: "/discover",
       labelKey: "nav.discover",
       icon: AudioLines,
     },
     {
       href: "/library",
-      match: "/library",
       labelKey: "nav.library",
       icon: Library,
     },
     {
       href: "/playlists",
-      match: "/playlists",
       labelKey: "nav.playlists",
       icon: ListMusic,
     },
     {
       href: "/queue",
-      match: "/queue",
       labelKey: "nav.queue",
       icon: ListOrdered,
     },
@@ -93,7 +83,6 @@ export function Sidebar({
       ? [
           {
             href: "/settings",
-            match: "/settings",
             labelKey: "nav.settings",
             icon: Settings,
           },
@@ -101,8 +90,7 @@ export function Sidebar({
       : []),
   ];
 
-  const isActive = (match: string) =>
-    pathname === match || pathname.startsWith(`${match}/`);
+  const isActive = (href: string) => isNavItemActive(pathname, href);
 
   return (
     <div className={cn("flex h-full flex-col", className)}>
@@ -142,17 +130,17 @@ export function Sidebar({
         className={cn("space-y-1", collapsed ? "p-2" : "p-3")}
         aria-label={t("nav.label")}
       >
-        {items.map(({ href, match, labelKey, icon: Icon }) => {
+        {items.map(({ href, labelKey, icon: Icon }) => {
           const button = (
             <Button
               key={href}
               onClick={() => navigate(href)}
-              variant={isActive(match) ? "secondary" : "ghost"}
+              variant={isActive(href) ? "secondary" : "ghost"}
               className={cn(
                 "w-full",
                 collapsed ? "justify-center px-0" : "justify-start",
               )}
-              aria-current={isActive(match) ? "page" : undefined}
+              aria-current={isActive(href) ? "page" : undefined}
               aria-label={t(labelKey)}
             >
               <Icon className={cn(!collapsed && "mr-2")} />

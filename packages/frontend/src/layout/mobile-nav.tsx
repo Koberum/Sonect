@@ -1,15 +1,9 @@
-import type { LucideIcon } from "lucide-react";
 import { AudioLines, Disc3, ListOrdered, Search, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/features/auth/auth-context";
+import { isNavItemActive, type NavItem } from "@/layout/nav-items";
 import { cn } from "@/lib/utils";
-
-type NavItem = {
-  href: string;
-  labelKey: string;
-  icon: LucideIcon;
-};
 
 export interface MobileNavProps {
   onSearch(): void;
@@ -32,7 +26,7 @@ export function MobileNav({ onSearch }: MobileNavProps) {
   ];
 
   const renderLink = ({ href, labelKey, icon: Icon }: NavItem) => {
-    const isActive = pathname === href || pathname.startsWith(`${href}/`);
+    const isActive = isNavItemActive(pathname, href);
     return (
       <Link
         key={href}

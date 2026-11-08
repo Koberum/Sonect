@@ -1,9 +1,10 @@
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { ListPlus, MicVocal, Play } from "lucide-react";
 import type { Artist } from "@repo/types/catalog";
-import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { getTracksByArtist } from "@/features/catalog/api";
+import { useCollectionActions } from "@/features/catalog/use-collection-actions";
 import { MediaActionMenu } from "./media-action-menu";
 import { MediaCard } from "./media-card";
 
@@ -15,8 +16,13 @@ export interface ArtistCardProps {
 export function ArtistCard({ artist, className }: ArtistCardProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { play, addToQueue } = usePlayTrack();
   const coverPreviews = artist.coverPreviews ?? [];
+
+  const loadTracks = useCallback(
+    () => getTracksByArtist(String(artist.id)),
+    [artist.id],
+  );
+  const { playFirst, enqueueAll } = useCollectionActions(loadTracks);
 
   const openArtist = () => {
     void navigate(`/library/artists/${artist.id}`);
@@ -51,21 +57,13 @@ export function ArtistCard({ artist, className }: ArtistCardProps) {
               label: t("contextMenu.play"),
               icon: Play,
               separatorBefore: true,
-              onSelect: () => {
-                void getTracksByArtist(String(artist.id)).then((tracks) => {
-                  if (tracks[0]) void play(tracks[0]);
-                });
-              },
+              onSelect: () => void playFirst(),
             },
             {
               key: "queue",
               label: t("contextMenu.addToQueue"),
               icon: ListPlus,
-              onSelect: () => {
-                void getTracksByArtist(String(artist.id)).then((tracks) => {
-                  for (const track of tracks) void addToQueue(track.file);
-                });
-              },
+              onSelect: () => void enqueueAll(),
             },
           ]}
         />

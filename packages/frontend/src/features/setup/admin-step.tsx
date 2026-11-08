@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordField } from "@/components/ui/password-field";
 import {
   Select,
   SelectContent,
@@ -22,11 +23,13 @@ import {
 } from "@/components/ui/wizard-step";
 import { useTheme, type Theme } from "@/components/theme-provider";
 import { useAuth } from "@/features/auth/auth-context";
+import { usePasswordValidation } from "@/features/auth/use-password-validation";
 
 export function AdminStep({ onDone }: { onDone: () => void }) {
   const { t, i18n } = useTranslation();
   const { bootstrap } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { validateNewPassword } = usePasswordValidation();
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -43,12 +46,9 @@ export function AdminStep({ onDone }: { onDone: () => void }) {
   const handleSubmit = async (): Promise<void> => {
     if (pending) return;
     if (!name.trim()) return;
-    if (password.length < 8) {
-      setError(t("auth.passwordTooShort"));
-      return;
-    }
-    if (password !== confirm) {
-      setError(t("auth.passwordsDoNotMatch"));
+    const validationError = validateNewPassword(password, confirm);
+    if (validationError) {
+      setError(validationError);
       return;
     }
     setPending(true);
@@ -95,15 +95,12 @@ export function AdminStep({ onDone }: { onDone: () => void }) {
           </WizardStepField>
 
           <WizardStepField>
-            <Label htmlFor="admin-password">
-              {t("auth.bootstrapPassword")}
-            </Label>
-            <Input
+            <PasswordField
               id="admin-password"
-              type="password"
+              label={t("auth.bootstrapPassword")}
               value={password}
-              onChange={(event) => {
-                setPassword(event.target.value);
+              onChange={(value) => {
+                setPassword(value);
                 setError(null);
               }}
               autoComplete="new-password"
@@ -111,13 +108,12 @@ export function AdminStep({ onDone }: { onDone: () => void }) {
           </WizardStepField>
 
           <WizardStepField>
-            <Label htmlFor="admin-confirm">{t("auth.bootstrapConfirm")}</Label>
-            <Input
+            <PasswordField
               id="admin-confirm"
-              type="password"
+              label={t("auth.bootstrapConfirm")}
               value={confirm}
-              onChange={(event) => {
-                setConfirm(event.target.value);
+              onChange={(value) => {
+                setConfirm(value);
                 setError(null);
               }}
               autoComplete="new-password"
