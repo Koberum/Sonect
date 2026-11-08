@@ -28,7 +28,7 @@ export function AppearanceTab() {
   const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
 
-  const currentLanguage = i18n.language.split("-")[0];
+  const currentLanguage = i18n.resolvedLanguage ?? "en";
 
   return (
     <Card>
@@ -90,8 +90,7 @@ export function AppearanceTab() {
             <Select
               value={currentLanguage}
               onValueChange={(value) => {
-                i18n.changeLanguage(value);
-                localStorage.setItem("language", value);
+                void i18n.changeLanguage(value);
               }}
             >
               <SelectTrigger

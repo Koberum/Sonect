@@ -19,10 +19,14 @@ import { formatAvgDuration, formatDuration } from "@/lib/format";
 
 function formatDate(
   isoString: string | null,
+  locale: string,
   t: (key: string) => string,
 ): string {
   if (!isoString) return t("statistics.never");
-  return new Date(isoString).toLocaleString();
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(isoString));
 }
 
 interface StatCardProps {
@@ -50,7 +54,7 @@ function StatCard({ title, value, icon, description }: StatCardProps) {
 }
 
 export function Statistics() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const {
     data: stats,
     isPending,
@@ -134,17 +138,18 @@ export function Statistics() {
           description={
             stats.totalTracks > 0
               ? t("statistics.percentOfLibrary", {
-                  percent: (
-                    (stats.tracksWithoutAlbum / stats.totalTracks) *
-                    100
-                  ).toFixed(1),
+                  percent: new Intl.NumberFormat(i18n.language, {
+                    maximumFractionDigits: 1,
+                  }).format(
+                    (stats.tracksWithoutAlbum / stats.totalTracks) * 100,
+                  ),
                 })
               : undefined
           }
         />
         <StatCard
           title={t("statistics.lastSync")}
-          value={formatDate(stats.lastSync, t)}
+          value={formatDate(stats.lastSync, i18n.language, t)}
           icon={<Clock className="h-4 w-4" />}
         />
       </div>
