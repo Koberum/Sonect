@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useParams } from "react-router-dom";
 import MainLayout from "./layout/MainLayout";
 import { ThemeProvider } from "./components/theme-provider";
 import { ErrorBoundary } from "./components/error-boundary";
+import { PageSkeleton } from "./components/ui/page-skeleton";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./features/auth/auth-context";
 import { AuthGuard } from "./features/auth/auth-guard";
@@ -43,14 +44,6 @@ const GenreDetail = lazy(() => import("./pages/GenreDetail"));
 const Settings = lazy(() => import("./pages/Settings"));
 const SetupWizard = lazy(() => import("./pages/SetupWizard"));
 
-function PageLoader() {
-  return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
-    </div>
-  );
-}
-
 type LegacyTabRedirectProps = { to: string; tab: string };
 
 const LEGACY_TAB_REDIRECTS: (LegacyTabRedirectProps & { path: string })[] = [
@@ -87,7 +80,7 @@ export default function App() {
             <WebSocketProvider>
               <TooltipProvider>
                 <ErrorBoundary>
-                  <Suspense fallback={<PageLoader />}>
+                  <Suspense fallback={<PageSkeleton />}>
                     <Routes>
                       <Route
                         path="/login"

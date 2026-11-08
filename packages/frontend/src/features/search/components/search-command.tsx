@@ -41,6 +41,10 @@ export function SearchCommand({
 }: SearchCommandProps = {}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const isMac =
+    typeof navigator !== "undefined" &&
+    /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
+  const shortcutLabel = isMac ? "⌘K" : "Ctrl K";
   const { play, addToQueue } = usePlayTrack();
   const { profile } = useAuth();
   const profileId = profile?.id ?? "";
@@ -349,7 +353,7 @@ export function SearchCommand({
             className="flex-1 bg-transparent outline-none"
           />
           <kbd className="bg-muted pointer-events-none rounded border px-1.5 font-mono text-xs">
-            ⌘K
+            {shortcutLabel}
           </kbd>
         </div>
         {showDropdown && (

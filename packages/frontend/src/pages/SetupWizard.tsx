@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Toaster } from "@/components/ui/sonner";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { useAuth } from "@/features/auth/auth-context";
 import {
   completeSetup,
@@ -123,17 +124,14 @@ export default function SetupWizard() {
   };
 
   if (loading || showAdminStep === null) {
-    return (
-      <div className="flex h-dvh items-center justify-center">
-        <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   const stepLabel = steps[currentStep];
 
   return (
     <div className="bg-muted/30 flex min-h-dvh items-center justify-center p-4">
+      <h1 className="sr-only">{t("setup.title")}</h1>
       <Card className="w-full max-w-lg">
         <CardContent className="pt-6">
           {/* Step indicator */}

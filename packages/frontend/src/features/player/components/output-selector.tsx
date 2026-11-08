@@ -52,10 +52,10 @@ export function OutputSelector({ disabled }: { disabled?: boolean }) {
       <DropdownMenuTrigger asChild>
         <Button
           variant="bare"
-          size="sm"
+          size="icon-sm"
           disabled={disabled}
           aria-label={t("player.outputDevices")}
-          className="text-muted-foreground hover:text-foreground gap-1 text-xs"
+          className="text-muted-foreground hover:text-foreground"
         >
           <Speaker className="h-4 w-4" />
         </Button>

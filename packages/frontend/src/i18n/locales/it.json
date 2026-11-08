@@ -384,6 +384,7 @@
     }
   },
   "setup": {
+    "title": "Configura Sonect",
     "welcome": {
       "language": "Lingua",
       "theme": "Tema",

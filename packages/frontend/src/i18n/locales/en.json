@@ -450,6 +450,7 @@
     }
   },
   "setup": {
+    "title": "Set up Sonect",
     "welcome": {
       "language": "Language",
       "theme": "Theme",

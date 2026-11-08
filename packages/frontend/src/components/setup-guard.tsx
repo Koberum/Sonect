@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { isSetupCompleteForSession } from "@/features/system/api";
 import { useAuth } from "@/features/auth/auth-context";
 
@@ -42,11 +43,7 @@ export function SetupGuard({ children }: { children: React.ReactNode }) {
   if (!isAdmin) return <>{children}</>;
 
   if (checking) {
-    return (
-      <div className="flex h-dvh items-center justify-center">
-        <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   return <>{children}</>;
