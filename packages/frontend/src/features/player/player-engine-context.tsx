@@ -65,6 +65,7 @@ export function PlayerEngineProvider({
     pause,
     seek,
     preloadTrack,
+    clearPreload,
     setCrossfade,
     volume,
     setVolume,
@@ -136,12 +137,15 @@ export function PlayerEngineProvider({
     const currentId = playbackStatus.track?.id;
     if (nextId && nextId !== currentId) {
       preloadTrack(nextId, `/stream/${nextId}`);
+    } else {
+      clearPreload();
     }
   }, [
     isActiveBrowser,
     playbackStatus.nextTrackId,
     playbackStatus.track?.id,
     preloadTrack,
+    clearPreload,
   ]);
 
   // Track change detection feeds the shared "now playing" track. The context

@@ -27,6 +27,7 @@ interface UseBrowserAudioReturn {
     revision?: number,
   ) => void;
   preloadTrack: (trackId: number, src: string) => void;
+  clearPreload: () => void;
   state: BrowserAudioState;
   currentTime: number;
   duration: number;
@@ -121,6 +122,10 @@ export function useBrowserAudio(
     engineRef.current?.preloadTrack(trackId, src);
   }, []);
 
+  const clearPreload = useCallback(() => {
+    engineRef.current?.clearPreload();
+  }, []);
+
   return useMemo(
     () => ({
       play,
@@ -130,6 +135,7 @@ export function useBrowserAudio(
       setCrossfade,
       startTrack,
       preloadTrack,
+      clearPreload,
       state,
       currentTime,
       duration,
@@ -145,6 +151,7 @@ export function useBrowserAudio(
       setCrossfade,
       startTrack,
       preloadTrack,
+      clearPreload,
       state,
       currentTime,
       duration,
