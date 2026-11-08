@@ -1,9 +1,12 @@
+ARG PNPM_VERSION=12.18.0
+
 # ---- Build stage ----
 FROM node:24-alpine AS builder
+ARG PNPM_VERSION
 WORKDIR /build
 
 RUN apk add --no-cache python3 make g++ libc6-compat
-RUN npm install -g pnpm@10.34.7
+RUN npm install -g pnpm@${PNPM_VERSION}
 
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY packages/types ./packages/types
@@ -19,8 +22,9 @@ RUN pnpm --filter @repo/types build && \
 
 # ---- Production stage ----
 FROM node:24-alpine
+ARG PNPM_VERSION
 RUN apk add --no-cache ffmpeg alsa-utils mpd xz ca-certificates
-RUN npm install -g pnpm@10.34.7
+RUN npm install -g pnpm@${PNPM_VERSION}
 
 # s6-overlay v3 supervisord: runs the mpd and node longruns as siblings.
 ARG S6_OVERLAY_VERSION=3.2.0.0
