@@ -1,4 +1,5 @@
 import { EventEmitter } from "events";
+import { randomUUID } from "node:crypto";
 import { profileSettingsDb } from "@repo/db";
 import type { LogService } from "../utils/logService.js";
 import type { MpdConfigService } from "../mpd/mpdConfigService.js";
@@ -25,6 +26,9 @@ type SessionRecord = {
   activeDeviceType: string | null;
   volume: number;
   crossfade: number;
+  /** Stable ordering identity for engines that do not expose their own. */
+  epoch: string;
+  statusRevision: number;
 };
 
 function fmtSid(id: string): string {
@@ -99,6 +103,8 @@ export class PlayerRouter extends EventEmitter {
       activeDeviceType: null,
       volume: 100,
       crossfade: profileSettingsDb.get(sessionId).crossfadeSeconds,
+      epoch: randomUUID(),
+      statusRevision: 0,
     };
     this.records.set(sessionId, rec);
     this.attachForwarder(sessionId, engine);
@@ -466,6 +472,8 @@ export class PlayerRouter extends EventEmitter {
         activeDeviceType: null,
         volume: rec.volume ?? 100,
         crossfade: rec.crossfade,
+        epoch: randomUUID(),
+        statusRevision: 0,
       });
       this.attachForwarder(sessionId, mpdEngine);
       // Re-play with clear semantics at same seek
@@ -530,6 +538,8 @@ export class PlayerRouter extends EventEmitter {
         activeDeviceType: deviceType ?? null,
         volume: rec.volume ?? 100,
         crossfade: rec.crossfade,
+        epoch: randomUUID(),
+        statusRevision: 0,
       });
       this.attachForwarder(sessionId, browserEngine);
       if (prevFile) {
@@ -581,8 +591,18 @@ export class PlayerRouter extends EventEmitter {
     const rec = this.ensureRecord(sessionId);
     const base = rec.engine.getStatus();
     const volume = rec.mode === "browser" ? rec.volume : base.volume;
+    // Browser sessions already expose an engine epoch/revision. MPD statuses
+    // have neither, so assign a stable epoch and a monotonic revision here;
+    // the frontend can then reject a slow command response that arrives after
+    // a newer WebSocket status.
+    const hasEngineOrder =
+      base.epoch !== undefined && base.revision !== undefined;
+    const revision = hasEngineOrder ? base.revision : ++rec.statusRevision;
+    const epoch = base.epoch ?? rec.epoch;
     return {
       ...base,
+      epoch,
+      revision,
       volume,
       activeDeviceId: rec.activeDeviceId,
       activeDeviceName: rec.activeDeviceName,

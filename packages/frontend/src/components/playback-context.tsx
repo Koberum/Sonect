@@ -17,6 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/auth-context";
 import { playerQueries } from "@/features/player/queries";
 import { getDeviceId, getDeviceName, getDeviceType } from "@/lib/deviceId";
+import { shouldApplyPlaybackStatus } from "@/lib/playbackStatusOrdering";
 import { defaultPlayerState } from "@/lib/playbackState";
 
 export type SyncProgress = LibrarySyncProgress;
@@ -115,15 +116,10 @@ export function PlaybackProvider({ children }: { children: React.ReactNode }) {
   // Apply them in (epoch, revision) order so a slower response cannot roll
   // playback back to an older state.
   const applyPlaybackStatus = useCallback((status: PlaybackStatus) => {
+    if (!shouldApplyPlaybackStatus(lastStatusRef.current, status)) {
+      return;
+    }
     if (status.epoch !== undefined && status.revision !== undefined) {
-      const previous = lastStatusRef.current;
-      if (
-        previous.epoch === status.epoch &&
-        previous.revision !== undefined &&
-        status.revision <= previous.revision
-      ) {
-        return;
-      }
       lastStatusRef.current = {
         epoch: status.epoch,
         revision: status.revision,

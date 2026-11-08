@@ -117,4 +117,15 @@ describe("PlayerRouter crossfade", () => {
     expect(manager.executeCommand.called).to.equal(false);
     expect(router.getStatus(profileId).crossfade).to.equal(6);
   });
+
+  it("gives MPD statuses a stable epoch and a monotonic revision", async () => {
+    await router.setMode(profileId, "mpd");
+
+    const first = router.getStatus(profileId);
+    const second = router.getStatus(profileId);
+
+    expect(first.epoch).to.be.a("string");
+    expect(second.epoch).to.equal(first.epoch);
+    expect(second.revision).to.equal((first.revision ?? 0) + 1);
+  });
 });
