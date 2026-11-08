@@ -7,10 +7,11 @@
   "scripts": {
     "dev": "vite --host",
     "start": "echo 'Frontend served by backend on :3000'",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && NODE_ENV=production vite build",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "size": "node scripts/check-bundle-size.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

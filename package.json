@@ -20,6 +20,7 @@
     "backend:test": "turbo run test --filter backend",
     "frontend:test": "turbo run test --filter frontend",
     "frontend:test:watch": "pnpm --filter frontend test:watch",
+    "frontend:size": "pnpm --filter frontend size",
     "test": "turbo run test",
     "backend:test:watch": "pnpm --filter backend test:watch",
     "backend:test:coverage": "pnpm --filter backend test:coverage",

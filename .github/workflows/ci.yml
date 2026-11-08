@@ -54,6 +54,9 @@ jobs:
           VITE_COVER_PATH: /covers
           VITE_DEBUG: "false"
 
+      - name: Frontend bundle budget
+        run: pnpm --filter frontend size
+
       - name: Frontend tests
         run: pnpm --filter frontend test
 

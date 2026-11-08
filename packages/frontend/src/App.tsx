@@ -8,7 +8,6 @@ import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./features/auth/auth-context";
 import { AuthGuard } from "./features/auth/auth-guard";
 import { AdminGuard } from "./features/auth/admin-guard";
-import { LoginPage } from "./features/auth/login-page";
 import { PlaybackProvider } from "./components/playback-context";
 import { WebSocketProvider } from "./components/ws-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,6 +18,12 @@ import { queryClient } from "@/lib/queryClient";
 const Devtools = lazy(() =>
   import("@tanstack/react-query-devtools").then((m) => ({
     default: m.ReactQueryDevtools,
+  })),
+);
+
+const LoginPage = lazy(() =>
+  import("./features/auth/login-page").then((m) => ({
+    default: m.LoginPage,
   })),
 );
 

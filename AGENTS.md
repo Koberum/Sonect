@@ -31,6 +31,7 @@ pnpm backend:test:watch # Backend tests in watch mode
 pnpm backend:test:coverage # Backend test coverage report (c8)
 pnpm frontend:test      # Run frontend tests (Vitest)
 pnpm frontend:test:watch # Frontend tests in watch mode (from packages/frontend)
+pnpm frontend:size      # Check the built JS gzip budget (after frontend:build)
 pnpm db:generate        # Generate a new SQL migration from tables.ts (drizzle-kit)
 pnpm db:migrate         # Apply pending migrations to DB_PATH (dev convenience)
 pnpm db:migrate-reset   # Wipe + re-apply migrations; prompts, --force skips
