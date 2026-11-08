@@ -47,6 +47,10 @@ no subscriptions, no limits.
   genre, playlist, search, queue, now playing) adds a song to the signed-in
   profile's Liked Songs. Liked Songs has Play All and Shuffle and is scoped per
   household member; the old flat Tracks page is gone.
+- **Appearance templates** — Settings → Appearance offers three built-in color
+  templates (Sonect amber, Graphite neutral, Ocean cool green-teal), each with
+  light and dark variants. The mode can be light, dark, or follow the system;
+  template and mode are stored per browser.
 - **Section navigation** — the desktop sidebar has Discover, Library, Playlists,
   Queue, and Settings. Discover (`/discover`) holds Listen Now and Liked Songs;
   Library holds Albums, Artists, Genres, and Statistics; Playlists (`/playlists`)
