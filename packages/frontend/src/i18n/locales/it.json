@@ -125,6 +125,20 @@
     "dark": "Scuro",
     "system": "Sistema"
   },
+  "themeTemplates": {
+    "sonect": {
+      "name": "Sonect",
+      "description": "Ambra calda, il classico stile Sonect."
+    },
+    "graphite": {
+      "name": "Grafite",
+      "description": "Grigi neutri, sobri e discreti."
+    },
+    "ocean": {
+      "name": "Oceano",
+      "description": "Grigi blu freddi con un accento verde acqua."
+    }
+  },
   "sync": {
     "title": "Sincronizzazione libreria",
     "preparing": "Preparazione...",
@@ -348,8 +362,10 @@
     },
     "appearance": {
       "description": "Personalizza l'aspetto e la lingua di Sonect.",
-      "theme": "Tema",
-      "themeDescription": "Scegli il tuo tema preferito",
+      "template": "Template",
+      "templateDescription": "Scegli un template di colore. I modi chiaro e scuro valgono per tutti i template.",
+      "mode": "Modalità",
+      "modeDescription": "Scegli chiaro, scuro o segui il sistema.",
       "language": "Lingua",
       "languageDescription": "Scegli la tua lingua preferita"
     },

@@ -125,6 +125,20 @@
     "dark": "Dark",
     "system": "System"
   },
+  "themeTemplates": {
+    "sonect": {
+      "name": "Sonect",
+      "description": "Warm amber, the classic Sonect look."
+    },
+    "graphite": {
+      "name": "Graphite",
+      "description": "Neutral greys, quiet and understated."
+    },
+    "ocean": {
+      "name": "Ocean",
+      "description": "Cool blue-greys with a green-teal accent."
+    }
+  },
   "sync": {
     "title": "Library sync",
     "preparing": "Preparing...",
@@ -348,8 +362,10 @@
     },
     "appearance": {
       "description": "Customize how Sonect looks and reads for you.",
-      "theme": "Theme",
-      "themeDescription": "Choose your preferred theme",
+      "template": "Template",
+      "templateDescription": "Choose a color template. Light and dark modes apply to every template.",
+      "mode": "Mode",
+      "modeDescription": "Choose light, dark, or follow your system.",
       "language": "Language",
       "languageDescription": "Choose your preferred language"
     },
