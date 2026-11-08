@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "./themes/sonect.css";
+@import "./themes/graphite.css";
+@import "./themes/ocean.css";
 
 @custom-variant dark (&:is(.dark *));
 
