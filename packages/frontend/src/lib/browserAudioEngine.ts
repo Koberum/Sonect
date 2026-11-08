@@ -1,4 +1,5 @@
 import type { PlayerReport } from "@repo/types";
+import { DEFAULT_VOLUME, volumeToGain } from "@/lib/volume";
 
 export type BrowserAudioState =
   "idle" | "loading" | "playing" | "paused" | "buffering" | "ended" | "error";
@@ -71,7 +72,7 @@ export class BrowserAudioEngine {
   private stateValue: BrowserAudioState = "idle";
   private currentTimeValue = 0;
   private durationValue = 0;
-  private volumeValue = 100;
+  private volumeValue = DEFAULT_VOLUME;
   private crossfadeSeconds = 0;
   private crossfading = false;
   private crossfadeStarting = false;
@@ -260,12 +261,17 @@ export class BrowserAudioEngine {
   setVolume(volume: number): void {
     const clamped = Math.max(0, Math.min(100, volume));
     this.volumeValue = clamped;
-    const value = clamped / 100;
+    const gain = volumeToGain(clamped);
     if (this.masterGain && this.audioContext) {
-      this.masterGain.gain.value = value;
+      // Smooth the gain change to avoid clicks/pops while dragging.
+      this.masterGain.gain.setTargetAtTime(
+        gain,
+        this.audioContext.currentTime,
+        0.015,
+      );
     } else {
-      this.active.audio.volume = value;
-      this.standby.audio.volume = value;
+      this.active.audio.volume = gain;
+      this.standby.audio.volume = gain;
     }
   }
 
@@ -665,7 +671,7 @@ export class BrowserAudioEngine {
     if (deck.nodes) {
       deck.nodes.gain.gain.value = resetOthers ? 1 : 0;
     } else {
-      deck.audio.volume = this.volumeValue / 100;
+      deck.audio.volume = volumeToGain(this.volumeValue);
     }
     deck.audio.src = src;
     deck.audio.load();
@@ -708,7 +714,7 @@ export class BrowserAudioEngine {
     try {
       const context = new Ctor();
       const master = context.createGain();
-      master.gain.value = this.volumeValue / 100;
+      master.gain.value = volumeToGain(this.volumeValue);
       master.connect(context.destination);
 
       for (const deck of [this.active, this.standby]) {

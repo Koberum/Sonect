@@ -59,11 +59,17 @@ class FakeGainParam {
   setValueAtTime = vi.fn();
   linearRampToValueAtTime = vi.fn();
   cancelScheduledValues = vi.fn();
+  setTargetAtTime = vi.fn();
 }
 
 class FakeGainNode {
+  static instances: FakeGainNode[] = [];
   gain = new FakeGainParam();
   connect = vi.fn();
+
+  constructor() {
+    FakeGainNode.instances.push(this);
+  }
 }
 
 class FakeSourceNode {
@@ -87,6 +93,7 @@ class FakeAudioContext {
 describe("BrowserAudioEngine deck transitions", () => {
   beforeEach(() => {
     FakeAudio.instances = [];
+    FakeGainNode.instances = [];
     vi.stubGlobal("Audio", FakeAudio);
   });
 
@@ -213,5 +220,31 @@ describe("BrowserAudioEngine deck transitions", () => {
     const ended = reports.filter((report) => report.event === "ended");
     expect(ended).toHaveLength(1);
     expect(ended[0]).toMatchObject({ fromTrackId: 1 });
+  });
+
+  it("applies the perceptual curve to HTMLMediaElement volume", () => {
+    const engine = new BrowserAudioEngine();
+    const [active, standby] = FakeAudio.instances;
+
+    engine.setVolume(50);
+
+    expect(active.volume).toBe(0.25);
+    expect(standby.volume).toBe(0.25);
+  });
+
+  it("ramps the master gain with setTargetAtTime", async () => {
+    vi.stubGlobal("window", { AudioContext: FakeAudioContext });
+    const engine = new BrowserAudioEngine();
+    engine.startTrack(1, "/stream/1", 0, "epoch-1", 1);
+    engine.play();
+    await vi.waitFor(() => expect(engine.state).toBe("playing"));
+
+    engine.setVolume(50);
+
+    expect(FakeGainNode.instances[0].gain.setTargetAtTime).toHaveBeenCalledWith(
+      0.25,
+      0,
+      0.015,
+    );
   });
 });
