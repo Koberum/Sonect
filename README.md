@@ -61,7 +61,8 @@ no subscriptions, no limits.
   switches between the full player at `/player` and the sections; Library,
   Playlists, and the profile switcher are not in the mobile nav, and the top
   toolbar (history, search, profile) is desktop-only. The compact player bar is
-  desktop-only.
+  desktop-only. The mobile full player shows an always-visible horizontal volume
+  slider under the playback controls.
 - **Playlists** — create and browse them from the Playlists section
   (`/playlists`). Playlists are private per profile (same names allowed across
   profiles). Drag any track onto the right-hand playlist panel to add it, or use

@@ -39,8 +39,8 @@ vi.mock("@/features/player/api", () => ({
 
 import { PlayerVolumeControls } from "./volume-controls";
 
-function renderControl() {
-  return renderWithProviders(<PlayerVolumeControls />);
+function renderControl(variant?: "inline") {
+  return renderWithProviders(<PlayerVolumeControls variant={variant} />);
 }
 
 describe("PlayerVolumeControls", () => {
@@ -172,5 +172,51 @@ describe("PlayerVolumeControls", () => {
     expect(
       screen.queryByRole("button", { name: "Volume" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("stays visible with a horizontal slider on coarse pointers", () => {
+    state.coarse = true;
+    renderControl("inline");
+
+    const slider = screen.getByRole("slider", { name: "Volume" });
+    expect(slider).toHaveAttribute("aria-orientation", "horizontal");
+    expect(screen.getByRole("button", { name: "Volume" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+  });
+
+  it("toggles mute from the inline volume icon", async () => {
+    const user = userEvent.setup();
+    state.coarse = true;
+    renderControl("inline");
+
+    await user.click(screen.getByRole("button", { name: "Volume" }));
+
+    expect(state.engine.toggleMute).toHaveBeenCalledTimes(1);
+  });
+
+  it("adjusts the inline slider with arrow keys", async () => {
+    const user = userEvent.setup();
+    state.coarse = true;
+    renderControl("inline");
+
+    screen.getByRole("slider", { name: "Volume" }).focus();
+    await user.keyboard("{ArrowRight}");
+
+    expect(state.engine.setVolume).toHaveBeenLastCalledWith(70);
+  });
+
+  it("persists inline volume changes for a passive device", async () => {
+    const user = userEvent.setup();
+    state.coarse = true;
+    state.engine.isActiveBrowser = false;
+    state.playback.playbackStatus.volume = 65;
+    renderControl("inline");
+
+    screen.getByRole("slider", { name: "Volume" }).focus();
+    await user.keyboard("{ArrowRight}");
+
+    expect(state.persistVolume).toHaveBeenCalledWith(70);
   });
 });

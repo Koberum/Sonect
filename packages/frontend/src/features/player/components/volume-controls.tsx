@@ -14,7 +14,7 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { usePlaybackContext } from "@/components/playback-context";
 import { setVolume as persistVolume } from "@/features/player/api";
 import { usePlayerEngine } from "../player-engine-context";
@@ -37,12 +37,23 @@ function VolumeIconFor({ volume, muted }: { volume: number; muted: boolean }) {
   return <Volume2Icon className="size-5" />;
 }
 
+type PlayerVolumeControlsProps = {
+  /**
+   * `popover` is the desktop bar control (vertical slider on hover).
+   * `inline` is the always-visible horizontal slider used by the mobile full
+   * player.
+   */
+  variant?: "popover" | "inline";
+};
+
 /**
  * Player-aware volume control. The active browser owns the local engine and
  * persists through the provider; passive devices still write the shared player
  * volume through the API.
  */
-export function PlayerVolumeControls() {
+export function PlayerVolumeControls({
+  variant = "popover",
+}: PlayerVolumeControlsProps) {
   const { t } = useTranslation();
   const { playbackStatus, applyPlaybackStatus } = usePlaybackContext();
   const { isActiveBrowser, volume, muted, setVolume, toggleMute, resetVolume } =
@@ -206,9 +217,41 @@ export function PlayerVolumeControls() {
     [displayedVolume, commitVolume],
   );
 
-  // Touch devices use hardware keys; the desktop bar is the only place this
-  // control is rendered.
-  if (isTouch) return null;
+  // Touch devices get the always-visible inline slider in the full player;
+  // the hover popover stays desktop-only.
+  if (variant === "popover" && isTouch) return null;
+
+  if (variant === "inline") {
+    return (
+      <div className="flex w-full items-center gap-2">
+        <Slider
+          value={[displayedVolume]}
+          min={0}
+          max={100}
+          step={1}
+          aria-label={t("player.volume")}
+          onValueChange={handleValueChange}
+          onKeyDownCapture={handleKeyDown}
+          onDoubleClick={(event) => {
+            event.preventDefault();
+            reset();
+          }}
+          className="h-11 flex-1"
+        />
+        <Button
+          type="button"
+          variant="bare"
+          size="icon"
+          aria-label={t("player.volume")}
+          aria-pressed={isMuted}
+          className="text-muted-foreground hover:text-foreground size-11 shrink-0"
+          onClick={toggle}
+        >
+          <VolumeIconFor volume={displayedVolume} muted={isMuted} />
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <Popover

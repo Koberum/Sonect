@@ -1,5 +1,6 @@
 import { PlaybackControls } from "./playback-controls";
 import { PlaybackWaveform } from "./playback-waveform";
+import { PlayerVolumeControls } from "./volume-controls";
 import { usePlaybackContext } from "@/components/playback-context";
 import { getCoverPath } from "@/lib/utils";
 import { PlaybackErrorNotice } from "./playback-error";
@@ -32,7 +33,7 @@ export function FullPagePlayer() {
         <div className="from-background/15 via-background/50 to-background/85 absolute inset-0 bg-gradient-to-b" />
       </div>
 
-      <div className="relative z-10 mx-auto flex h-full w-full max-w-xl flex-col gap-4 px-5 py-4">
+      <div className="relative z-10 mx-auto flex h-full w-full max-w-xl flex-col gap-4 px-5 py-4 landscape:gap-2 landscape:py-2">
         <div className="flex shrink-0 items-center justify-end gap-1">
           <LikeButton
             trackId={trackPlayed.id ?? playbackStatus.track?.id ?? null}
@@ -45,27 +46,27 @@ export function FullPagePlayer() {
           className="shrink-0 rounded-lg"
         />
 
-        <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden landscape:hidden">
+        <div className="mx-auto flex w-[min(100%,20rem,calc(100dvh-24rem))] shrink-0 flex-col gap-4 landscape:w-full">
           <img
             src={cover}
             alt={trackPlayed.title}
-            className="aspect-square w-[min(100%,calc(100dvh-23rem))] rounded-xl object-cover shadow-2xl"
+            className="aspect-square w-full rounded-xl object-cover shadow-2xl landscape:hidden"
             onError={(e) => {
               e.currentTarget.src = "/default_cover.webp";
             }}
           />
-        </div>
 
-        <div className="min-w-0 shrink-0 text-left">
-          <h2 className="truncate text-xl leading-tight font-semibold">
-            {trackPlayed.title}
-          </h2>
-          <p className="text-muted-foreground mt-1 truncate text-sm">
-            {trackPlayed.artist_name}
-            {trackPlayed.album_title
-              ? ` \u00b7 ${trackPlayed.album_title}`
-              : ""}
-          </p>
+          <div className="min-w-0 text-left">
+            <h2 className="truncate text-xl leading-tight font-semibold">
+              {trackPlayed.title}
+            </h2>
+            <p className="text-muted-foreground mt-1 truncate text-sm">
+              {trackPlayed.artist_name}
+              {trackPlayed.album_title
+                ? ` \u00b7 ${trackPlayed.album_title}`
+                : ""}
+            </p>
+          </div>
         </div>
 
         <div className="shrink-0">
@@ -83,6 +84,10 @@ export function FullPagePlayer() {
             track={trackPlayed}
             size="large"
           />
+        </div>
+
+        <div className="shrink-0">
+          <PlayerVolumeControls variant="inline" />
         </div>
       </div>
     </div>
