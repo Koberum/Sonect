@@ -93,17 +93,19 @@ export function StatusCenter({ collapsed }: { collapsed: boolean }) {
               ? t("status.library.empty")
               : `${formatCount(stats.totalTracks)} ${t("status.library.tracksLabel")}`}
           </p>
-          <p className="text-muted-foreground text-xs">
-            {t("status.library.albums", {
-              count: stats.totalAlbums,
-              formatted: formatCount(stats.totalAlbums),
-            })}{" "}
-            ·{" "}
-            {t("status.library.artists", {
-              count: stats.totalArtists,
-              formatted: formatCount(stats.totalArtists),
-            })}
-          </p>
+          {stats.totalTracks > 0 && (
+            <p className="text-muted-foreground text-xs">
+              {t("status.library.albums", {
+                count: stats.totalAlbums,
+                formatted: formatCount(stats.totalAlbums),
+              })}{" "}
+              ·{" "}
+              {t("status.library.artists", {
+                count: stats.totalArtists,
+                formatted: formatCount(stats.totalArtists),
+              })}
+            </p>
+          )}
           <p className="text-muted-foreground mt-0.5 text-xs">
             {relativeLastSync
               ? t("status.library.lastSync", { time: relativeLastSync })
@@ -178,7 +180,12 @@ export function StatusCenter({ collapsed }: { collapsed: boolean }) {
               )}
             </TooltipContent>
           </Tooltip>
-          <PopoverContent side="right" align="end" className="w-80 p-0">
+          <PopoverContent
+            side="right"
+            align="end"
+            className="w-80 p-0"
+            aria-label={t("status.title")}
+          >
             <StatusCenterContent
               status={status}
               onNavigate={() => setOpen(false)}
@@ -204,7 +211,12 @@ export function StatusCenter({ collapsed }: { collapsed: boolean }) {
             {topItem ? activeContent : idleContent}
           </button>
         </PopoverTrigger>
-        <PopoverContent side="right" align="end" className="w-80 p-0">
+        <PopoverContent
+          side="right"
+          align="end"
+          className="w-80 p-0"
+          aria-label={t("status.title")}
+        >
           <StatusCenterContent
             status={status}
             onNavigate={() => setOpen(false)}
