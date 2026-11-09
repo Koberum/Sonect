@@ -67,6 +67,25 @@
     "noQualityMatches": "No tracks match this quality",
     "clearFilter": "Clear filter"
   },
+  "trackInfo": {
+    "details": "Details",
+    "audio": "Audio",
+    "artist": "Artist",
+    "album": "Album",
+    "year": "Year",
+    "genre": "Genre",
+    "trackNumber": "Track",
+    "discNumber": "Disc",
+    "duration": "Duration",
+    "file": "File",
+    "library": "Library",
+    "codec": "Format",
+    "bitDepth": "Bit depth",
+    "sampleRate": "Sample rate",
+    "channels": "Channels",
+    "channelsValue_one": "{{count}} channel",
+    "channelsValue_other": "{{count}} channels"
+  },
   "statistics": {
     "totalTracks": "Total Songs",
     "totalArtists": "Artists",
@@ -214,6 +233,7 @@
   },
   "trackActions": {
     "open": "Track actions",
+    "info": "Info",
     "noPlaylists": "No playlists yet"
   },
   "search": {

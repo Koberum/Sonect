@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   EllipsisVertical,
   Heart,
+  Info,
   ListMusic,
   ListPlus,
   Play,
@@ -31,6 +32,7 @@ import { cn } from "@/lib/utils";
 import { useToggleLike } from "@/features/liked/useToggleLike";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { AddToPlaylistDialog } from "@/features/playlists/components/add-to-playlist-dialog";
+import { TrackInfoDialog } from "./track-info-dialog";
 
 interface TrackActionsMenuProps {
   track: TrackWithRelations;
@@ -49,6 +51,7 @@ interface TrackAction {
   destructive?: boolean;
   disabled?: boolean;
   separatorBefore?: boolean;
+  mobileOnly?: boolean;
 }
 
 export function TrackActionsMenu({
@@ -63,6 +66,7 @@ export function TrackActionsMenu({
   const { liked, isPending: likePending, toggle } = useToggleLike(track.id);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [playlistOpen, setPlaylistOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
 
   const handlePlay = () => {
     if (onPlay) onPlay();
@@ -111,6 +115,15 @@ export function TrackActionsMenu({
     });
   }
 
+  actions.push({
+    key: "info",
+    icon: Info,
+    label: t("trackActions.info"),
+    onSelect: () => setInfoOpen(true),
+    mobileOnly: true,
+    separatorBefore: true,
+  });
+
   const handleSheetAction = (event: SyntheticEvent, action: TrackAction) => {
     event.stopPropagation();
     setSheetOpen(false);
@@ -148,24 +161,26 @@ export function TrackActionsMenu({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align={align} className="w-48">
-          {actions.map((action) => (
-            <Fragment key={action.key}>
-              {action.separatorBefore && <DropdownMenuSeparator />}
-              <DropdownMenuItem
-                disabled={action.disabled}
-                className={cn(
-                  action.destructive &&
-                    "text-destructive focus:text-destructive",
-                )}
-                onSelect={() => action.onSelect()}
-              >
-                <action.icon
-                  className={cn(action.filledIcon && "fill-current")}
-                />
-                {action.label}
-              </DropdownMenuItem>
-            </Fragment>
-          ))}
+          {actions
+            .filter((action) => !action.mobileOnly)
+            .map((action) => (
+              <Fragment key={action.key}>
+                {action.separatorBefore && <DropdownMenuSeparator />}
+                <DropdownMenuItem
+                  disabled={action.disabled}
+                  className={cn(
+                    action.destructive &&
+                      "text-destructive focus:text-destructive",
+                  )}
+                  onSelect={() => action.onSelect()}
+                >
+                  <action.icon
+                    className={cn(action.filledIcon && "fill-current")}
+                  />
+                  {action.label}
+                </DropdownMenuItem>
+              </Fragment>
+            ))}
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -222,6 +237,12 @@ export function TrackActionsMenu({
         trackId={track.id}
         open={playlistOpen}
         onOpenChange={setPlaylistOpen}
+      />
+
+      <TrackInfoDialog
+        track={track}
+        open={infoOpen}
+        onOpenChange={setInfoOpen}
       />
     </span>
   );

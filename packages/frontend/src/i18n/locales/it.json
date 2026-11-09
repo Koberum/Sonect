@@ -67,6 +67,25 @@
     "noQualityMatches": "Nessun brano corrisponde a questa qualità",
     "clearFilter": "Azzera filtro"
   },
+  "trackInfo": {
+    "details": "Dettagli",
+    "audio": "Audio",
+    "artist": "Artista",
+    "album": "Album",
+    "year": "Anno",
+    "genre": "Genere",
+    "trackNumber": "Brano",
+    "discNumber": "Disco",
+    "duration": "Durata",
+    "file": "File",
+    "library": "Libreria",
+    "codec": "Formato",
+    "bitDepth": "Profondità di bit",
+    "sampleRate": "Frequenza di campionamento",
+    "channels": "Canali",
+    "channelsValue_one": "{{count}} canale",
+    "channelsValue_other": "{{count}} canali"
+  },
   "statistics": {
     "totalTracks": "Totale Brani",
     "totalArtists": "Artisti",
@@ -214,6 +233,7 @@
   },
   "trackActions": {
     "open": "Azioni traccia",
+    "info": "Info",
     "noPlaylists": "Nessuna playlist"
   },
   "search": {

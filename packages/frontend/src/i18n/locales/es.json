@@ -67,6 +67,25 @@
     "noQualityMatches": "Ningún tema coincide con esta calidad",
     "clearFilter": "Borrar filtro"
   },
+  "trackInfo": {
+    "details": "Detalles",
+    "audio": "Audio",
+    "artist": "Artista",
+    "album": "Álbum",
+    "year": "Año",
+    "genre": "Género",
+    "trackNumber": "Pista",
+    "discNumber": "Disco",
+    "duration": "Duración",
+    "file": "Archivo",
+    "library": "Biblioteca",
+    "codec": "Formato",
+    "bitDepth": "Profundidad de bits",
+    "sampleRate": "Frecuencia de muestreo",
+    "channels": "Canales",
+    "channelsValue_one": "{{count}} canal",
+    "channelsValue_other": "{{count}} canales"
+  },
   "statistics": {
     "totalTracks": "Canciones Totales",
     "totalArtists": "Artistas",
@@ -214,6 +233,7 @@
   },
   "trackActions": {
     "open": "Acciones de la pista",
+    "info": "Información",
     "noPlaylists": "Aún no hay listas"
   },
   "search": {
