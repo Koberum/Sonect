@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "@/components/theme-provider";
 import { useAuth } from "@/features/auth/auth-context";
 import { isNavItemActive, type NavItem } from "@/layout/nav-items";
+import { StatusCenter } from "@/features/status/components/status-center";
 import {
   Tooltip,
   TooltipContent,
@@ -126,40 +127,43 @@ export function Sidebar({
           </Tooltip>
         ) : null}
       </div>
-      <nav
-        className={cn("space-y-1", collapsed ? "p-2" : "p-3")}
-        aria-label={t("nav.label")}
-      >
-        {items.map(({ href, labelKey, icon: Icon }) => {
-          const button = (
-            <Button
-              key={href}
-              onClick={() => navigate(href)}
-              variant={isActive(href) ? "secondary" : "ghost"}
-              className={cn(
-                "w-full",
-                collapsed ? "justify-center px-0" : "justify-start",
-              )}
-              aria-current={isActive(href) ? "page" : undefined}
-              aria-label={t(labelKey)}
-            >
-              <Icon className={cn(!collapsed && "mr-2")} />
-              {!collapsed ? (
-                <span className="truncate">{t(labelKey)}</span>
-              ) : null}
-            </Button>
-          );
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+        <nav
+          className={cn("space-y-1", collapsed ? "p-2" : "p-3")}
+          aria-label={t("nav.label")}
+        >
+          {items.map(({ href, labelKey, icon: Icon }) => {
+            const button = (
+              <Button
+                key={href}
+                onClick={() => navigate(href)}
+                variant={isActive(href) ? "secondary" : "ghost"}
+                className={cn(
+                  "w-full",
+                  collapsed ? "justify-center px-0" : "justify-start",
+                )}
+                aria-current={isActive(href) ? "page" : undefined}
+                aria-label={t(labelKey)}
+              >
+                <Icon className={cn(!collapsed && "mr-2")} />
+                {!collapsed ? (
+                  <span className="truncate">{t(labelKey)}</span>
+                ) : null}
+              </Button>
+            );
 
-          if (!collapsed) return button;
+            if (!collapsed) return button;
 
-          return (
-            <Tooltip key={href}>
-              <TooltipTrigger asChild>{button}</TooltipTrigger>
-              <TooltipContent side="right">{t(labelKey)}</TooltipContent>
-            </Tooltip>
-          );
-        })}
-      </nav>
+            return (
+              <Tooltip key={href}>
+                <TooltipTrigger asChild>{button}</TooltipTrigger>
+                <TooltipContent side="right">{t(labelKey)}</TooltipContent>
+              </Tooltip>
+            );
+          })}
+        </nav>
+      </div>
+      <StatusCenter collapsed={collapsed} />
     </div>
   );
 }

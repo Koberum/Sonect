@@ -11,7 +11,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { useMediaQuery } from "react-responsive";
 import { useTranslation } from "react-i18next";
 import { Toaster } from "@/components/ui/sonner";
-import { SyncIndicator } from "@/features/sync/components/sync-indicator";
+import { MobileStatusCenter } from "@/features/status/components/mobile-status-center";
 import { PlaylistDropProvider } from "@/features/playlists/components/playlist-drop-provider";
 import { SearchCommand } from "@/features/search/components/search-command";
 import { cn } from "@/lib/utils";
@@ -69,7 +69,7 @@ export default function MainLayout() {
               )}
             >
               <Sidebar
-                className="no-scrollbar flex-1 overflow-y-auto"
+                className="flex-1"
                 collapsed={collapsed}
                 collapsible={!isCompactSidebar}
                 onToggleCollapse={toggleCollapse}
@@ -115,7 +115,7 @@ export default function MainLayout() {
             </div>
           </div>
 
-          <SyncIndicator />
+          {isMobile && <MobileStatusCenter />}
           <AutoplayNotice />
         </div>
       </PlayerEngineProvider>

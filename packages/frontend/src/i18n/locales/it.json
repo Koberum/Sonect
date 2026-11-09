@@ -157,6 +157,42 @@
     "openDetails": "Mostra dettagli sincronizzazione",
     "stepOf": "Passo {{current}} di {{total}}"
   },
+  "status": {
+    "title": "Stato libreria",
+    "description": "Attività della libreria e stato del sistema.",
+    "library": {
+      "title": "Libreria",
+      "tracksLabel": "brani",
+      "tracks_one": "{{formatted}} brano",
+      "tracks_other": "{{formatted}} brani",
+      "albums_one": "{{formatted}} album",
+      "albums_other": "{{formatted}} album",
+      "artists_one": "{{formatted}} artista",
+      "artists_other": "{{formatted}} artisti",
+      "lastSync": "Aggiornata {{time}}",
+      "neverSynced": "Mai sincronizzata",
+      "statsUnavailable": "Statistiche non disponibili",
+      "empty": "Nessun brano"
+    },
+    "connection": {
+      "lost": "Riconnessione…",
+      "description": "Gli aggiornamenti live riprenderanno automaticamente."
+    },
+    "storage": {
+      "unavailable": "Libreria non disponibile"
+    },
+    "audio": {
+      "noDevices": "Nessun dispositivo audio trovato",
+      "outputMissing": "Uscita configurata non disponibile",
+      "engineOffline": "Motore di riproduzione offline"
+    },
+    "actions": {
+      "openLibraries": "Apri librerie",
+      "openAudio": "Apri impostazioni audio",
+      "viewStatistics": "Vedi statistiche",
+      "openSettings": "Apri impostazioni"
+    }
+  },
   "language": {
     "en": "English",
     "es": "Español",

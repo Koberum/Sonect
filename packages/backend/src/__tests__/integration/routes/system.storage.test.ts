@@ -130,10 +130,13 @@ describe("system storage routes", () => {
 
     expect(res.status).to.equal(200);
     const byName = Object.fromEntries(
-      (res.body as Array<{ name: string }>).map((source) => [
-        source.name,
-        source,
-      ]),
+      (
+        res.body as Array<{
+          name: string;
+          available?: boolean;
+          error?: string;
+        }>
+      ).map((source) => [source.name, source]),
     );
     expect(byName.Readable).to.include({ available: true });
     expect(byName.Missing).to.include({ available: false });

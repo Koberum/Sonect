@@ -64,7 +64,7 @@ export function useStatusCenter() {
 
   return {
     items,
-    topItem: items[0] ?? null,
+    topItem: items.length > 0 ? items[0] : null,
     stats: statsQuery.data,
     statsLoading: statsQuery.isPending,
     statsError: statsQuery.isError,
@@ -76,3 +76,5 @@ export function useStatusCenter() {
     syncPending,
   };
 }
+
+export type StatusCenterState = ReturnType<typeof useStatusCenter>;

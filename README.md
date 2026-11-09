@@ -53,7 +53,11 @@ no subscriptions, no limits.
   light and dark variants. The mode can be light, dark, or follow the system;
   template and mode are stored per browser.
 - **Section navigation** — the desktop sidebar has Discover, Library, Playlists,
-  Queue, and Settings. Discover (`/discover`) holds Listen Now and Liked Songs;
+  Queue, and Settings, plus a status center at the bottom. At rest it shows
+  library statistics (tracks, albums, artists, last sync); during a sync or a
+  problem it shows the active status and opens a details popover. On mobile an
+  activity pill appears above the bottom nav only while something is happening.
+  Discover (`/discover`) holds Listen Now and Liked Songs;
   Library holds Albums, Artists, Genres, and Statistics; Playlists (`/playlists`)
   is the dedicated per-profile playlist list, with each playlist at
   `/playlists/:id`; Queue is the sortable per-profile play queue; Settings

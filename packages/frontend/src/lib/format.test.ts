@@ -1,18 +1,25 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { formatRelativeTime } from "./format";
 
 describe("formatRelativeTime", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-09T12:00:00Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("returns null without a timestamp", () => {
     expect(formatRelativeTime(null)).toBeNull();
   });
 
   it("formats a recent timestamp as now", () => {
-    const now = new Date().toISOString();
-    expect(formatRelativeTime(now)).toBe("now");
+    expect(formatRelativeTime("2026-11-09T12:00:00Z")).toBe("now");
   });
 
   it("formats an hour-old timestamp", () => {
-    const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    expect(formatRelativeTime(hourAgo)).toBe("1 hour ago");
+    expect(formatRelativeTime("2026-11-09T11:00:00Z")).toBe("1 hour ago");
   });
 });

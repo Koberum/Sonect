@@ -157,6 +157,42 @@
     "openDetails": "Show sync details",
     "stepOf": "Step {{current}} of {{total}}"
   },
+  "status": {
+    "title": "Library status",
+    "description": "Library activity and system health.",
+    "library": {
+      "title": "Library",
+      "tracksLabel": "tracks",
+      "tracks_one": "{{formatted}} track",
+      "tracks_other": "{{formatted}} tracks",
+      "albums_one": "{{formatted}} album",
+      "albums_other": "{{formatted}} albums",
+      "artists_one": "{{formatted}} artist",
+      "artists_other": "{{formatted}} artists",
+      "lastSync": "Updated {{time}}",
+      "neverSynced": "Never synced",
+      "statsUnavailable": "Statistics unavailable",
+      "empty": "No tracks yet"
+    },
+    "connection": {
+      "lost": "Reconnecting…",
+      "description": "Live updates will resume automatically."
+    },
+    "storage": {
+      "unavailable": "Library unavailable"
+    },
+    "audio": {
+      "noDevices": "No audio devices found",
+      "outputMissing": "Configured output unavailable",
+      "engineOffline": "Playback engine offline"
+    },
+    "actions": {
+      "openLibraries": "Open libraries",
+      "openAudio": "Open audio settings",
+      "viewStatistics": "View statistics",
+      "openSettings": "Open settings"
+    }
+  },
   "language": {
     "en": "English",
     "es": "Español",
