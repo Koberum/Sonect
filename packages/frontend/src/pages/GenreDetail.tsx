@@ -97,6 +97,7 @@ export default function GenreDetail() {
           <TrackTable
             tracks={tracks}
             getNumber={(track, index) => track.track_number ?? index + 1}
+            resetKey={genre}
           />
         </TabsContent>
       </Tabs>

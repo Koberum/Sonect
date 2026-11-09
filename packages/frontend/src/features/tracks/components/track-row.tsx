@@ -7,11 +7,13 @@ import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { useTrackDragHandlers } from "@/features/playlists/use-track-drag-handlers";
 import { cn, getCoverPath } from "@/lib/utils";
 import { formatTime } from "@/lib/format";
+import { formatQuality } from "../quality";
 
 interface TrackRowProps {
   track: TrackWithRelations;
   number?: number;
   showCover?: boolean;
+  showQuality?: boolean;
   onPlay?: () => void;
   onRemove?: () => void;
   removeLabel?: string;
@@ -21,6 +23,7 @@ export function TrackRow({
   track,
   number,
   showCover = false,
+  showQuality = false,
   onPlay,
   onRemove,
   removeLabel,
@@ -81,6 +84,11 @@ export function TrackRow({
           </div>
         </button>
       </TableCell>
+      {showQuality && (
+        <TableCell className="text-muted-foreground hidden w-40 text-right text-xs tabular-nums md:table-cell">
+          {formatQuality(track) ?? "\u2014"}
+        </TableCell>
+      )}
       <TableCell
         onClick={handlePlay}
         className="text-muted-foreground w-14 text-right sm:w-20"

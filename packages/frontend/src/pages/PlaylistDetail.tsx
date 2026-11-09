@@ -321,6 +321,7 @@ export default function PlaylistDetail() {
           onPlay={(track) => void handlePlay(track)}
           onRemove={(track) => void handleRemoveTrack(track.pt_id)}
           removeLabel={t("playlist.removeTrack")}
+          resetKey={id}
         />
       ) : (
         <EmptyState icon={ListMusic} title={t("playlist.emptyDescription")} />

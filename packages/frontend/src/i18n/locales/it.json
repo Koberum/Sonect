@@ -55,9 +55,17 @@
     "trackCount_one": "{{count}} brano",
     "trackCount_other": "{{count}} brani",
     "duration": "Durata",
+    "quality": "Qualità",
     "trackNumber": "#",
     "playAll": "Riproduci Tutto",
     "goToAlbum": "Vai all'Album"
+  },
+  "trackTable": {
+    "allQualities": "Tutte le qualità",
+    "filterQuality": "Filtra per qualità",
+    "sortQuality": "Ordina per qualità",
+    "noQualityMatches": "Nessun brano corrisponde a questa qualità",
+    "clearFilter": "Azzera filtro"
   },
   "statistics": {
     "totalTracks": "Totale Brani",

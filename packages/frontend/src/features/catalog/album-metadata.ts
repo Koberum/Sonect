@@ -6,7 +6,6 @@ export type AlbumMetadata = {
   trackCount: number;
   totalDuration: number;
   genre?: string;
-  formats: string[];
   sourceNames: string[];
 };
 
@@ -15,13 +14,6 @@ function parseYearNumber(value?: string): number | undefined {
   if (!raw) return undefined;
   const year = Number(raw);
   return Number.isFinite(year) && year > 0 ? year : undefined;
-}
-
-function fileExtension(file: string): string | undefined {
-  const name = file.split("/").pop() ?? "";
-  const dot = name.lastIndexOf(".");
-  if (dot <= 0 || dot === name.length - 1) return undefined;
-  return name.slice(dot + 1).toUpperCase();
 }
 
 export function deriveAlbumMetadata(
@@ -35,14 +27,6 @@ export function deriveAlbumMetadata(
   const genres = tracks
     .map((track) => track.genre?.trim())
     .filter((genre): genre is string => Boolean(genre));
-
-  const formats = [
-    ...new Set(
-      tracks
-        .map((track) => fileExtension(track.file))
-        .filter((format): format is string => Boolean(format)),
-    ),
-  ].sort();
 
   const sourceNames = [
     ...new Set(
@@ -62,7 +46,6 @@ export function deriveAlbumMetadata(
       0,
     ),
     genre: album?.genre?.trim() || genres[0],
-    formats,
     sourceNames,
   };
 }

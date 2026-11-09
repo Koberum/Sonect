@@ -55,9 +55,17 @@
     "trackCount_one": "{{count}} track",
     "trackCount_other": "{{count}} tracks",
     "duration": "Duration",
+    "quality": "Quality",
     "trackNumber": "#",
     "playAll": "Play All",
     "goToAlbum": "Go to Album"
+  },
+  "trackTable": {
+    "allQualities": "All qualities",
+    "filterQuality": "Filter by quality",
+    "sortQuality": "Sort by quality",
+    "noQualityMatches": "No tracks match this quality",
+    "clearFilter": "Clear filter"
   },
   "statistics": {
     "totalTracks": "Total Songs",

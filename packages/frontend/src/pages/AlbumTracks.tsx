@@ -59,10 +59,7 @@ export default function AlbumPage() {
       : null,
     durationLabel,
   ].filter((part): part is string => Boolean(part));
-  const hasBadges =
-    Boolean(metadata.genre) ||
-    metadata.formats.length > 0 ||
-    metadata.sourceNames.length > 0;
+  const hasBadges = Boolean(metadata.genre) || metadata.sourceNames.length > 0;
 
   if (isError && !album) {
     return (
@@ -112,11 +109,6 @@ export default function AlbumPage() {
                       <Badge variant="secondary">{metadata.genre}</Badge>
                     </Link>
                   )}
-                  {metadata.formats.map((format) => (
-                    <Badge key={format} variant="outline">
-                      {format}
-                    </Badge>
-                  ))}
                   {metadata.sourceNames.map((name) => (
                     <Badge key={name} variant="outline" className="gap-1">
                       <Library className="size-4" aria-hidden="true" />
@@ -153,6 +145,7 @@ export default function AlbumPage() {
             tracks={tracks}
             isPending={isPending}
             getNumber={(track, index) => track.track_number ?? index + 1}
+            resetKey={id}
           />
         )}
       </div>
