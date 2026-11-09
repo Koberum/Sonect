@@ -40,6 +40,9 @@ export const playerSchemas = {
   toggle: z.object({
     enabled: z.boolean({ error: "enabled is required" }),
   }),
+  repeatMode: z.object({
+    mode: z.enum(["off", "all", "one"], { error: "mode is required" }),
+  }),
   settings: z.object({
     crossfadeSeconds: z
       .number()

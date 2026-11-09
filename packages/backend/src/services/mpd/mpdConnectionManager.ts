@@ -1,7 +1,11 @@
 import { EventEmitter } from "events";
 import net from "net";
 import mpd from "mpd";
-import type { PlaybackStatus, PlaybackState } from "@repo/types";
+import {
+  repeatModeFromFlags,
+  type PlaybackStatus,
+  type PlaybackState,
+} from "@repo/types";
 import type { CatalogService } from "@services/library/catalogService";
 import type { LogService } from "@services/utils/logService";
 import {
@@ -36,6 +40,7 @@ function createDefaultStatus(): PlaybackStatus {
     random: false,
     single: false,
     consume: false,
+    repeatMode: "off",
     error: null,
     queueLength: 0,
   };
@@ -439,6 +444,10 @@ export class MpdConnectionManager extends EventEmitter {
         random: status.random === "1",
         single: status.single === "1",
         consume: status.consume === "1",
+        repeatMode: repeatModeFromFlags(
+          status.repeat === "1",
+          status.single === "1",
+        ),
         error: statusError,
         track: resolvedTrack ?? undefined,
         queueLength: playlistLength,

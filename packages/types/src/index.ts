@@ -16,6 +16,19 @@ export type StorageSource = DBStorageSource;
 
 export type PlaybackState = "play" | "pause" | "stop";
 export type OutputMode = "mpd" | "browser";
+export type RepeatMode = "off" | "all" | "one";
+
+/**
+ * MPD exposes repeat and single independently; the UI exposes the three
+ * combinations that make sense as a single cycle.
+ */
+export function repeatModeFromFlags(
+  repeat: boolean,
+  single: boolean,
+): RepeatMode {
+  if (!repeat) return "off";
+  return single ? "one" : "all";
+}
 
 export type PlaybackStatus = {
   state: PlaybackState;
@@ -26,6 +39,7 @@ export type PlaybackStatus = {
   random: boolean;
   single: boolean;
   consume: boolean;
+  repeatMode: RepeatMode;
   error?: string | null;
   track?: TrackWithRelations;
   queueLength: number;

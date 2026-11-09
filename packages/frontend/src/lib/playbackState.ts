@@ -9,6 +9,7 @@ export const defaultPlayerState: PlaybackStatus = {
   random: false,
   single: false,
   consume: false,
+  repeatMode: "off",
   state: "stop",
   queueLength: 0,
 };

@@ -256,6 +256,7 @@ export class SessionPlayer extends EventEmitter {
       random: false,
       single: false,
       consume: false,
+      repeatMode: "off",
       track: this.currentTrack(),
       queueLength: this.queueInternal.length,
       nextTrackId: next?.id ?? null,

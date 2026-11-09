@@ -67,6 +67,7 @@ describe("PlayerRouter crossfade", () => {
         random: false,
         single: false,
         consume: false,
+        repeatMode: "off" as const,
         queueLength: 0,
       }),
     } as unknown as PlayerServiceImpl;
