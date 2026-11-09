@@ -15,6 +15,7 @@ import {
   hashFile,
 } from "../../utils/mpd.js";
 import { TrackWithRelations } from "@repo/types/catalog";
+import { shouldRefillAutoplay } from "./autoplayPolicy.js";
 
 const { cmd } = mpd;
 
@@ -25,8 +26,6 @@ const RECONNECT_BASE_MS = 1_000;
 const RECONNECT_MAX_MS = 30_000;
 const POLL_INTERVAL_PLAY_MS = 2_000;
 const POLL_INTERVAL_IDLE_MS = 10_000;
-const AUTOPLAY_REFILL_INTERVAL_MS = 10_000;
-const AUTOPLAY_QUEUE_LOW = 5;
 
 type MPDClient = ReturnType<typeof mpd.connect>;
 
@@ -459,13 +458,21 @@ export class MpdConnectionManager extends EventEmitter {
 
       this.emit("stateChanged", this._cache);
 
+      const hasNextSong =
+        status.nextsongid !== undefined || status.nextsong !== undefined;
       if (
-        remainingTracks > 0 &&
-        remainingTracks < AUTOPLAY_QUEUE_LOW &&
         this._autoplayCallback &&
-        !this._autofillInProgress &&
         this._cache.track?.file &&
-        Date.now() - this._lastAutofillTime > AUTOPLAY_REFILL_INTERVAL_MS
+        shouldRefillAutoplay({
+          state: this._cache.state,
+          repeat: this._cache.repeat,
+          hasTrack: Boolean(this._cache.track?.file),
+          remainingTracks,
+          hasNextSong,
+          autofillInProgress: this._autofillInProgress,
+          lastAutofillAt: this._lastAutofillTime,
+          now: Date.now(),
+        })
       ) {
         this._lastAutofillTime = Date.now();
         this._autofillInProgress = true;

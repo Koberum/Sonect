@@ -16,6 +16,7 @@ import type {
   PlaybackStatus,
   PlayerReport,
   QueuedTrack,
+  RepeatMode,
 } from "@repo/types";
 
 type SessionRecord = {
@@ -179,8 +180,12 @@ export class PlayerRouter extends EventEmitter {
         this.p.clearQueue();
       }
       async setVolume(_volume: number): Promise<void> {}
-      async enableRandom(_enabled: boolean): Promise<void> {}
-      async enableRepeat(_enabled: boolean): Promise<void> {}
+      async setRandom(enabled: boolean): Promise<void> {
+        this.p.setRandom(enabled);
+      }
+      async setRepeatMode(mode: RepeatMode): Promise<void> {
+        this.p.setRepeatMode(mode);
+      }
       async playPosition(pos: number): Promise<void> {
         this.p.playPosition(pos);
       }

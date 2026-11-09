@@ -1,5 +1,10 @@
 import { PlayTrackError } from "@repo/types";
-import { PlayTrackResponse, PlaybackStatus, QueuedTrack } from "@repo/types";
+import {
+  PlayTrackResponse,
+  PlaybackStatus,
+  QueuedTrack,
+  RepeatMode,
+} from "@repo/types";
 import type { LogService } from "@services/utils/logService";
 import { MpdConnectionManager } from "@services/mpd/mpdConnectionManager";
 import type { AutoplayService } from "../mpd/autoplayService";
@@ -16,8 +21,8 @@ export interface PlayerService {
   nextTrack(): Promise<void>;
   previousTrack(): Promise<void>;
   goToPosition(position: number): Promise<void>;
-  enableRepeat(enabled: boolean): Promise<void>;
-  enableRandom(enabled: boolean): Promise<void>;
+  setRepeatMode(mode: RepeatMode): Promise<void>;
+  setRandom(enabled: boolean): Promise<void>;
   setVolume(volume: number): Promise<void>;
   playPosition(pos: number): Promise<void>;
   removeFromQueue(pos: number): Promise<void>;
@@ -61,13 +66,16 @@ export class PlayerServiceImpl implements PlayerService {
         commands.push({ command: "add", args: [initialFile] });
       }
 
-      commands.push({ command: "consume", args: ["1"] });
+      commands.push({ command: "consume", args: ["0"] });
       commands.push({ command: "play" });
 
       const sessionId = this.autoplayService.resetSession(file, initialFiles);
       await this.mpdConnectionManager.executeCommandList(commands);
 
-      if (this.autoplayService.sessionId === sessionId) {
+      if (
+        !this.mpdConnectionManager.getCachedStatus().repeat &&
+        this.autoplayService.sessionId === sessionId
+      ) {
         try {
           const tracks = this.autoplayService.getNextBatch(file);
           if (
@@ -206,22 +214,19 @@ export class PlayerServiceImpl implements PlayerService {
     });
   }
 
-  public async enableRepeat(enabled: boolean): Promise<void> {
-    await this.mpdConnectionManager.executeCommand("repeat", [
-      enabled ? "1" : "0",
+  public async setRepeatMode(mode: RepeatMode): Promise<void> {
+    await this.mpdConnectionManager.executeCommandList([
+      { command: "repeat", args: [mode === "off" ? "0" : "1"] },
+      { command: "single", args: [mode === "one" ? "1" : "0"] },
     ]);
-    this.mpdConnectionManager.refreshNow().catch((err) => {
-      console.error("[Player] refreshNow failed after enableRepeat:", err);
-    });
+    await this.mpdConnectionManager.refreshNow();
   }
 
-  public async enableRandom(enabled: boolean): Promise<void> {
+  public async setRandom(enabled: boolean): Promise<void> {
     await this.mpdConnectionManager.executeCommand("random", [
       enabled ? "1" : "0",
     ]);
-    this.mpdConnectionManager.refreshNow().catch((err) => {
-      console.error("[Player] refreshNow failed after enableRandom:", err);
-    });
+    await this.mpdConnectionManager.refreshNow();
   }
 
   public async setVolume(volume: number): Promise<void> {

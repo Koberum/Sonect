@@ -491,7 +491,7 @@ export const unifiedEnableRandomHandler = asyncHandler(
         enabled,
       },
     );
-    await router().forSession(sid).enableRandom(enabled);
+    await router().forSession(sid).setRandom(enabled);
     res.json(router().getStatus(sid));
   },
 );
@@ -508,7 +508,9 @@ export const unifiedEnableRepeatHandler = asyncHandler(
         enabled,
       },
     );
-    await router().forSession(sid).enableRepeat(enabled);
+    await router()
+      .forSession(sid)
+      .setRepeatMode(enabled ? "all" : "off");
     res.json(router().getStatus(sid));
   },
 );
