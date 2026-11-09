@@ -109,6 +109,7 @@ export class SessionPlayer extends EventEmitter {
     // Fence in-flight track transitions: an advance/ended report belongs to the
     // track that produced it, so a command that replaced the queue meanwhile
     // must not be advanced by a stale report.
+    let reportedEntry: SessionQueueEntry | undefined;
     if (report.event === "ended") {
       if (report.trackId !== undefined && report.trackId !== current.id) return;
     } else if (report.event === "advance") {
@@ -118,12 +119,19 @@ export class SessionPlayer extends EventEmitter {
       ) {
         return;
       }
-      const expected = this.playOrder.peekNext();
-      if (
-        report.trackId !== undefined &&
-        (expected === null || report.trackId !== expected.id)
-      ) {
-        return;
+      if (report.trackId !== undefined) {
+        reportedEntry =
+          this.queueInternal.find(
+            (entry) =>
+              entry.id === report.trackId && this.playOrder.isUpcoming(entry),
+          ) ?? this.queueInternal.find((entry) => entry.id === report.trackId);
+        if (!reportedEntry) return;
+        if (
+          reportedEntry.id !== current.id &&
+          !this.playOrder.isUpcoming(reportedEntry)
+        ) {
+          return;
+        }
       }
     } else if (report.trackId !== undefined && report.trackId !== current.id) {
       return;
@@ -131,7 +139,12 @@ export class SessionPlayer extends EventEmitter {
 
     this.touch();
 
-    if (report.event === "ended" || report.event === "advance") {
+    if (report.event === "advance") {
+      this.advanceTo(reportedEntry);
+      this.emitStateChanged();
+      return;
+    }
+    if (report.event === "ended") {
       this.advance();
       this.emitStateChanged();
       return;
@@ -179,8 +192,8 @@ export class SessionPlayer extends EventEmitter {
   private maybeRefill(): void {
     if (this.playOrder.repeat !== "off") return;
     if (this._autofillInProgress) return;
-    const remaining = this.queueInternal.length - this.indexInternal - 1;
-    if (remaining >= 5 || remaining < 0) return;
+    const remaining = this.playOrder.remaining;
+    if (remaining >= 5) return;
     const current = this.queueInternal[this.indexInternal];
     if (!current) return;
     const queuedFiles = this.queueInternal.map((e) => e.file);
@@ -228,20 +241,46 @@ export class SessionPlayer extends EventEmitter {
     };
   }
 
-  private advance(): void {
-    this.maybeRefill();
-    const next = this.playOrder.advance();
+  private applyNext(next: SessionQueueEntry | null): boolean {
     if (!next) {
       this.stateInternal = "stop";
       this.indexInternal = -1;
       this.position = 0;
       this.bufferingInternal = false;
-      return;
+      return false;
     }
     this.indexInternal = this.queueInternal.indexOf(next);
     this.position = 0;
     this.stateInternal = "play";
     this.bufferingInternal = false;
+    return true;
+  }
+
+  /**
+   * Automatic transition. Advance before refilling so a shuffled refill cannot
+   * insert a different track at the cursor and desync the browser preload.
+   */
+  private advance(): void {
+    const repeatOff = this.playOrder.repeat === "off";
+    let next = this.playOrder.advance();
+    if (!next && repeatOff) {
+      this.maybeRefill();
+      next = this.playOrder.advance();
+    }
+    const moved = this.applyNext(next);
+    if (moved && repeatOff) this.maybeRefill();
+  }
+
+  /** Transition reported by the active browser device with its new track. */
+  private advanceTo(item: SessionQueueEntry | undefined): void {
+    const repeatOff = this.playOrder.repeat === "off";
+    let next = item ? this.playOrder.advanceTo(item) : this.playOrder.advance();
+    if (!next && repeatOff) {
+      this.maybeRefill();
+      next = item ? this.playOrder.advanceTo(item) : this.playOrder.advance();
+    }
+    const moved = this.applyNext(next);
+    if (moved && repeatOff) this.maybeRefill();
   }
 
   private currentTrack(): TrackWithRelations | undefined {
@@ -456,7 +495,14 @@ export class SessionPlayer extends EventEmitter {
       return;
     }
     const prevIdx = this.indexInternal;
-    this.advance();
+    const repeatOff = this.playOrder.repeat === "off";
+    let next = this.playOrder.skipNext();
+    if (!next && repeatOff) {
+      this.maybeRefill();
+      next = this.playOrder.skipNext();
+    }
+    const moved = this.applyNext(next);
+    if (moved && repeatOff) this.maybeRefill();
     this.log(
       "debug",
       `[Session ${this.sessionId.slice(0, 8)}][browser] next ${prevIdx}→${this.indexInternal} state=${this.stateInternal}`,
@@ -467,12 +513,11 @@ export class SessionPlayer extends EventEmitter {
         state: this.stateInternal,
       },
     );
-    if (this.stateInternal === "stop") {
+    if (!moved) {
       // Queue end reached: emit so WS consumers observe the final stop.
       this.emitStateChanged();
       return;
     }
-    this.stateInternal = "play";
     this.seekSeqInternal += 1;
     this.emitStateChanged();
   }
@@ -619,6 +664,7 @@ export class SessionPlayer extends EventEmitter {
       this.queueInternal,
       this.currentEntry() ?? null,
     );
+    this.syncIndexFromOrder();
 
     this.log(
       "debug",

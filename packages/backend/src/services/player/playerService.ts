@@ -67,7 +67,7 @@ export class PlayerServiceImpl implements PlayerService {
       }
 
       commands.push({ command: "consume", args: ["0"] });
-      commands.push({ command: "play" });
+      commands.push({ command: "play", args: ["0"] });
 
       const sessionId = this.autoplayService.resetSession(file, initialFiles);
       await this.mpdConnectionManager.executeCommandList(commands);

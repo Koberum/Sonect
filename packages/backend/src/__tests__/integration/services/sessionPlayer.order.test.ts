@@ -140,6 +140,136 @@ describe("SessionPlayer shuffle and repeat", () => {
     expect(p.getStatus().elapsed).to.equal(0);
   });
 
+  it("advances on explicit next in repeat-one and wraps previous", () => {
+    const { t1, t2, t3 } = seedThreeTracks("RepeatOneNext", 550);
+    p = new SessionPlayer(
+      "S-repeat-one-next",
+      {} as LogService,
+      undefined,
+      identity,
+    );
+    p.setRepeatMode("one");
+    p.playTrack(t1.file);
+
+    p.next();
+    expect(p.getStatus().track?.id).to.equal(t2.id);
+    p.next();
+    expect(p.getStatus().track?.id).to.equal(t3.id);
+    p.next();
+    expect(p.getStatus().track?.id).to.equal(t1.id);
+    p.previous();
+    expect(p.getStatus().track?.id).to.equal(t3.id);
+  });
+
+  it("keeps autoplay running through a shuffled pass", () => {
+    const a = artist.create({ name: "ShuffledAutoplay" }, 560);
+    const al = album.create(
+      { title: "ShuffledAutoplayAlbum", artistName: a.name },
+      560,
+    );
+    const tracks = Array.from({ length: 10 }, (_, i) =>
+      track.create(
+        {
+          artist: a.name,
+          album: al.title,
+          title: `T${i + 1}`,
+          duration: 4,
+          track: i + 1,
+          disc: "1",
+        },
+        561 + i,
+      ),
+    );
+    const extraArtist = artist.create({ name: "ShuffledExtra" }, 580);
+    const extraAlbum = album.create(
+      { title: "ShuffledExtraAlbum", artistName: extraArtist.name },
+      580,
+    );
+    const extra = track.create(
+      {
+        artist: extraArtist.name,
+        album: extraAlbum.title,
+        title: "Extra",
+        duration: 4,
+      },
+      581,
+    );
+
+    const getNextBatch = sinon
+      .stub()
+      .onFirstCall()
+      .returns([])
+      .onSecondCall()
+      .returns([extra.file])
+      .returns([]);
+    const autoplay = {
+      sessionId: 1,
+      resetSession: sinon.stub().returns(1),
+      getNextBatch,
+      commitBatch: sinon.stub(),
+    } as unknown as AutoplayService;
+
+    p = new SessionPlayer(
+      "S-shuffled-autoplay",
+      {} as LogService,
+      autoplay,
+      reverse,
+    );
+    p.setRandom(true);
+    p.playTrack(tracks[0].file);
+
+    for (let i = 0; i < 9; i += 1) {
+      p.reportPlayback({ event: "ended" });
+    }
+
+    expect(p.getStatus().state).to.equal("play");
+    expect(getNextBatch.callCount).to.be.greaterThan(1);
+    expect(p.getStatus().queueLength).to.equal(11);
+  });
+
+  it("advances to the track the browser reported even when a refill is due", () => {
+    const { t1 } = seedThreeTracks("ReportedAdvance", 590);
+    const extraArtist = artist.create({ name: "ReportedExtra" }, 600);
+    const extraAlbum = album.create(
+      { title: "ReportedExtraAlbum", artistName: extraArtist.name },
+      600,
+    );
+    const extra = track.create(
+      {
+        artist: extraArtist.name,
+        album: extraAlbum.title,
+        title: "Extra",
+        duration: 4,
+      },
+      601,
+    );
+    const autoplay = {
+      sessionId: 1,
+      resetSession: sinon.stub().returns(1),
+      getNextBatch: sinon
+        .stub()
+        .onFirstCall()
+        .returns([])
+        .onSecondCall()
+        .returns([extra.file]),
+      commitBatch: sinon.stub(),
+    } as unknown as AutoplayService;
+
+    p = new SessionPlayer(
+      "S-reported-advance",
+      {} as LogService,
+      autoplay,
+      identity,
+    );
+    p.setRandom(true);
+    p.playTrack(t1.file);
+    const expected = p.getStatus().nextTrackId;
+
+    p.reportPlayback({ event: "advance", trackId: expected ?? undefined });
+
+    expect(p.getStatus().track?.id).to.equal(expected);
+  });
+
   it("suspends autoplay while repeat is active and resumes when off", () => {
     const { t1 } = seedThreeTracks("AutoplayRepeat", 500);
     const a = artist.create({ name: "ExtraArtist" }, 600);

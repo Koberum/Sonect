@@ -46,11 +46,18 @@ export class PlayOrder<T> {
     return this.cursor >= 0 ? (this.order[this.cursor] ?? null) : null;
   }
 
+  /** Items still to play in the current pass (autoplay uses this). */
+  get remaining(): number {
+    return this.cursor < 0
+      ? this.order.length
+      : this.order.length - this.cursor - 1;
+  }
+
   reset(natural: readonly T[], current: T | null): void {
     this.order = this.randomEnabled
       ? this.withCurrentFirst(natural, current)
       : [...natural];
-    this.cursor = current ? this.order.indexOf(current) : this.firstIndex();
+    this.cursor = current ? this.order.indexOf(current) : -1;
     this.nextCycle = null;
   }
 
@@ -63,7 +70,7 @@ export class PlayOrder<T> {
       this.cursor = current ? 0 : -1;
     } else {
       this.order = [...natural];
-      this.cursor = current ? this.order.indexOf(current) : this.firstIndex();
+      this.cursor = current ? this.order.indexOf(current) : -1;
     }
   }
 
@@ -77,21 +84,21 @@ export class PlayOrder<T> {
   setNaturalOrder(natural: readonly T[], current: T | null): void {
     if (this.randomEnabled) return;
     this.order = [...natural];
-    this.cursor = current ? this.order.indexOf(current) : this.firstIndex();
+    this.cursor = current ? this.order.indexOf(current) : -1;
     this.nextCycle = null;
   }
 
   append(item: T): void {
     if (!this.randomEnabled) {
       this.order.push(item);
-      this.nextCycle = null;
+      this.appendToNextCycle(item);
       return;
     }
     const min = this.cursor < 0 ? 0 : this.cursor + 1;
     const max = this.order.length;
     const at = min + Math.floor(this.rng() * (max - min + 1));
     this.order.splice(at, 0, item);
-    this.nextCycle = null;
+    this.appendToNextCycle(item);
   }
 
   appendMany(items: readonly T[]): void {
@@ -102,13 +109,17 @@ export class PlayOrder<T> {
     const index = this.order.indexOf(item);
     if (index < 0) return;
     this.order.splice(index, 1);
+    if (this.nextCycle) {
+      const nextIndex = this.nextCycle.indexOf(item);
+      if (nextIndex >= 0) this.nextCycle.splice(nextIndex, 1);
+      if (this.nextCycle.length === 0) this.nextCycle = null;
+    }
     if (index < this.cursor) {
       this.cursor -= 1;
     } else if (index === this.cursor && this.cursor >= this.order.length) {
       this.cursor = this.order.length - 1;
     }
     if (this.order.length === 0) this.cursor = -1;
-    this.nextCycle = null;
   }
 
   /**
@@ -116,6 +127,7 @@ export class PlayOrder<T> {
    * current order entry; while stopped it becomes the first item.
    */
   playAt(item: T, playing: boolean): void {
+    if (this.cursor >= 0 && this.order[this.cursor] === item) return;
     const index = this.order.indexOf(item);
     if (index < 0) this.order.push(item);
     if (!this.randomEnabled) {
@@ -155,13 +167,55 @@ export class PlayOrder<T> {
     return null;
   }
 
+  /** True when the item is the current one, the immediate next, or part of the cached next cycle. */
+  isUpcoming(item: T): boolean {
+    if (this.cursor >= 0 && this.order[this.cursor] === item) return true;
+    if (this.order[this.cursor + 1] === item) return true;
+    return this.nextCycle?.includes(item) ?? false;
+  }
+
+  /** Moves to a specific upcoming item (used by browser advance reports). */
+  advanceTo(item: T): T | null {
+    if (this.cursor >= 0 && this.order[this.cursor] === item) {
+      return this.current;
+    }
+    const nextIndex = this.cursor + 1;
+    if (this.order[nextIndex] === item) {
+      this.cursor = nextIndex;
+      return this.current;
+    }
+    if (this.nextCycle?.includes(item)) {
+      this.order = this.nextCycle;
+      this.nextCycle = null;
+      this.cursor = this.order.indexOf(item);
+      return this.current;
+    }
+    return null;
+  }
+
+  /** Explicit Next: advances even in repeat-one, wrapping when repeating. */
+  skipNext(): T | null {
+    if (this.order.length === 0) return null;
+    if (this.cursor + 1 < this.order.length) {
+      this.cursor += 1;
+      return this.current;
+    }
+    if (this.repeatMode !== "off") {
+      this.order = this.nextCycle ?? this.shuffleOrder();
+      this.nextCycle = null;
+      this.cursor = 0;
+      return this.current;
+    }
+    return null;
+  }
+
   previous(): T | null {
     if (this.order.length === 0) return null;
     if (this.cursor > 0) {
       this.cursor -= 1;
       return this.current;
     }
-    if (this.repeatMode === "all") {
+    if (this.repeatMode !== "off") {
       this.cursor = this.order.length - 1;
       return this.current;
     }
@@ -174,7 +228,8 @@ export class PlayOrder<T> {
    */
   peekNext(): T | null {
     if (this.order.length === 0) return null;
-    if (this.repeatMode === "one" && this.cursor >= 0) {
+    if (this.cursor < 0) return null;
+    if (this.repeatMode === "one") {
       return this.current;
     }
     if (this.cursor + 1 < this.order.length) {
@@ -199,8 +254,14 @@ export class PlayOrder<T> {
     return [...this.order];
   }
 
-  private firstIndex(): number {
-    return this.order.length > 0 ? 0 : -1;
+  private appendToNextCycle(item: T): void {
+    if (!this.nextCycle || this.nextCycle.length === 0) return;
+    if (!this.randomEnabled) {
+      this.nextCycle.push(item);
+      return;
+    }
+    const at = 1 + Math.floor(this.rng() * this.nextCycle.length);
+    this.nextCycle.splice(at, 0, item);
   }
 
   private shuffleOrder(): T[] {

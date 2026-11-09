@@ -86,7 +86,7 @@ describe("PlayerServiceImpl.playTrack", () => {
       { command: "add", args: [first.file] },
       { command: "add", args: [second.file] },
       { command: "consume", args: ["0"] },
-      { command: "play" },
+      { command: "play", args: ["0"] },
     ]);
   });
 
