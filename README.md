@@ -33,8 +33,9 @@ no subscriptions, no limits.
   manage libraries, audio, sync, and profiles; users can browse, listen, use
   playlists, and change their own password.
 - **MPD-powered playback** — Gapless, battle-tested, supports virtually any
-  audio format. Random and repeat have UI controls; `consume` is forced by the
-  queue engine and `single` is reflected from MPD status.
+  audio format. Shuffle randomizes the current queue, and Repeat cycles through
+  off, repeat queue and repeat track with the same behavior in the browser and
+  on the speakers; autoplay pauses while repeat is active.
 - **MPD-backed catalog** — Sonect mirrors MPD's indexed database instead of
   scanning tags itself. The first sync is full; later syncs are incremental and
   skip entirely when MPD reports no changes. Track names stream in the status

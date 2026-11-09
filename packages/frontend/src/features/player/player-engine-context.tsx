@@ -255,19 +255,14 @@ export function PlayerEngineProvider({
   useEffect(() => {
     if (!isActiveBrowser) return;
     const nextId = playbackStatus.nextTrackId;
-    const currentId = playbackStatus.track?.id;
-    if (nextId && nextId !== currentId) {
+    if (nextId) {
+      // `nextTrackId` may equal the current track for repeat-one; the engine
+      // treats that as "restart the current deck" on ended.
       preloadTrack(nextId, `/stream/${nextId}`);
     } else {
       clearPreload();
     }
-  }, [
-    isActiveBrowser,
-    playbackStatus.nextTrackId,
-    playbackStatus.track?.id,
-    preloadTrack,
-    clearPreload,
-  ]);
+  }, [isActiveBrowser, playbackStatus.nextTrackId, preloadTrack, clearPreload]);
 
   // Track change detection feeds the shared "now playing" track. The context
   // derives trackPlayed from playbackStatus.track, so a stopped, empty queue

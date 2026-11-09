@@ -128,6 +128,31 @@ describe("BrowserAudioEngine deck transitions", () => {
     });
   });
 
+  it("restarts the current track when the server repeats it", async () => {
+    const reports: PlayerReport[] = [];
+    const engine = new BrowserAudioEngine({
+      onReport: (report) => reports.push(report),
+    });
+
+    engine.startTrack(1, "/stream/1", 0, "epoch-1", 1);
+    engine.preloadTrack(1, "/stream/1");
+    engine.play();
+    await vi.waitFor(() => expect(engine.state).toBe("playing"));
+
+    const [first] = FakeAudio.instances;
+    first.currentTime = 100;
+    first.emit("ended");
+    await Promise.resolve();
+
+    expect(engine.getTrackId()).toBe(1);
+    expect(first.currentTime).toBe(0);
+    expect(reports.at(-1)).toMatchObject({
+      event: "advance",
+      trackId: 1,
+      fromTrackId: 1,
+    });
+  });
+
   it("does not promote a preloaded track when the server reports no next track", async () => {
     const reports: PlayerReport[] = [];
     const engine = new BrowserAudioEngine({

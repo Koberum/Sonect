@@ -196,7 +196,13 @@ export class BrowserAudioEngine {
    */
   preloadTrack(trackId: number, src: string): void {
     if (this.destroyed) return;
-    if (this.active.trackId === trackId) return;
+    if (this.active.trackId === trackId) {
+      // Repeat one (or a one-track repeat-all queue): the server reports the
+      // current track as the next one. Remember it so `ended` restarts it
+      // instead of promoting a stale standby deck.
+      this.expectedNextTrackId = trackId;
+      return;
+    }
     this.expectedNextTrackId = trackId;
     if (this.standby.trackId === trackId && this.standby.src === src) return;
     if (this.crossfading || this.crossfadeStarting) {
@@ -425,6 +431,21 @@ export class BrowserAudioEngine {
       this.crossfadeStarting = false;
     }
     const ended = this.active;
+    if (ended.trackId !== null && this.expectedNextTrackId === ended.trackId) {
+      this.seekDeck(ended, 0);
+      this.pendingPlay = true;
+      this.emitProgress();
+      this.report({
+        event: "advance",
+        state: "play",
+        elapsed: 0,
+        trackId: ended.trackId,
+        fromTrackId: ended.trackId,
+      });
+      this.playActive();
+      return;
+    }
+
     const next = this.standby;
     const nextReady =
       this.expectedNextTrackId !== null &&
