@@ -6,6 +6,7 @@ import {
   getAudioDevices,
   getAudioStatus,
   getHardwareUsage,
+  getMpdStatus,
   getStorageSources,
   createStorageSource,
   updateStorageSource,
@@ -57,6 +58,14 @@ export const systemQueries = {
       staleTime: 0,
       refetchInterval: enabled ? 5000 : false,
       refetchIntervalInBackground: false,
+    }),
+
+  mpdStatus: () =>
+    queryOptions({
+      queryKey: qk.system.mpdStatus(),
+      queryFn: ({ signal }) => getMpdStatus(signal),
+      staleTime: 0,
+      refetchInterval: 30_000,
     }),
 
   dashboard: (profileId: string) =>

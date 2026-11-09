@@ -71,6 +71,25 @@ export function formatAvgDuration(seconds: number): string {
   return formatUnit(secs, "second");
 }
 
+/** Relative timestamp for status surfaces, e.g. "2 hours ago" / "now". */
+export function formatRelativeTime(iso: string | null): string | null {
+  if (!iso) return null;
+  const timestamp = new Date(iso).getTime();
+  if (Number.isNaN(timestamp)) return null;
+  const diffMs = timestamp - Date.now();
+  const abs = Math.abs(diffMs);
+  const rtf = new Intl.RelativeTimeFormat(locale(), { numeric: "auto" });
+  if (abs < 60_000) return rtf.format(Math.round(diffMs / 1000), "second");
+  if (abs < 3_600_000) return rtf.format(Math.round(diffMs / 60_000), "minute");
+  if (abs < 86_400_000)
+    return rtf.format(Math.round(diffMs / 3_600_000), "hour");
+  if (abs < 2_592_000_000)
+    return rtf.format(Math.round(diffMs / 86_400_000), "day");
+  if (abs < 31_536_000_000)
+    return rtf.format(Math.round(diffMs / 2_592_000_000), "month");
+  return rtf.format(Math.round(diffMs / 31_536_000_000), "year");
+}
+
 /** Uptime with days/hours/minutes, e.g. 2d 3h 10m. */
 export function formatUptime(seconds: number): string {
   const d = Math.floor(seconds / 86400);

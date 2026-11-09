@@ -47,6 +47,7 @@ export const qk = {
     storageSources: () => ["system", "storage", "sources"] as const,
     detectedLibraries: () => ["system", "storage", "detected"] as const,
     hardwareUsage: () => ["system", "hardware", "usage"] as const,
+    mpdStatus: () => ["system", "mpd", "status"] as const,
   },
   profiles: {
     list: () => ["profiles", "list"] as const,
