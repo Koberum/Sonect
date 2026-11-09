@@ -43,9 +43,9 @@ no subscriptions, no limits.
 - **Track audio quality** — every track carries the sample rate, bit depth and
   channel count MPD reports in its `Format` field. Desktop track tables show a
   Quality column (only when the list has format data) with sorting and a filter
-  by quality; on mobile the track menu's Info dialog shows the full metadata.
-  Liked Songs filters and sorts on the server so pagination, totals and Play All
-  stay consistent.
+  by quality; the track menu's Info dialog shows the full metadata on desktop
+  and mobile. Liked Songs filters and sorts on the server so pagination, totals
+  and Play All stay consistent.
 - **Live WebSocket state** — Playback changes reflect instantly across every
   open tab. MPD status is polled (2 s during play, 10 s during pause/stop) and
   pushed to all connected clients over WebSocket; browser sessions tick locally
