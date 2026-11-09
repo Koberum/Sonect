@@ -1,35 +1,33 @@
-import { useEffect, useRef } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
-import { Heart, Loader2, Play, Shuffle } from "lucide-react";
+import { Filter, Heart, Loader2, Play, Shuffle } from "lucide-react";
 import { toast } from "sonner";
 import type { LikedTracksPage } from "@repo/types/catalog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
+import { ListSkeleton } from "@/components/ui/list-skeleton";
+import { QueryError } from "@/components/ui/query-error";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody } from "@/components/ui/table";
 import { useAuth } from "@/features/auth/auth-context";
-import { likedQueries } from "@/features/liked/queries";
+import { apiSort, likedQueries } from "@/features/liked/queries";
 import { playLiked } from "@/features/liked/api";
-import { TrackRow } from "@/features/tracks/components/track-row";
-import { TrackTableHeader } from "@/features/tracks/components/track-table-header";
-
-function formatTotalDuration(seconds: number): string {
-  const total = Math.max(0, Math.round(seconds));
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  if (minutes > 0) return `${minutes}m`;
-  return `${total}s`;
-}
+import { TrackTable } from "@/features/tracks/components/track-table";
+import {
+  qualityOptionsFromQualities,
+  type QualitySort,
+} from "@/features/tracks/quality";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
+import { formatDuration } from "@/lib/format";
 
 export default function LikedSongs() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { profile } = useAuth();
   const profileId = profile?.id ?? "";
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const [quality, setQuality] = useState<string | null>(null);
+  const [qualitySort, setQualitySort] = useState<QualitySort>("none");
 
   const {
     data,
@@ -39,38 +37,36 @@ export default function LikedSongs() {
     isPending,
     isError,
     refetch,
-  } = useInfiniteQuery(likedQueries.list(profileId));
+  } = useInfiniteQuery(likedQueries.list(profileId, quality, qualitySort));
 
-  const playMutation = useMutation({
-    mutationFn: (shuffle: boolean) => playLiked(shuffle),
-    onError: () => toast.error(t("liked.playError")),
+  const sentinelRef = useInfiniteScroll({
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    resetKey: `${quality ?? "all"}:${qualitySort}`,
   });
 
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-          void fetchNextPage();
-        }
-      },
-      { rootMargin: "200px" },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  const playMutation = useMutation({
+    mutationFn: ({ shuffle }: { shuffle: boolean }) =>
+      playLiked(shuffle, quality, apiSort(qualitySort)),
+    onError: () => toast.error(t("liked.playError")),
+  });
 
   const firstPage: LikedTracksPage | undefined = data?.pages[0];
   const total = firstPage?.total ?? 0;
   const totalDuration = firstPage?.totalDuration ?? 0;
   const tracks = data?.pages.flatMap((page) => page.items) ?? [];
+  const qualityOptions = qualityOptionsFromQualities(
+    firstPage?.qualities ?? [],
+  );
   const canPlay = total > 0 && !playMutation.isPending;
 
   const description =
     total > 0
-      ? `${t("liked.count", { count: total })} · ${formatTotalDuration(totalDuration)}`
+      ? `${t("liked.count", { count: total })} · ${formatDuration(totalDuration)}`
       : t("liked.description");
+
+  const clearFilter = () => setQuality(null);
 
   return (
     <div>
@@ -82,9 +78,10 @@ export default function LikedSongs() {
               variant="outline"
               size="sm"
               disabled={!canPlay}
-              onClick={() => playMutation.mutate(true)}
+              onClick={() => playMutation.mutate({ shuffle: true })}
             >
-              {playMutation.isPending && playMutation.variables === true ? (
+              {playMutation.isPending &&
+              playMutation.variables?.shuffle === true ? (
                 <Loader2 className="animate-spin" />
               ) : (
                 <Shuffle />
@@ -94,9 +91,10 @@ export default function LikedSongs() {
             <Button
               size="sm"
               disabled={!canPlay}
-              onClick={() => playMutation.mutate(false)}
+              onClick={() => playMutation.mutate({ shuffle: false })}
             >
-              {playMutation.isPending && playMutation.variables === false ? (
+              {playMutation.isPending &&
+              playMutation.variables?.shuffle === false ? (
                 <Loader2 className="animate-spin" />
               ) : (
                 <Play />
@@ -108,18 +106,23 @@ export default function LikedSongs() {
       </div>
 
       {isPending ? (
-        <div className="space-y-2">
-          {Array.from({ length: 8 }).map((_, index) => (
-            <Skeleton key={index} className="h-12 w-full rounded-lg" />
-          ))}
-        </div>
+        <ListSkeleton rows={8} />
       ) : isError ? (
-        <div className="border-destructive/40 bg-destructive/5 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
-          <p className="text-destructive text-sm">{t("liked.loadError")}</p>
-          <Button variant="outline" size="sm" onClick={() => void refetch()}>
-            {t("common.retry")}
-          </Button>
-        </div>
+        <QueryError
+          message={t("liked.loadError")}
+          onRetry={() => void refetch()}
+        />
+      ) : total === 0 && quality !== null ? (
+        <EmptyState
+          icon={Filter}
+          title={t("liked.noMatches")}
+          description={t("liked.noMatchesDescription")}
+          action={
+            <Button variant="outline" size="sm" onClick={clearFilter}>
+              {t("trackTable.clearFilter")}
+            </Button>
+          }
+        />
       ) : total === 0 ? (
         <EmptyState
           icon={Heart}
@@ -137,19 +140,18 @@ export default function LikedSongs() {
         />
       ) : (
         <>
-          <Table>
-            <TrackTableHeader />
-            <TableBody>
-              {tracks.map((track, index) => (
-                <TrackRow
-                  key={track.id}
-                  track={track}
-                  number={index + 1}
-                  showCover
-                />
-              ))}
-            </TableBody>
-          </Table>
+          <TrackTable
+            tracks={tracks}
+            showCover
+            qualityMode={{
+              kind: "server",
+              filter: quality,
+              sort: qualitySort,
+              options: qualityOptions,
+              onFilterChange: setQuality,
+              onSortChange: setQualitySort,
+            }}
+          />
           <div ref={sentinelRef} className="h-4" />
           {isFetchingNextPage && (
             <Skeleton className="mt-2 h-12 w-full rounded-lg" />

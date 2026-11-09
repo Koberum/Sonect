@@ -1,6 +1,10 @@
+import type { QualitySort } from "@/features/tracks/quality";
+
 export const qk = {
   dashboardRoot: () => ["dashboard"] as const,
   dashboard: (profileId: string) => ["dashboard", profileId] as const,
+  playlistsRoot: () => ["playlists"] as const,
+  likedRoot: () => ["liked"] as const,
   catalog: {
     root: () => ["catalog"] as const,
     albumsInfinite: (sort: string) =>
@@ -27,12 +31,21 @@ export const qk = {
   },
   liked: {
     ids: (profileId: string) => ["liked", "ids", profileId] as const,
-    list: (profileId: string) => ["liked", "list", profileId] as const,
+    list: (
+      profileId: string,
+      quality: string | null = null,
+      sort: QualitySort = "none",
+    ) => ["liked", "list", profileId, quality ?? "all", sort] as const,
   },
   player: {
-    queue: () => ["player", "queue"] as const,
+    queueRoot: () => ["player", "queue"] as const,
+    queue: (profileId: string) => ["player", "queue", profileId] as const,
     waveform: (trackId: number) => ["player", "waveform", trackId] as const,
-    settings: () => ["player", "settings"] as const,
+    settingsRoot: () => ["player", "settings"] as const,
+    settings: (profileId: string) => ["player", "settings", profileId] as const,
+    outputModeRoot: () => ["player", "outputMode"] as const,
+    outputMode: (profileId: string) =>
+      ["player", "outputMode", profileId] as const,
   },
   system: {
     audioDevices: () => ["system", "audio", "devices"] as const,
@@ -40,7 +53,7 @@ export const qk = {
     storageSources: () => ["system", "storage", "sources"] as const,
     detectedLibraries: () => ["system", "storage", "detected"] as const,
     hardwareUsage: () => ["system", "hardware", "usage"] as const,
-    outputMode: () => ["system", "outputMode"] as const,
+    mpdStatus: () => ["system", "mpd", "status"] as const,
   },
   profiles: {
     list: () => ["profiles", "list"] as const,

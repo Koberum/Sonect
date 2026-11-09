@@ -6,7 +6,7 @@ import {
   getAudioDevices,
   getAudioStatus,
   getHardwareUsage,
-  getOutputMode,
+  getMpdStatus,
   getStorageSources,
   createStorageSource,
   updateStorageSource,
@@ -60,11 +60,12 @@ export const systemQueries = {
       refetchIntervalInBackground: false,
     }),
 
-  outputMode: () =>
+  mpdStatus: () =>
     queryOptions({
-      queryKey: qk.system.outputMode(),
-      queryFn: ({ signal }) => getOutputMode(signal),
-      staleTime: 60_000,
+      queryKey: qk.system.mpdStatus(),
+      queryFn: ({ signal }) => getMpdStatus(signal),
+      staleTime: 0,
+      refetchInterval: 30_000,
     }),
 
   dashboard: (profileId: string) =>
@@ -139,7 +140,7 @@ export const systemMutations = {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: qk.system.audioDevices() });
         queryClient.invalidateQueries({ queryKey: qk.system.audioStatus() });
-        queryClient.invalidateQueries({ queryKey: qk.system.outputMode() });
+        queryClient.invalidateQueries({ queryKey: qk.player.outputModeRoot() });
       },
     }),
 };

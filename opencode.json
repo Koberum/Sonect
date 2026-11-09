@@ -52,6 +52,23 @@
       "type": "local",
       "enabled": true,
       "command": ["npx", "-y", "shadcn@4.23.0", "mcp"]
+    },
+    "playwright": {
+      "type": "local",
+      "enabled": true,
+      "command": [
+        "npx",
+        "-y",
+        "@playwright/mcp@latest",
+        "--headless",
+        "--no-sandbox",
+        "--config",
+        ".opencode/playwright-mcp.json",
+        "--browser",
+        "chromium",
+        "--viewport-size",
+        "1440x900"
+      ]
     }
   }
 }

@@ -6,10 +6,10 @@ import { toast } from "sonner";
 import type { Profile, ProfileRole } from "@repo/types";
 import { ApiError } from "@/lib/api";
 import { profileMutations } from "../queries";
-import { AvatarColorPicker } from "./avatar-color-picker";
+import { ProfileFields } from "./profile-fields";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { PasswordField } from "@/components/ui/password-field";
+import { usePasswordValidation } from "@/features/auth/use-password-validation";
 import {
   Dialog,
   DialogContent,
@@ -28,13 +28,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 type EditProfileDialogProps = {
   profile: Profile | null;
@@ -59,6 +52,7 @@ export function EditProfileDialog({
   onClose,
 }: EditProfileDialogProps) {
   const { t } = useTranslation();
+  const { validateLength } = usePasswordValidation();
   const [name, setName] = useState("");
   const [color, setColor] = useState("");
   const [role, setRole] = useState<ProfileRole>("user");
@@ -110,8 +104,9 @@ export function EditProfileDialog({
 
   const handleResetPassword = async (): Promise<void> => {
     if (!profile || resetMut.isPending) return;
-    if (resetPassword.length < 8) {
-      setResetError(t("auth.passwordTooShort"));
+    const validationError = validateLength(resetPassword);
+    if (validationError) {
+      setResetError(validationError);
       return;
     }
     setResetError(null);
@@ -151,41 +146,16 @@ export function EditProfileDialog({
 
         {profile && (
           <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="edit-profile-name">
-                {t("profile.namePlaceholder")}
-              </Label>
-              <Input
-                id="edit-profile-name"
-                value={name}
-                maxLength={50}
-                onChange={(event) => setName(event.target.value)}
-                placeholder={t("profile.namePlaceholder")}
-                autoFocus
-              />
-            </div>
-
-            <AvatarColorPicker
-              value={color}
-              onChange={setColor}
-              previewName={name}
+            <ProfileFields
+              idPrefix="edit-profile"
+              name={name}
+              onNameChange={setName}
+              color={color}
+              onColorChange={setColor}
+              role={role}
+              onRoleChange={setRole}
+              autoFocus
             />
-
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="edit-profile-role">{t("auth.role")}</Label>
-              <Select
-                value={role}
-                onValueChange={(value) => setRole(value as ProfileRole)}
-              >
-                <SelectTrigger id="edit-profile-role" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">{t("auth.roleUser")}</SelectItem>
-                  <SelectItem value="admin">{t("auth.roleAdmin")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
 
             {error && (
               <p role="alert" className="text-destructive text-sm">
@@ -194,19 +164,15 @@ export function EditProfileDialog({
             )}
 
             <div className="border-border flex flex-col gap-2 rounded-lg border p-3">
-              <Label htmlFor="edit-profile-password">
-                {t("auth.resetPassword")}
-              </Label>
               <p className="text-muted-foreground text-xs">
                 {t("auth.resetPasswordDescription", { name: profile.name })}
               </p>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Input
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <PasswordField
                   id="edit-profile-password"
-                  type="password"
+                  label={t("auth.resetPassword")}
                   value={resetPassword}
-                  onChange={(event) => setResetPassword(event.target.value)}
-                  autoComplete="new-password"
+                  onChange={setResetPassword}
                   className="flex-1"
                 />
                 <Button

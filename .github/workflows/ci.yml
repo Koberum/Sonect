@@ -15,9 +15,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # The pnpm version comes from "packageManager" in the root package.json.
       - uses: pnpm/action-setup@v6
-        with:
-          version: 10.34.7
 
       - uses: actions/setup-node@v7
         with:
@@ -53,6 +52,12 @@ jobs:
           VITE_WEBSOCKET_URL: ""
           VITE_COVER_PATH: /covers
           VITE_DEBUG: "false"
+
+      - name: Frontend bundle budget
+        run: pnpm --filter frontend size
+
+      - name: Frontend tests
+        run: pnpm --filter frontend test
 
       - name: Backend tests
         run: pnpm --filter backend test

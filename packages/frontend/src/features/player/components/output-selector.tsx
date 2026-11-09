@@ -1,143 +1,177 @@
-import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Check, Laptop, Smartphone, Speaker } from "lucide-react";
+import { RadioGroup as RadioGroupPrimitive } from "radix-ui";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Speaker, Laptop, Smartphone } from "lucide-react";
-import type { OutputMode } from "@repo/types";
-import { useTranslation } from "react-i18next";
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { getDeviceName, getDeviceType } from "@/lib/deviceId";
+import { useHoverPopover } from "@/hooks/useHoverPopover";
+import { usePlaybackContext } from "@/components/playback-context";
+import { useOutputMode } from "../useOutputMode";
 
 type DeviceValue = "mpd" | "this-browser" | "remote-browser";
 
-interface OutputSelectorProps {
-  currentMode: OutputMode;
-  onModeChange: (mode: OutputMode) => void;
-  deviceName: string | null;
-  disabled?: boolean;
-  disabledMpd?: boolean;
-  activeDeviceId?: string | null;
-  activeDeviceName?: string | null;
-  activeDeviceType?: string | null;
-  myDeviceId?: string;
-}
+type OutputSelectorProps = {
+  /**
+   * `bar` anchors the popover to the desktop player bar; `page` opens below
+   * the trigger on the full-page mobile player.
+   */
+  placement?: "bar" | "page";
+};
 
-export function OutputSelector({
-  currentMode,
-  onModeChange,
-  deviceName,
-  disabled,
-  disabledMpd,
-  activeDeviceId,
-  activeDeviceName,
-  activeDeviceType,
-  myDeviceId,
-}: OutputSelectorProps) {
+type OutputOption = {
+  value: DeviceValue;
+  icon: typeof Speaker;
+  title: string;
+  subtitle?: string;
+  disabled?: boolean;
+};
+
+/**
+ * Output picker shared by both player views. It reads the profile's mode,
+ * configured speaker name and active browser device from the player state.
+ * On pointer-fine devices it opens on hover with the same grace period as the
+ * volume popover; touch and keyboard keep using the trigger.
+ */
+export function OutputSelector({ placement = "bar" }: OutputSelectorProps) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
+  const { activeDeviceId, activeDeviceName, activeDeviceType, myDeviceId } =
+    usePlaybackContext();
+  const { outputMode, deviceName, isMpdLockedForMe, changeOutputMode } =
+    useOutputMode();
+  const {
+    open,
+    close,
+    anchorRef,
+    contentRef,
+    triggerProps,
+    contentProps,
+    onOpenChange,
+  } = useHoverPopover();
 
   const isPlayingElsewhere =
-    currentMode === "browser" &&
+    outputMode === "browser" &&
     !!activeDeviceId &&
     activeDeviceId !== myDeviceId;
 
   const myDeviceName = getDeviceName();
-  const myDeviceType = getDeviceType();
-  const MyBrowserIcon = myDeviceType === "mobile" ? Smartphone : Laptop;
-  const remoteType = activeDeviceType === "mobile" ? "mobile" : "desktop";
-  const RemoteBrowserIcon = remoteType === "mobile" ? Smartphone : Laptop;
+  const MyBrowserIcon = getDeviceType() === "mobile" ? Smartphone : Laptop;
+  const RemoteBrowserIcon = activeDeviceType === "mobile" ? Smartphone : Laptop;
 
   const selectedValue: DeviceValue =
-    currentMode === "mpd"
+    outputMode === "mpd"
       ? "mpd"
       : isPlayingElsewhere
         ? "remote-browser"
         : "this-browser";
 
+  const options: OutputOption[] = [
+    {
+      value: "mpd",
+      icon: Speaker,
+      title: t("player.outputSpeakers"),
+      subtitle: isMpdLockedForMe
+        ? t("player.outputInUse")
+        : (deviceName ?? undefined),
+      disabled: isMpdLockedForMe,
+    },
+    {
+      value: "this-browser",
+      icon: MyBrowserIcon,
+      title: t("player.thisDevice"),
+      subtitle: myDeviceName,
+    },
+  ];
+
+  if (isPlayingElsewhere) {
+    options.push({
+      value: "remote-browser",
+      icon: RemoteBrowserIcon,
+      title: activeDeviceName || t("player.remoteDevice"),
+      subtitle: activeDeviceName ? t("player.remoteDevice") : undefined,
+      disabled: true,
+    });
+  }
+
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverAnchor asChild>
         <Button
+          ref={anchorRef}
+          type="button"
           variant="bare"
-          size="sm"
-          disabled={disabled}
-          className="text-muted-foreground hover:text-foreground gap-1 text-xs"
+          size="icon-sm"
+          aria-label={t("player.outputDevices")}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          className="text-muted-foreground hover:text-foreground"
+          {...triggerProps}
         >
-          <Speaker className="h-4 w-4" />
+          <Speaker />
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-[220px]">
-        <DropdownMenuLabel>{t("player.outputDevices")}</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuRadioGroup
+      </PopoverAnchor>
+
+      <PopoverContent
+        ref={contentRef}
+        side={placement === "page" ? "bottom" : "top"}
+        align="end"
+        sideOffset={placement === "page" ? 8 : 32}
+        aria-label={t("player.outputDevices")}
+        {...contentProps}
+        className="w-64 p-2"
+      >
+        <div className="text-muted-foreground px-2 py-1.5 text-xs font-medium">
+          {t("player.outputDevices")}
+        </div>
+
+        <RadioGroupPrimitive.Root
           value={selectedValue}
-          onValueChange={(val) => {
-            const v = val as DeviceValue;
-            if (v === "mpd") onModeChange("mpd");
-            else if (v === "this-browser") onModeChange("browser");
-            // remote-browser is disabled (highlight only)
-            setOpen(false);
+          onValueChange={(value) => {
+            const next = value as DeviceValue;
+            if (next === "mpd") void changeOutputMode("mpd");
+            else if (next === "this-browser") void changeOutputMode("browser");
+            close();
           }}
+          aria-label={t("player.outputDevices")}
+          className="grid gap-1"
         >
-          <DropdownMenuRadioItem value="mpd" disabled={!!disabledMpd}>
-            <span className="flex items-center gap-2">
-              <Speaker className="size-4 shrink-0" />
-              <span className="flex flex-col">
-                <span className="text-sm leading-none">
-                  {t("player.outputSpeakers")}
+          {options.map((option) => (
+            <RadioGroupPrimitive.Item
+              key={option.value}
+              value={option.value}
+              disabled={option.disabled}
+              onClick={() => {
+                if (option.value === selectedValue) close();
+              }}
+              className={cn(
+                "group flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors outline-none",
+                "hover:bg-accent focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+                "data-[state=checked]:bg-accent/60",
+                "disabled:pointer-events-none disabled:opacity-50",
+              )}
+            >
+              <option.icon className="text-muted-foreground group-data-[state=checked]:text-foreground size-4 shrink-0" />
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-sm leading-tight font-medium">
+                  {option.title}
                 </span>
-                {disabledMpd ? (
-                  <span className="text-muted-foreground text-xs leading-none">
-                    {t("player.outputInUse")}
-                  </span>
-                ) : deviceName ? (
-                  <span className="text-muted-foreground text-xs leading-none">
-                    {deviceName}
+                {option.subtitle ? (
+                  <span className="text-muted-foreground mt-0.5 truncate text-xs leading-tight">
+                    {option.subtitle}
                   </span>
                 ) : null}
               </span>
-            </span>
-          </DropdownMenuRadioItem>
-
-          <DropdownMenuRadioItem value="this-browser">
-            <span className="flex items-center gap-2">
-              <MyBrowserIcon className="size-4 shrink-0" />
-              <span className="flex flex-col">
-                <span className="text-sm leading-none">
-                  {t("player.thisDevice")}
-                </span>
-                <span className="text-muted-foreground text-xs leading-none">
-                  {myDeviceName}
-                </span>
-              </span>
-            </span>
-          </DropdownMenuRadioItem>
-
-          {isPlayingElsewhere ? (
-            <DropdownMenuRadioItem value="remote-browser" disabled>
-              <span className="flex items-center gap-2">
-                <RemoteBrowserIcon className="size-4 shrink-0" />
-                <span className="flex flex-col">
-                  <span className="text-sm leading-none">
-                    {activeDeviceName || t("player.remoteDevice")}
-                  </span>
-                  {activeDeviceName ? (
-                    <span className="text-muted-foreground text-xs leading-none">
-                      {t("player.remoteDevice")}
-                    </span>
-                  ) : null}
-                </span>
-              </span>
-            </DropdownMenuRadioItem>
-          ) : null}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+              <RadioGroupPrimitive.Indicator className="text-primary flex size-4 shrink-0 items-center justify-center">
+                <Check className="size-4" />
+              </RadioGroupPrimitive.Indicator>
+            </RadioGroupPrimitive.Item>
+          ))}
+        </RadioGroupPrimitive.Root>
+      </PopoverContent>
+    </Popover>
   );
 }

@@ -5,17 +5,10 @@ import { Loader2 } from "lucide-react";
 import type { Profile, ProfileRole } from "@repo/types";
 import { AVATAR_COLORS } from "@/lib/avatar";
 import { profileMutations } from "../queries";
-import { AvatarColorPicker } from "./avatar-color-picker";
+import { ProfileFields } from "./profile-fields";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { PasswordField } from "@/components/ui/password-field";
+import { usePasswordValidation } from "@/features/auth/use-password-validation";
 
 type CreateProfileFormProps = {
   onCreated?: (profile: Profile) => void;
@@ -29,6 +22,7 @@ export function CreateProfileForm({
   autoFocus = true,
 }: CreateProfileFormProps) {
   const { t } = useTranslation();
+  const { validateNewPassword } = usePasswordValidation();
   const [name, setName] = useState("");
   const [color, setColor] = useState<string>(AVATAR_COLORS[0]);
   const [password, setPassword] = useState("");
@@ -47,12 +41,9 @@ export function CreateProfileForm({
   const handleCreate = async (): Promise<void> => {
     const trimmed = name.trim();
     if (!trimmed || createMut.isPending) return;
-    if (password.length < 8) {
-      setError(t("auth.passwordTooShort"));
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError(t("auth.passwordsDoNotMatch"));
+    const validationError = validateNewPassword(password, confirmPassword);
+    if (validationError) {
+      setError(validationError);
       return;
     }
     setError(null);
@@ -71,65 +62,34 @@ export function CreateProfileForm({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="create-profile-name">
-          {t("profile.namePlaceholder")}
-        </Label>
-        <Input
-          id="create-profile-name"
-          value={name}
-          maxLength={50}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") void handleCreate();
-            if (e.key === "Escape") onCancel?.();
-          }}
-          placeholder={t("profile.namePlaceholder")}
-          autoFocus={autoFocus}
-        />
-      </div>
+      <ProfileFields
+        idPrefix="create-profile"
+        name={name}
+        onNameChange={setName}
+        color={color}
+        onColorChange={setColor}
+        role={role}
+        onRoleChange={setRole}
+        autoFocus={autoFocus}
+        onNameKeyDown={(event) => {
+          if (event.key === "Enter") void handleCreate();
+          if (event.key === "Escape") onCancel?.();
+        }}
+      />
 
-      <AvatarColorPicker value={color} onChange={setColor} previewName={name} />
+      <PasswordField
+        id="create-profile-password"
+        label={t("auth.password")}
+        value={password}
+        onChange={setPassword}
+      />
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="create-profile-password">{t("auth.password")}</Label>
-        <Input
-          id="create-profile-password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete="new-password"
-        />
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="create-profile-confirm">
-          {t("auth.confirmPassword")}
-        </Label>
-        <Input
-          id="create-profile-confirm"
-          type="password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          autoComplete="new-password"
-        />
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="create-profile-role">{t("auth.role")}</Label>
-        <Select
-          value={role}
-          onValueChange={(value) => setRole(value as ProfileRole)}
-        >
-          <SelectTrigger id="create-profile-role" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="user">{t("auth.roleUser")}</SelectItem>
-            <SelectItem value="admin">{t("auth.roleAdmin")}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <PasswordField
+        id="create-profile-confirm"
+        label={t("auth.confirmPassword")}
+        value={confirmPassword}
+        onChange={setConfirmPassword}
+      />
 
       {error && (
         <p role="alert" className="text-destructive text-sm">

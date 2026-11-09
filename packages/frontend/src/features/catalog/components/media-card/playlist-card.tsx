@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { ListMusic, Play } from "lucide-react";
 import type { PlaylistSummary } from "@repo/types/catalog";
 import { playlistMutations } from "@/features/playlists/queries";
@@ -15,12 +16,15 @@ export interface PlaylistCardProps {
 export function PlaylistCard({ playlist, className }: PlaylistCardProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const loadMut = useMutation(playlistMutations.load());
+  const loadMut = useMutation({
+    ...playlistMutations.load(),
+    onError: () => toast.error(t("player.commandError")),
+  });
   const coverPreviews = playlist.coverPreviews;
   const trackCount = playlist.trackCount;
 
   const openPlaylist = () => {
-    void navigate(`/home/playlists/${playlist.id}`);
+    void navigate(`/playlists/${playlist.id}`);
   };
 
   return (

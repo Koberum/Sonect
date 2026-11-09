@@ -19,6 +19,9 @@ import { getLogService } from "@services/factory";
 
 const app = express();
 
+const frontendDist =
+  process.env.FRONTEND_DIST || path.resolve(process.cwd(), "@frontend/dist");
+
 const apiPaths = [
   "/covers",
   "/stream",
@@ -79,6 +82,37 @@ app.use((req, res, next) => {
 });
 app.use(express.json());
 
+// `/player` is both the mobile player page and the playback API prefix. Serve
+// the SPA shell for document requests to the exact page path; API requests
+// below `/player/*` keep going through the authenticated router. Resolve the
+// dist at request time so tests and dev builds can point at it.
+app.get(["/player", "/player/"], (req, res, next) => {
+  if (!req.accepts("html")) return next();
+  const dist =
+    process.env.FRONTEND_DIST || path.resolve(process.cwd(), "@frontend/dist");
+  const index = path.join(dist, "index.html");
+  if (!fs.existsSync(index)) return next();
+  getLogService().pushLog("debug", `SPA fallback: ${req.path}`);
+  res.sendFile(index);
+});
+
+// `/playlists` is both the top-level playlists page and the playlist API
+// prefix. Only document navigations get the SPA shell; API calls (including
+// fetch's default `Accept: */*`) keep going through the authenticated router.
+app.get(
+  ["/playlists", "/playlists/", "/playlists/{*path}"],
+  (req, res, next) => {
+    if (!req.headers.accept?.includes("text/html")) return next();
+    const dist =
+      process.env.FRONTEND_DIST ||
+      path.resolve(process.cwd(), "@frontend/dist");
+    const index = path.join(dist, "index.html");
+    if (!fs.existsSync(index)) return next();
+    getLogService().pushLog("debug", `SPA fallback: ${req.path}`);
+    res.sendFile(index);
+  },
+);
+
 app.use(apiPaths, authenticate);
 
 app.use(
@@ -106,13 +140,11 @@ app.use("/profiles", profileRoutes);
 app.use("/likes", likedRoutes);
 
 // In production, serve the built frontend from the same process
-const frontendDist =
-  process.env.FRONTEND_DIST || path.resolve(process.cwd(), "@frontend/dist");
 if (process.env.NODE_ENV === "production" && fs.existsSync(frontendDist)) {
   app.use(express.static(frontendDist, { maxAge: "30d", immutable: true }));
   app.get("/{*path}", (req, res, next) => {
     if (
-      req.path.startsWith("/player") ||
+      req.path.startsWith("/player/") ||
       req.path.startsWith("/catalog") ||
       req.path.startsWith("/playlists") ||
       req.path.startsWith("/covers") ||

@@ -5,20 +5,30 @@
     <link rel="icon" type="image/svg+xml" href="/sonect-favicon.svg" />
     <link rel="icon" type="image/x-icon" href="/sonect-favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap"
-      media="print"
-      onload="this.media = 'all'"
-    />
-    <noscript
-      ><link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap"
-    /></noscript>
     <title>Sonect</title>
+    <script>
+      (function () {
+        try {
+          var root = document.documentElement;
+          var mode = localStorage.getItem("vite-ui-theme") || "dark";
+          if (mode === "system") {
+            mode = window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+          }
+          if (mode === "dark" || mode === "light") root.classList.add(mode);
+
+          var template = localStorage.getItem("sonect.theme.template");
+          if (template !== "graphite" && template !== "ocean") {
+            template = "sonect";
+          }
+          root.setAttribute("data-theme", template);
+        } catch {
+          document.documentElement.classList.add("dark");
+          document.documentElement.setAttribute("data-theme", "sonect");
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

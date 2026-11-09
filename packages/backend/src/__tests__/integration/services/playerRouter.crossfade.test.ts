@@ -67,8 +67,11 @@ describe("PlayerRouter crossfade", () => {
         random: false,
         single: false,
         consume: false,
+        repeatMode: "off" as const,
         queueLength: 0,
       }),
+      setRandom: sinon.stub().resolves(),
+      setRepeatMode: sinon.stub().resolves(),
     } as unknown as PlayerServiceImpl;
 
     router = new PlayerRouter(
@@ -116,5 +119,20 @@ describe("PlayerRouter crossfade", () => {
     router.setCrossfade(profileId, 6);
     expect(manager.executeCommand.called).to.equal(false);
     expect(router.getStatus(profileId).crossfade).to.equal(6);
+  });
+
+  it("starts browser sessions at 65% volume", () => {
+    expect(router.getStatus(profileId).volume).to.equal(65);
+  });
+
+  it("gives MPD statuses a stable epoch and a monotonic revision", async () => {
+    await router.setMode(profileId, "mpd");
+
+    const first = router.getStatus(profileId);
+    const second = router.getStatus(profileId);
+
+    expect(first.epoch).to.be.a("string");
+    expect(second.epoch).to.equal(first.epoch);
+    expect(second.revision).to.equal((first.revision ?? 0) + 1);
   });
 });

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { profileSettingsDb } from "@repo/db";
 import { playerSchemas, systemSchemas } from "@repo/types";
+import type { BulkQueueResult } from "@repo/types";
 import { asyncHandler } from "@middleware/asyncHandler";
 import { resolvePlayerRouter } from "@services/player/playerRouter.js";
 import { LockedError } from "../middleware/errorHandler.js";
@@ -252,6 +253,43 @@ export const unifiedAddToQueueHandler = asyncHandler(
   },
 );
 
+export const unifiedAddManyToQueueHandler = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { files } = playerSchemas.addManyToQueue.parse(req.body);
+    const sid = req.sessionId as string;
+    const engine = router().forSession(sid);
+    const failed: Array<{ file: string; error: string }> = [];
+    let added = 0;
+
+    // Keep the request order: playlists mirror it, and MPD appends in command
+    // order. A broken file must not discard the files that were already queued.
+    for (const file of files) {
+      try {
+        await engine.addToQueue(file);
+        added += 1;
+      } catch (error) {
+        failed.push({
+          file,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    getLogService().pushLog(
+      failed.length > 0 ? "warn" : "debug",
+      `[Session ${fmtSid(sid)}][${router().getMode(sid)}] addManyToQueue ${added}/${files.length}`,
+      { sessionId: fmtSid(sid), added, failed: failed.length },
+    );
+
+    const result: BulkQueueResult = {
+      status: router().getStatus(sid),
+      added,
+      failed,
+    };
+    res.status(failed.length > 0 && added === 0 ? 422 : 200).json(result);
+  },
+);
+
 export const unifiedRemoveFromQueueHandler = asyncHandler(
   async (req: Request, res: Response) => {
     const { pos } = playerSchemas.queuePos.parse(req.params);
@@ -265,6 +303,39 @@ export const unifiedRemoveFromQueueHandler = asyncHandler(
       },
     );
     await router().forSession(sid).removeFromQueue(pos);
+    res.json(router().getStatus(sid));
+  },
+);
+
+export const unifiedMoveInQueueHandler = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { from, to } = playerSchemas.moveQueueItem.parse(req.body);
+    const sid = req.sessionId as string;
+    getLogService().pushLog(
+      "debug",
+      `[Session ${fmtSid(sid)}][${router().getMode(sid)}] moveInQueue ${from}→${to}`,
+      {
+        sessionId: fmtSid(sid),
+        from,
+        to,
+      },
+    );
+    await router().forSession(sid).moveInQueue(from, to);
+    res.json(router().getStatus(sid));
+  },
+);
+
+export const unifiedClearQueueHandler = asyncHandler(
+  async (req: Request, res: Response) => {
+    const sid = req.sessionId as string;
+    getLogService().pushLog(
+      "debug",
+      `[Session ${fmtSid(sid)}][${router().getMode(sid)}] clearQueue`,
+      {
+        sessionId: fmtSid(sid),
+      },
+    );
+    await router().forSession(sid).clearQueue();
     res.json(router().getStatus(sid));
   },
 );
@@ -420,24 +491,24 @@ export const unifiedEnableRandomHandler = asyncHandler(
         enabled,
       },
     );
-    await router().forSession(sid).enableRandom(enabled);
+    await router().setRandom(sid, enabled);
     res.json(router().getStatus(sid));
   },
 );
 
 export const unifiedEnableRepeatHandler = asyncHandler(
   async (req: Request, res: Response) => {
-    const { enabled } = playerSchemas.toggle.parse(req.body);
+    const { mode } = playerSchemas.repeatMode.parse(req.body);
     const sid = req.sessionId as string;
     getLogService().pushLog(
       "debug",
-      `[Session ${fmtSid(sid)}][${router().getMode(sid)}] setRepeat ${enabled}`,
+      `[Session ${fmtSid(sid)}][${router().getMode(sid)}] setRepeat ${mode}`,
       {
         sessionId: fmtSid(sid),
-        enabled,
+        mode,
       },
     );
-    await router().forSession(sid).enableRepeat(enabled);
+    await router().setRepeatMode(sid, mode);
     res.json(router().getStatus(sid));
   },
 );

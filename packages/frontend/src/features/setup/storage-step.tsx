@@ -1,22 +1,16 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { FolderSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { EmptyState } from "@/components/ui/empty-state";
-import { ItemGroup } from "@/components/ui/item";
 import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import type { DetectedLibrary, StorageSource } from "@/features/system/api";
-import { systemQueries, systemMutations } from "@/features/system/queries";
-import { DetectedLibraryRow } from "@/features/settings/library-rows";
+import { DetectedLibrariesList } from "@/features/settings/detected-libraries-list";
 import { LibraryStats } from "@/features/settings/library-stats";
 import {
   LibrarySourceForm,
   type LibrarySourceFormValues,
 } from "@/features/settings/library-source-form";
+import { useLibraries } from "@/features/settings/use-libraries";
 import { useLibrarySourceForm } from "@/features/settings/use-library-source-form";
 import {
   AlertDialog,
@@ -49,14 +43,10 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
     null,
   );
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const { sources, detected, detectedQuery, createMut, computeMut } =
+    useLibraries();
 
-  const sourcesQuery = useQuery(systemQueries.storageSources());
-  const detectedQuery = useQuery(systemQueries.detectedLibraries());
-  const createMut = useMutation(systemMutations.createStorageSource());
-  const computeMut = useMutation(systemMutations.computeStorageStats());
-
-  const hasSources = (sourcesQuery.data ?? []).length > 0;
-  const detected = (detectedQuery.data ?? []).filter((l) => !l.registered);
+  const hasSources = sources.length > 0;
 
   const showSuccess = (source: StorageSource) => {
     setCreatedSource(source);
@@ -75,11 +65,11 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
     }
   };
 
-  const handleAddDetected = async (lib: DetectedLibrary) => {
+  const handleAddDetected = async (library: DetectedLibrary) => {
     try {
       const source = await createMut.mutateAsync({
-        name: lib.name,
-        path: lib.path,
+        name: library.name,
+        path: library.path,
       });
       showSuccess(source);
     } catch (err) {
@@ -90,9 +80,9 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
     }
   };
 
-  const handleComputeStats = async (lib: DetectedLibrary) => {
+  const handleComputeStats = async (library: DetectedLibrary) => {
     try {
-      await computeMut.mutateAsync(lib.path);
+      await computeMut.mutateAsync(library.path);
       toast.success(t("settings.libraries.statsRefreshed", "Stats updated"));
     } catch (err) {
       toast.error(
@@ -122,59 +112,20 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
           <h2 className="text-sm font-medium">
             {t("settings.libraries.detected", "Detected libraries")}
           </h2>
-          {detectedQuery.isError ? (
-            <Alert
-              variant="destructive"
-              className="flex flex-wrap items-center justify-between gap-3"
-            >
-              <AlertDescription>
-                {t(
-                  "settings.libraries.loadDetectedError",
-                  "Couldn't load detected folders",
-                )}
-              </AlertDescription>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => void detectedQuery.refetch()}
-              >
-                {t("common.retry", "Retry")}
-              </Button>
-            </Alert>
-          ) : detectedQuery.isPending ? (
-            <div className="flex flex-col gap-2" aria-hidden="true">
-              {[0, 1].map((i) => (
-                <Skeleton key={i} className="h-16 w-full rounded-lg" />
-              ))}
-            </div>
-          ) : detected.length === 0 ? (
-            <EmptyState
-              icon={FolderSearch}
-              title={t(
-                "settings.libraries.noDetected",
-                "No folders detected under the music directory.",
-              )}
-              className="py-6"
-            />
-          ) : (
-            <ItemGroup>
-              {detected.map((lib) => (
-                <DetectedLibraryRow
-                  key={lib.path}
-                  lib={lib}
-                  isAdding={
-                    createMut.isPending &&
-                    createMut.variables?.path === lib.path
-                  }
-                  isComputing={
-                    computeMut.isPending && computeMut.variables === lib.path
-                  }
-                  onAdd={() => handleAddDetected(lib)}
-                  onCompute={() => handleComputeStats(lib)}
-                />
-              ))}
-            </ItemGroup>
-          )}
+          <DetectedLibrariesList
+            libraries={detected}
+            isPending={detectedQuery.isPending}
+            isError={detectedQuery.isError}
+            onRetry={() => void detectedQuery.refetch()}
+            isAdding={(library) =>
+              createMut.isPending && createMut.variables?.path === library.path
+            }
+            isComputing={(library) =>
+              computeMut.isPending && computeMut.variables === library.path
+            }
+            onAdd={(library) => void handleAddDetected(library)}
+            onCompute={(library) => void handleComputeStats(library)}
+          />
         </section>
 
         <Separator />
@@ -185,10 +136,7 @@ export function StorageStep({ onNext, onBack }: StorageStepProps) {
           </h2>
 
           <LibrarySourceForm
-            form={form.form}
-            setForm={form.setForm}
-            errors={form.errors}
-            handleFieldBlur={form.handleFieldBlur}
+            formState={form}
             formId={FORM_ID}
             onSubmit={form.submit}
           />

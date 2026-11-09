@@ -42,11 +42,7 @@ function LibrariesFormFields({
   return (
     <>
       <LibrarySourceForm
-        editingId={editingId}
-        form={form.form}
-        setForm={form.setForm}
-        errors={form.errors}
-        handleFieldBlur={form.handleFieldBlur}
+        formState={form}
         formId={formId}
         onSubmit={form.submit}
       />

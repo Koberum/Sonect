@@ -4,6 +4,8 @@ import type {
   PlaybackStatus,
   QueuedTrack,
   OutputMode,
+  BulkQueueResult,
+  RepeatMode,
 } from "@repo/types";
 import type { Track } from "@repo/types/catalog";
 
@@ -28,8 +30,8 @@ export function previousTrack(): Promise<PlaybackStatus> {
 export function setRandom(enabled: boolean): Promise<PlaybackStatus> {
   return apiFetch("/player/random", { method: "POST", body: { enabled } });
 }
-export function setRepeat(enabled: boolean): Promise<PlaybackStatus> {
-  return apiFetch("/player/repeat", { method: "POST", body: { enabled } });
+export function setRepeatMode(mode: RepeatMode): Promise<PlaybackStatus> {
+  return apiFetch("/player/repeat", { method: "POST", body: { mode } });
 }
 export function goToPosition(position: number): Promise<PlaybackStatus> {
   return apiFetch("/player/seek", { method: "POST", body: { position } });
@@ -46,8 +48,23 @@ export function playQueueItem(pos: number): Promise<PlaybackStatus> {
 export function removeFromQueue(pos: number): Promise<PlaybackStatus> {
   return apiFetch("/player/queue/" + pos, { method: "DELETE" });
 }
+export function moveQueueItem(
+  from: number,
+  to: number,
+): Promise<PlaybackStatus> {
+  return apiFetch("/player/queue/move", {
+    method: "PATCH",
+    body: { from, to },
+  });
+}
+export function clearQueue(): Promise<PlaybackStatus> {
+  return apiFetch("/player/queue", { method: "DELETE" });
+}
 export function addToQueue(file: string): Promise<PlaybackStatus> {
   return apiFetch("/player/queue", { method: "POST", body: { file } });
+}
+export function addManyToQueue(files: string[]): Promise<BulkQueueResult> {
+  return apiFetch("/player/queue/bulk", { method: "POST", body: { files } });
 }
 export function getOutputMode(signal?: AbortSignal): Promise<{
   mode: OutputMode;

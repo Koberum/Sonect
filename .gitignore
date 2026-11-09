@@ -90,6 +90,7 @@ TODO.md
 # ===============================
 # Dev tooling (agent/plans, local-only)
 # ===============================
+.playwright-mcp/
 .superpowers/
 .opencode/plans/
 .opencode/skills/*.local.md

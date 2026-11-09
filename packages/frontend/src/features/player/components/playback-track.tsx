@@ -15,9 +15,9 @@ export function PlayedTrack({ track }: PlaybackTrack): React.ReactElement {
       alt={track.title}
       loading="lazy"
       onError={(e) => {
-        e.currentTarget.src = "/default_cover.png";
+        e.currentTarget.src = "/default_cover.webp";
       }}
-      className="aspect-square size-10 shrink-0 rounded-md object-cover md:size-12"
+      className="aspect-square size-12 shrink-0 rounded-md object-cover"
     />
   );
 
@@ -36,17 +36,7 @@ export function PlayedTrack({ track }: PlaybackTrack): React.ReactElement {
         cover
       )}
       <div className="ml-2 min-w-0 space-y-1">
-        <div className="overflow-hidden md:hidden">
-          <div className="animate-marquee flex whitespace-nowrap will-change-transform">
-            <span className="font-mono text-sm leading-none font-medium">
-              {track.title}
-            </span>
-            <span className="ml-8 font-mono text-sm leading-none font-medium">
-              {track.title}
-            </span>
-          </div>
-        </div>
-        <h3 className="hidden truncate font-mono text-sm leading-none font-medium md:block">
+        <h3 className="truncate font-mono text-sm leading-none font-medium">
           {track.title}
         </h3>
 

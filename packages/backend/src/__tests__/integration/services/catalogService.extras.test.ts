@@ -60,6 +60,24 @@ describe("CatalogService extras (trophy)", () => {
       expect(res.tracks).to.deep.equal([]);
       expect(res.genres).to.deep.equal([]);
     });
+
+    it("caps results at the command palette page sizes", () => {
+      for (let i = 0; i < 6; i += 1) {
+        const a = artist.create({ name: `LimitArtist ${i}` }, 20 + i);
+        album.create({ title: `LimitAlbum ${i}`, artistName: a.name }, 20 + i);
+        for (let j = 0; j < 3; j += 1) {
+          track.create(
+            { title: `LimitTrack ${i}-${j}`, artist: a.name, album: a.name },
+            30 + i * 3 + j,
+          );
+        }
+      }
+
+      const res = catalog.searchTracks("limit");
+      expect(res.artists).to.have.length(5);
+      expect(res.albums).to.have.length(5);
+      expect(res.tracks).to.have.length(10);
+    });
   });
 
   describe("getLibraryStats", () => {

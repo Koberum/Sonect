@@ -1,9 +1,22 @@
 import { Request, Response } from "express";
+import type { LikedQualityFilter } from "@repo/db";
 import { likedSchemas } from "@repo/types/schemas";
 import { getLikedService } from "@services/factory";
 import { resolvePlayerRouter } from "@services/player/playerRouter.js";
 import { asyncHandler } from "@middleware/asyncHandler";
 import { NotFoundError, ValidationError } from "@middleware/errorHandler";
+
+function parseQualityKey(
+  value: string | undefined,
+): LikedQualityFilter | undefined {
+  if (!value) return undefined;
+  const [bitsPart, ratePart] = value.split(":");
+  if (bitsPart === undefined || ratePart === undefined) return undefined;
+  return {
+    bitsPerSample: bitsPart === "" ? null : Number(bitsPart),
+    sampleRate: ratePart === "" ? null : Number(ratePart),
+  };
+}
 
 function shuffled<T>(items: T[]): T[] {
   const result = [...items];
@@ -16,9 +29,18 @@ function shuffled<T>(items: T[]): T[] {
 
 export const getLikedHandler = asyncHandler(
   async (req: Request, res: Response) => {
-    const { limit, offset } = likedSchemas.listQuery.parse(req.query);
+    const { limit, offset, quality, sort } = likedSchemas.listQuery.parse(
+      req.query,
+    );
     const profileId = req.auth!.profileId;
-    res.json(getLikedService().list(profileId, limit, offset));
+    res.json(
+      getLikedService().list(profileId, {
+        limit,
+        offset,
+        quality: parseQualityKey(quality),
+        sort,
+      }),
+    );
   },
 );
 
@@ -50,9 +72,13 @@ export const unlikeTrackHandler = asyncHandler(
 
 export const playLikedHandler = asyncHandler(
   async (req: Request, res: Response) => {
-    const { shuffle } = likedSchemas.play.parse(req.body ?? {});
+    const { shuffle, quality, sort } = likedSchemas.play.parse(req.body ?? {});
     const profileId = req.auth!.profileId;
-    const files = getLikedService().files(profileId);
+    const files = getLikedService().files(
+      profileId,
+      parseQualityKey(quality),
+      sort,
+    );
     if (files.length === 0) {
       throw new ValidationError("No liked tracks", {});
     }

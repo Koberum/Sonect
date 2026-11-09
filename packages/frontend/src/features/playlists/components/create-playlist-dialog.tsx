@@ -4,11 +4,13 @@ import { useMutation } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { playlistMutations } from "@/features/playlists/queries";
 import { useAuth } from "@/features/auth/auth-context";
 
@@ -43,6 +45,7 @@ export function CreatePlaylistDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("playlist.new")}</DialogTitle>
+          <DialogDescription>{t("playlist.newDescription")}</DialogDescription>
         </DialogHeader>
         <form
           onSubmit={(event) => {
@@ -51,14 +54,20 @@ export function CreatePlaylistDialog({
           }}
           className="space-y-4"
         >
-          <Input
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder={t("playlist.namePlaceholder")}
-            autoFocus
-          />
+          <div className="space-y-2">
+            <Label htmlFor="create-playlist-name">
+              {t("playlist.nameLabel")}
+            </Label>
+            <Input
+              id="create-playlist-name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder={t("playlist.namePlaceholder")}
+              autoFocus
+            />
+          </div>
           {createMut.isError ? (
-            <p className="text-destructive text-sm">
+            <p role="alert" className="text-destructive text-sm">
               {t("playlist.createError")}
             </p>
           ) : null}

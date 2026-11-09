@@ -11,6 +11,7 @@ import { usePlaybackContext, type SyncProgress } from "./playback-context";
 import { defaultPlayerState } from "@/lib/playbackState";
 import type { PlaybackStatus, PlayerReport } from "@repo/types";
 import { getDeviceId, getDeviceName, getDeviceType } from "@/lib/deviceId";
+import { PlayerReportBuffer } from "@/lib/playerReportBuffer";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   invalidateCatalogAfterSync,
@@ -38,55 +39,29 @@ export function usePlayerSocket(): PlayerSocketContextValue {
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const {
-    setPlaybackStatus,
     applyPlaybackStatus,
-    setTrackPlayed,
+    applyRouterStatus,
     setSyncProgress,
     setSyncError,
     setWsConnected,
-    setActiveDeviceId,
-    setActiveDeviceName,
-    setActiveDeviceType,
     setOutputMode,
   } = usePlaybackContext();
 
-  const settersRef = useRef({
-    setPlaybackStatus,
-    applyPlaybackStatus,
-    setTrackPlayed,
-    setSyncProgress,
-    setSyncError,
-    setWsConnected,
-    setActiveDeviceId,
-    setActiveDeviceName,
-    setActiveDeviceType,
-    setOutputMode,
-  });
-  useEffect(() => {
-    settersRef.current = {
-      setPlaybackStatus,
-      applyPlaybackStatus,
-      setTrackPlayed,
-      setSyncProgress,
-      setSyncError,
-      setWsConnected,
-      setActiveDeviceId,
-      setActiveDeviceName,
-      setActiveDeviceType,
-      setOutputMode,
-    };
-  });
-
   const wsRef = useRef<WebSocket | null>(null);
-  const trackIdRef = useRef<number | null>(null);
+  const reportBufferRef = useRef(new PlayerReportBuffer());
 
   const sendReport = useCallback((report: PlayerReport) => {
     const ws = wsRef.current;
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      reportBufferRef.current.push(report);
+      return;
+    }
     try {
       ws.send(JSON.stringify({ type: "player-report", ...report }));
     } catch {
-      // socket may close between the check and the send
+      // The socket may close between the check and the send; keep the fact
+      // for the next connection instead of losing the transition.
+      reportBufferRef.current.push(report);
     }
   }, []);
   const socketValue = useMemo(() => ({ sendReport }), [sendReport]);
@@ -106,19 +81,11 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!profileId) return;
 
-    const {
-      setPlaybackStatus,
-      applyPlaybackStatus,
-      setTrackPlayed,
-      setSyncProgress,
-      setSyncError,
-      setWsConnected,
-      setActiveDeviceId,
-      setActiveDeviceName,
-      setActiveDeviceType,
-      setOutputMode,
-    } = settersRef.current;
     let lastSyncInvalidationKey: string | null = null;
+
+    // Report facts belong to the profile that produced them; never replay them
+    // into another profile's socket.
+    reportBufferRef.current.clear();
 
     // Guard: each profile gets its own isolated socket. Tear down any previous
     // socket *before* opening the new one so we never have two live streams
@@ -130,14 +97,9 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     // Reset per-profile UI state immediately so the old profile's track doesn't
     // linger while the new one connects.
-    trackIdRef.current = null;
-    setPlaybackStatus(defaultPlayerState);
-    setTrackPlayed(null);
+    applyPlaybackStatus(defaultPlayerState);
     setSyncProgress(null);
     setSyncError(null);
-    setActiveDeviceId(null);
-    setActiveDeviceName(null);
-    setActiveDeviceType(null);
     setWsConnected(false);
 
     // Ensure any socket left in wsRef (rare race) is fully detached.
@@ -191,6 +153,20 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }
         setWsConnected(true);
         reconnectAttempt = 0;
+
+        const pending = reportBufferRef.current.drain();
+        for (let index = 0; index < pending.length; index += 1) {
+          try {
+            nextWs.send(
+              JSON.stringify({ type: "player-report", ...pending[index] }),
+            );
+          } catch {
+            for (const report of pending.slice(index)) {
+              reportBufferRef.current.push(report);
+            }
+            break;
+          }
+        }
       };
 
       nextWs.onmessage = (event) => {
@@ -251,52 +227,11 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           }
 
           if (type === "player-status" || type === undefined) {
-            const pd = data as unknown as PlaybackStatus & {
-              activeDeviceId?: string | null;
-              activeDeviceName?: string | null;
-              activeDeviceType?: string | null;
-            };
-
-            applyPlaybackStatus({
-              track: pd.track,
-              elapsed: pd.elapsed,
-              duration: pd.duration,
-              state: pd.state,
-              volume: pd.volume,
-              repeat: pd.repeat,
-              random: pd.random,
-              single: pd.single,
-              consume: pd.consume,
-              error: pd.error ?? null,
-              queueLength: pd.queueLength ?? 0,
-              activeDeviceId: pd.activeDeviceId ?? null,
-              activeDeviceName: pd.activeDeviceName ?? null,
-              activeDeviceType: pd.activeDeviceType ?? null,
-              mode: (pd as unknown as { mode?: string })
-                .mode as PlaybackStatus["mode"],
-              nextTrackId: pd.nextTrackId ?? null,
-              buffering: pd.buffering ?? false,
-              seekSeq: pd.seekSeq ?? 0,
-              crossfade: pd.crossfade ?? 0,
-              epoch: pd.epoch,
-              revision: pd.revision,
-            });
-            if ("activeDeviceId" in pd) {
-              setActiveDeviceId(pd.activeDeviceId ?? null);
-            }
-            if ("activeDeviceName" in pd) {
-              setActiveDeviceName(pd.activeDeviceName ?? null);
-            }
-            if ("activeDeviceType" in pd) {
-              setActiveDeviceType(pd.activeDeviceType ?? null);
-            }
-            if (pd.mode === "browser" || pd.mode === "mpd") {
-              setOutputMode(pd.mode);
-            }
-
-            if (pd.track && trackIdRef.current !== pd.track.id) {
-              trackIdRef.current = pd.track.id;
-              setTrackPlayed(pd.track);
+            const status = data as unknown as PlaybackStatus;
+            applyPlaybackStatus({ ...defaultPlayerState, ...status });
+            applyRouterStatus(status);
+            if (status.mode === "browser" || status.mode === "mpd") {
+              setOutputMode(status.mode);
             }
             return;
           }
@@ -345,7 +280,17 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       }
       setWsConnected(false);
     };
-  }, [wsUrl, profileId, queryClient]);
+  }, [
+    wsUrl,
+    profileId,
+    queryClient,
+    applyPlaybackStatus,
+    applyRouterStatus,
+    setSyncProgress,
+    setSyncError,
+    setWsConnected,
+    setOutputMode,
+  ]);
 
   return (
     <PlayerSocketContext.Provider value={socketValue}>

@@ -1,4 +1,9 @@
-import type { PlaybackStatus, PlayerReport, QueuedTrack } from "@repo/types";
+import type {
+  PlaybackStatus,
+  PlayerReport,
+  QueuedTrack,
+  RepeatMode,
+} from "@repo/types";
 import { PlayerServiceImpl } from "./playerService.js";
 import { MpdConnectionManager } from "../mpd/mpdConnectionManager.js";
 import type { LogService } from "../utils/logService.js";
@@ -16,10 +21,12 @@ export interface PlaybackEngine extends EventEmitter {
   addToQueue(file: string): Promise<void>;
   playFiles(files: string[], startAt?: number): Promise<void>;
   removeFromQueue(pos: number): Promise<void>;
+  moveInQueue(from: number, to: number): Promise<void>;
+  clearQueue(): Promise<void>;
   setVolume(volume: number): Promise<void>;
   playPosition(pos: number): Promise<void>;
-  enableRandom(enabled: boolean): Promise<void>;
-  enableRepeat(enabled: boolean): Promise<void>;
+  setRandom(enabled: boolean): Promise<void>;
+  setRepeatMode(mode: RepeatMode): Promise<void>;
   reportPlayback(report: PlayerReport): void;
 }
 
@@ -228,6 +235,14 @@ export class MpdAdapter extends EventEmitter implements PlaybackEngine {
     await this.playerService.removeFromQueue(pos);
   }
 
+  async moveInQueue(from: number, to: number): Promise<void> {
+    await this.playerService.moveInQueue(from, to);
+  }
+
+  async clearQueue(): Promise<void> {
+    await this.playerService.clearQueue();
+  }
+
   async setVolume(volume: number): Promise<void> {
     await this.playerService.setVolume(volume);
   }
@@ -236,12 +251,12 @@ export class MpdAdapter extends EventEmitter implements PlaybackEngine {
     await this.playerService.playPosition(pos);
   }
 
-  async enableRandom(enabled: boolean): Promise<void> {
-    await this.playerService.enableRandom(enabled);
+  async setRandom(enabled: boolean): Promise<void> {
+    await this.playerService.setRandom(enabled);
   }
 
-  async enableRepeat(enabled: boolean): Promise<void> {
-    await this.playerService.enableRepeat(enabled);
+  async setRepeatMode(mode: RepeatMode): Promise<void> {
+    await this.playerService.setRepeatMode(mode);
   }
 
   /**

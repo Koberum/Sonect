@@ -17,8 +17,18 @@ export const playerSchemas = {
       .int("pos must be an integer")
       .min(0, "pos must be >= 0"),
   }),
+  moveQueueItem: z.object({
+    from: z.number().int("from must be an integer").min(0, "from must be >= 0"),
+    to: z.number().int("to must be an integer").min(0, "to must be >= 0"),
+  }),
   addToQueue: z.object({
     file: z.string().min(1, "file is required"),
+  }),
+  addManyToQueue: z.object({
+    files: z
+      .array(z.string().min(1, "file is required"))
+      .min(1, "files must not be empty")
+      .max(500, "at most 500 files can be queued at once"),
   }),
   volume: z.object({
     volume: z
@@ -29,6 +39,9 @@ export const playerSchemas = {
   }),
   toggle: z.object({
     enabled: z.boolean({ error: "enabled is required" }),
+  }),
+  repeatMode: z.object({
+    mode: z.enum(["off", "all", "one"], { error: "mode is required" }),
   }),
   settings: z.object({
     crossfadeSeconds: z
@@ -83,6 +96,11 @@ export const playlistSchemas = {
   }),
 };
 
+const qualityKeySchema = z
+  .string()
+  .regex(/^(\d*):(\d*)$/, "quality must be bits:rate")
+  .refine((value) => value !== ":", "quality must contain bits or rate");
+
 export const likedSchemas = {
   trackIdParam: z.object({
     trackId: z.coerce
@@ -102,9 +120,13 @@ export const likedSchemas = {
       .int("offset must be an integer")
       .min(0, "offset must be >= 0")
       .optional(),
+    quality: qualityKeySchema.optional(),
+    sort: z.enum(["recent", "quality-desc", "quality-asc"]).optional(),
   }),
   play: z.object({
     shuffle: z.boolean().optional(),
+    quality: qualityKeySchema.optional(),
+    sort: z.enum(["recent", "quality-desc", "quality-asc"]).optional(),
   }),
 };
 

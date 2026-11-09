@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryError } from "@/components/ui/query-error";
 import { useTranslation } from "react-i18next";
 import {
   AlbumIcon,
@@ -14,29 +15,18 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { catalogQueries } from "@/features/catalog/queries";
-
-function formatDuration(seconds: number): string {
-  if (seconds === 0) return "0m";
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
-}
-
-function formatAvgDuration(seconds: number): string {
-  if (seconds === 0) return "0s";
-  const minutes = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  if (minutes > 0) return `${minutes}m ${secs}s`;
-  return `${secs}s`;
-}
+import { formatAvgDuration, formatDuration } from "@/lib/format";
 
 function formatDate(
   isoString: string | null,
+  locale: string,
   t: (key: string) => string,
 ): string {
   if (!isoString) return t("statistics.never");
-  return new Date(isoString).toLocaleString();
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(isoString));
 }
 
 interface StatCardProps {
@@ -64,10 +54,15 @@ function StatCard({ title, value, icon, description }: StatCardProps) {
 }
 
 export function Statistics() {
-  const { t } = useTranslation();
-  const { data: stats, isPending } = useQuery(catalogQueries.stats());
+  const { t, i18n } = useTranslation();
+  const {
+    data: stats,
+    isPending,
+    isError,
+    refetch,
+  } = useQuery(catalogQueries.stats());
 
-  if (isPending || !stats) {
+  if (isPending) {
     return (
       <div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -76,6 +71,15 @@ export function Statistics() {
           ))}
         </div>
       </div>
+    );
+  }
+
+  if (isError || !stats) {
+    return (
+      <QueryError
+        message={t("common.loadError")}
+        onRetry={() => void refetch()}
+      />
     );
   }
 
@@ -134,17 +138,18 @@ export function Statistics() {
           description={
             stats.totalTracks > 0
               ? t("statistics.percentOfLibrary", {
-                  percent: (
-                    (stats.tracksWithoutAlbum / stats.totalTracks) *
-                    100
-                  ).toFixed(1),
+                  percent: new Intl.NumberFormat(i18n.language, {
+                    maximumFractionDigits: 1,
+                  }).format(
+                    (stats.tracksWithoutAlbum / stats.totalTracks) * 100,
+                  ),
                 })
               : undefined
           }
         />
         <StatCard
           title={t("statistics.lastSync")}
-          value={formatDate(stats.lastSync, t)}
+          value={formatDate(stats.lastSync, i18n.language, t)}
           icon={<Clock className="h-4 w-4" />}
         />
       </div>

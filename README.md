@@ -33,12 +33,19 @@ no subscriptions, no limits.
   manage libraries, audio, sync, and profiles; users can browse, listen, use
   playlists, and change their own password.
 - **MPD-powered playback** — Gapless, battle-tested, supports virtually any
-  audio format. Random and repeat have UI controls; `consume` is forced by the
-  queue engine and `single` is reflected from MPD status.
+  audio format. Shuffle randomizes the current queue, and Repeat cycles through
+  off, repeat queue and repeat track with the same behavior in the browser and
+  on the speakers; autoplay pauses while repeat is active.
 - **MPD-backed catalog** — Sonect mirrors MPD's indexed database instead of
   scanning tags itself. The first sync is full; later syncs are incremental and
   skip entirely when MPD reports no changes. Track names stream in the status
   bar while the catalog is imported.
+- **Track audio quality** — every track carries the sample rate, bit depth and
+  channel count MPD reports in its `Format` field. Desktop track tables show a
+  Quality column (only when the list has format data) with sorting and a filter
+  by quality; the track menu's Info dialog shows the full metadata on desktop
+  and mobile. Liked Songs filters and sorts on the server so pagination, totals
+  and Play All stay consistent.
 - **Live WebSocket state** — Playback changes reflect instantly across every
   open tab. MPD status is polled (2 s during play, 10 s during pause/stop) and
   pushed to all connected clients over WebSocket; browser sessions tick locally
@@ -47,14 +54,30 @@ no subscriptions, no limits.
   genre, playlist, search, queue, now playing) adds a song to the signed-in
   profile's Liked Songs. Liked Songs has Play All and Shuffle and is scoped per
   household member; the old flat Tracks page is gone.
-- **Three-section navigation** — the sidebar has Home, Library, and Settings,
-  each opening a page with horizontal tabs: Home holds Listen Now, Playlists,
-  and Liked Songs; Library holds Albums, Artists, Genres, and Statistics;
-  Settings (admins) holds Audio, Playback, Libraries, Appearance, and Debug.
-- **Playlists** — create and browse them from Home → Playlists. Playlists are
-  private per profile (same names allowed across profiles). Drag any track onto
-  the right-hand playlist panel to add it, or use "Add to playlist" in the
-  three-dot track menu (touch and keyboard).
+- **Appearance templates** — Settings → Appearance offers three built-in color
+  templates (Sonect amber, Graphite neutral, Ocean cool green-teal), each with
+  light and dark variants. The mode can be light, dark, or follow the system;
+  template and mode are stored per browser.
+- **Section navigation** — the desktop sidebar has Discover, Library, Playlists,
+  Queue, and Settings, plus a status center at the bottom. At rest it shows
+  library statistics (tracks, albums, artists, last sync); during a sync or a
+  problem it shows the active status and opens a details popover. On mobile an
+  activity pill appears above the bottom nav only while something is happening.
+  Discover (`/discover`) holds Listen Now and Liked Songs;
+  Library holds Albums, Artists, Genres, and Statistics; Playlists (`/playlists`)
+  is the dedicated per-profile playlist list, with each playlist at
+  `/playlists/:id`; Queue is the sortable per-profile play queue; Settings
+  (admins) holds Audio, Playback, Libraries, Appearance, and Debug. Below 768px
+  an icon-only bottom nav (Player, Queue, centered Search, Discover, Settings)
+  switches between the full player at `/player` and the sections; Library,
+  Playlists, and the profile switcher are not in the mobile nav, and the top
+  toolbar (history, search, profile) is desktop-only. The compact player bar is
+  desktop-only. The mobile full player shows an always-visible horizontal volume
+  slider under the playback controls.
+- **Playlists** — create and browse them from the Playlists section
+  (`/playlists`). Playlists are private per profile (same names allowed across
+  profiles). Drag any track onto the right-hand playlist panel to add it, or use
+  "Add to playlist" in the three-dot track menu (touch and keyboard).
 - **Dashboard per profile** — Recently played albums, artists, and tracks, top
   tracks, suggestions, and the genre mix are all personal. Listening history is
   recorded separately per household member (MPD plays count for the profile
@@ -279,6 +302,12 @@ All `/player`, `/catalog`, `/playlists`, `/likes`, `/dashboard`, `/covers`,
 admin exists) are public; the remaining `/system/*` routes, `/profiles/*`, and
 `POST /catalog/scan` are admin-only.
 
+`/playlists` is both the Playlists page (document requests with
+`Accept: text/html`) and the playlist API prefix; in development Vite bypasses
+the proxy for document navigation, and in production the backend serves the SPA
+shell before the authenticated `/playlists` router. API calls with `Accept: */*`
+or `application/json` keep reaching the API.
+
 | Method | Path                                     | Description                                                                                                                                                                                                                                        |
 | ------ | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | GET    | `/auth/state`                            | Public: `{bootstrapRequired, authenticated, profile}` for the current cookie                                                                                                                                                                       |
@@ -301,6 +330,10 @@ admin exists) are public; the remaining `/system/*` routes, `/profiles/*`, and
 | POST   | `/player/previous`                       | Previous track (per-profile)                                                                                                                                                                                                                       |
 | POST   | `/player/seek`                           | Seek to position (per-profile)                                                                                                                                                                                                                     |
 | GET    | `/player/queue`                          | Queue for this profile (browser: shared per profile, MPD: shared global)                                                                                                                                                                           |
+| POST   | `/player/queue`                          | Add a track to the queue (`{file}`)                                                                                                                                                                                                                |
+| PATCH  | `/player/queue/move`                     | Reorder the queue (`{from,to}`)                                                                                                                                                                                                                    |
+| DELETE | `/player/queue/:pos`                     | Remove one queue position                                                                                                                                                                                                                          |
+| DELETE | `/player/queue`                          | Clear the queue                                                                                                                                                                                                                                    |
 | PUT    | `/player/output-mode`                    | Switch `browser`↔`mpd` (per-profile, `mpd` locked → 423 if busy; `browser` with `X-Device-Id` hands off to that browser)                                                                                                                           |
 | PATCH  | `/player/volume`                         | Set volume (per-profile; browser stored in-memory and broadcast to active device)                                                                                                                                                                  |
 | GET    | `/stream/:trackId`                       | Stream an audio track by database ID (progressive HTTP Range incl. suffix, HEAD, ETag/Last-Modified)                                                                                                                                               |
@@ -416,6 +449,8 @@ pnpm build          # Compile all packages (turbo-cached)
 pnpm lint           # Lint all packages (turbo-cached)
 pnpm dev            # Run all packages' dev servers in parallel (not cached)
 pnpm backend:test   # Run backend tests (fresh run, not cached)
+pnpm frontend:test  # Run frontend tests (Vitest, fresh run, not cached)
+pnpm frontend:size  # Check the built JS gzip budget (after frontend:build)
 pnpm backend:bundle # Bundle backend for production
 pnpm frontend:build # Build frontend for production
 pnpm db:generate    # Generate a new SQL migration from the schema (drizzle-kit)

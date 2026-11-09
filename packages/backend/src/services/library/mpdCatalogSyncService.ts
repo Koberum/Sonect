@@ -51,7 +51,7 @@ const PROGRESS_THROTTLE_MS = 100;
 const ALL_FILES_FILTER = "(file != '')";
 // Bump when the catalog identity rules change so the next sync reprocesses
 // every track instead of taking the unchanged-catalog shortcut.
-export const CATALOG_SCHEMA_VERSION = "2";
+export const CATALOG_SCHEMA_VERSION = "3";
 
 function getMusicDir(): string {
   return path.resolve(process.env.MUSIC_DIR ?? "/opt/sonect/music");
@@ -468,6 +468,9 @@ export class MpdCatalogSyncService implements CatalogSyncService {
       (existing.track_number ?? null) !== toInteger(next.track) ||
       (existing.disc_number ?? null) !== toInteger(next.disc) ||
       (existing.duration ?? null) !== (next.duration ?? null) ||
+      (existing.sample_rate ?? null) !== (next.sampleRate ?? null) ||
+      (existing.bits_per_sample ?? null) !== (next.bitsPerSample ?? null) ||
+      (existing.channels ?? null) !== (next.channels ?? null) ||
       (existing.date ?? null) !== (next.date ?? null) ||
       (existing.storage_source_id ?? null) !== (next.storageSourceId ?? null)
     );

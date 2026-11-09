@@ -1,26 +1,19 @@
 import type { Album, TrackWithRelations } from "@repo/types/catalog";
+import { parseYear } from "@/lib/utils";
 
 export type AlbumMetadata = {
   year?: number;
   trackCount: number;
   totalDuration: number;
   genre?: string;
-  formats: string[];
   sourceNames: string[];
 };
 
-function parseYear(value: string | undefined): number | undefined {
-  const match = value?.match(/\b(\d{4})\b/);
-  if (!match) return undefined;
-  const year = Number(match[1]);
+function parseYearNumber(value?: string): number | undefined {
+  const raw = parseYear(value);
+  if (!raw) return undefined;
+  const year = Number(raw);
   return Number.isFinite(year) && year > 0 ? year : undefined;
-}
-
-function fileExtension(file: string): string | undefined {
-  const name = file.split("/").pop() ?? "";
-  const dot = name.lastIndexOf(".");
-  if (dot <= 0 || dot === name.length - 1) return undefined;
-  return name.slice(dot + 1).toUpperCase();
 }
 
 export function deriveAlbumMetadata(
@@ -28,20 +21,12 @@ export function deriveAlbumMetadata(
   tracks: TrackWithRelations[],
 ): AlbumMetadata {
   const trackYears = tracks
-    .map((track) => parseYear(track.date))
+    .map((track) => parseYearNumber(track.date))
     .filter((year): year is number => year !== undefined);
 
   const genres = tracks
     .map((track) => track.genre?.trim())
     .filter((genre): genre is string => Boolean(genre));
-
-  const formats = [
-    ...new Set(
-      tracks
-        .map((track) => fileExtension(track.file))
-        .filter((format): format is string => Boolean(format)),
-    ),
-  ].sort();
 
   const sourceNames = [
     ...new Set(
@@ -61,7 +46,6 @@ export function deriveAlbumMetadata(
       0,
     ),
     genre: album?.genre?.trim() || genres[0],
-    formats,
     sourceNames,
   };
 }

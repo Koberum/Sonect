@@ -23,12 +23,15 @@ MPDDROP
 fi
 
 # Install rtk (Rust Token Killer, https://github.com/rtk-ai/rtk) so agents can
-# use the token-optimized commands documented in AGENTS.md. Idempotent.
+# use the token-optimized commands documented in AGENTS.md. Install it into
+# /usr/local/bin because that directory is already on the default PATH of the
+# non-interactive shells used by agents; a PATH export in this script would
+# not persist. Idempotent.
 if ! command -v rtk > /dev/null 2>&1; then
   echo "Installing rtk..."
-  curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+  curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh \
+    | RTK_INSTALL_DIR=/usr/local/bin sh
 fi
-export PATH="$HOME/.local/bin:$PATH"
 
 if command -v ffmpeg >/dev/null 2>&1; then
   echo "ffmpeg $(ffmpeg -version | head -n1)"

@@ -1,14 +1,14 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { QueryError } from "@/components/ui/query-error";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { AlbumCard } from "@/features/catalog/components/media-card/album-card";
+import { MediaGrid } from "@/features/catalog/components/media-grid";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody } from "@/components/ui/table";
 import { Disc3, Music } from "lucide-react";
-import { TrackRow } from "@/features/tracks/components/track-row";
-import { TrackTableHeader } from "@/features/tracks/components/track-table-header";
+import { TrackTable } from "@/features/tracks/components/track-table";
 import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
 
@@ -16,11 +16,21 @@ export default function GenreDetail() {
   const { t } = useTranslation();
   const { genre } = useParams<{ genre: string }>();
 
-  const { data: albums = [], isPending: albumsPending } = useQuery({
+  const {
+    data: albums = [],
+    isPending: albumsPending,
+    isError: albumsError,
+    refetch: refetchAlbums,
+  } = useQuery({
     ...catalogQueries.albumsByGenre(genre ?? ""),
     enabled: !!genre,
   });
-  const { data: tracks = [], isPending: tracksPending } = useQuery({
+  const {
+    data: tracks = [],
+    isPending: tracksPending,
+    isError: tracksError,
+    refetch: refetchTracks,
+  } = useQuery({
     ...catalogQueries.tracksByGenre(genre ?? ""),
     enabled: !!genre,
   });
@@ -28,6 +38,11 @@ export default function GenreDetail() {
   if (!genre) return null;
 
   const isPending = albumsPending || tracksPending;
+  const isError = albumsError || tracksError;
+  const retry = () => {
+    void refetchAlbums();
+    void refetchTracks();
+  };
   if (isPending) {
     return (
       <div>
@@ -37,6 +52,18 @@ export default function GenreDetail() {
             <Skeleton key={i} className="h-12 w-full rounded-lg" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div>
+        <PageHeader title={genre} description={t("genres.description")} />
+        <QueryError
+          message={t("common.loadError")}
+          onRetry={() => void retry()}
+        />
       </div>
     );
   }
@@ -57,28 +84,21 @@ export default function GenreDetail() {
           {albums.length === 0 && (
             <EmptyState icon={Disc3} title={t("albums.noAlbums")} />
           )}
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <MediaGrid>
             {albums.map((album) => (
               <AlbumCard key={album.id} album={album} className="w-full" />
             ))}
-          </div>
+          </MediaGrid>
         </TabsContent>
         <TabsContent value="tracks" className="mt-4">
           {tracks.length === 0 && (
             <EmptyState icon={Music} title={t("tracks.noTracks")} />
           )}
-          <Table>
-            <TrackTableHeader />
-            <TableBody>
-              {tracks.map((track, index) => (
-                <TrackRow
-                  key={track.id}
-                  track={track}
-                  number={track.track_number ?? index + 1}
-                />
-              ))}
-            </TableBody>
-          </Table>
+          <TrackTable
+            tracks={tracks}
+            getNumber={(track, index) => track.track_number ?? index + 1}
+            resetKey={genre}
+          />
         </TabsContent>
       </Tabs>
     </div>

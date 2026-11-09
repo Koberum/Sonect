@@ -5,6 +5,7 @@ import { initializeServices } from "@services/factory.js";
 import {
   unifiedSetOutputModeHandler,
   unifiedPauseHandler,
+  unifiedAddManyToQueueHandler,
 } from "@controllers/unifiedPlayerController.js";
 import { resolvePlayerRouter } from "@services/player/playerRouter.js";
 
@@ -81,5 +82,61 @@ describe("unifiedPlayerController.setOutputModeHandler", () => {
     );
 
     expect((caught as { name?: string }).name).to.equal("ZodError");
+  });
+
+  it("queues files in order and reports partial failures", async () => {
+    const router = resolvePlayerRouter();
+    const calls: string[] = [];
+    const addToQueue = sandbox.stub().callsFake(async (file: string) => {
+      calls.push(file);
+      if (file === "bad.flac") throw new Error("decode failed");
+    });
+    sandbox.stub(router, "forSession").returns({ addToQueue } as never);
+    sandbox.stub(router, "getMode").returns("browser");
+    const status = { state: "stop" };
+    sandbox.stub(router, "getStatus").returns(status as never);
+    const json = sandbox.stub();
+    const setStatus = sandbox.stub().returns({ json });
+
+    await unifiedAddManyToQueueHandler(
+      {
+        body: { files: ["a.flac", "bad.flac", "b.flac"] },
+        sessionId: "profile-1",
+      } as never,
+      { status: setStatus } as never,
+      () => undefined,
+    );
+
+    expect(calls).to.deep.equal(["a.flac", "bad.flac", "b.flac"]);
+    expect(setStatus.calledOnceWith(200)).to.be.true;
+    expect(
+      json.calledOnceWith({
+        status,
+        added: 2,
+        failed: [{ file: "bad.flac", error: "decode failed" }],
+      }),
+    ).to.be.true;
+  });
+
+  it("returns 422 when no file could be queued", async () => {
+    const router = resolvePlayerRouter();
+    sandbox
+      .stub(router, "forSession")
+      .returns({
+        addToQueue: sandbox.stub().rejects(new Error("nope")),
+      } as never);
+    sandbox.stub(router, "getMode").returns("browser");
+    sandbox.stub(router, "getStatus").returns({ state: "stop" } as never);
+    const json = sandbox.stub();
+    const setStatus = sandbox.stub().returns({ json });
+
+    await unifiedAddManyToQueueHandler(
+      { body: { files: ["bad.flac"] }, sessionId: "profile-1" } as never,
+      { status: setStatus } as never,
+      () => undefined,
+    );
+
+    expect(setStatus.calledOnceWith(422)).to.be.true;
+    expect(json.firstCall.args[0]).to.deep.include({ added: 0 });
   });
 });

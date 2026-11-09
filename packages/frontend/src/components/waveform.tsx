@@ -20,6 +20,27 @@ function getCssColor(fallback: string, varName: string): string {
   return val;
 }
 
+function withAlpha(color: string, alpha: number): string {
+  const hex = color.trim();
+  if (/^#[0-9a-f]{6}$/i.test(hex)) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  if (/^#[0-9a-f]{3}$/i.test(hex)) {
+    const [r, g, b] = hex
+      .slice(1)
+      .split("")
+      .map((part) => parseInt(part + part, 16));
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  if (hex.startsWith("oklch(")) {
+    return hex.replace(/\)$/, ` / ${alpha})`);
+  }
+  return hex;
+}
+
 function drawWaveform(
   canvas: HTMLCanvasElement,
   samples: number[],
@@ -37,8 +58,10 @@ function drawWaveform(
 
   if (width === 0 || height === 0) return;
 
-  canvas.width = Math.round(width * dpr);
-  canvas.height = Math.round(height * dpr);
+  const targetWidth = Math.round(width * dpr);
+  const targetHeight = Math.round(height * dpr);
+  if (canvas.width !== targetWidth) canvas.width = targetWidth;
+  if (canvas.height !== targetHeight) canvas.height = targetHeight;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, width, height);
 
@@ -108,15 +131,13 @@ export function Waveform({
     if (!canvas) return;
     const played = getCssColor("oklch(0.55 0.2 265)", "--primary");
     const unplayed = getCssColor("oklch(0.7 0 0)", "--muted-foreground");
-    // add opacity for unplayed via color alpha if possible: use 35% opacity
-    // oklch supports / alpha
-    const unplayedFaint = unplayed.includes("oklch")
-      ? `${unplayed} / 0.35`
-      : unplayed;
-    // canvas fillStyle handles oklch with alpha? fallback to rgba if needed
-    // try parsing; if oklch unsupported it will fallback to default, which is okay
-    drawWaveform(canvas, samples, progress, played, unplayedFaint);
+    drawWaveform(canvas, samples, progress, played, withAlpha(unplayed, 0.35));
   }, [samples, progress]);
+
+  const renderRef = useRef(render);
+  useEffect(() => {
+    renderRef.current = render;
+  }, [render]);
 
   useEffect(() => {
     render();
@@ -125,14 +146,15 @@ export function Waveform({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ro = new ResizeObserver(() => render());
+    const redraw = () => renderRef.current();
+    const ro = new ResizeObserver(redraw);
     ro.observe(canvas);
-    window.addEventListener("resize", render);
+    window.addEventListener("resize", redraw);
     return () => {
       ro.disconnect();
-      window.removeEventListener("resize", render);
+      window.removeEventListener("resize", redraw);
     };
-  }, [render]);
+  }, []);
 
   return (
     <canvas

@@ -1,4 +1,8 @@
-import { queryOptions, infiniteQueryOptions } from "@tanstack/react-query";
+import {
+  queryOptions,
+  infiniteQueryOptions,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { qk } from "@/lib/queryKeys";
 import {
   getAlbumById,
@@ -32,6 +36,8 @@ export const catalogQueries = {
         return allPages.reduce((acc, p) => acc + p.items.length, 0);
       },
       staleTime: 60_000,
+      // Keep the current grid visible while switching sort order.
+      placeholderData: keepPreviousData,
     }),
 
   artistsInfinite: () =>

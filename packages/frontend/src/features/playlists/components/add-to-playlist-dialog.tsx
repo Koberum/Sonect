@@ -6,11 +6,13 @@ import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
@@ -72,6 +74,9 @@ export function AddToPlaylistDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{t("contextMenu.addToPlaylist")}</DialogTitle>
+          <DialogDescription>
+            {t("playlist.addToDescription")}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -109,22 +114,28 @@ export function AddToPlaylistDialog({
               event.preventDefault();
               void handleCreateAndAdd();
             }}
-            className="flex flex-col gap-2 sm:flex-row"
+            className="space-y-2"
           >
-            <Input
-              value={newName}
-              onChange={(event) => setNewName(event.target.value)}
-              placeholder={t("playlist.namePlaceholder")}
-              disabled={pending}
-            />
-            <Button
-              type="submit"
-              className="shrink-0"
-              disabled={!newName.trim() || pending}
-            >
-              {pending ? <Loader2 className="animate-spin" /> : <Plus />}
-              {t("playlist.create")}
-            </Button>
+            <Label htmlFor="add-to-playlist-name">
+              {t("playlist.nameLabel")}
+            </Label>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Input
+                id="add-to-playlist-name"
+                value={newName}
+                onChange={(event) => setNewName(event.target.value)}
+                placeholder={t("playlist.namePlaceholder")}
+                disabled={pending}
+              />
+              <Button
+                type="submit"
+                className="shrink-0"
+                disabled={!newName.trim() || pending}
+              >
+                {pending ? <Loader2 className="animate-spin" /> : <Plus />}
+                {t("playlist.create")}
+              </Button>
+            </div>
           </form>
         </div>
       </DialogContent>

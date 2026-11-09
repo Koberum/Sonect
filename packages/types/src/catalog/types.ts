@@ -32,6 +32,11 @@ export type CoverProgress = {
   };
 };
 
+export type AudioQuality = {
+  bits_per_sample: number | null;
+  sample_rate: number | null;
+};
+
 export type Track = DBTrack;
 export type TrackWithRelations = DBTrackWithRelations;
 export type Artist = DBArtist & {
@@ -77,6 +82,7 @@ export interface LikedTracksPage {
   items: TrackWithRelations[];
   total: number;
   totalDuration: number;
+  qualities: AudioQuality[];
 }
 
 export interface LibraryStats {

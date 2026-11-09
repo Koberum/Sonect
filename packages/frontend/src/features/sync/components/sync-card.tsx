@@ -1,5 +1,4 @@
 import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { usePlaybackContext } from "@/components/playback-context";
 import { Button } from "@/components/ui/button";
@@ -12,21 +11,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from "@/features/auth/auth-context";
-import { scanLibrary } from "@/features/catalog/api";
+import { useSyncNow } from "@/features/sync/use-sync-now";
 import { SyncProgressView } from "./sync-progress-view";
 
 export function SyncCard() {
   const { t } = useTranslation();
   const { isAdmin } = useAuth();
   const { syncProgress, syncError } = usePlaybackContext();
-
-  const scanMutation = useMutation({
-    mutationFn: () => scanLibrary(),
-  });
+  const { syncNow, running, pending } = useSyncNow();
 
   if (!isAdmin) return null;
-
-  const running = scanMutation.isPending || syncProgress !== null;
 
   return (
     <Card>
@@ -34,7 +28,7 @@ export function SyncCard() {
         <CardTitle>{t("sync.title")}</CardTitle>
         <CardDescription>{t("sync.cardDescription")}</CardDescription>
         <CardAction>
-          <Button onClick={() => scanMutation.mutate()} disabled={running}>
+          <Button onClick={syncNow} disabled={running}>
             {running ? <Loader2 className="animate-spin" /> : <RefreshCw />}
             {running ? t("sync.syncing") : t("sync.syncNow")}
           </Button>
@@ -43,7 +37,7 @@ export function SyncCard() {
       <CardContent>
         {syncProgress ? (
           <SyncProgressView progress={syncProgress} />
-        ) : scanMutation.isPending ? (
+        ) : pending ? (
           <p className="text-muted-foreground flex items-center gap-2 text-sm">
             <Loader2 className="text-primary size-4 animate-spin" />
             {t("sync.preparing")}
@@ -67,7 +61,7 @@ export function SyncCard() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => scanMutation.mutate()}
+              onClick={syncNow}
               disabled={running}
             >
               <RefreshCw />

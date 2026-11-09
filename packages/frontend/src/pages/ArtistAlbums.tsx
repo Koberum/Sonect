@@ -1,6 +1,8 @@
 import { AlbumCard } from "@/features/catalog/components/media-card/album-card";
+import { MediaGrid } from "@/features/catalog/components/media-grid";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
+import { QueryError } from "@/components/ui/query-error";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SortTabs } from "@/components/ui/sort-tabs";
 import { useState } from "react";
@@ -17,16 +19,31 @@ export function ArtistAlbums() {
   const { artistId } = useParams();
   const [sort, setSort] = useState<SortOption>("recent");
 
-  const { data: albums = [], isPending: albumsPending } = useQuery({
+  const {
+    data: albums = [],
+    isPending: albumsPending,
+    isError: albumsError,
+    refetch: refetchAlbums,
+  } = useQuery({
     ...catalogQueries.albumsByArtist(artistId ?? ""),
     enabled: !!artistId,
   });
-  const { data: artist, isPending: artistPending } = useQuery({
+  const {
+    data: artist,
+    isPending: artistPending,
+    isError: artistError,
+    refetch: refetchArtist,
+  } = useQuery({
     ...catalogQueries.artist(artistId ?? ""),
     enabled: !!artistId,
   });
 
   const isPending = albumsPending || artistPending;
+  const isError = albumsError || artistError;
+  const retry = () => {
+    void refetchAlbums();
+    void refetchArtist();
+  };
 
   const sortedAlbums = [...(albums ?? [])].sort((a, b) => {
     if (sort === "title") return (a.title ?? "").localeCompare(b.title ?? "");
@@ -47,11 +64,16 @@ export function ArtistAlbums() {
         description={t("artist.description")}
       />
       {isPending ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <MediaGrid>
           {Array.from({ length: 12 }).map((_, i) => (
             <Skeleton key={i} className="aspect-square w-full rounded-lg" />
           ))}
-        </div>
+        </MediaGrid>
+      ) : isError ? (
+        <QueryError
+          message={t("common.loadError")}
+          onRetry={() => void retry()}
+        />
       ) : (
         <>
           <SortTabs
@@ -63,11 +85,11 @@ export function ArtistAlbums() {
           {sortedAlbums.length === 0 ? (
             <EmptyState icon={Disc3} title={t("albums.noAlbums")} />
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            <MediaGrid>
               {sortedAlbums.map((album) => (
                 <AlbumCard key={album.id} album={album} className="w-full" />
               ))}
-            </div>
+            </MediaGrid>
           )}
         </>
       )}

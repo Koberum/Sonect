@@ -1,12 +1,21 @@
-import { count, desc, eq, sql } from "drizzle-orm";
-import type { DBTrackWithRelations } from "@repo/types";
+import { and, asc, count, desc, eq, isNull, or, sql } from "drizzle-orm";
+import type { AudioQuality, DBTrackWithRelations } from "@repo/types";
 import { db } from "../connection.js";
 import { albums, artists, genres, likedTracks, tracks } from "../tables.js";
 import { dBTrackWithRelations } from "./tracks.js";
 
+export type LikedQualityFilter = {
+  bitsPerSample: number | null;
+  sampleRate: number | null;
+};
+
+export type LikedSort = "recent" | "quality-desc" | "quality-asc";
+
 export type LikedListOptions = {
   limit?: number;
   offset?: number;
+  quality?: LikedQualityFilter;
+  sort?: LikedSort;
 };
 
 export type LikedSummary = {
@@ -15,6 +24,39 @@ export type LikedSummary = {
 };
 
 const likedOrder = [desc(likedTracks.liked_at), desc(likedTracks.id)] as const;
+
+function likedWhere(profileId: string, quality?: LikedQualityFilter) {
+  const profile = eq(likedTracks.profile_id, profileId);
+  if (!quality) return profile;
+  return and(
+    profile,
+    quality.bitsPerSample === null
+      ? isNull(tracks.bits_per_sample)
+      : eq(tracks.bits_per_sample, quality.bitsPerSample),
+    quality.sampleRate === null
+      ? isNull(tracks.sample_rate)
+      : eq(tracks.sample_rate, quality.sampleRate),
+  );
+}
+
+function likedOrderFor(sort: LikedSort = "recent") {
+  if (sort === "recent") return likedOrder;
+  const bitsDirection =
+    sort === "quality-desc"
+      ? desc(tracks.bits_per_sample)
+      : asc(tracks.bits_per_sample);
+  const rateDirection =
+    sort === "quality-desc"
+      ? desc(tracks.sample_rate)
+      : asc(tracks.sample_rate);
+  return [
+    asc(sql`${tracks.bits_per_sample} IS NULL`),
+    bitsDirection,
+    asc(sql`${tracks.sample_rate} IS NULL`),
+    rateDirection,
+    ...likedOrder,
+  ];
+}
 
 export const likedDb = {
   add(profileId: string, trackId: number): boolean {
@@ -42,7 +84,12 @@ export const likedDb = {
 
   list(
     profileId: string,
-    { limit = 100, offset = 0 }: LikedListOptions = {},
+    {
+      limit = 100,
+      offset = 0,
+      quality,
+      sort = "recent",
+    }: LikedListOptions = {},
   ): DBTrackWithRelations[] {
     return db()
       .select(dBTrackWithRelations)
@@ -51,11 +98,37 @@ export const likedDb = {
       .leftJoin(artists, eq(tracks.artist_id, artists.id))
       .leftJoin(albums, eq(tracks.album_id, albums.id))
       .leftJoin(genres, eq(tracks.genre_id, genres.id))
-      .where(eq(likedTracks.profile_id, profileId))
-      .orderBy(...likedOrder)
+      .where(likedWhere(profileId, quality))
+      .orderBy(...likedOrderFor(sort))
       .limit(limit)
       .offset(offset)
       .all() as DBTrackWithRelations[];
+  },
+
+  qualities(profileId: string): AudioQuality[] {
+    return db()
+      .selectDistinct({
+        bits_per_sample: tracks.bits_per_sample,
+        sample_rate: tracks.sample_rate,
+      })
+      .from(likedTracks)
+      .innerJoin(tracks, eq(likedTracks.track_id, tracks.id))
+      .where(
+        and(
+          eq(likedTracks.profile_id, profileId),
+          or(
+            sql`${tracks.bits_per_sample} IS NOT NULL`,
+            sql`${tracks.sample_rate} IS NOT NULL`,
+          ),
+        ),
+      )
+      .orderBy(
+        asc(sql`${tracks.bits_per_sample} IS NULL`),
+        desc(tracks.bits_per_sample),
+        asc(sql`${tracks.sample_rate} IS NULL`),
+        desc(tracks.sample_rate),
+      )
+      .all() as AudioQuality[];
   },
 
   ids(profileId: string): number[] {
@@ -68,18 +141,22 @@ export const likedDb = {
       .map((row) => row.id);
   },
 
-  files(profileId: string): string[] {
+  files(
+    profileId: string,
+    quality?: LikedQualityFilter,
+    sort: LikedSort = "recent",
+  ): string[] {
     return db()
       .select({ file: tracks.file })
       .from(likedTracks)
       .innerJoin(tracks, eq(likedTracks.track_id, tracks.id))
-      .where(eq(likedTracks.profile_id, profileId))
-      .orderBy(...likedOrder)
+      .where(likedWhere(profileId, quality))
+      .orderBy(...likedOrderFor(sort))
       .all()
       .map((row) => row.file);
   },
 
-  summary(profileId: string): LikedSummary {
+  summary(profileId: string, quality?: LikedQualityFilter): LikedSummary {
     const row = db()
       .select({
         count: count(),
@@ -87,7 +164,7 @@ export const likedDb = {
       })
       .from(likedTracks)
       .innerJoin(tracks, eq(likedTracks.track_id, tracks.id))
-      .where(eq(likedTracks.profile_id, profileId))
+      .where(likedWhere(profileId, quality))
       .get();
     return {
       count: row?.count ?? 0,

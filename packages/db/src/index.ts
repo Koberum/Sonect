@@ -18,6 +18,8 @@ export { playlistsDb } from "./repositories/playlists.js";
 export {
   likedDb,
   type LikedListOptions,
+  type LikedQualityFilter,
+  type LikedSort,
   type LikedSummary,
 } from "./repositories/liked.js";
 export { playHistoryDb } from "./repositories/playHistory.js";

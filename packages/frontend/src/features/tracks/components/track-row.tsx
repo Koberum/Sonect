@@ -4,14 +4,16 @@ import PlayStatus from "@/features/player/components/play-status";
 import { TrackActionsMenu } from "@/features/tracks/components/track-actions-menu";
 import { usePlaybackContext } from "@/components/playback-context";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
-import { useTrackDrag } from "@/features/playlists/playlist-drop-context";
-import { setTrackDragData } from "@/features/playlists/track-drag";
-import { cn, formatTime, getCoverPath } from "@/lib/utils";
+import { useTrackDragHandlers } from "@/features/playlists/use-track-drag-handlers";
+import { cn, getCoverPath } from "@/lib/utils";
+import { formatTime } from "@/lib/format";
+import { formatQuality } from "../quality";
 
 interface TrackRowProps {
   track: TrackWithRelations;
   number?: number;
   showCover?: boolean;
+  showQuality?: boolean;
   onPlay?: () => void;
   onRemove?: () => void;
   removeLabel?: string;
@@ -21,13 +23,14 @@ export function TrackRow({
   track,
   number,
   showCover = false,
+  showQuality = false,
   onPlay,
   onRemove,
   removeLabel,
 }: TrackRowProps) {
   const { trackPlayed } = usePlaybackContext();
   const { play } = usePlayTrack();
-  const { startDrag, endDrag } = useTrackDrag();
+  const dragHandlers = useTrackDragHandlers<HTMLTableRowElement>(track.id);
   const isPlaying = trackPlayed?.id === track.id;
 
   const handlePlay = () => {
@@ -37,17 +40,12 @@ export function TrackRow({
 
   return (
     <TableRow
-      draggable
+      {...dragHandlers}
       aria-current={isPlaying ? "true" : undefined}
       className={cn(
         "group h-12 cursor-pointer",
         isPlaying && "bg-primary/10 hover:bg-primary/15",
       )}
-      onDragStart={(event) => {
-        setTrackDragData(event.dataTransfer, track.id);
-        startDrag(track.id);
-      }}
-      onDragEnd={endDrag}
     >
       <TableCell
         onClick={handlePlay}
@@ -55,15 +53,19 @@ export function TrackRow({
       >
         {isPlaying ? <PlayStatus className="justify-center" /> : (number ?? "")}
       </TableCell>
-      <TableCell onClick={handlePlay} className="w-full max-w-0">
-        <div className="flex min-w-0 items-center gap-2">
+      <TableCell className="w-full max-w-0">
+        <button
+          type="button"
+          onClick={handlePlay}
+          className="focus-visible:ring-ring flex w-full min-w-0 items-center gap-2 rounded-sm text-left focus-visible:ring-2 focus-visible:outline-none"
+        >
           {showCover && (
             <img
               src={getCoverPath(track.cover_path)}
               alt=""
               className="h-8 w-8 shrink-0 rounded-sm object-cover"
               onError={(event) => {
-                event.currentTarget.src = "/default_cover.png";
+                event.currentTarget.src = "/default_cover.webp";
               }}
             />
           )}
@@ -80,8 +82,13 @@ export function TrackRow({
               {track.artist_name || "-"}
             </p>
           </div>
-        </div>
+        </button>
       </TableCell>
+      {showQuality && (
+        <TableCell className="text-muted-foreground hidden w-40 text-right text-xs tabular-nums md:table-cell">
+          {formatQuality(track) ?? "\u2014"}
+        </TableCell>
+      )}
       <TableCell
         onClick={handlePlay}
         className="text-muted-foreground w-14 text-right sm:w-20"

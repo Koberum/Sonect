@@ -481,4 +481,82 @@ describe("SessionPlayer", () => {
 
     expect(p.getStatus().track?.id).to.equal(t1.id);
   });
+
+  it("moveInQueue reorders the queue without changing the current track", () => {
+    const { t1 } = seedAlbum("MoveArtist", 110);
+    p = new SessionPlayer("S-MOVE", {} as LogService);
+    p.playTrack(t1.file);
+
+    p.moveInQueue(2, 0);
+
+    expect(p.getQueue().map((entry) => entry.title)).to.deep.equal([
+      "Z",
+      "X",
+      "Y",
+    ]);
+    expect(p.getStatus().track?.title).to.equal("X");
+  });
+
+  it("moveInQueue moves the current track with its index", () => {
+    const { t1 } = seedAlbum("MoveCurrentArtist", 120);
+    p = new SessionPlayer("S-MOVE-CURRENT", {} as LogService);
+    p.playTrack(t1.file);
+
+    p.moveInQueue(0, 2);
+
+    expect(p.getQueue().map((entry) => entry.title)).to.deep.equal([
+      "Y",
+      "Z",
+      "X",
+    ]);
+    expect(p.getStatus().track?.title).to.equal("X");
+    expect(p.getStatus().nextTrackId).to.be.null;
+  });
+
+  it("moveInQueue adjusts the current index when moving across it", () => {
+    const { t1 } = seedAlbum("MoveAcrossArtist", 130);
+    p = new SessionPlayer("S-MOVE-ACROSS", {} as LogService);
+    p.playTrack(t1.file);
+    p.playPosition(1);
+
+    p.moveInQueue(2, 0);
+
+    expect(p.getQueue().map((entry) => entry.title)).to.deep.equal([
+      "Z",
+      "X",
+      "Y",
+    ]);
+    expect(p.getStatus().track?.title).to.equal("Y");
+  });
+
+  it("moveInQueue ignores out-of-range positions", () => {
+    const { t1 } = seedAlbum("MoveInvalidArtist", 140);
+    p = new SessionPlayer("S-MOVE-INVALID", {} as LogService);
+    p.playTrack(t1.file);
+    const before = p.getStatus();
+
+    p.moveInQueue(-1, 0);
+    p.moveInQueue(0, 3);
+    p.moveInQueue(1, 1);
+
+    expect(p.getQueue().map((entry) => entry.title)).to.deep.equal([
+      "X",
+      "Y",
+      "Z",
+    ]);
+    expect(p.getStatus().track?.id).to.equal(before.track?.id);
+  });
+
+  it("clearQueue empties the queue and stops playback", () => {
+    const { t1 } = seedAlbum("ClearArtist", 150);
+    p = new SessionPlayer("S-CLEAR", {} as LogService);
+    p.playTrack(t1.file);
+
+    p.clearQueue();
+
+    expect(p.getQueue()).to.deep.equal([]);
+    expect(p.getStatus().state).to.equal("stop");
+    expect(p.getStatus().track).to.be.undefined;
+    expect(p.getStatus().queueLength).to.equal(0);
+  });
 });

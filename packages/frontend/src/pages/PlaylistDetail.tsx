@@ -5,9 +5,10 @@ import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { useAuth } from "@/features/auth/auth-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
+import { QueryError } from "@/components/ui/query-error";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody } from "@/components/ui/table";
+import { Label } from "@/components/ui/label";
 import { Trash2, Play, Edit3, ListMusic } from "lucide-react";
 import type { PlaylistTrack } from "@repo/types/catalog";
 import { toast } from "sonner";
@@ -32,6 +33,7 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -41,8 +43,7 @@ import {
   playlistQueries,
   playlistMutations,
 } from "@/features/playlists/queries";
-import { TrackRow } from "@/features/tracks/components/track-row";
-import { TrackTableHeader } from "@/features/tracks/components/track-table-header";
+import { TrackTable } from "@/features/tracks/components/track-table";
 
 export default function PlaylistDetail() {
   const { t } = useTranslation();
@@ -52,16 +53,25 @@ export default function PlaylistDetail() {
   const { profile } = useAuth();
   const profileId = profile?.id ?? "";
   const pid = id ? parseInt(id, 10) : 0;
+  const validId = Number.isInteger(pid) && pid > 0;
 
-  const { data: playlist, isPending } = useQuery({
+  const {
+    data: playlist,
+    isPending,
+    isError,
+    refetch,
+  } = useQuery({
     ...playlistQueries.detail(profileId, pid),
-    enabled: !!pid && !!profileId,
+    enabled: validId && !!profileId,
   });
 
   const updateMut = useMutation(playlistMutations.update(profileId));
   const deleteMut = useMutation(playlistMutations.delete(profileId));
   const removeTrackMut = useMutation(playlistMutations.removeTrack(profileId));
-  const loadMut = useMutation(playlistMutations.load());
+  const loadMut = useMutation({
+    ...playlistMutations.load(),
+    onError: () => toast.error(t("player.commandError")),
+  });
 
   const [editOpen, setEditOpen] = useState(false);
   const [editName, setEditName] = useState("");
@@ -84,7 +94,11 @@ export default function PlaylistDetail() {
 
   const handlePlayAll = useCallback(async () => {
     if (!playlist || playlist.tracks.length === 0) return;
-    await loadMut.mutateAsync(playlist.id);
+    try {
+      await loadMut.mutateAsync(playlist.id);
+    } catch {
+      // The mutation's onError already surfaces a localized toast.
+    }
   }, [playlist, loadMut]);
 
   const handleDelete = async () => {
@@ -92,7 +106,7 @@ export default function PlaylistDetail() {
     try {
       await deleteMut.mutateAsync(playlist.id);
       toast(t("playlist.deleted"));
-      navigate("/home", { state: { tab: "playlists" } });
+      navigate("/playlists");
     } catch {
       toast.error(t("playlist.deleteError"));
     } finally {
@@ -126,6 +140,24 @@ export default function PlaylistDetail() {
       toast.error(t("playlist.updateError"));
     }
   };
+
+  if (!validId) {
+    return (
+      <QueryError
+        message={t("playlist.loadError")}
+        onRetry={() => void navigate("/playlists")}
+      />
+    );
+  }
+
+  if (isError) {
+    return (
+      <QueryError
+        message={t("playlist.loadError")}
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
   if (isPending) {
     return (
@@ -189,6 +221,9 @@ export default function PlaylistDetail() {
               <SheetContent side="right">
                 <SheetHeader>
                   <SheetTitle>{t("playlist.edit")}</SheetTitle>
+                  <SheetDescription>
+                    {t("playlist.editDescription")}
+                  </SheetDescription>
                 </SheetHeader>
                 <form
                   onSubmit={(e) => {
@@ -197,17 +232,29 @@ export default function PlaylistDetail() {
                   }}
                   className="mt-6 space-y-4"
                 >
-                  <Input
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    placeholder={t("playlist.namePlaceholder")}
-                    autoFocus
-                  />
-                  <Input
-                    value={editDesc}
-                    onChange={(e) => setEditDesc(e.target.value)}
-                    placeholder={t("playlist.descriptionPlaceholder")}
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="playlist-edit-name">
+                      {t("playlist.nameLabel")}
+                    </Label>
+                    <Input
+                      id="playlist-edit-name"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder={t("playlist.namePlaceholder")}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="playlist-edit-description">
+                      {t("playlist.descriptionLabel")}
+                    </Label>
+                    <Input
+                      id="playlist-edit-description"
+                      value={editDesc}
+                      onChange={(e) => setEditDesc(e.target.value)}
+                      placeholder={t("playlist.descriptionPlaceholder")}
+                    />
+                  </div>
                   <Button
                     type="submit"
                     className="w-full"
@@ -267,22 +314,15 @@ export default function PlaylistDetail() {
       <Separator className="my-4" />
 
       {playlist.tracks.length > 0 ? (
-        <Table>
-          <TrackTableHeader />
-          <TableBody>
-            {playlist.tracks.map((track, index) => (
-              <TrackRow
-                key={track.pt_id ?? track.id}
-                track={track}
-                number={index + 1}
-                showCover
-                onPlay={() => void handlePlay(track)}
-                onRemove={() => void handleRemoveTrack(track.pt_id)}
-                removeLabel={t("playlist.removeTrack")}
-              />
-            ))}
-          </TableBody>
-        </Table>
+        <TrackTable<PlaylistTrack>
+          tracks={playlist.tracks}
+          getKey={(track) => track.pt_id ?? track.id}
+          showCover
+          onPlay={(track) => void handlePlay(track)}
+          onRemove={(track) => void handleRemoveTrack(track.pt_id)}
+          removeLabel={t("playlist.removeTrack")}
+          resetKey={id}
+        />
       ) : (
         <EmptyState icon={ListMusic} title={t("playlist.emptyDescription")} />
       )}

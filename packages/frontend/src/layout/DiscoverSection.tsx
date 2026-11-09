@@ -7,10 +7,9 @@ import { useAuth } from "@/features/auth/auth-context";
 import { likedQueries } from "@/features/liked/queries";
 
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
-const Playlists = lazy(() => import("@/pages/Playlists"));
 const LikedSongs = lazy(() => import("@/pages/LikedSongs"));
 
-export function HomeSection() {
+export function DiscoverSection() {
   const { t } = useTranslation();
   const { profile } = useAuth();
   const { data: likedIds = [] } = useQuery(likedQueries.ids(profile?.id ?? ""));
@@ -18,21 +17,22 @@ export function HomeSection() {
   const tabs: SectionTab[] = [
     {
       id: "listen",
-      labelKey: "home.tabs.listen",
+      labelKey: "discover.tabs.listen",
       content: <Dashboard />,
     },
     {
-      id: "playlists",
-      labelKey: "home.tabs.playlists",
-      content: <Playlists />,
-    },
-    {
       id: "liked",
-      labelKey: "home.tabs.liked",
+      labelKey: "discover.tabs.liked",
       badge: likedIds.length,
       content: <LikedSongs />,
     },
   ];
 
-  return <SectionLayout title={t("home.title")} basePath="/home" tabs={tabs} />;
+  return (
+    <SectionLayout
+      title={t("discover.title")}
+      basePath="/discover"
+      tabs={tabs}
+    />
+  );
 }

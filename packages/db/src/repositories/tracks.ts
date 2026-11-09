@@ -113,6 +113,9 @@ export type SyncTrackSnapshot = {
   track_number: number | null;
   disc_number: number | null;
   duration: number | null;
+  sample_rate: number | null;
+  bits_per_sample: number | null;
+  channels: number | null;
   date: string | null;
   storage_source_id: number | null;
 };
@@ -160,6 +163,9 @@ export function upsertTrack(
         track_number: trackNumberOf(track),
         disc_number: discNumberOf(track),
         duration: track.duration ?? null,
+        sample_rate: track.sampleRate ?? null,
+        bits_per_sample: track.bitsPerSample ?? null,
+        channels: track.channels ?? null,
         date: track.date ?? null,
         storage_source_id: track.storageSourceId ?? null,
         mtime: track.mtime ?? null,
@@ -182,6 +188,9 @@ export function upsertTrack(
       track_number: trackNumberOf(track),
       disc_number: discNumberOf(track),
       duration: track.duration ?? null,
+      sample_rate: track.sampleRate ?? null,
+      bits_per_sample: track.bitsPerSample ?? null,
+      channels: track.channels ?? null,
       date: track.date ?? null,
       storage_source_id: track.storageSourceId ?? null,
       mtime: track.mtime ?? null,
@@ -294,6 +303,9 @@ export const tracksDb = {
         track_number: tracks.track_number,
         disc_number: tracks.disc_number,
         duration: tracks.duration,
+        sample_rate: tracks.sample_rate,
+        bits_per_sample: tracks.bits_per_sample,
+        channels: tracks.channels,
         date: tracks.date,
         storage_source_id: tracks.storage_source_id,
       })

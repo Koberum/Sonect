@@ -23,12 +23,13 @@ import {
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useTheme, type Theme } from "@/components/theme-provider";
+import { ThemeTemplatePicker } from "@/features/settings/theme-template-picker";
 
 export function AppearanceTab() {
   const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
 
-  const currentLanguage = i18n.language.split("-")[0];
+  const currentLanguage = i18n.resolvedLanguage ?? "en";
 
   return (
     <Card>
@@ -40,8 +41,12 @@ export function AppearanceTab() {
       </CardHeader>
       <CardContent>
         <FieldGroup className="gap-4">
+          <ThemeTemplatePicker />
+
+          <FieldSeparator />
+
           <Field>
-            <FieldLabel>{t("settings.appearance.theme")}</FieldLabel>
+            <FieldLabel>{t("settings.appearance.mode")}</FieldLabel>
             <ToggleGroup
               type="single"
               variant="outline"
@@ -77,7 +82,7 @@ export function AppearanceTab() {
               </ToggleGroupItem>
             </ToggleGroup>
             <FieldDescription>
-              {t("settings.appearance.themeDescription")}
+              {t("settings.appearance.modeDescription")}
             </FieldDescription>
           </Field>
 
@@ -90,8 +95,7 @@ export function AppearanceTab() {
             <Select
               value={currentLanguage}
               onValueChange={(value) => {
-                i18n.changeLanguage(value);
-                localStorage.setItem("language", value);
+                void i18n.changeLanguage(value);
               }}
             >
               <SelectTrigger

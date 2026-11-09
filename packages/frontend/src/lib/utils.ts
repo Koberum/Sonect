@@ -5,22 +5,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatTime(seconds: number) {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
 export function getCoverPath(cover_path?: string) {
   if (cover_path) {
     return `${import.meta.env.VITE_BACKEND_URL ?? ""}${import.meta.env.VITE_COVER_PATH ?? "/covers"}/${cover_path}`;
   }
-  return "/default_cover.png";
+  return "/default_cover.webp";
 }
 
 /** Extract a 4-digit year from an MPD/ID3 date such as "2021-05-01". */
 export function parseYear(date?: string): string | undefined {
-  return date?.match(/^(\d{4})/)?.[1];
+  if (!date) return undefined;
+  return date.match(/\b(\d{4})\b/)?.[1] ?? date.match(/^(\d{4})/)?.[1];
 }
 
 /** Shared hover effect classes for album/track/artist artwork */

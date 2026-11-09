@@ -12,19 +12,21 @@
   },
   "nav": {
     "label": "Sezioni",
-    "home": "Home",
+    "discover": "Scopri",
     "library": "Libreria",
+    "playlists": "Playlist",
+    "player": "Riproduzione",
+    "queue": "Coda",
     "settings": "Impostazioni",
     "back": "Indietro",
     "forward": "Avanti",
     "collapse": "Comprimi barra laterale",
     "expand": "Espandi barra laterale"
   },
-  "home": {
-    "title": "Home",
+  "discover": {
+    "title": "Scopri",
     "tabs": {
       "listen": "Ascolta Ora",
-      "playlists": "Playlist",
       "liked": "Preferiti"
     }
   },
@@ -36,9 +38,6 @@
       "genres": "Generi",
       "statistics": "Statistiche"
     }
-  },
-  "sidebar": {
-    "toggleSidebar": "Mostra/nascondi barra laterale"
   },
   "artists": {
     "title": "Artisti",
@@ -56,9 +55,36 @@
     "trackCount_one": "{{count}} brano",
     "trackCount_other": "{{count}} brani",
     "duration": "Durata",
+    "quality": "Qualità",
     "trackNumber": "#",
     "playAll": "Riproduci Tutto",
     "goToAlbum": "Vai all'Album"
+  },
+  "trackTable": {
+    "allQualities": "Tutte le qualità",
+    "filterQuality": "Filtra per qualità",
+    "sortQuality": "Ordina per qualità",
+    "noQualityMatches": "Nessun brano corrisponde a questa qualità",
+    "clearFilter": "Azzera filtro"
+  },
+  "trackInfo": {
+    "details": "Dettagli",
+    "audio": "Audio",
+    "artist": "Artista",
+    "album": "Album",
+    "year": "Anno",
+    "genre": "Genere",
+    "trackNumber": "Brano",
+    "discNumber": "Disco",
+    "duration": "Durata",
+    "file": "File",
+    "library": "Libreria",
+    "codec": "Formato",
+    "bitDepth": "Profondità di bit",
+    "sampleRate": "Frequenza di campionamento",
+    "channels": "Canali",
+    "channelsValue_one": "{{count}} canale",
+    "channelsValue_other": "{{count}} canali"
   },
   "statistics": {
     "totalTracks": "Totale Brani",
@@ -76,13 +102,36 @@
     "percentOfLibrary": "{{percent}}% della libreria"
   },
   "queue": {
-    "upNext": "Prossimi",
+    "title": "Coda",
     "remove": "Rimuovi dalla coda",
+    "reorder": "Riordina brano",
+    "dragHint": "Trascina per riordinare",
+    "empty": "La tua coda è vuota",
+    "emptyDescription": "Riproduci un album o aggiungi brani per creare una coda.",
+    "clear": "Svuota coda",
+    "clearConfirmTitle": "Svuotare la coda?",
+    "clearConfirmDescription": "Questo rimuove tutti i brani dalla coda.",
+    "cleared": "Coda svuotata",
+    "clearError": "Impossibile svuotare la coda",
+    "moveError": "Impossibile riordinare la coda",
+    "removeError": "Impossibile rimuovere il brano",
     "tracksInQueue_one": "{{count}} brano in coda",
     "tracksInQueue_other": "{{count}} brani in coda"
   },
   "player": {
     "title": "In riproduzione",
+    "nothingPlaying": "Nessun brano in riproduzione",
+    "nothingPlayingDescription": "Scegli un brano da Home o Libreria per iniziare ad ascoltare.",
+    "playbackPosition": "Posizione di riproduzione",
+    "shuffle": "Riproduzione casuale",
+    "previous": "Brano precedente",
+    "play": "Riproduci",
+    "pause": "Pausa",
+    "next": "Brano successivo",
+    "repeat": "Ripeti",
+    "repeatOne": "Ripeti brano",
+    "volume": "Volume",
+    "volumeError": "Errore nel cambio del volume",
     "outputSpeakers": "Altoparlanti",
     "outputDevices": "Uscita",
     "thisDevice": "Questo browser",
@@ -91,6 +140,11 @@
     "tapToPlay": "Tocca per riprodurre",
     "playbackErrorDetail": "Errore di riproduzione: {{error}}",
     "playbackError": "Impossibile riprodurre questo brano",
+    "commandError": "Errore durante il comando di riproduzione",
+    "queueError": "Impossibile aggiungere alla coda",
+    "queueBulkError": "Impossibile aggiungere i brani alla coda",
+    "queuePartial_one": "Impossibile aggiungere {{count}} brano",
+    "queuePartial_other": "Impossibile aggiungere {{count}} brani",
     "outputInUse": "In uso da un'altra sessione",
     "outputInUseByOther": "L'uscita audio è in uso da un'altra sessione"
   },
@@ -98,6 +152,20 @@
     "light": "Chiaro",
     "dark": "Scuro",
     "system": "Sistema"
+  },
+  "themeTemplates": {
+    "sonect": {
+      "name": "Sonect",
+      "description": "Ambra calda, il classico stile Sonect."
+    },
+    "graphite": {
+      "name": "Grafite",
+      "description": "Grigi neutri, sobri e discreti."
+    },
+    "ocean": {
+      "name": "Oceano",
+      "description": "Grigi blu freddi con un accento verde acqua."
+    }
   },
   "sync": {
     "title": "Sincronizzazione libreria",
@@ -116,6 +184,43 @@
     "openDetails": "Mostra dettagli sincronizzazione",
     "stepOf": "Passo {{current}} di {{total}}"
   },
+  "status": {
+    "title": "Stato libreria",
+    "description": "Attività della libreria e stato del sistema.",
+    "openWith": "Apri stato libreria: {{status}}",
+    "library": {
+      "title": "Libreria",
+      "tracksLabel": "brani",
+      "tracks_one": "{{formatted}} brano",
+      "tracks_other": "{{formatted}} brani",
+      "albums_one": "{{formatted}} album",
+      "albums_other": "{{formatted}} album",
+      "artists_one": "{{formatted}} artista",
+      "artists_other": "{{formatted}} artisti",
+      "lastSync": "Aggiornata {{time}}",
+      "neverSynced": "Mai sincronizzata",
+      "statsUnavailable": "Statistiche non disponibili",
+      "empty": "Nessun brano"
+    },
+    "connection": {
+      "lost": "Riconnessione…",
+      "description": "Gli aggiornamenti live riprenderanno automaticamente."
+    },
+    "storage": {
+      "unavailable": "Libreria non disponibile"
+    },
+    "audio": {
+      "noDevices": "Nessun dispositivo audio trovato",
+      "outputMissing": "Uscita configurata non disponibile",
+      "engineOffline": "Motore di riproduzione offline"
+    },
+    "actions": {
+      "openLibraries": "Apri librerie",
+      "openAudio": "Apri impostazioni audio",
+      "viewStatistics": "Vedi statistiche",
+      "openSettings": "Apri impostazioni"
+    }
+  },
   "language": {
     "en": "English",
     "es": "Español",
@@ -128,10 +233,12 @@
   },
   "trackActions": {
     "open": "Azioni traccia",
+    "info": "Info",
     "noPlaylists": "Nessuna playlist"
   },
   "search": {
     "placeholder": "Cerca",
+    "open": "Cerca",
     "genres": "Generi",
     "artists": "Artisti",
     "albums": "Album",
@@ -143,16 +250,22 @@
     "noResults": "Nessun risultato trovato"
   },
   "playlist": {
+    "title": "Playlist",
     "new": "Nuova Playlist",
+    "newDescription": "Crea una playlist per questo profilo.",
+    "addToDescription": "Scegli una playlist esistente o creane una nuova.",
     "open": "Apri playlist",
     "defaultName": "La mia playlist",
     "dropToCreate": "Rilascia qui per creare una playlist",
     "dropHint": "Trascina un brano su una playlist per aggiungerlo.",
     "edit": "Modifica Playlist",
+    "editDescription": "Aggiorna il nome e la descrizione della playlist.",
     "save": "Salva",
     "create": "Crea",
     "delete": "Elimina Playlist",
     "namePlaceholder": "Nome playlist",
+    "nameLabel": "Nome",
+    "descriptionLabel": "Descrizione",
     "descriptionPlaceholder": "Descrizione (opzionale)",
     "updated": "Playlist aggiornata",
     "deleted": "Playlist eliminata",
@@ -195,6 +308,8 @@
     "shuffle": "Casuale",
     "emptyTitle": "Nessun brano che ti piace",
     "emptyDescription": "Tocca il cuore su un brano per aggiungerlo qui.",
+    "noMatches": "Nessun brano preferito corrisponde a questa qualità",
+    "noMatchesDescription": "Scegli un'altra qualità o azzera il filtro.",
     "browse": "Sfoglia gli album",
     "loadError": "Impossibile caricare i brani che ti piacciono.",
     "playError": "Impossibile avviare la riproduzione.",
@@ -210,8 +325,15 @@
     "albums": "Album",
     "tracks": "Brani"
   },
+  "notFound": {
+    "title": "Pagina non trovata",
+    "description": "La pagina che cerchi non esiste o è stata spostata.",
+    "back": "Vai a Scopri"
+  },
   "common": {
     "cover": "Copertina",
+    "loadError": "Impossibile caricare questa pagina.",
+    "errorDescription": "Qualcosa è andato storto durante il rendering di questa pagina. Ricarica per riprovare.",
     "cancel": "Annulla",
     "retry": "Riprova",
     "continue": "Continua",
@@ -308,8 +430,10 @@
     },
     "appearance": {
       "description": "Personalizza l'aspetto e la lingua di Sonect.",
-      "theme": "Tema",
-      "themeDescription": "Scegli il tuo tema preferito",
+      "template": "Template",
+      "templateDescription": "Scegli un template di colore. I modi chiaro e scuro valgono per tutti i template.",
+      "mode": "Modalità",
+      "modeDescription": "Scegli chiaro, scuro o segui il sistema.",
       "language": "Lingua",
       "languageDescription": "Scegli la tua lingua preferita"
     },
@@ -347,6 +471,7 @@
     }
   },
   "setup": {
+    "title": "Configura Sonect",
     "welcome": {
       "language": "Lingua",
       "theme": "Tema",
@@ -398,6 +523,7 @@
     "switch": "Cambia",
     "switching": "Cambio in corso...",
     "changePassword": "Cambia password",
+    "changePasswordDescription": "Inserisci la password attuale e scegline una nuova.",
     "currentPassword": "Password attuale",
     "newPassword": "Nuova password",
     "confirmPassword": "Conferma nuova password",

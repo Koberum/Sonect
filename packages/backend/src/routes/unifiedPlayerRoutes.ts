@@ -11,7 +11,10 @@ import {
   unifiedSeekHandler,
   unifiedGetQueueHandler,
   unifiedAddToQueueHandler,
+  unifiedAddManyToQueueHandler,
   unifiedRemoveFromQueueHandler,
+  unifiedMoveInQueueHandler,
+  unifiedClearQueueHandler,
   unifiedPlayPositionHandler,
   unifiedSetVolumeHandler,
   unifiedGetPlaybackSettingsHandler,
@@ -34,6 +37,9 @@ router.post("/next", unifiedNextHandler);
 router.post("/previous", unifiedPreviousHandler);
 router.post("/seek", unifiedSeekHandler);
 router.post("/queue", unifiedAddToQueueHandler);
+router.post("/queue/bulk", unifiedAddManyToQueueHandler);
+router.patch("/queue/move", unifiedMoveInQueueHandler);
+router.delete("/queue", unifiedClearQueueHandler);
 router.delete("/queue/:pos", unifiedRemoveFromQueueHandler);
 router.post("/play-position", unifiedPlayPositionHandler);
 router.patch("/volume", unifiedSetVolumeHandler);

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PlayerReport } from "@repo/types";
+import { DEFAULT_VOLUME, clampVolume } from "@/lib/volume";
 import {
   BrowserAudioEngine,
   type BrowserAudioEngineCallbacks,
@@ -11,6 +12,7 @@ export type { BrowserAudioState };
 interface UseBrowserAudioOptions {
   onReport?: (report: PlayerReport) => void;
   onError?: (message: string) => void;
+  initialVolume?: number;
 }
 
 interface UseBrowserAudioReturn {
@@ -27,6 +29,7 @@ interface UseBrowserAudioReturn {
     revision?: number,
   ) => void;
   preloadTrack: (trackId: number, src: string) => void;
+  clearPreload: () => void;
   state: BrowserAudioState;
   currentTime: number;
   duration: number;
@@ -43,7 +46,9 @@ export function useBrowserAudio(
   const [state, setState] = useState<BrowserAudioState>("idle");
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolumeState] = useState(100);
+  const [volume, setVolumeState] = useState(() =>
+    clampVolume(options.initialVolume ?? DEFAULT_VOLUME),
+  );
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,6 +71,9 @@ export function useBrowserAudio(
       onAutoplayBlocked: setAutoplayBlocked,
     };
     const engine = new BrowserAudioEngine(callbacks);
+    engine.setVolume(
+      clampVolume(optionsRef.current.initialVolume ?? DEFAULT_VOLUME),
+    );
     engineRef.current = engine;
     return () => {
       engine.destroy();
@@ -95,8 +103,9 @@ export function useBrowserAudio(
   }, []);
 
   const setVolume = useCallback((vol: number) => {
-    setVolumeState(vol);
-    engineRef.current?.setVolume(vol);
+    const next = clampVolume(vol);
+    setVolumeState(next);
+    engineRef.current?.setVolume(next);
   }, []);
 
   const setCrossfade = useCallback((seconds: number) => {
@@ -121,6 +130,10 @@ export function useBrowserAudio(
     engineRef.current?.preloadTrack(trackId, src);
   }, []);
 
+  const clearPreload = useCallback(() => {
+    engineRef.current?.clearPreload();
+  }, []);
+
   return useMemo(
     () => ({
       play,
@@ -130,6 +143,7 @@ export function useBrowserAudio(
       setCrossfade,
       startTrack,
       preloadTrack,
+      clearPreload,
       state,
       currentTime,
       duration,
@@ -145,6 +159,7 @@ export function useBrowserAudio(
       setCrossfade,
       startTrack,
       preloadTrack,
+      clearPreload,
       state,
       currentTime,
       duration,

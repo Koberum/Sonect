@@ -1,4 +1,6 @@
 import type { PlaybackStatus } from "@repo/types";
+import type { Track } from "@repo/types/catalog";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   PauseIcon,
@@ -6,54 +8,57 @@ import {
   ShuffleIcon,
   SkipBackIcon,
   SkipForwardIcon,
+  Repeat1Icon,
   RepeatIcon,
 } from "lucide-react";
+import { nextRepeatMode } from "../repeat-mode";
+import { usePlayerCommands } from "../usePlayerCommands";
 
-type PlaybackControls = {
+type PlaybackControlsProps = {
   playbackStatus: PlaybackStatus;
-  playTrack(): void;
-  pauseTrack(): void;
-  resumeTrack(): void;
-  nextTrack(): void;
-  previousTrack(): void;
-  setRandom(status: boolean): void;
-  setRepeat(status: boolean): void;
+  track?: Track | null;
   className?: string;
-  showAllControls?: boolean;
+  size?: "default" | "large";
 };
 
 export function PlaybackControls({
   playbackStatus,
-  playTrack,
-  pauseTrack,
-  resumeTrack,
-  nextTrack,
-  previousTrack,
-  setRandom,
-  setRepeat,
+  track,
   className,
-  showAllControls,
-}: PlaybackControls): React.ReactElement {
+  size = "default",
+}: PlaybackControlsProps): React.ReactElement {
+  const { t } = useTranslation();
+  const { play, pause, resume, next, previous, toggleRandom, setRepeat } =
+    usePlayerCommands();
+  const repeatMode = playbackStatus.repeatMode;
+  const isLarge = size === "large";
+  const actionSize = isLarge ? "icon-lg" : "icon-sm";
+  const mainIcon = isLarge ? "size-7" : "size-5";
   const btnBase =
     "text-muted-foreground hover:text-foreground transition-colors p-1";
   const btnActive = "text-primary hover:text-primary";
-  const showAlways = showAllControls ? "" : "hidden md:block";
 
   const handleMain = () => {
-    if (playbackStatus.state === "play") return pauseTrack();
-    if (playbackStatus.state === "pause") return resumeTrack();
-    return playTrack();
+    if (playbackStatus.state === "play") return pause();
+    if (playbackStatus.state === "pause") return resume();
+    return play(track ?? playbackStatus.track);
   };
 
   return (
     <div className={className}>
-      <div className="flex items-center gap-2">
+      <div
+        className={
+          isLarge ? "flex items-center gap-3" : "flex items-center gap-2"
+        }
+      >
         <Button
           variant="bare"
-          size="icon-sm"
-          className={`${showAlways} ${playbackStatus.random ? btnActive : btnBase}`}
+          size={actionSize}
+          className={playbackStatus.random ? btnActive : btnBase}
+          aria-label={t("player.shuffle")}
+          aria-pressed={playbackStatus.random}
           onClick={() => {
-            setRandom(!playbackStatus.random);
+            toggleRandom(!playbackStatus.random);
           }}
         >
           <ShuffleIcon className="size-5" />
@@ -61,44 +66,63 @@ export function PlaybackControls({
 
         <Button
           variant="bare"
-          size="icon-sm"
-          className={`${showAlways} ${btnBase}`}
-          onClick={previousTrack}
+          size={actionSize}
+          className={btnBase}
+          aria-label={t("player.previous")}
+          onClick={previous}
         >
           <SkipBackIcon className="size-5" />
         </Button>
 
         <Button
           variant="default"
-          size="icon-sm"
-          className="rounded-full transition-opacity hover:opacity-85"
+          size={isLarge ? "icon-lg" : "icon-sm"}
+          className={
+            isLarge
+              ? "size-14 rounded-full transition-opacity hover:opacity-85"
+              : "rounded-full transition-opacity hover:opacity-85"
+          }
+          aria-label={
+            playbackStatus.state === "play"
+              ? t("player.pause")
+              : t("player.play")
+          }
           onClick={handleMain}
         >
           {playbackStatus.state === "play" ? (
-            <PauseIcon className="size-5" fill="currentColor" />
+            <PauseIcon className={mainIcon} fill="currentColor" />
           ) : (
-            <PlayIcon className="size-5" fill="currentColor" />
+            <PlayIcon className={mainIcon} fill="currentColor" />
           )}
         </Button>
 
         <Button
           variant="bare"
-          size="icon-sm"
-          className={`${showAlways} ${btnBase}`}
-          onClick={nextTrack}
+          size={actionSize}
+          className={btnBase}
+          aria-label={t("player.next")}
+          onClick={next}
         >
           <SkipForwardIcon className="size-5" />
         </Button>
 
         <Button
           variant="bare"
-          size="icon-sm"
-          className={`${showAlways} ${playbackStatus.repeat ? btnActive : btnBase}`}
+          size={actionSize}
+          className={repeatMode !== "off" ? btnActive : btnBase}
+          aria-label={
+            repeatMode === "one" ? t("player.repeatOne") : t("player.repeat")
+          }
+          aria-pressed={repeatMode !== "off"}
           onClick={() => {
-            setRepeat(!playbackStatus.repeat);
+            setRepeat(nextRepeatMode(repeatMode));
           }}
         >
-          <RepeatIcon className="size-5" />
+          {repeatMode === "one" ? (
+            <Repeat1Icon className="size-5" />
+          ) : (
+            <RepeatIcon className="size-5" />
+          )}
         </Button>
       </div>
     </div>

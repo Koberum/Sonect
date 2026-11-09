@@ -1,17 +1,31 @@
 import { useTranslation } from "react-i18next";
+import { useEffect, type ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/auth-context";
 import { usePlaybackContext } from "@/components/playback-context";
-import { useEffect } from "react";
 import { AlbumCard } from "@/features/catalog/components/media-card/album-card";
 import { ArtistCard } from "@/features/catalog/components/media-card/artist-card";
 import { TrackCard } from "@/features/catalog/components/media-card/track-card";
-import { ScrollBar, ScrollArea } from "@/components/ui/scroll-area";
+import { MediaCarousel } from "@/features/catalog/components/media-carousel";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryError } from "@/components/ui/query-error";
 import { Button } from "@/components/ui/button";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { systemQueries } from "@/features/system/queries";
 import { qk } from "@/lib/queryKeys";
+
+function CarouselSection<T>({
+  title,
+  items,
+  renderItem,
+}: {
+  title: string;
+  items: T[] | undefined;
+  renderItem: (item: T) => ReactNode;
+}) {
+  if (!items?.length) return null;
+  return <MediaCarousel title={title}>{items.map(renderItem)}</MediaCarousel>;
+}
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -21,7 +35,9 @@ export default function Dashboard() {
   const { play } = usePlayTrack();
   const qc = useQueryClient();
 
-  const { data, isPending } = useQuery(systemQueries.dashboard(profileId));
+  const { data, isPending, isError, refetch } = useQuery(
+    systemQueries.dashboard(profileId),
+  );
 
   useEffect(() => {
     if (!playbackStatus.track?.id || !profileId) return;
@@ -31,129 +47,80 @@ export default function Dashboard() {
     });
   }, [playbackStatus.track?.id, profileId, qc]);
 
+  if (isError) {
+    return (
+      <QueryError
+        message={t("common.loadError")}
+        onRetry={() => void refetch()}
+      />
+    );
+  }
+
   if (isPending && !data) {
     return (
-      <div>
-        <div className="space-y-8">
-          {Array.from({ length: 3 }).map((_, section) => (
-            <div key={section} className="space-y-2">
-              <Skeleton className="h-4 w-40" />
-              <div className="flex gap-4 overflow-hidden">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <Skeleton
-                    key={i}
-                    className="aspect-square w-44 shrink-0 rounded-lg"
-                  />
-                ))}
-              </div>
+      <div className="space-y-8">
+        {Array.from({ length: 3 }).map((_, section) => (
+          <div key={section} className="space-y-2">
+            <Skeleton className="h-4 w-40" />
+            <div className="flex gap-4 overflow-hidden">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <Skeleton
+                  key={index}
+                  className="aspect-square w-44 shrink-0 rounded-lg"
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     );
   }
 
   return (
     <div>
-      {data?.recentlyPlayedAlbums && data.recentlyPlayedAlbums.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-muted-foreground mb-2 text-sm font-medium tracking-wider uppercase">
-            {t("dashboard.recentlyPlayedAlbums")}
-          </h2>
-          <ScrollArea type="always" className="w-full">
-            <div className="flex gap-4 pb-4">
-              {data.recentlyPlayedAlbums.map((album) => (
-                <AlbumCard
-                  key={album.id}
-                  album={album}
-                  className="w-44 shrink-0"
-                />
-              ))}
-            </div>
-            <ScrollBar orientation="horizontal" className="hidden" />
-          </ScrollArea>
-        </div>
-      )}
+      <CarouselSection
+        title={t("dashboard.recentlyPlayedAlbums")}
+        items={data?.recentlyPlayedAlbums}
+        renderItem={(album) => (
+          <AlbumCard key={album.id} album={album} className="w-44 shrink-0" />
+        )}
+      />
 
-      {data?.recentlyPlayedArtists && data.recentlyPlayedArtists.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-muted-foreground mb-2 text-sm font-medium tracking-wider uppercase">
-            {t("dashboard.recentlyPlayedArtists")}
-          </h2>
-          <ScrollArea type="always" className="w-full">
-            <div className="flex gap-4 pb-4">
-              {data.recentlyPlayedArtists.map((artist) => (
-                <ArtistCard
-                  key={artist.id}
-                  artist={artist}
-                  className="w-44 shrink-0"
-                />
-              ))}
-            </div>
-            <ScrollBar orientation="horizontal" className="hidden" />
-          </ScrollArea>
-        </div>
-      )}
+      <CarouselSection
+        title={t("dashboard.recentlyPlayedArtists")}
+        items={data?.recentlyPlayedArtists}
+        renderItem={(artist) => (
+          <ArtistCard
+            key={artist.id}
+            artist={artist}
+            className="w-44 shrink-0"
+          />
+        )}
+      />
 
-      {data?.recentlyPlayed && data.recentlyPlayed.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-muted-foreground mb-2 text-sm font-medium tracking-wider uppercase">
-            {t("dashboard.recentlyPlayed")}
-          </h2>
-          <ScrollArea type="always" className="w-full">
-            <div className="flex gap-4 pb-4">
-              {data.recentlyPlayed.map((track) => (
-                <TrackCard
-                  key={track.id}
-                  track={track}
-                  className="w-44 shrink-0"
-                />
-              ))}
-            </div>
-            <ScrollBar orientation="horizontal" className="hidden" />
-          </ScrollArea>
-        </div>
-      )}
+      <CarouselSection
+        title={t("dashboard.recentlyPlayed")}
+        items={data?.recentlyPlayed}
+        renderItem={(track) => (
+          <TrackCard key={track.id} track={track} className="w-44 shrink-0" />
+        )}
+      />
 
-      {data?.topTracks && data.topTracks.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-muted-foreground mb-2 text-sm font-medium tracking-wider uppercase">
-            {t("dashboard.topTracks")}
-          </h2>
-          <ScrollArea type="always" className="w-full">
-            <div className="flex gap-4 pb-4">
-              {data.topTracks.map((track) => (
-                <TrackCard
-                  key={track.id}
-                  track={track}
-                  className="w-44 shrink-0"
-                />
-              ))}
-            </div>
-            <ScrollBar orientation="horizontal" className="hidden" />
-          </ScrollArea>
-        </div>
-      )}
+      <CarouselSection
+        title={t("dashboard.topTracks")}
+        items={data?.topTracks}
+        renderItem={(track) => (
+          <TrackCard key={track.id} track={track} className="w-44 shrink-0" />
+        )}
+      />
 
-      {data?.suggestedTracks && data.suggestedTracks.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-muted-foreground mb-2 text-sm font-medium tracking-wider uppercase">
-            {t("dashboard.suggestedForYou")}
-          </h2>
-          <ScrollArea type="always" className="w-full">
-            <div className="flex gap-4 pb-4">
-              {data.suggestedTracks.map((track) => (
-                <TrackCard
-                  key={track.id}
-                  track={track}
-                  className="w-44 shrink-0"
-                />
-              ))}
-            </div>
-            <ScrollBar orientation="horizontal" className="hidden" />
-          </ScrollArea>
-        </div>
-      )}
+      <CarouselSection
+        title={t("dashboard.suggestedForYou")}
+        items={data?.suggestedTracks}
+        renderItem={(track) => (
+          <TrackCard key={track.id} track={track} className="w-44 shrink-0" />
+        )}
+      />
 
       {data?.genreQuickMix && data.genreQuickMix.tracks.length > 0 && (
         <div className="mb-8">
@@ -162,33 +129,37 @@ export default function Dashboard() {
               genre: data.genreQuickMix.genre,
             })}
           </h2>
-          <div
-            className="from-primary/15 to-primary/5 flex cursor-pointer items-center justify-between rounded-lg bg-gradient-to-br p-6"
-            onClick={() =>
-              data.genreQuickMix!.tracks[0]?.file &&
-              play(data.genreQuickMix!.tracks[0])
-            }
-          >
-            <div>
-              <p className="text-lg font-semibold">
-                {data.genreQuickMix.genre}
-              </p>
-              <p className="text-muted-foreground text-sm">
-                {t("dashboard.trackCount", {
-                  count: data.genreQuickMix.tracks.length,
-                })}
-              </p>
+          <div className="relative">
+            <button
+              type="button"
+              aria-label={t("dashboard.playMix")}
+              className="focus-visible:ring-ring absolute inset-0 z-0 cursor-pointer rounded-lg focus-visible:ring-2 focus-visible:outline-none"
+              onClick={() =>
+                data.genreQuickMix!.tracks[0]?.file &&
+                play(data.genreQuickMix!.tracks[0])
+              }
+            />
+            <div className="from-primary/15 to-primary/5 pointer-events-none relative z-10 flex w-full items-center justify-between rounded-lg bg-gradient-to-br p-6">
+              <div>
+                <p className="text-lg font-semibold">
+                  {data.genreQuickMix.genre}
+                </p>
+                <p className="text-muted-foreground text-sm">
+                  {t("dashboard.trackCount", {
+                    count: data.genreQuickMix.tracks.length,
+                  })}
+                </p>
+              </div>
+              <Button
+                className="pointer-events-auto rounded-full px-6"
+                onClick={() => {
+                  if (data.genreQuickMix!.tracks[0]?.file)
+                    play(data.genreQuickMix!.tracks[0]);
+                }}
+              >
+                {t("dashboard.playMix")}
+              </Button>
             </div>
-            <Button
-              className="rounded-full px-6"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (data.genreQuickMix!.tracks[0]?.file)
-                  play(data.genreQuickMix!.tracks[0]);
-              }}
-            >
-              {t("dashboard.playMix")}
-            </Button>
           </div>
         </div>
       )}

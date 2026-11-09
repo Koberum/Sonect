@@ -89,4 +89,117 @@ describe("player routes", () => {
     expect(get.status).to.equal(200);
     expect(get.body.state).to.equal("play");
   });
+
+  it("moves and clears the queue", async () => {
+    const a = artist.create({ name: "QueueArtist" }, 10);
+    const al = album.create({ title: "QueueAlbum", artistName: a.name }, 10);
+    const t1 = track.create(
+      {
+        artist: a.name,
+        album: al.title,
+        title: "Queue A",
+        track: 1,
+        disc: "1",
+      },
+      11,
+    );
+    track.create(
+      {
+        artist: a.name,
+        album: al.title,
+        title: "Queue B",
+        track: 2,
+        disc: "1",
+      },
+      12,
+    );
+    track.create(
+      {
+        artist: a.name,
+        album: al.title,
+        title: "Queue C",
+        track: 3,
+        disc: "1",
+      },
+      13,
+    );
+
+    const app = makeApp();
+    const play = await request(app)
+      .post("/player/play")
+      .set("Cookie", authCookie)
+      .set("X-Session-Id", profileId)
+      .send({ file: t1.file });
+    expect(play.status).to.equal(200);
+
+    const move = await request(app)
+      .patch("/player/queue/move")
+      .set("Cookie", authCookie)
+      .set("X-Session-Id", profileId)
+      .send({ from: 2, to: 0 });
+    expect(move.status).to.equal(200);
+
+    const afterMove = await request(app)
+      .get("/player/queue")
+      .set("Cookie", authCookie)
+      .set("X-Session-Id", profileId);
+    expect(afterMove.status).to.equal(200);
+    expect(
+      afterMove.body.slice(0, 3).map((entry: { title: string }) => entry.title),
+    ).to.deep.equal(["Queue C", "Queue A", "Queue B"]);
+
+    const clear = await request(app)
+      .delete("/player/queue")
+      .set("Cookie", authCookie)
+      .set("X-Session-Id", profileId);
+    expect(clear.status).to.equal(200);
+    expect(clear.body.state).to.equal("stop");
+
+    const afterClear = await request(app)
+      .get("/player/queue")
+      .set("Cookie", authCookie)
+      .set("X-Session-Id", profileId);
+    expect(afterClear.status).to.equal(200);
+    expect(afterClear.body).to.deep.equal([]);
+  });
+
+  it("toggles random and the three repeat modes", async () => {
+    const app = makeApp();
+
+    const random = await request(app)
+      .post("/player/random")
+      .set("Cookie", authCookie)
+      .set("X-Session-Id", profileId)
+      .send({ enabled: true });
+    expect(random.status).to.equal(200);
+    expect(random.body.random).to.equal(true);
+
+    const all = await request(app)
+      .post("/player/repeat")
+      .set("Cookie", authCookie)
+      .set("X-Session-Id", profileId)
+      .send({ mode: "all" });
+    expect(all.status).to.equal(200);
+    expect(all.body.repeatMode).to.equal("all");
+    expect(all.body.repeat).to.equal(true);
+    expect(all.body.single).to.equal(false);
+
+    const one = await request(app)
+      .post("/player/repeat")
+      .set("Cookie", authCookie)
+      .set("X-Session-Id", profileId)
+      .send({ mode: "one" });
+    expect(one.status).to.equal(200);
+    expect(one.body.repeatMode).to.equal("one");
+    expect(one.body.single).to.equal(true);
+  });
+
+  it("rejects an invalid repeat mode", async () => {
+    const res = await request(makeApp())
+      .post("/player/repeat")
+      .set("Cookie", authCookie)
+      .set("X-Session-Id", profileId)
+      .send({ mode: "sometimes" });
+    expect(res.status).to.equal(400);
+  });
 });

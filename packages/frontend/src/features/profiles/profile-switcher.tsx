@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, KeyRound, LogOut, Pencil, Plus } from "lucide-react";
+import { Check, KeyRound, LogOut, Pencil, Plus, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Profile, PublicProfile } from "@repo/types";
 import { useAuth } from "@/features/auth/auth-context";
 import { authQueries } from "@/features/auth/queries";
 import { getInitials } from "@/lib/avatar";
+import { useHoverPopover } from "@/hooks/useHoverPopover";
 import { profileQueries } from "./queries";
 import { CreateProfileForm } from "./components/create-profile-form";
 import { SwitchProfileDialog } from "./components/switch-profile-dialog";
@@ -22,15 +23,35 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from "@/components/ui/popover";
 
 type Candidate = Profile | PublicProfile;
+
+type MenuRowProps = {
+  icon?: typeof Plus;
+  label: string;
+  onClick: () => void;
+};
+
+function MenuRow({ icon: Icon, label, onClick }: MenuRowProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="hover:bg-accent focus-visible:ring-ring/50 flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm font-medium transition-colors outline-none focus-visible:ring-[3px]"
+    >
+      {Icon ? <Icon className="text-muted-foreground size-4 shrink-0" /> : null}
+      <span className="truncate">{label}</span>
+    </button>
+  );
+}
+
+function MenuSeparator() {
+  return <div role="separator" className="bg-border my-1 h-px" />;
+}
 
 export function ProfileSwitcher() {
   const { t } = useTranslation();
@@ -48,6 +69,16 @@ export function ProfileSwitcher() {
     ...authQueries.profiles(),
     enabled: !isAdmin,
   });
+
+  const {
+    open,
+    close,
+    anchorRef,
+    contentRef,
+    triggerProps,
+    contentProps,
+    onOpenChange,
+  } = useHoverPopover();
 
   if (!profile) return null;
 
@@ -78,13 +109,17 @@ export function ProfileSwitcher() {
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+      <Popover open={open} onOpenChange={onOpenChange}>
+        <PopoverAnchor asChild>
           <Button
+            ref={anchorRef}
             variant="ghost"
             size="icon"
             aria-label={t("profile.switch")}
+            aria-haspopup="dialog"
+            aria-expanded={open}
             className="h-11 w-11 shrink-0 rounded-full"
+            {...triggerProps}
           >
             <Avatar className="h-8 w-8">
               <AvatarFallback
@@ -95,100 +130,134 @@ export function ProfileSwitcher() {
               </AvatarFallback>
             </Avatar>
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent side="bottom" align="end" className="w-64">
-          <DropdownMenuLabel>{t("profile.change")}</DropdownMenuLabel>
-          <DropdownMenuSeparator />
+        </PopoverAnchor>
+
+        <PopoverContent
+          ref={contentRef}
+          side="bottom"
+          align="end"
+          sideOffset={8}
+          aria-label={t("profile.switch")}
+          {...contentProps}
+          className="max-h-[var(--radix-popover-content-available-height)] w-64 overflow-y-auto p-2"
+        >
+          <div className="text-muted-foreground px-2 py-1.5 text-xs font-medium">
+            {t("profile.change")}
+          </div>
+
           {isLoading && (
             <div className="flex flex-col gap-2 p-2">
-              <Skeleton className="h-9 rounded-md" />
-              <Skeleton className="h-9 rounded-md" />
+              <Skeleton className="h-12 rounded-md" />
+              <Skeleton className="h-12 rounded-md" />
             </div>
           )}
+
           {isError && (
-            <DropdownMenuItem
-              onSelect={(event) => {
-                event.preventDefault();
-                void refetch();
-              }}
-            >
-              {t("profile.retry")}
-            </DropdownMenuItem>
+            <MenuRow
+              icon={RefreshCw}
+              label={t("profile.retry")}
+              onClick={() => void refetch()}
+            />
           )}
-          {candidates.map((candidate) => {
-            const isCurrent = candidate.id === profile.id;
-            return (
-              <div key={candidate.id} className="flex items-center gap-0">
-                <DropdownMenuItem
-                  disabled={isCurrent}
-                  onSelect={() => setSwitchTarget(candidate)}
-                  className="flex flex-1 items-center gap-2"
+
+          <div className="grid gap-1">
+            {candidates.map((candidate) => {
+              const isCurrent = candidate.id === profile.id;
+              return (
+                <div
+                  key={candidate.id}
+                  className={
+                    isCurrent
+                      ? "group flex items-center gap-1 rounded-md"
+                      : "group hover:bg-accent flex items-center gap-1 rounded-md transition-colors"
+                  }
                 >
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback
-                      className="text-xs font-bold text-white"
-                      style={{ backgroundColor: candidate.avatarColor }}
-                    >
-                      {getInitials(candidate.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="flex-1 truncate text-sm font-medium">
-                    {candidate.name}
-                  </span>
-                  {isCurrent && <Check className="size-4 shrink-0" />}
-                </DropdownMenuItem>
-                {isAdmin && (
-                  <Button
+                  <button
                     type="button"
-                    variant="bare"
-                    size="icon-sm"
-                    aria-label={`${t("profile.editTitle")}: ${candidate.name}`}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      handleEdit(candidate);
+                    disabled={isCurrent}
+                    aria-current={isCurrent ? "true" : undefined}
+                    data-popover-initial-focus={isCurrent ? undefined : ""}
+                    onClick={() => {
+                      close();
+                      setSwitchTarget(candidate);
                     }}
-                    className="mr-1 shrink-0"
+                    className="focus-visible:ring-ring/50 flex min-w-0 flex-1 items-center gap-3 rounded-md px-2 py-2 text-left outline-none focus-visible:ring-[3px] disabled:cursor-default disabled:opacity-100"
                   >
-                    <Pencil className="opacity-60 hover:opacity-100" />
-                  </Button>
-                )}
-              </div>
-            );
-          })}
+                    <Avatar className="h-8 w-8" aria-hidden="true">
+                      <AvatarFallback
+                        className="text-xs font-bold text-white"
+                        style={{ backgroundColor: candidate.avatarColor }}
+                      >
+                        {getInitials(candidate.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                      {candidate.name}
+                    </span>
+                  </button>
+
+                  {isCurrent && (
+                    <Check
+                      className="text-primary size-4 shrink-0"
+                      aria-hidden="true"
+                    />
+                  )}
+
+                  {isAdmin && (
+                    <Button
+                      type="button"
+                      variant="bare"
+                      size="icon-sm"
+                      aria-label={`${t("profile.editTitle")}: ${candidate.name}`}
+                      onClick={() => {
+                        close();
+                        handleEdit(candidate);
+                      }}
+                      className="mr-1 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                    >
+                      <Pencil className="opacity-60 hover:opacity-100" />
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
           {isAdmin && (
             <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={(event) => {
-                  event.preventDefault();
+              <MenuSeparator />
+              <MenuRow
+                icon={Plus}
+                label={t("profile.addProfile")}
+                onClick={() => {
+                  close();
                   setCreateOpen(true);
                 }}
-              >
-                <Plus className="size-4" />
-                {t("profile.addProfile")}
-              </DropdownMenuItem>
+              />
             </>
           )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onSelect={() => {
-              setPasswordOpen(true);
-            }}
-          >
-            <KeyRound className="size-4" />
-            {t("auth.changePassword")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={() => {
-              void logout();
-            }}
-          >
-            <LogOut className="size-4" />
-            {t("auth.logout")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+
+          <MenuSeparator />
+          <div className="grid gap-1">
+            <MenuRow
+              icon={KeyRound}
+              label={t("auth.changePassword")}
+              onClick={() => {
+                close();
+                setPasswordOpen(true);
+              }}
+            />
+            <MenuRow
+              icon={LogOut}
+              label={t("auth.logout")}
+              onClick={() => {
+                close();
+                void logout();
+              }}
+            />
+          </div>
+        </PopoverContent>
+      </Popover>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-md">

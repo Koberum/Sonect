@@ -493,6 +493,30 @@ describe("tracksDb (trophy integration)", () => {
   });
 
   describe("sync snapshot and source attribution", () => {
+    it("persists audio format fields and exposes them in the sync snapshot", () => {
+      const id = upsertTrack(
+        db(),
+        mpdTrack({
+          file: "format/a.flac",
+          title: "A",
+          sampleRate: 48000,
+          bitsPerSample: 24,
+          channels: 2,
+        }),
+      );
+
+      expect(tracksDb.getById(id)).to.include({
+        sample_rate: 48000,
+        bits_per_sample: 24,
+        channels: 2,
+      });
+      expect(tracksDb.getSyncSnapshot()[0]).to.include({
+        sample_rate: 48000,
+        bits_per_sample: 24,
+        channels: 2,
+      });
+    });
+
     it("getSyncSnapshot includes attribution and relations", () => {
       const sourceId = storageDb.create({
         name: "Lib",

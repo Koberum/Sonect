@@ -3,16 +3,14 @@ import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "react-i18next";
 import { useParams, Link } from "react-router-dom";
 import { getCoverPath } from "@/lib/utils";
-import { Table, TableBody } from "@/components/ui/table";
 import { Library } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryError } from "@/components/ui/query-error";
 import { PageHeader } from "@/components/ui/page-header";
-import { TrackRow } from "@/features/tracks/components/track-row";
-import { TrackTableHeader } from "@/features/tracks/components/track-table-header";
+import { TrackTable } from "@/features/tracks/components/track-table";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { catalogQueries } from "@/features/catalog/queries";
-import type { TrackWithRelations } from "@repo/types/catalog";
 import {
   deriveAlbumMetadata,
   formatAlbumDuration,
@@ -21,15 +19,30 @@ import {
 export default function AlbumPage() {
   const { t, i18n } = useTranslation();
   const { id } = useParams();
-  const { data: album, isPending: albumPending } = useQuery({
+  const {
+    data: album,
+    isPending: albumPending,
+    isError: albumError,
+    refetch: refetchAlbum,
+  } = useQuery({
     ...catalogQueries.album(id ?? ""),
     enabled: !!id,
   });
-  const { data: tracks = [], isPending: tracksPending } = useQuery({
+  const {
+    data: tracks = [],
+    isPending: tracksPending,
+    isError: tracksError,
+    refetch: refetchTracks,
+  } = useQuery({
     ...catalogQueries.tracksByAlbum(id ?? ""),
     enabled: !!id,
   });
   const isPending = albumPending || tracksPending;
+  const isError = albumError || tracksError;
+  const retry = () => {
+    void refetchAlbum();
+    void refetchTracks();
+  };
 
   const metadata = useMemo(
     () => deriveAlbumMetadata(album, tracks),
@@ -46,10 +59,16 @@ export default function AlbumPage() {
       : null,
     durationLabel,
   ].filter((part): part is string => Boolean(part));
-  const hasBadges =
-    Boolean(metadata.genre) ||
-    metadata.formats.length > 0 ||
-    metadata.sourceNames.length > 0;
+  const hasBadges = Boolean(metadata.genre) || metadata.sourceNames.length > 0;
+
+  if (isError && !album) {
+    return (
+      <QueryError
+        message={t("common.loadError")}
+        onRetry={() => void retry()}
+      />
+    );
+  }
 
   return (
     <>
@@ -62,7 +81,7 @@ export default function AlbumPage() {
               alt={album.title}
               className="size-24 rounded-lg object-cover shadow-sm sm:size-32 lg:size-40"
               onError={(e) => {
-                e.currentTarget.src = "/default_cover.png";
+                e.currentTarget.src = "/default_cover.webp";
               }}
             />
           ) : (
@@ -90,11 +109,6 @@ export default function AlbumPage() {
                       <Badge variant="secondary">{metadata.genre}</Badge>
                     </Link>
                   )}
-                  {metadata.formats.map((format) => (
-                    <Badge key={format} variant="outline">
-                      {format}
-                    </Badge>
-                  ))}
                   {metadata.sourceNames.map((name) => (
                     <Badge key={name} variant="outline" className="gap-1">
                       <Library className="size-4" aria-hidden="true" />
@@ -121,25 +135,18 @@ export default function AlbumPage() {
       />
       <Separator className="my-4" />
       <div className="relative">
-        {isPending ? (
-          <div className="space-y-2">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full rounded-lg" />
-            ))}
-          </div>
+        {isError ? (
+          <QueryError
+            message={t("common.loadError")}
+            onRetry={() => void retry()}
+          />
         ) : (
-          <Table>
-            <TrackTableHeader />
-            <TableBody>
-              {tracks.map((track: TrackWithRelations, index) => (
-                <TrackRow
-                  key={track.id}
-                  track={track}
-                  number={track.track_number ?? index + 1}
-                />
-              ))}
-            </TableBody>
-          </Table>
+          <TrackTable
+            tracks={tracks}
+            isPending={isPending}
+            getNumber={(track, index) => track.track_number ?? index + 1}
+            resetKey={id}
+          />
         )}
       </div>
     </>

@@ -53,6 +53,9 @@ describe("parseMPDTracks (pure unit)", () => {
       file: "lib/a.mp3",
       lastModified: "2026-01-02T03:04:05Z",
       format: "44100:16:2",
+      sampleRate: 44100,
+      bitsPerSample: 16,
+      channels: 2,
       title: "A",
       artist: "Artist",
       album: "Album",
@@ -81,6 +84,21 @@ describe("parseMPDTracks (pure unit)", () => {
     )[0];
     expect(parsed.artist).to.equal("First");
     expect(parsed.genre).to.equal("Rock");
+  });
+
+  it("parses sample rate, bit depth and channels from Format", () => {
+    const [track] = parseMPDTracks("file: a.flac\nFormat: 48000:24:2");
+    expect(track.sampleRate).to.equal(48000);
+    expect(track.bitsPerSample).to.equal(24);
+    expect(track.channels).to.equal(2);
+  });
+
+  it("keeps a malformed Format raw but leaves parsed fields empty", () => {
+    const [track] = parseMPDTracks("file: a.flac\nFormat: 48000:abc:2");
+    expect(track.format).to.equal("48000:abc:2");
+    expect(track.sampleRate).to.equal(undefined);
+    expect(track.bitsPerSample).to.equal(undefined);
+    expect(track.channels).to.equal(undefined);
   });
 });
 

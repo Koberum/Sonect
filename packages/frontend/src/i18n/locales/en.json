@@ -12,19 +12,21 @@
   },
   "nav": {
     "label": "Sections",
-    "home": "Home",
+    "discover": "Discover",
     "library": "Library",
+    "playlists": "Playlists",
+    "player": "Player",
+    "queue": "Queue",
     "settings": "Settings",
     "back": "Back",
     "forward": "Forward",
     "collapse": "Collapse sidebar",
     "expand": "Expand sidebar"
   },
-  "home": {
-    "title": "Home",
+  "discover": {
+    "title": "Discover",
     "tabs": {
       "listen": "Listen Now",
-      "playlists": "Playlists",
       "liked": "Liked Songs"
     }
   },
@@ -36,9 +38,6 @@
       "genres": "Genres",
       "statistics": "Statistics"
     }
-  },
-  "sidebar": {
-    "toggleSidebar": "Toggle sidebar"
   },
   "artists": {
     "title": "Artists",
@@ -56,9 +55,36 @@
     "trackCount_one": "{{count}} track",
     "trackCount_other": "{{count}} tracks",
     "duration": "Duration",
+    "quality": "Quality",
     "trackNumber": "#",
     "playAll": "Play All",
     "goToAlbum": "Go to Album"
+  },
+  "trackTable": {
+    "allQualities": "All qualities",
+    "filterQuality": "Filter by quality",
+    "sortQuality": "Sort by quality",
+    "noQualityMatches": "No tracks match this quality",
+    "clearFilter": "Clear filter"
+  },
+  "trackInfo": {
+    "details": "Details",
+    "audio": "Audio",
+    "artist": "Artist",
+    "album": "Album",
+    "year": "Year",
+    "genre": "Genre",
+    "trackNumber": "Track",
+    "discNumber": "Disc",
+    "duration": "Duration",
+    "file": "File",
+    "library": "Library",
+    "codec": "Format",
+    "bitDepth": "Bit depth",
+    "sampleRate": "Sample rate",
+    "channels": "Channels",
+    "channelsValue_one": "{{count}} channel",
+    "channelsValue_other": "{{count}} channels"
   },
   "statistics": {
     "totalTracks": "Total Songs",
@@ -76,13 +102,36 @@
     "percentOfLibrary": "{{percent}}% of library"
   },
   "queue": {
-    "upNext": "Up Next",
+    "title": "Queue",
     "remove": "Remove from queue",
+    "reorder": "Reorder track",
+    "dragHint": "Drag to reorder",
+    "empty": "Your queue is empty",
+    "emptyDescription": "Play an album or add tracks to start a queue.",
+    "clear": "Clear queue",
+    "clearConfirmTitle": "Clear the queue?",
+    "clearConfirmDescription": "This removes every track from the queue.",
+    "cleared": "Queue cleared",
+    "clearError": "Could not clear the queue",
+    "moveError": "Could not reorder the queue",
+    "removeError": "Could not remove the track",
     "tracksInQueue_one": "{{count}} track in queue",
     "tracksInQueue_other": "{{count}} tracks in queue"
   },
   "player": {
     "title": "Now Playing",
+    "nothingPlaying": "Nothing playing",
+    "nothingPlayingDescription": "Pick a track from Home or Library to start listening.",
+    "playbackPosition": "Playback position",
+    "shuffle": "Shuffle",
+    "previous": "Previous track",
+    "play": "Play",
+    "pause": "Pause",
+    "next": "Next track",
+    "repeat": "Repeat",
+    "repeatOne": "Repeat one",
+    "volume": "Volume",
+    "volumeError": "Failed to change volume",
     "outputSpeakers": "Speakers",
     "outputDevices": "Output",
     "thisDevice": "This browser",
@@ -91,6 +140,11 @@
     "tapToPlay": "Tap to play",
     "playbackErrorDetail": "Playback error: {{error}}",
     "playbackError": "Unable to play this track",
+    "commandError": "Playback command failed",
+    "queueError": "Couldn't add to the queue",
+    "queueBulkError": "Couldn't add the tracks to the queue",
+    "queuePartial_one": "{{count}} track couldn't be added",
+    "queuePartial_other": "{{count}} tracks couldn't be added",
     "outputInUse": "In use by another session",
     "outputInUseByOther": "Audio output is in use by another session"
   },
@@ -98,6 +152,20 @@
     "light": "Light",
     "dark": "Dark",
     "system": "System"
+  },
+  "themeTemplates": {
+    "sonect": {
+      "name": "Sonect",
+      "description": "Warm amber, the classic Sonect look."
+    },
+    "graphite": {
+      "name": "Graphite",
+      "description": "Neutral greys, quiet and understated."
+    },
+    "ocean": {
+      "name": "Ocean",
+      "description": "Cool blue-greys with a green-teal accent."
+    }
   },
   "sync": {
     "title": "Library sync",
@@ -116,6 +184,43 @@
     "openDetails": "Show sync details",
     "stepOf": "Step {{current}} of {{total}}"
   },
+  "status": {
+    "title": "Library status",
+    "description": "Library activity and system health.",
+    "openWith": "Open library status: {{status}}",
+    "library": {
+      "title": "Library",
+      "tracksLabel": "tracks",
+      "tracks_one": "{{formatted}} track",
+      "tracks_other": "{{formatted}} tracks",
+      "albums_one": "{{formatted}} album",
+      "albums_other": "{{formatted}} albums",
+      "artists_one": "{{formatted}} artist",
+      "artists_other": "{{formatted}} artists",
+      "lastSync": "Updated {{time}}",
+      "neverSynced": "Never synced",
+      "statsUnavailable": "Statistics unavailable",
+      "empty": "No tracks yet"
+    },
+    "connection": {
+      "lost": "Reconnecting…",
+      "description": "Live updates will resume automatically."
+    },
+    "storage": {
+      "unavailable": "Library unavailable"
+    },
+    "audio": {
+      "noDevices": "No audio devices found",
+      "outputMissing": "Configured output unavailable",
+      "engineOffline": "Playback engine offline"
+    },
+    "actions": {
+      "openLibraries": "Open libraries",
+      "openAudio": "Open audio settings",
+      "viewStatistics": "View statistics",
+      "openSettings": "Open settings"
+    }
+  },
   "language": {
     "en": "English",
     "es": "Español",
@@ -128,10 +233,12 @@
   },
   "trackActions": {
     "open": "Track actions",
+    "info": "Info",
     "noPlaylists": "No playlists yet"
   },
   "search": {
     "placeholder": "Search",
+    "open": "Search",
     "genres": "Genres",
     "artists": "Artists",
     "albums": "Albums",
@@ -143,16 +250,22 @@
     "noResults": "No results found"
   },
   "playlist": {
+    "title": "Playlists",
     "new": "New Playlist",
+    "newDescription": "Create a playlist for this profile.",
+    "addToDescription": "Choose an existing playlist or create a new one.",
     "open": "Open Playlist",
     "defaultName": "My playlist",
     "dropToCreate": "Drop here to create a playlist",
     "dropHint": "Drag a song onto a playlist to add it.",
     "edit": "Edit Playlist",
+    "editDescription": "Update the playlist name and description.",
     "save": "Save",
     "create": "Create",
     "delete": "Delete Playlist",
     "namePlaceholder": "Playlist name",
+    "nameLabel": "Name",
+    "descriptionLabel": "Description",
     "descriptionPlaceholder": "Description (optional)",
     "updated": "Playlist updated",
     "deleted": "Playlist deleted",
@@ -195,6 +308,8 @@
     "shuffle": "Shuffle",
     "emptyTitle": "No liked songs yet",
     "emptyDescription": "Tap the heart on any song to add it here.",
+    "noMatches": "No liked songs match this quality",
+    "noMatchesDescription": "Choose another quality or clear the filter.",
     "browse": "Browse albums",
     "loadError": "Could not load your liked songs.",
     "playError": "Could not start playback.",
@@ -210,8 +325,15 @@
     "albums": "Albums",
     "tracks": "Tracks"
   },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you're looking for doesn't exist or was moved.",
+    "back": "Go to Discover"
+  },
   "common": {
     "cover": "Cover",
+    "loadError": "Couldn't load this page.",
+    "errorDescription": "Something went wrong while rendering this page. Reload to try again.",
     "cancel": "Cancel",
     "retry": "Retry",
     "continue": "Continue",
@@ -308,8 +430,10 @@
     },
     "appearance": {
       "description": "Customize how Sonect looks and reads for you.",
-      "theme": "Theme",
-      "themeDescription": "Choose your preferred theme",
+      "template": "Template",
+      "templateDescription": "Choose a color template. Light and dark modes apply to every template.",
+      "mode": "Mode",
+      "modeDescription": "Choose light, dark, or follow your system.",
       "language": "Language",
       "languageDescription": "Choose your preferred language"
     },
@@ -363,6 +487,7 @@
     "switch": "Switch",
     "switching": "Switching...",
     "changePassword": "Change password",
+    "changePasswordDescription": "Enter your current password and choose a new one.",
     "currentPassword": "Current password",
     "newPassword": "New password",
     "confirmPassword": "Confirm new password",
@@ -412,6 +537,7 @@
     }
   },
   "setup": {
+    "title": "Set up Sonect",
     "welcome": {
       "language": "Language",
       "theme": "Theme",

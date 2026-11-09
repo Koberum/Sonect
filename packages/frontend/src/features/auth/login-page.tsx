@@ -4,13 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2, Users } from "lucide-react";
 import type { PublicProfile } from "@repo/types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { PasswordField } from "@/components/ui/password-field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ApiError } from "@/lib/api";
 import { ProfileCard } from "@/features/profiles/components/profile-card";
+import { getAuthErrorMessage } from "./auth-error";
 import { authQueries } from "./queries";
 import { useAuth } from "./auth-context";
 
@@ -45,13 +44,7 @@ export function LoginPage() {
     try {
       await login({ profileId: selected.id, password });
     } catch (err) {
-      setError(
-        err instanceof ApiError && err.status === 429
-          ? t("auth.tooManyAttempts", {
-              seconds: err.retryAfterSeconds ?? 900,
-            })
-          : t("auth.invalidCredentials"),
-      );
+      setError(getAuthErrorMessage(err, t));
       setPassword("");
     } finally {
       setPending(false);
@@ -123,17 +116,14 @@ export function LoginPage() {
                 void handleSubmit();
               }}
             >
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="login-password">{t("auth.password")}</Label>
-                <Input
-                  id="login-password"
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  autoFocus
-                  autoComplete="current-password"
-                />
-              </div>
+              <PasswordField
+                id="login-password"
+                label={t("auth.password")}
+                value={password}
+                onChange={setPassword}
+                autoComplete="current-password"
+                autoFocus
+              />
               {error && (
                 <p role="alert" className="text-destructive text-sm">
                   {error}

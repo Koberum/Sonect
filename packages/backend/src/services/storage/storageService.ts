@@ -8,7 +8,11 @@ import {
   type SourceStats,
 } from "./storageStats";
 import { ValidationError } from "@middleware/errorHandler";
-import { DetectedLibrary, StorageSource } from "@repo/types";
+import {
+  DetectedLibrary,
+  StorageSource,
+  StorageSourceHealth,
+} from "@repo/types";
 import type { CatalogSyncOrchestrator } from "@services/library/catalogSyncOrchestrator";
 import type { LibraryStatsService } from "./libraryStatsService";
 
@@ -98,7 +102,7 @@ interface MountInfo {
 }
 
 export interface StorageService {
-  getStorageSourcesHandler(): Promise<StorageSource[]>;
+  getStorageSourcesHandler(): Promise<StorageSourceHealth[]>;
   createStorageSource(data: {
     name: string;
     path: string;
@@ -134,8 +138,24 @@ export class StorageServiceImpl implements StorageService {
     private libraryStatsService: LibraryStatsService,
   ) {}
 
-  public async getStorageSourcesHandler(): Promise<StorageSource[]> {
-    return storageDb.getAll() as StorageSource[];
+  public async getStorageSourcesHandler(): Promise<StorageSourceHealth[]> {
+    return storageDb.getAll().map((source) => {
+      try {
+        const stat = fs.statSync(source.path);
+        if (!stat.isDirectory()) {
+          return { ...source, available: false, error: "Not a directory" };
+        }
+        fs.accessSync(source.path, fs.constants.R_OK);
+        return { ...source, available: true };
+      } catch (err) {
+        const code = (err as NodeJS.ErrnoException).code;
+        return {
+          ...source,
+          available: false,
+          error: code ?? "Unavailable",
+        };
+      }
+    });
   }
 
   public async createStorageSource(data: {

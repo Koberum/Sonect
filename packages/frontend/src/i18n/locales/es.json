@@ -12,19 +12,21 @@
   },
   "nav": {
     "label": "Secciones",
-    "home": "Inicio",
+    "discover": "Descubrir",
     "library": "Biblioteca",
+    "playlists": "Listas",
+    "player": "Reproductor",
+    "queue": "Cola",
     "settings": "Ajustes",
     "back": "Atrás",
     "forward": "Adelante",
     "collapse": "Contraer barra lateral",
     "expand": "Expandir barra lateral"
   },
-  "home": {
-    "title": "Inicio",
+  "discover": {
+    "title": "Descubrir",
     "tabs": {
       "listen": "Escuchar Ahora",
-      "playlists": "Listas",
       "liked": "Canciones que te gustan"
     }
   },
@@ -36,9 +38,6 @@
       "genres": "Géneros",
       "statistics": "Estadísticas"
     }
-  },
-  "sidebar": {
-    "toggleSidebar": "Alternar barra lateral"
   },
   "artists": {
     "title": "Artistas",
@@ -56,9 +55,36 @@
     "trackCount_one": "{{count}} pista",
     "trackCount_other": "{{count}} pistas",
     "duration": "Duración",
+    "quality": "Calidad",
     "trackNumber": "#",
     "playAll": "Reproducir Todo",
     "goToAlbum": "Ir al Álbum"
+  },
+  "trackTable": {
+    "allQualities": "Todas las calidades",
+    "filterQuality": "Filtrar por calidad",
+    "sortQuality": "Ordenar por calidad",
+    "noQualityMatches": "Ningún tema coincide con esta calidad",
+    "clearFilter": "Borrar filtro"
+  },
+  "trackInfo": {
+    "details": "Detalles",
+    "audio": "Audio",
+    "artist": "Artista",
+    "album": "Álbum",
+    "year": "Año",
+    "genre": "Género",
+    "trackNumber": "Pista",
+    "discNumber": "Disco",
+    "duration": "Duración",
+    "file": "Archivo",
+    "library": "Biblioteca",
+    "codec": "Formato",
+    "bitDepth": "Profundidad de bits",
+    "sampleRate": "Frecuencia de muestreo",
+    "channels": "Canales",
+    "channelsValue_one": "{{count}} canal",
+    "channelsValue_other": "{{count}} canales"
   },
   "statistics": {
     "totalTracks": "Canciones Totales",
@@ -76,13 +102,36 @@
     "percentOfLibrary": "{{percent}}% de la biblioteca"
   },
   "queue": {
-    "upNext": "A continuación",
+    "title": "Cola",
     "remove": "Eliminar de la cola",
+    "reorder": "Reordenar pista",
+    "dragHint": "Arrastra para reordenar",
+    "empty": "Tu cola está vacía",
+    "emptyDescription": "Reproduce un álbum o añade pistas para crear una cola.",
+    "clear": "Vaciar cola",
+    "clearConfirmTitle": "¿Vaciar la cola?",
+    "clearConfirmDescription": "Esto elimina todas las pistas de la cola.",
+    "cleared": "Cola vaciada",
+    "clearError": "No se pudo vaciar la cola",
+    "moveError": "No se pudo reordenar la cola",
+    "removeError": "No se pudo eliminar la pista",
     "tracksInQueue_one": "{{count}} pista en cola",
     "tracksInQueue_other": "{{count}} pistas en cola"
   },
   "player": {
     "title": "Reproduciendo ahora",
+    "nothingPlaying": "Nada en reproducción",
+    "nothingPlayingDescription": "Elige una pista de Inicio o Biblioteca para empezar a escuchar.",
+    "playbackPosition": "Posición de reproducción",
+    "shuffle": "Aleatorio",
+    "previous": "Pista anterior",
+    "play": "Reproducir",
+    "pause": "Pausar",
+    "next": "Pista siguiente",
+    "repeat": "Repetir",
+    "repeatOne": "Repetir una",
+    "volume": "Volumen",
+    "volumeError": "Error al cambiar el volumen",
     "outputSpeakers": "Altavoces",
     "outputDevices": "Salida",
     "thisDevice": "Este navegador",
@@ -91,6 +140,11 @@
     "tapToPlay": "Toca para reproducir",
     "playbackErrorDetail": "Error de reproducción: {{error}}",
     "playbackError": "No se puede reproducir esta pista",
+    "commandError": "Error al ejecutar la orden de reproducción",
+    "queueError": "No se pudo añadir a la cola",
+    "queueBulkError": "No se pudieron añadir las pistas a la cola",
+    "queuePartial_one": "No se pudo añadir {{count}} pista",
+    "queuePartial_other": "No se pudieron añadir {{count}} pistas",
     "outputInUse": "En uso por otra sesión",
     "outputInUseByOther": "La salida de audio está en uso por otra sesión"
   },
@@ -98,6 +152,20 @@
     "light": "Claro",
     "dark": "Oscuro",
     "system": "Sistema"
+  },
+  "themeTemplates": {
+    "sonect": {
+      "name": "Sonect",
+      "description": "Ámbar cálido, el estilo clásico de Sonect."
+    },
+    "graphite": {
+      "name": "Grafito",
+      "description": "Grises neutros, sobrios y discretos."
+    },
+    "ocean": {
+      "name": "Océano",
+      "description": "Grises azules fríos con un acento verde azulado."
+    }
   },
   "sync": {
     "title": "Sincronización de biblioteca",
@@ -116,6 +184,43 @@
     "openDetails": "Mostrar detalles de sincronización",
     "stepOf": "Paso {{current}} de {{total}}"
   },
+  "status": {
+    "title": "Estado de la biblioteca",
+    "description": "Actividad de la biblioteca y estado del sistema.",
+    "openWith": "Abrir estado de la biblioteca: {{status}}",
+    "library": {
+      "title": "Biblioteca",
+      "tracksLabel": "pistas",
+      "tracks_one": "{{formatted}} pista",
+      "tracks_other": "{{formatted}} pistas",
+      "albums_one": "{{formatted}} álbum",
+      "albums_other": "{{formatted}} álbumes",
+      "artists_one": "{{formatted}} artista",
+      "artists_other": "{{formatted}} artistas",
+      "lastSync": "Actualizada {{time}}",
+      "neverSynced": "Nunca sincronizada",
+      "statsUnavailable": "Estadísticas no disponibles",
+      "empty": "Aún no hay pistas"
+    },
+    "connection": {
+      "lost": "Reconectando…",
+      "description": "Las actualizaciones en vivo se reanudarán automáticamente."
+    },
+    "storage": {
+      "unavailable": "Biblioteca no disponible"
+    },
+    "audio": {
+      "noDevices": "No se encontraron dispositivos de audio",
+      "outputMissing": "Salida configurada no disponible",
+      "engineOffline": "Motor de reproducción desconectado"
+    },
+    "actions": {
+      "openLibraries": "Abrir bibliotecas",
+      "openAudio": "Abrir ajustes de audio",
+      "viewStatistics": "Ver estadísticas",
+      "openSettings": "Abrir ajustes"
+    }
+  },
   "language": {
     "en": "English",
     "es": "Español",
@@ -128,10 +233,12 @@
   },
   "trackActions": {
     "open": "Acciones de la pista",
+    "info": "Información",
     "noPlaylists": "Aún no hay listas"
   },
   "search": {
     "placeholder": "Buscar",
+    "open": "Buscar",
     "genres": "Géneros",
     "artists": "Artistas",
     "albums": "Álbumes",
@@ -143,16 +250,22 @@
     "noResults": "Sin resultados"
   },
   "playlist": {
+    "title": "Listas",
     "new": "Nueva Lista",
+    "newDescription": "Crea una lista para este perfil.",
+    "addToDescription": "Elige una lista existente o crea una nueva.",
     "open": "Abrir lista",
     "defaultName": "Mi lista",
     "dropToCreate": "Suelta aquí para crear una lista",
     "dropHint": "Arrastra una canción sobre una lista para añadirla.",
     "edit": "Editar Lista",
+    "editDescription": "Actualiza el nombre y la descripción de la lista.",
     "save": "Guardar",
     "create": "Crear",
     "delete": "Eliminar Lista",
     "namePlaceholder": "Nombre de la lista",
+    "nameLabel": "Nombre",
+    "descriptionLabel": "Descripción",
     "descriptionPlaceholder": "Descripción (opcional)",
     "updated": "Lista actualizada",
     "deleted": "Lista eliminada",
@@ -195,6 +308,8 @@
     "shuffle": "Aleatorio",
     "emptyTitle": "Aún no hay canciones que te gusten",
     "emptyDescription": "Toca el corazón en cualquier canción para añadirla aquí.",
+    "noMatches": "Ninguna canción favorita coincide con esta calidad",
+    "noMatchesDescription": "Elige otra calidad o borra el filtro.",
     "browse": "Explorar álbumes",
     "loadError": "No se pudieron cargar tus canciones favoritas.",
     "playError": "No se pudo iniciar la reproducción.",
@@ -210,8 +325,15 @@
     "albums": "Álbumes",
     "tracks": "Pistas"
   },
+  "notFound": {
+    "title": "Página no encontrada",
+    "description": "La página que buscas no existe o se ha movido.",
+    "back": "Ir a Descubrir"
+  },
   "common": {
     "cover": "Carátula",
+    "loadError": "No se pudo cargar esta página.",
+    "errorDescription": "Algo salió mal al mostrar esta página. Recarga para intentarlo de nuevo.",
     "cancel": "Cancelar",
     "retry": "Reintentar",
     "continue": "Continuar",
@@ -308,8 +430,10 @@
     },
     "appearance": {
       "description": "Personaliza el aspecto y el idioma de Sonect.",
-      "theme": "Tema",
-      "themeDescription": "Elige tu tema preferido",
+      "template": "Plantilla",
+      "templateDescription": "Elige una plantilla de color. Los modos claro y oscuro se aplican a todas las plantillas.",
+      "mode": "Modo",
+      "modeDescription": "Elige claro, oscuro o sigue el sistema.",
       "language": "Idioma",
       "languageDescription": "Elige tu idioma preferido"
     },
@@ -363,6 +487,7 @@
     "switch": "Cambiar",
     "switching": "Cambiando...",
     "changePassword": "Cambiar contraseña",
+    "changePasswordDescription": "Introduce tu contraseña actual y elige una nueva.",
     "currentPassword": "Contraseña actual",
     "newPassword": "Nueva contraseña",
     "confirmPassword": "Confirmar nueva contraseña",
@@ -412,6 +537,7 @@
     }
   },
   "setup": {
+    "title": "Configurar Sonect",
     "welcome": {
       "language": "Idioma",
       "theme": "Tema",

@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   EllipsisVertical,
   Heart,
+  Info,
   ListMusic,
   ListPlus,
   Play,
@@ -31,6 +32,7 @@ import { cn } from "@/lib/utils";
 import { useToggleLike } from "@/features/liked/useToggleLike";
 import { usePlayTrack } from "@/features/player/usePlayTrack";
 import { AddToPlaylistDialog } from "@/features/playlists/components/add-to-playlist-dialog";
+import { TrackInfoDialog } from "./track-info-dialog";
 
 interface TrackActionsMenuProps {
   track: TrackWithRelations;
@@ -63,6 +65,7 @@ export function TrackActionsMenu({
   const { liked, isPending: likePending, toggle } = useToggleLike(track.id);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [playlistOpen, setPlaylistOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
 
   const handlePlay = () => {
     if (onPlay) onPlay();
@@ -111,6 +114,14 @@ export function TrackActionsMenu({
     });
   }
 
+  actions.push({
+    key: "info",
+    icon: Info,
+    label: t("trackActions.info"),
+    onSelect: () => setInfoOpen(true),
+    separatorBefore: true,
+  });
+
   const handleSheetAction = (event: SyntheticEvent, action: TrackAction) => {
     event.stopPropagation();
     setSheetOpen(false);
@@ -124,6 +135,7 @@ export function TrackActionsMenu({
   return (
     <span
       data-track-actions
+      role="presentation"
       className="contents"
       onClick={stopRowActivation}
       onPointerDown={stopRowActivation}
@@ -221,6 +233,12 @@ export function TrackActionsMenu({
         trackId={track.id}
         open={playlistOpen}
         onOpenChange={setPlaylistOpen}
+      />
+
+      <TrackInfoDialog
+        track={track}
+        open={infoOpen}
+        onOpenChange={setInfoOpen}
       />
     </span>
   );
