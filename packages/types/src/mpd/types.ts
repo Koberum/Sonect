@@ -5,6 +5,9 @@
 export type MPDTrack = {
   file: string;
   format?: string;
+  sampleRate?: number;
+  bitsPerSample?: number;
+  channels?: number;
   title?: string;
   artist?: string;
   album?: string;

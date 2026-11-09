@@ -33,6 +33,40 @@ export function hashFile(file: string): number {
 }
 
 /**
+ * Split MPD's `Format` value (`samplerate:bits:channels`) into numbers.
+ * Malformed or missing values yield no fields so the catalog stays nullable.
+ */
+export function parseAudioFormat(
+  format: string | undefined,
+): Pick<MPDTrack, "sampleRate" | "bitsPerSample" | "channels"> {
+  if (!format) return {};
+  const parts = format.split(":");
+  if (parts.length !== 3) return {};
+  const [ratePart, bitsPart, channelsPart] = parts;
+  if (
+    ratePart === undefined ||
+    bitsPart === undefined ||
+    channelsPart === undefined
+  ) {
+    return {};
+  }
+  const sampleRate = Number(ratePart);
+  const bitsPerSample = Number(bitsPart);
+  const channels = Number(channelsPart);
+  if (
+    !Number.isInteger(sampleRate) ||
+    !Number.isInteger(bitsPerSample) ||
+    !Number.isInteger(channels) ||
+    sampleRate <= 0 ||
+    bitsPerSample <= 0 ||
+    channels <= 0
+  ) {
+    return {};
+  }
+  return { sampleRate, bitsPerSample, channels };
+}
+
+/**
  * Parse the song records returned by `find` / `listallinfo`.
  *
  * MPD emits one `file:` record per song, followed by tag lines (and an
@@ -130,6 +164,7 @@ export function parseMPDTracks(msg: string): MPDTrack[] {
       case "Format":
         if (current.format === undefined && value !== "") {
           current.format = value;
+          Object.assign(current, parseAudioFormat(value));
         }
         break;
       default:

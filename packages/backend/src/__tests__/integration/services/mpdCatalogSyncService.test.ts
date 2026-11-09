@@ -41,6 +41,7 @@ type TrackFixture = {
   track?: number;
   disc?: string;
   date?: string;
+  format?: string;
 };
 
 function mpdRecord(track: TrackFixture): string {
@@ -49,6 +50,7 @@ function mpdRecord(track: TrackFixture): string {
     "Last-Modified: 2026-01-02T03:04:05Z",
     `Title: ${track.title}`,
   ];
+  if (track.format) lines.push(`Format: ${track.format}`);
   if (track.artist) lines.push(`Artist: ${track.artist}`);
   if (track.album) lines.push(`Album: ${track.album}`);
   if (track.albumArtist) lines.push(`AlbumArtist: ${track.albumArtist}`);
@@ -238,6 +240,36 @@ describe("MpdCatalogSyncService (integration)", () => {
     expect(
       progress.some((p) => p.phase === "tracks" && p.track?.title === "A"),
     ).to.equal(true);
+  });
+
+  it("updates a track when only the audio format changes", async () => {
+    const first: TrackFixture[] = [
+      {
+        file: "lib/a.flac",
+        title: "A",
+        artist: "Artist",
+        album: "Album",
+        duration: 10,
+        format: "44100:16:2",
+      },
+    ];
+    const firstMpd = makeMpd(first, { dbUpdate: "200", songs: 1 });
+    await makeService(firstMpd.mpd).sync({ force: true });
+    expect(tracksDb.getByFile("lib/a.flac")).to.include({
+      sample_rate: 44100,
+      bits_per_sample: 16,
+      channels: 2,
+    });
+
+    const second: TrackFixture[] = [{ ...first[0], format: "48000:24:2" }];
+    const secondMpd = makeMpd(second, { dbUpdate: "201", songs: 1 });
+    await makeService(secondMpd.mpd).sync({ force: true });
+
+    expect(tracksDb.getByFile("lib/a.flac")).to.include({
+      sample_rate: 48000,
+      bits_per_sample: 24,
+      channels: 2,
+    });
   });
 
   it("second sync skips the fetch when db_update and song count are unchanged", async () => {

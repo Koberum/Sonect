@@ -21,6 +21,9 @@ export type DBTrack = {
   track_number?: number;
   disc_number?: number;
   duration?: number;
+  sample_rate?: number | null;
+  bits_per_sample?: number | null;
+  channels?: number | null;
   date?: string;
   mtime?: number;
   size?: number;
