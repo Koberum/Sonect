@@ -49,9 +49,11 @@ function ToneIcon({
 function StatusRow({
   item,
   onAction,
+  syncRunning,
 }: {
   item: StatusItem;
   onAction: (action: StatusAction) => void;
+  syncRunning: boolean;
 }) {
   const { t } = useTranslation();
   const description =
@@ -83,6 +85,7 @@ function StatusRow({
             size="sm"
             className="mt-2"
             onClick={() => onAction(action)}
+            disabled={action.kind === "sync" && syncRunning}
           >
             {t(action.labelKey)}
           </Button>
@@ -173,7 +176,12 @@ export function StatusCenterContent({
                   <SyncProgressView progress={syncProgress} />
                 </div>
               ) : (
-                <StatusRow key={item.id} item={item} onAction={handleAction} />
+                <StatusRow
+                  key={item.id}
+                  item={item}
+                  onAction={handleAction}
+                  syncRunning={syncRunning}
+                />
               ),
             )}
           </div>
