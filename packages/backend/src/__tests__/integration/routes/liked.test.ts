@@ -262,4 +262,95 @@ describe("liked routes", () => {
       .set("Cookie", cookie);
     expect(res.status).to.equal(400);
   });
+
+  function setQuality(
+    id: number,
+    bits: number | null,
+    rate: number | null,
+  ): void {
+    db()
+      .update(tracks)
+      .set({
+        bits_per_sample: bits,
+        sample_rate: rate,
+        channels: bits === null ? null : 2,
+      })
+      .where(eq(tracks.id, id))
+      .run();
+  }
+
+  it("filters and sorts liked tracks by quality", async () => {
+    const { cookie } = await createTestSession("user", "QualityLiker");
+    const app = makeApp();
+    const hiRes = seedTrack("QualityHiRes", 50);
+    const cd = seedTrack("QualityCD", 51);
+    const unknown = seedTrack("QualityUnknown", 52);
+    setQuality(hiRes.id, 24, 48000);
+    setQuality(cd.id, 16, 44100);
+    setQuality(unknown.id, null, null);
+    for (const t of [hiRes, cd, unknown]) {
+      await request(app).put(`/likes/${t.id}`).set("Cookie", cookie);
+    }
+
+    const filtered = await request(app)
+      .get("/likes?quality=24:48000")
+      .set("Cookie", cookie);
+    expect(filtered.status).to.equal(200);
+    expect(filtered.body.total).to.equal(1);
+    expect(
+      filtered.body.items.map((t: { title: string }) => t.title),
+    ).to.deep.equal(["QualityHiRes"]);
+    expect(filtered.body.qualities).to.deep.equal([
+      { bits_per_sample: 24, sample_rate: 48000 },
+      { bits_per_sample: 16, sample_rate: 44100 },
+    ]);
+
+    const sorted = await request(app)
+      .get("/likes?sort=quality-desc")
+      .set("Cookie", cookie);
+    expect(
+      sorted.body.items.map((t: { title: string }) => t.title),
+    ).to.deep.equal(["QualityHiRes", "QualityCD", "QualityUnknown"]);
+
+    const invalid = await request(app)
+      .get("/likes?quality=:")
+      .set("Cookie", cookie);
+    expect(invalid.status).to.equal(400);
+  });
+
+  it("plays only the liked tracks matching the quality filter", async () => {
+    const { cookie, id: profileId } = await createTestSession(
+      "user",
+      "QualityPlayer",
+    );
+    const app = makeApp();
+    const hiRes = seedTrack("QualityPlayHiRes", 53);
+    const cd = seedTrack("QualityPlayCD", 54);
+    setQuality(hiRes.id, 24, 48000);
+    setQuality(cd.id, 16, 44100);
+    for (const t of [hiRes, cd]) {
+      await request(app).put(`/likes/${t.id}`).set("Cookie", cookie);
+    }
+
+    const registry = new SessionRegistry({} as LogService);
+    registryOverrideForTests(registry);
+    try {
+      const res = await request(app)
+        .post("/likes/play")
+        .send({ quality: "24:48000" })
+        .set("Cookie", cookie);
+
+      expect(res.status).to.equal(200);
+      expect(res.body).to.deep.equal({ started: true, count: 1 });
+      expect(
+        registry
+          .getSession(profileId)!
+          .getQueue()
+          .map((entry) => entry.title),
+      ).to.deep.equal(["QualityPlayHiRes"]);
+    } finally {
+      registryOverrideForTests(null);
+      registry.dispose();
+    }
+  });
 });

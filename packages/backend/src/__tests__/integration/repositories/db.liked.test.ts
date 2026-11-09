@@ -152,4 +152,68 @@ describe("likedDb (trophy integration)", () => {
     expect(likedDb.list(profileId)).to.deep.equal([]);
     expect(tracksDb.getById(t.id)).to.be.undefined;
   });
+
+  function setQuality(
+    id: number,
+    bits: number | null,
+    rate: number | null,
+    duration = 100,
+  ): void {
+    db()
+      .update(tracks)
+      .set({
+        bits_per_sample: bits,
+        sample_rate: rate,
+        channels: bits === null ? null : 2,
+        duration,
+      })
+      .where(eq(tracks.id, id))
+      .run();
+  }
+
+  it("exposes and filters liked tracks by exact quality", () => {
+    const hiRes = seedTrack("HiRes", 11);
+    const cd = seedTrack("CD", 12);
+    const unknown = seedTrack("Unknown", 13);
+    setQuality(hiRes.id, 24, 48000, 100);
+    setQuality(cd.id, 16, 44100, 200);
+    setQuality(unknown.id, null, null, 300);
+    likedDb.add(profileId, hiRes.id);
+    likedDb.add(profileId, cd.id);
+    likedDb.add(profileId, unknown.id);
+
+    expect(likedDb.qualities(profileId)).to.deep.equal([
+      { bits_per_sample: 24, sample_rate: 48000 },
+      { bits_per_sample: 16, sample_rate: 44100 },
+    ]);
+
+    const quality = { bitsPerSample: 24, sampleRate: 48000 };
+    expect(
+      likedDb.list(profileId, { quality }).map((t) => t.title),
+    ).to.deep.equal(["HiRes"]);
+    expect(likedDb.summary(profileId, quality)).to.deep.equal({
+      count: 1,
+      totalDuration: 100,
+    });
+    expect(likedDb.files(profileId, quality)).to.deep.equal([hiRes.file]);
+  });
+
+  it("sorts liked tracks by quality with missing values last", () => {
+    const hiRes = seedTrack("HiResSort", 14);
+    const cd = seedTrack("CDSort", 15);
+    const unknown = seedTrack("UnknownSort", 16);
+    setQuality(hiRes.id, 24, 48000);
+    setQuality(cd.id, 16, 44100);
+    setQuality(unknown.id, null, null);
+    likedDb.add(profileId, hiRes.id);
+    likedDb.add(profileId, cd.id);
+    likedDb.add(profileId, unknown.id);
+
+    expect(
+      likedDb.list(profileId, { sort: "quality-desc" }).map((t) => t.title),
+    ).to.deep.equal(["HiResSort", "CDSort", "UnknownSort"]);
+    expect(
+      likedDb.list(profileId, { sort: "quality-asc" }).map((t) => t.title),
+    ).to.deep.equal(["CDSort", "HiResSort", "UnknownSort"]);
+  });
 });

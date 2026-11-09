@@ -1,22 +1,55 @@
-import { likedDb, tracksDb, type LikedSummary } from "@repo/db";
+import {
+  likedDb,
+  tracksDb,
+  type LikedQualityFilter,
+  type LikedSort,
+  type LikedSummary,
+} from "@repo/db";
 import type { LikedTracksPage } from "@repo/types/catalog";
 
+export type LikedServiceListOptions = {
+  limit?: number;
+  offset?: number;
+  quality?: LikedQualityFilter;
+  sort?: LikedSort;
+};
+
+export function parseQualityKey(
+  value: string | undefined,
+): LikedQualityFilter | undefined {
+  if (!value) return undefined;
+  const [bitsPart, ratePart] = value.split(":");
+  if (bitsPart === undefined || ratePart === undefined) return undefined;
+  return {
+    bitsPerSample: bitsPart === "" ? null : Number(bitsPart),
+    sampleRate: ratePart === "" ? null : Number(ratePart),
+  };
+}
+
 export interface LikedService {
-  list(profileId: string, limit?: number, offset?: number): LikedTracksPage;
+  list(profileId: string, options?: LikedServiceListOptions): LikedTracksPage;
   ids(profileId: string): number[];
-  files(profileId: string): string[];
+  files(
+    profileId: string,
+    quality?: LikedQualityFilter,
+    sort?: LikedSort,
+  ): string[];
   add(profileId: string, trackId: number): boolean | undefined;
   remove(profileId: string, trackId: number): boolean;
-  summary(profileId: string): LikedSummary;
+  summary(profileId: string, quality?: LikedQualityFilter): LikedSummary;
 }
 
 export class LikedServiceImpl implements LikedService {
-  list(profileId: string, limit?: number, offset?: number): LikedTracksPage {
-    const summary = likedDb.summary(profileId);
+  list(
+    profileId: string,
+    options: LikedServiceListOptions = {},
+  ): LikedTracksPage {
+    const summary = likedDb.summary(profileId, options.quality);
     return {
-      items: likedDb.list(profileId, { limit, offset }),
+      items: likedDb.list(profileId, options),
       total: summary.count,
       totalDuration: summary.totalDuration,
+      qualities: likedDb.qualities(profileId),
     };
   }
 
@@ -24,8 +57,12 @@ export class LikedServiceImpl implements LikedService {
     return likedDb.ids(profileId);
   }
 
-  files(profileId: string): string[] {
-    return likedDb.files(profileId);
+  files(
+    profileId: string,
+    quality?: LikedQualityFilter,
+    sort?: LikedSort,
+  ): string[] {
+    return likedDb.files(profileId, quality, sort);
   }
 
   add(profileId: string, trackId: number): boolean | undefined {
@@ -37,7 +74,7 @@ export class LikedServiceImpl implements LikedService {
     return likedDb.remove(profileId, trackId);
   }
 
-  summary(profileId: string): LikedSummary {
-    return likedDb.summary(profileId);
+  summary(profileId: string, quality?: LikedQualityFilter): LikedSummary {
+    return likedDb.summary(profileId, quality);
   }
 }

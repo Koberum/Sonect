@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { likedSchemas } from "@repo/types/schemas";
 import { getLikedService } from "@services/factory";
+import { parseQualityKey } from "@services/library/likedService";
 import { resolvePlayerRouter } from "@services/player/playerRouter.js";
 import { asyncHandler } from "@middleware/asyncHandler";
 import { NotFoundError, ValidationError } from "@middleware/errorHandler";
@@ -16,9 +17,18 @@ function shuffled<T>(items: T[]): T[] {
 
 export const getLikedHandler = asyncHandler(
   async (req: Request, res: Response) => {
-    const { limit, offset } = likedSchemas.listQuery.parse(req.query);
+    const { limit, offset, quality, sort } = likedSchemas.listQuery.parse(
+      req.query,
+    );
     const profileId = req.auth!.profileId;
-    res.json(getLikedService().list(profileId, limit, offset));
+    res.json(
+      getLikedService().list(profileId, {
+        limit,
+        offset,
+        quality: parseQualityKey(quality),
+        sort,
+      }),
+    );
   },
 );
 
@@ -50,9 +60,13 @@ export const unlikeTrackHandler = asyncHandler(
 
 export const playLikedHandler = asyncHandler(
   async (req: Request, res: Response) => {
-    const { shuffle } = likedSchemas.play.parse(req.body ?? {});
+    const { shuffle, quality, sort } = likedSchemas.play.parse(req.body ?? {});
     const profileId = req.auth!.profileId;
-    const files = getLikedService().files(profileId);
+    const files = getLikedService().files(
+      profileId,
+      parseQualityKey(quality),
+      sort,
+    );
     if (files.length === 0) {
       throw new ValidationError("No liked tracks", {});
     }

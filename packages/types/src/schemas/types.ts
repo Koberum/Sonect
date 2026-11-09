@@ -96,6 +96,11 @@ export const playlistSchemas = {
   }),
 };
 
+const qualityKeySchema = z
+  .string()
+  .regex(/^(\d*):(\d*)$/, "quality must be bits:rate")
+  .refine((value) => value !== ":", "quality must contain bits or rate");
+
 export const likedSchemas = {
   trackIdParam: z.object({
     trackId: z.coerce
@@ -115,9 +120,13 @@ export const likedSchemas = {
       .int("offset must be an integer")
       .min(0, "offset must be >= 0")
       .optional(),
+    quality: qualityKeySchema.optional(),
+    sort: z.enum(["recent", "quality-desc", "quality-asc"]).optional(),
   }),
   play: z.object({
     shuffle: z.boolean().optional(),
+    quality: qualityKeySchema.optional(),
+    sort: z.enum(["recent", "quality-desc", "quality-asc"]).optional(),
   }),
 };
 

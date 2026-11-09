@@ -11,6 +11,9 @@ export type TrackOverrides = Partial<{
   genre: string;
   file: string;
   duration: number;
+  sampleRate: number;
+  bitsPerSample: number;
+  channels: number;
   track: number;
   disc: string;
   date: string;
@@ -40,6 +43,9 @@ export function buildTrack(
     duration:
       overrides.duration ??
       faker.number.float({ min: 90, max: 400, multipleOf: 0.1 }),
+    sampleRate: overrides.sampleRate,
+    bitsPerSample: overrides.bitsPerSample,
+    channels: overrides.channels,
     track: overrides.track ?? faker.number.int({ min: 1, max: 12 }),
     disc: overrides.disc ?? String(faker.number.int({ min: 1, max: 2 })),
     date: overrides.date ?? String(faker.number.int({ min: 1970, max: 2025 })),
