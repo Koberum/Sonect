@@ -11,12 +11,13 @@ import { SessionPlayer } from "../session/sessionPlayer.js";
 import { MpdAdapter, type PlaybackEngine } from "./mpdAdapter.js";
 import type { PlayerServiceImpl } from "./playerService.js";
 import type { MpdConnectionManager } from "../mpd/mpdConnectionManager.js";
-import type {
-  OutputMode,
-  PlaybackStatus,
-  PlayerReport,
-  QueuedTrack,
-  RepeatMode,
+import {
+  repeatModeFromFlags,
+  type OutputMode,
+  type PlaybackStatus,
+  type PlayerReport,
+  type QueuedTrack,
+  type RepeatMode,
 } from "@repo/types";
 
 type SessionRecord = {
@@ -27,6 +28,8 @@ type SessionRecord = {
   activeDeviceType: string | null;
   volume: number;
   crossfade: number;
+  random: boolean;
+  repeat: RepeatMode;
   /** Stable ordering identity for engines that do not expose their own. */
   epoch: string;
   statusRevision: number;
@@ -104,6 +107,8 @@ export class PlayerRouter extends EventEmitter {
       activeDeviceType: null,
       volume: 65,
       crossfade: profileSettingsDb.get(sessionId).crossfadeSeconds,
+      random: false,
+      repeat: "off",
       epoch: randomUUID(),
       statusRevision: 0,
     };
@@ -329,6 +334,38 @@ export class PlayerRouter extends EventEmitter {
     const rec = this.records.get(owner);
     if (!rec || rec.mode !== "mpd") return;
     this.applyMpdCrossfade(rec.crossfade);
+    void this.applyMpdOptions(rec).catch((err: unknown) => {
+      this.logService?.pushLog?.(
+        "warn",
+        `[MPD] failed to reapply playback options: ${String(err)}`,
+        { error: String(err) },
+      );
+    });
+  }
+
+  /**
+   * Sonect owns consume and the playback mode flags for the MPD owner.
+   * Reapplying them on acquire/reconnect also prevents flags leaking from a
+   * previous profile.
+   */
+  private async applyMpdOptions(rec: SessionRecord): Promise<void> {
+    await Promise.all([
+      this.playerService.setRandom(rec.random),
+      this.playerService.setRepeatMode(rec.repeat),
+      this.mpdConnectionManager.executeCommand("consume", ["0"]),
+    ]);
+  }
+
+  async setRandom(sessionId: string, enabled: boolean): Promise<void> {
+    const rec = this.ensureRecord(sessionId);
+    rec.random = enabled;
+    await rec.engine.setRandom(enabled);
+  }
+
+  async setRepeatMode(sessionId: string, mode: RepeatMode): Promise<void> {
+    const rec = this.ensureRecord(sessionId);
+    rec.repeat = mode;
+    await rec.engine.setRepeatMode(mode);
   }
 
   private applyMpdCrossfade(seconds: number): void {
@@ -405,11 +442,15 @@ export class PlayerRouter extends EventEmitter {
     let prevFile: string | undefined;
     let prevElapsed = 0;
     let prevState: string = "stop";
+    let prevRandom = rec.random;
+    let prevRepeat: RepeatMode = rec.repeat;
     try {
       const st = rec.engine.getStatus();
       prevFile = st.track?.file;
       prevElapsed = st.elapsed ?? 0;
       prevState = st.state;
+      prevRandom = st.random;
+      prevRepeat = st.repeatMode ?? repeatModeFromFlags(st.repeat, st.single);
     } catch {
       // ignore
     }
@@ -469,7 +510,7 @@ export class PlayerRouter extends EventEmitter {
       this.detachForwarder(sessionId);
       rec.engine.removeAllListeners("stateChanged");
       const mpdEngine = this.createMpdEngine(sessionId);
-      this.records.set(sessionId, {
+      const nextRecord: SessionRecord = {
         mode,
         engine: mpdEngine,
         activeDeviceId: null,
@@ -477,10 +518,14 @@ export class PlayerRouter extends EventEmitter {
         activeDeviceType: null,
         volume: rec.volume ?? 65,
         crossfade: rec.crossfade,
+        random: prevRandom,
+        repeat: prevRepeat,
         epoch: randomUUID(),
         statusRevision: 0,
-      });
+      };
+      this.records.set(sessionId, nextRecord);
       this.attachForwarder(sessionId, mpdEngine);
+      await this.applyMpdOptions(nextRecord);
       // Re-play with clear semantics at same seek
       if (prevFile) {
         try {
@@ -543,10 +588,14 @@ export class PlayerRouter extends EventEmitter {
         activeDeviceType: deviceType ?? null,
         volume: rec.volume ?? 65,
         crossfade: rec.crossfade,
+        random: prevRandom,
+        repeat: prevRepeat,
         epoch: randomUUID(),
         statusRevision: 0,
       });
       this.attachForwarder(sessionId, browserEngine);
+      await browserEngine.setRandom(prevRandom);
+      await browserEngine.setRepeatMode(prevRepeat);
       if (prevFile) {
         try {
           await browserEngine.playTrack(prevFile);
@@ -596,6 +645,10 @@ export class PlayerRouter extends EventEmitter {
     const rec = this.ensureRecord(sessionId);
     const base = rec.engine.getStatus();
     const volume = rec.mode === "browser" ? rec.volume : base.volume;
+    const repeatMode =
+      base.repeatMode ?? repeatModeFromFlags(base.repeat, base.single);
+    rec.random = base.random;
+    rec.repeat = repeatMode;
     // Browser sessions already expose an engine epoch/revision. MPD statuses
     // have neither, so assign a stable epoch and a monotonic revision here;
     // the frontend can then reject a slow command response that arrives after
@@ -609,6 +662,7 @@ export class PlayerRouter extends EventEmitter {
       epoch,
       revision,
       volume,
+      repeatMode,
       activeDeviceId: rec.activeDeviceId,
       activeDeviceName: rec.activeDeviceName,
       activeDeviceType: rec.activeDeviceType,

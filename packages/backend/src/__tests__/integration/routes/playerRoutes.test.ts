@@ -162,4 +162,44 @@ describe("player routes", () => {
     expect(afterClear.status).to.equal(200);
     expect(afterClear.body).to.deep.equal([]);
   });
+
+  it("toggles random and the three repeat modes", async () => {
+    const app = makeApp();
+
+    const random = await request(app)
+      .post("/player/random")
+      .set("Cookie", authCookie)
+      .set("X-Session-Id", profileId)
+      .send({ enabled: true });
+    expect(random.status).to.equal(200);
+    expect(random.body.random).to.equal(true);
+
+    const all = await request(app)
+      .post("/player/repeat")
+      .set("Cookie", authCookie)
+      .set("X-Session-Id", profileId)
+      .send({ mode: "all" });
+    expect(all.status).to.equal(200);
+    expect(all.body.repeatMode).to.equal("all");
+    expect(all.body.repeat).to.equal(true);
+    expect(all.body.single).to.equal(false);
+
+    const one = await request(app)
+      .post("/player/repeat")
+      .set("Cookie", authCookie)
+      .set("X-Session-Id", profileId)
+      .send({ mode: "one" });
+    expect(one.status).to.equal(200);
+    expect(one.body.repeatMode).to.equal("one");
+    expect(one.body.single).to.equal(true);
+  });
+
+  it("rejects an invalid repeat mode", async () => {
+    const res = await request(makeApp())
+      .post("/player/repeat")
+      .set("Cookie", authCookie)
+      .set("X-Session-Id", profileId)
+      .send({ mode: "sometimes" });
+    expect(res.status).to.equal(400);
+  });
 });

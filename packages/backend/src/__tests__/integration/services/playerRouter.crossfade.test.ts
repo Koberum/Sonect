@@ -70,6 +70,8 @@ describe("PlayerRouter crossfade", () => {
         repeatMode: "off" as const,
         queueLength: 0,
       }),
+      setRandom: sinon.stub().resolves(),
+      setRepeatMode: sinon.stub().resolves(),
     } as unknown as PlayerServiceImpl;
 
     router = new PlayerRouter(

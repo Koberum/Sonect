@@ -491,26 +491,24 @@ export const unifiedEnableRandomHandler = asyncHandler(
         enabled,
       },
     );
-    await router().forSession(sid).setRandom(enabled);
+    await router().setRandom(sid, enabled);
     res.json(router().getStatus(sid));
   },
 );
 
 export const unifiedEnableRepeatHandler = asyncHandler(
   async (req: Request, res: Response) => {
-    const { enabled } = playerSchemas.toggle.parse(req.body);
+    const { mode } = playerSchemas.repeatMode.parse(req.body);
     const sid = req.sessionId as string;
     getLogService().pushLog(
       "debug",
-      `[Session ${fmtSid(sid)}][${router().getMode(sid)}] setRepeat ${enabled}`,
+      `[Session ${fmtSid(sid)}][${router().getMode(sid)}] setRepeat ${mode}`,
       {
         sessionId: fmtSid(sid),
-        enabled,
+        mode,
       },
     );
-    await router()
-      .forSession(sid)
-      .setRepeatMode(enabled ? "all" : "off");
+    await router().setRepeatMode(sid, mode);
     res.json(router().getStatus(sid));
   },
 );
