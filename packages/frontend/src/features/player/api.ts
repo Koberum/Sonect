@@ -5,6 +5,7 @@ import type {
   QueuedTrack,
   OutputMode,
   BulkQueueResult,
+  RepeatMode,
 } from "@repo/types";
 import type { Track } from "@repo/types/catalog";
 
@@ -29,8 +30,8 @@ export function previousTrack(): Promise<PlaybackStatus> {
 export function setRandom(enabled: boolean): Promise<PlaybackStatus> {
   return apiFetch("/player/random", { method: "POST", body: { enabled } });
 }
-export function setRepeat(enabled: boolean): Promise<PlaybackStatus> {
-  return apiFetch("/player/repeat", { method: "POST", body: { enabled } });
+export function setRepeatMode(mode: RepeatMode): Promise<PlaybackStatus> {
+  return apiFetch("/player/repeat", { method: "POST", body: { mode } });
 }
 export function goToPosition(position: number): Promise<PlaybackStatus> {
   return apiFetch("/player/seek", { method: "POST", body: { position } });

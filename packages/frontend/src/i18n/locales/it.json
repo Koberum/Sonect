@@ -102,6 +102,7 @@
     "pause": "Pausa",
     "next": "Brano successivo",
     "repeat": "Ripeti",
+    "repeatOne": "Ripeti brano",
     "volume": "Volume",
     "volumeError": "Errore nel cambio del volume",
     "outputSpeakers": "Altoparlanti",

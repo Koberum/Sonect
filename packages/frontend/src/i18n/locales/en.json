@@ -102,6 +102,7 @@
     "pause": "Pause",
     "next": "Next track",
     "repeat": "Repeat",
+    "repeatOne": "Repeat one",
     "volume": "Volume",
     "volumeError": "Failed to change volume",
     "outputSpeakers": "Speakers",

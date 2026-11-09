@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import type { PlaybackStatus } from "@repo/types";
+import type { PlaybackStatus, RepeatMode } from "@repo/types";
 import type { Track } from "@repo/types/catalog";
 import { usePlaybackContext } from "@/components/playback-context";
 import {
@@ -11,7 +11,7 @@ import {
   previousTrack,
   resumeSong,
   setRandom,
-  setRepeat,
+  setRepeatMode,
 } from "./api";
 
 /**
@@ -47,8 +47,8 @@ export function usePlayerCommands() {
     (enabled: boolean) => run(() => setRandom(enabled)),
     [run],
   );
-  const toggleRepeat = useCallback(
-    (enabled: boolean) => run(() => setRepeat(enabled)),
+  const setRepeat = useCallback(
+    (mode: RepeatMode) => run(() => setRepeatMode(mode)),
     [run],
   );
 
@@ -59,6 +59,6 @@ export function usePlayerCommands() {
     next,
     previous,
     toggleRandom,
-    toggleRepeat,
+    setRepeat,
   };
 }

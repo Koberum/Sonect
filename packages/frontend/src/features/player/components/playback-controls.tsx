@@ -8,8 +8,10 @@ import {
   ShuffleIcon,
   SkipBackIcon,
   SkipForwardIcon,
+  Repeat1Icon,
   RepeatIcon,
 } from "lucide-react";
+import { nextRepeatMode } from "../repeat-mode";
 import { usePlayerCommands } from "../usePlayerCommands";
 
 type PlaybackControlsProps = {
@@ -26,8 +28,9 @@ export function PlaybackControls({
   size = "default",
 }: PlaybackControlsProps): React.ReactElement {
   const { t } = useTranslation();
-  const { play, pause, resume, next, previous, toggleRandom, toggleRepeat } =
+  const { play, pause, resume, next, previous, toggleRandom, setRepeat } =
     usePlayerCommands();
+  const repeatMode = playbackStatus.repeatMode;
   const isLarge = size === "large";
   const actionSize = isLarge ? "icon-lg" : "icon-sm";
   const mainIcon = isLarge ? "size-7" : "size-5";
@@ -106,14 +109,20 @@ export function PlaybackControls({
         <Button
           variant="bare"
           size={actionSize}
-          className={playbackStatus.repeat ? btnActive : btnBase}
-          aria-label={t("player.repeat")}
-          aria-pressed={playbackStatus.repeat}
+          className={repeatMode !== "off" ? btnActive : btnBase}
+          aria-label={
+            repeatMode === "one" ? t("player.repeatOne") : t("player.repeat")
+          }
+          aria-pressed={repeatMode !== "off"}
           onClick={() => {
-            toggleRepeat(!playbackStatus.repeat);
+            setRepeat(nextRepeatMode(repeatMode));
           }}
         >
-          <RepeatIcon className="size-5" />
+          {repeatMode === "one" ? (
+            <Repeat1Icon className="size-5" />
+          ) : (
+            <RepeatIcon className="size-5" />
+          )}
         </Button>
       </div>
     </div>

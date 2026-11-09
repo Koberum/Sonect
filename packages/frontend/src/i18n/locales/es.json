@@ -102,6 +102,7 @@
     "pause": "Pausar",
     "next": "Pista siguiente",
     "repeat": "Repetir",
+    "repeatOne": "Repetir una",
     "volume": "Volumen",
     "volumeError": "Error al cambiar el volumen",
     "outputSpeakers": "Altavoces",
