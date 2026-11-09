@@ -5,10 +5,12 @@ import type { LogService } from "@services/utils/logService";
 import type {
   PlaybackStatus,
   PlayerReport,
+  RepeatMode,
   SessionQueueEntry,
 } from "@repo/types";
 import type { Track, TrackWithRelations } from "@repo/types/catalog";
 import { AutoplayService } from "../mpd/autoplayService.js";
+import { PlayOrder, type ShuffleFn } from "./playOrder.js";
 
 export class SessionPlayer extends EventEmitter {
   private readonly epochInternal = randomUUID();
@@ -22,15 +24,18 @@ export class SessionPlayer extends EventEmitter {
   private lastActiveAtInternal = Date.now();
   private lastTrackId: number | null = null;
   private readonly autoplayService: AutoplayService;
+  private readonly playOrder: PlayOrder<SessionQueueEntry>;
   private _autofillInProgress = false;
 
   constructor(
     private readonly sessionId: string,
     private readonly logService: LogService,
     autoplayService?: AutoplayService,
+    shuffle?: ShuffleFn,
   ) {
     super();
     this.autoplayService = autoplayService ?? new AutoplayService();
+    this.playOrder = new PlayOrder<SessionQueueEntry>(shuffle);
   }
 
   private log(
@@ -62,9 +67,18 @@ export class SessionPlayer extends EventEmitter {
     this.bufferingInternal = false;
   }
 
+  private currentEntry(): SessionQueueEntry | undefined {
+    return this.queueInternal[this.indexInternal];
+  }
+
+  private syncIndexFromOrder(): void {
+    const current = this.playOrder.current;
+    this.indexInternal = current ? this.queueInternal.indexOf(current) : -1;
+  }
+
   private emitStateChanged(): void {
     this.revisionInternal += 1;
-    const trackId = this.queueInternal[this.indexInternal]?.id ?? null;
+    const trackId = this.playOrder.current?.id ?? null;
     if (trackId !== this.lastTrackId) {
       this.lastTrackId = trackId;
       if (trackId !== null) {
@@ -104,11 +118,10 @@ export class SessionPlayer extends EventEmitter {
       ) {
         return;
       }
-      const expected = this.queueInternal[this.indexInternal + 1]?.id;
+      const expected = this.playOrder.peekNext();
       if (
         report.trackId !== undefined &&
-        expected !== undefined &&
-        report.trackId !== expected
+        (expected === null || report.trackId !== expected.id)
       ) {
         return;
       }
@@ -164,6 +177,7 @@ export class SessionPlayer extends EventEmitter {
   }
 
   private maybeRefill(): void {
+    if (this.playOrder.repeat !== "off") return;
     if (this._autofillInProgress) return;
     const remaining = this.queueInternal.length - this.indexInternal - 1;
     if (remaining >= 5 || remaining < 0) return;
@@ -179,7 +193,11 @@ export class SessionPlayer extends EventEmitter {
         const sid = this.autoplayService.sessionId;
         for (const f of batch) {
           const t = tracksDb.getByFile(f);
-          if (t) this.queueInternal.push(this.buildEntry(t));
+          if (t) {
+            const entry = this.buildEntry(t);
+            this.queueInternal.push(entry);
+            this.playOrder.append(entry);
+          }
         }
         this.autoplayService.commitBatch(batch, sid);
         this.log(
@@ -212,15 +230,15 @@ export class SessionPlayer extends EventEmitter {
 
   private advance(): void {
     this.maybeRefill();
-    const next = this.indexInternal + 1;
-    if (next >= this.queueInternal.length) {
+    const next = this.playOrder.advance();
+    if (!next) {
       this.stateInternal = "stop";
       this.indexInternal = -1;
       this.position = 0;
       this.bufferingInternal = false;
       return;
     }
-    this.indexInternal = next;
+    this.indexInternal = this.queueInternal.indexOf(next);
     this.position = 0;
     this.stateInternal = "play";
     this.bufferingInternal = false;
@@ -242,21 +260,18 @@ export class SessionPlayer extends EventEmitter {
 
   getStatus(): PlaybackStatus {
     this.touch();
-    const current = this.queueInternal[this.indexInternal];
-    const next =
-      this.indexInternal >= 0
-        ? this.queueInternal[this.indexInternal + 1]
-        : undefined;
+    const current = this.currentEntry();
+    const next = this.playOrder.peekNext();
     return {
       state: this.stateInternal,
       elapsed: this.position,
       duration: current?.duration ?? 0,
       volume: 100,
-      repeat: false,
-      random: false,
-      single: false,
+      repeat: this.playOrder.repeat !== "off",
+      random: this.playOrder.random,
+      single: this.playOrder.repeat === "one",
       consume: false,
-      repeatMode: "off",
+      repeatMode: this.playOrder.repeat,
       track: this.currentTrack(),
       queueLength: this.queueInternal.length,
       nextTrackId: next?.id ?? null,
@@ -301,8 +316,13 @@ export class SessionPlayer extends EventEmitter {
     this.stateInternal = "play";
     this.bufferingInternal = false;
     this.seekSeqInternal += 1;
+    this.playOrder.reset(this.queueInternal, this.queueInternal[0] ?? null);
 
     const sessionId = this.autoplayService.resetSession(file, initialFiles);
+    if (this.playOrder.repeat !== "off") {
+      this.emitStateChanged();
+      return;
+    }
     try {
       const batchFiles = this.autoplayService.getNextBatch(file);
       if (
@@ -311,7 +331,11 @@ export class SessionPlayer extends EventEmitter {
       ) {
         for (const f of batchFiles) {
           const t = tracksDb.getByFile(f);
-          if (t) this.queueInternal.push(this.buildEntry(t));
+          if (t) {
+            const entry = this.buildEntry(t);
+            this.queueInternal.push(entry);
+            this.playOrder.append(entry);
+          }
         }
         this.autoplayService.commitBatch(batchFiles, sessionId);
       }
@@ -358,6 +382,10 @@ export class SessionPlayer extends EventEmitter {
     this.stateInternal = "play";
     this.bufferingInternal = false;
     this.seekSeqInternal += 1;
+    this.playOrder.reset(
+      this.queueInternal,
+      this.queueInternal[startIndex] ?? null,
+    );
     this.autoplayService.resetSession(knownFiles[startIndex], knownFiles);
 
     this.log(
@@ -398,7 +426,10 @@ export class SessionPlayer extends EventEmitter {
       );
       return;
     }
-    if (this.indexInternal < 0) this.indexInternal = 0;
+    if (this.indexInternal < 0) {
+      const first = this.playOrder.restart();
+      this.indexInternal = first ? this.queueInternal.indexOf(first) : 0;
+    }
     this.stateInternal = "play";
     this.bufferingInternal = false;
     this.log(
@@ -449,9 +480,9 @@ export class SessionPlayer extends EventEmitter {
   previous(): void {
     if (this.queueInternal.length === 0) return;
     const prevIdx = this.indexInternal;
-    if (this.indexInternal > 0) {
-      this.indexInternal -= 1;
-    }
+    const previous = this.playOrder.previous();
+    if (!previous) return;
+    this.indexInternal = this.queueInternal.indexOf(previous);
     this.position = 0;
     if (this.queueInternal.length > 0) this.stateInternal = "play";
     this.bufferingInternal = false;
@@ -499,6 +530,9 @@ export class SessionPlayer extends EventEmitter {
   playPosition(pos: number): void {
     if (pos < 0 || pos >= this.queueInternal.length) return;
     const prevIdx = this.indexInternal;
+    const entry = this.queueInternal[pos];
+    if (!entry) return;
+    this.playOrder.playAt(entry, this.stateInternal === "play");
     this.indexInternal = pos;
     this.position = 0;
     this.stateInternal = "play";
@@ -520,7 +554,9 @@ export class SessionPlayer extends EventEmitter {
   addToQueue(file: string): void {
     const t = tracksDb.getByFile(file);
     if (t) {
-      this.queueInternal.push(this.buildEntry(t));
+      const entry = this.buildEntry(t);
+      this.queueInternal.push(entry);
+      this.playOrder.append(entry);
       this.log(
         "debug",
         `[Session ${this.sessionId.slice(0, 8)}][browser] addToQueue file="${file}" queueLen=${this.queueInternal.length}`,
@@ -545,25 +581,20 @@ export class SessionPlayer extends EventEmitter {
 
   removeFromQueue(pos: number): void {
     if (pos < 0 || pos >= this.queueInternal.length) return;
-    const removing = pos;
+    const removed = this.queueInternal[pos];
+    const wasCurrent = removed === this.currentEntry();
     this.queueInternal.splice(pos, 1);
-    if (this.indexInternal === removing) {
-      // we removed the playing item -> move to the next (now at pos) or stop
-      if (this.queueInternal.length === 0) {
-        this.indexInternal = -1;
-        this.stateInternal = "stop";
-        this.position = 0;
-        this.bufferingInternal = false;
-      } else if (this.indexInternal >= this.queueInternal.length) {
-        this.indexInternal = this.queueInternal.length - 1;
-        this.position = 0;
-      } else {
-        // Mid-queue: the item that followed the removed one is now current at
-        // `pos` — start it from the beginning.
-        this.position = 0;
-      }
-    } else if (this.indexInternal > removing) {
-      this.indexInternal -= 1;
+    this.playOrder.remove(removed);
+
+    const current = this.playOrder.current;
+    if (!current) {
+      this.indexInternal = -1;
+      this.stateInternal = "stop";
+      this.position = 0;
+      this.bufferingInternal = false;
+    } else {
+      this.indexInternal = this.queueInternal.indexOf(current);
+      if (wasCurrent) this.position = 0;
     }
     this.emitStateChanged();
   }
@@ -584,6 +615,10 @@ export class SessionPlayer extends EventEmitter {
     } else if (from > this.indexInternal && to <= this.indexInternal) {
       this.indexInternal += 1;
     }
+    this.playOrder.setNaturalOrder(
+      this.queueInternal,
+      this.currentEntry() ?? null,
+    );
 
     this.log(
       "debug",
@@ -597,9 +632,27 @@ export class SessionPlayer extends EventEmitter {
     this.emitStateChanged();
   }
 
+  setRandom(enabled: boolean): void {
+    if (this.playOrder.random === enabled) return;
+    this.playOrder.setRandom(
+      enabled,
+      this.queueInternal,
+      this.currentEntry() ?? null,
+    );
+    this.syncIndexFromOrder();
+    this.emitStateChanged();
+  }
+
+  setRepeatMode(mode: RepeatMode): void {
+    if (this.playOrder.repeat === mode) return;
+    this.playOrder.setRepeat(mode);
+    this.emitStateChanged();
+  }
+
   clearQueue(): void {
     this.queueInternal = [];
     this.indexInternal = -1;
+    this.playOrder.reset([], null);
     this.position = 0;
     this.stateInternal = "stop";
     this.bufferingInternal = false;
