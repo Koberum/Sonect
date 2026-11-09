@@ -161,7 +161,7 @@ export function StatusCenter({ collapsed }: { collapsed: boolean }) {
                     "relative",
                     hasActivity && "motion-safe:animate-pulse",
                   )}
-                  aria-label={tooltipLabel}
+                  aria-label={t("status.openWith", { status: tooltipLabel })}
                 >
                   <LibraryBig />
                   {topItem && <StatusDot tone={topItem.tone} />}

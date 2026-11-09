@@ -160,6 +160,7 @@
   "status": {
     "title": "Stato libreria",
     "description": "Attività della libreria e stato del sistema.",
+    "openWith": "Apri stato libreria: {{status}}",
     "library": {
       "title": "Libreria",
       "tracksLabel": "brani",

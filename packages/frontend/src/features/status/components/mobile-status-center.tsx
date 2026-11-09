@@ -55,7 +55,9 @@ export function MobileStatusCenter() {
               "max-w-[calc(100vw-2rem)] rounded-full border shadow-lg",
               pillTone(topItem.tone),
             )}
-            aria-label={t(topItem.titleKey)}
+            aria-label={t("status.openWith", {
+              status: t(topItem.titleKey),
+            })}
           >
             <PillIcon tone={topItem.tone} />
             <span className="max-w-40 truncate">{t(topItem.titleKey)}</span>

@@ -160,6 +160,7 @@
   "status": {
     "title": "Estado de la biblioteca",
     "description": "Actividad de la biblioteca y estado del sistema.",
+    "openWith": "Abrir estado de la biblioteca: {{status}}",
     "library": {
       "title": "Biblioteca",
       "tracksLabel": "pistas",

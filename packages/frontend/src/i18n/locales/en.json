@@ -160,6 +160,7 @@
   "status": {
     "title": "Library status",
     "description": "Library activity and system health.",
+    "openWith": "Open library status: {{status}}",
     "library": {
       "title": "Library",
       "tracksLabel": "tracks",
