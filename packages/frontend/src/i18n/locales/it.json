@@ -308,6 +308,8 @@
     "shuffle": "Casuale",
     "emptyTitle": "Nessun brano che ti piace",
     "emptyDescription": "Tocca il cuore su un brano per aggiungerlo qui.",
+    "noMatches": "Nessun brano preferito corrisponde a questa qualità",
+    "noMatchesDescription": "Scegli un'altra qualità o azzera il filtro.",
     "browse": "Sfoglia gli album",
     "loadError": "Impossibile caricare i brani che ti piacciono.",
     "playError": "Impossibile avviare la riproduzione.",

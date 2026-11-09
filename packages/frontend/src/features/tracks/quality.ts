@@ -1,4 +1,4 @@
-import type { TrackWithRelations } from "@repo/types/catalog";
+import type { AudioQuality, TrackWithRelations } from "@repo/types/catalog";
 import i18n from "@/i18n/config";
 
 export type QualitySort = "none" | "desc" | "asc";
@@ -23,24 +23,35 @@ export function formatBitDepth(bits: number): string {
   return `${bits} bit`;
 }
 
+export function qualityKeyFromValues(
+  bitsPerSample: number | null | undefined,
+  sampleRate: number | null | undefined,
+): string | null {
+  if (bitsPerSample == null && sampleRate == null) return null;
+  return `${bitsPerSample ?? ""}:${sampleRate ?? ""}`;
+}
+
 /** Stable filter key: bits:sampleRate, with an empty side for a null value. */
 export function qualityKey(track: TrackWithRelations): string | null {
-  if (track.bits_per_sample == null && track.sample_rate == null) return null;
-  return `${track.bits_per_sample ?? ""}:${track.sample_rate ?? ""}`;
+  return qualityKeyFromValues(track.bits_per_sample, track.sample_rate);
 }
 
 export function hasQualityData(track: TrackWithRelations): boolean {
   return qualityKey(track) !== null;
 }
 
-export function formatQuality(track: TrackWithRelations): string | null {
+export function formatQualityFromValues(
+  bitsPerSample: number | null | undefined,
+  sampleRate: number | null | undefined,
+): string | null {
   const parts: string[] = [];
-  if (track.sample_rate != null)
-    parts.push(formatSampleRate(track.sample_rate));
-  if (track.bits_per_sample != null) {
-    parts.push(formatBitDepth(track.bits_per_sample));
-  }
+  if (sampleRate != null) parts.push(formatSampleRate(sampleRate));
+  if (bitsPerSample != null) parts.push(formatBitDepth(bitsPerSample));
   return parts.length > 0 ? parts.join(" / ") : null;
+}
+
+export function formatQuality(track: TrackWithRelations): string | null {
+  return formatQualityFromValues(track.bits_per_sample, track.sample_rate);
 }
 
 export function fileExtension(file: string): string | undefined {
@@ -104,6 +115,22 @@ export function qualityOptionsFromTracks(
         a.option.key.localeCompare(b.option.key),
     )
     .map((entry) => entry.option);
+}
+
+export function qualityOptionsFromQualities(
+  qualities: AudioQuality[],
+): QualityOption[] {
+  return qualities.flatMap((quality) => {
+    const key = qualityKeyFromValues(
+      quality.bits_per_sample,
+      quality.sample_rate,
+    );
+    const label = formatQualityFromValues(
+      quality.bits_per_sample,
+      quality.sample_rate,
+    );
+    return key && label ? [{ key, label }] : [];
+  });
 }
 
 export function filterAndSortTracks<T extends TrackWithRelations>(

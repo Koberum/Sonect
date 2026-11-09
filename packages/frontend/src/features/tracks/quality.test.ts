@@ -6,6 +6,7 @@ import {
   formatQuality,
   formatSampleRate,
   qualityKey,
+  qualityOptionsFromQualities,
   qualityOptionsFromTracks,
 } from "./quality";
 
@@ -92,6 +93,21 @@ describe("qualityOptionsFromTracks", () => {
         makeTrack({ id: 2, bits_per_sample: 24, sample_rate: 48000 }),
         makeTrack({ id: 3, bits_per_sample: 24, sample_rate: 48000 }),
         makeTrack({ id: 4 }),
+      ]),
+    ).toEqual([
+      { key: "24:48000", label: "48 kHz / 24 bit" },
+      { key: "16:44100", label: "44.1 kHz / 16 bit" },
+    ]);
+  });
+});
+
+describe("qualityOptionsFromQualities", () => {
+  it("maps API quality rows to display options and skips empty rows", () => {
+    expect(
+      qualityOptionsFromQualities([
+        { bits_per_sample: 24, sample_rate: 48000 },
+        { bits_per_sample: 16, sample_rate: 44100 },
+        { bits_per_sample: null, sample_rate: null },
       ]),
     ).toEqual([
       { key: "24:48000", label: "48 kHz / 24 bit" },

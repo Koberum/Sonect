@@ -12,10 +12,21 @@ import {
   filterAndSortTracks,
   hasQualityData,
   qualityOptionsFromTracks,
+  type QualityOption,
   type QualitySort,
 } from "../quality";
 
-export type TrackTableQualityMode = "client" | "none";
+export type TrackTableQualityMode =
+  | { kind: "client" }
+  | { kind: "none" }
+  | {
+      kind: "server";
+      filter: string | null;
+      sort: QualitySort;
+      options: QualityOption[];
+      onFilterChange: (key: string | null) => void;
+      onSortChange: (sort: QualitySort) => void;
+    };
 
 export interface TrackTableProps<T extends TrackWithRelations> {
   tracks: T[];
@@ -45,47 +56,71 @@ export function TrackTable<T extends TrackWithRelations>({
   onPlay,
   onRemove,
   removeLabel,
-  qualityMode = "client",
+  qualityMode = { kind: "client" },
   resetKey,
 }: TrackTableProps<T>) {
   const { t } = useTranslation();
-  const [qualityFilter, setQualityFilter] = useState<string | null>(null);
-  const [qualitySort, setQualitySort] = useState<QualitySort>("none");
+  const [clientFilter, setClientFilter] = useState<string | null>(null);
+  const [clientSort, setClientSort] = useState<QualitySort>("none");
 
   useEffect(() => {
-    setQualityFilter(null);
-    setQualitySort("none");
+    setClientFilter(null);
+    setClientSort("none");
   }, [resetKey]);
 
-  const qualityOptions = useMemo(
+  const derivedOptions = useMemo(
     () => qualityOptionsFromTracks(tracks),
     [tracks],
   );
-  const showQuality = tracks.some(hasQualityData);
+  const qualityOptions =
+    qualityMode.kind === "server" ? qualityMode.options : derivedOptions;
+  const showQuality =
+    qualityMode.kind === "server"
+      ? qualityMode.options.length > 0 || tracks.some(hasQualityData)
+      : tracks.some(hasQualityData);
+  const qualityFilter =
+    qualityMode.kind === "server"
+      ? qualityMode.filter
+      : qualityMode.kind === "client"
+        ? clientFilter
+        : null;
+  const qualitySort =
+    qualityMode.kind === "server"
+      ? qualityMode.sort
+      : qualityMode.kind === "client"
+        ? clientSort
+        : "none";
+  const setQualityFilter =
+    qualityMode.kind === "server"
+      ? qualityMode.onFilterChange
+      : setClientFilter;
+  const setQualitySort =
+    qualityMode.kind === "server" ? qualityMode.onSortChange : setClientSort;
   const qualityControlsEnabled =
-    qualityMode !== "none" && qualityOptions.length > 1;
+    qualityMode.kind !== "none" && qualityOptions.length > 1;
 
   useEffect(() => {
+    if (qualityMode.kind !== "client") return;
     if (
-      qualityFilter !== null &&
-      !qualityOptions.some((option) => option.key === qualityFilter)
+      clientFilter !== null &&
+      !derivedOptions.some((option) => option.key === clientFilter)
     ) {
-      setQualityFilter(null);
+      setClientFilter(null);
     }
-  }, [qualityFilter, qualityOptions]);
+  }, [qualityMode.kind, clientFilter, derivedOptions]);
 
   if (isPending) {
     return <ListSkeleton rows={skeletonRows} />;
   }
 
   const visibleTracks =
-    qualityMode === "none"
-      ? tracks
-      : filterAndSortTracks(tracks, qualityFilter, qualitySort);
+    qualityMode.kind === "client"
+      ? filterAndSortTracks(tracks, clientFilter, clientSort)
+      : tracks;
 
   if (
-    qualityMode !== "none" &&
-    qualityFilter !== null &&
+    qualityMode.kind === "client" &&
+    clientFilter !== null &&
     visibleTracks.length === 0 &&
     tracks.length > 0
   ) {
@@ -98,7 +133,7 @@ export function TrackTable<T extends TrackWithRelations>({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setQualityFilter(null)}
+            onClick={() => setClientFilter(null)}
           >
             {t("trackTable.clearFilter")}
           </Button>

@@ -29,4 +29,14 @@ describe("query keys", () => {
       qk.playlistsRoot(),
     );
   });
+
+  it("includes the liked quality filter and sort in the list key", () => {
+    expect(qk.liked.list("p", "24:48000", "desc")).toEqual([
+      "liked",
+      "list",
+      "p",
+      "24:48000",
+      "desc",
+    ]);
+  });
 });

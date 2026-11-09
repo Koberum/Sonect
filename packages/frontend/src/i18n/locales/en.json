@@ -308,6 +308,8 @@
     "shuffle": "Shuffle",
     "emptyTitle": "No liked songs yet",
     "emptyDescription": "Tap the heart on any song to add it here.",
+    "noMatches": "No liked songs match this quality",
+    "noMatchesDescription": "Choose another quality or clear the filter.",
     "browse": "Browse albums",
     "loadError": "Could not load your liked songs.",
     "playError": "Could not start playback.",

@@ -1,3 +1,5 @@
+import type { QualitySort } from "@/features/tracks/quality";
+
 export const qk = {
   dashboardRoot: () => ["dashboard"] as const,
   dashboard: (profileId: string) => ["dashboard", profileId] as const,
@@ -29,7 +31,11 @@ export const qk = {
   },
   liked: {
     ids: (profileId: string) => ["liked", "ids", profileId] as const,
-    list: (profileId: string) => ["liked", "list", profileId] as const,
+    list: (
+      profileId: string,
+      quality: string | null = null,
+      sort: QualitySort = "none",
+    ) => ["liked", "list", profileId, quality ?? "all", sort] as const,
   },
   player: {
     queueRoot: () => ["player", "queue"] as const,

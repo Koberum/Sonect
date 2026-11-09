@@ -308,6 +308,8 @@
     "shuffle": "Aleatorio",
     "emptyTitle": "Aún no hay canciones que te gusten",
     "emptyDescription": "Toca el corazón en cualquier canción para añadirla aquí.",
+    "noMatches": "Ninguna canción favorita coincide con esta calidad",
+    "noMatchesDescription": "Elige otra calidad o borra el filtro.",
     "browse": "Explorar álbumes",
     "loadError": "No se pudieron cargar tus canciones favoritas.",
     "playError": "No se pudo iniciar la reproducción.",
