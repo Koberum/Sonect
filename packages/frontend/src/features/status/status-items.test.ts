@@ -99,7 +99,14 @@ describe("buildStatusItems", () => {
       buildStatusItems({
         ...base,
         audioStatus: { card: "hw:CARD=Missing,DEV=0", name: "Speakers" },
-        audioDevices: [{ card: "hw:CARD=Other,DEV=0", name: "Other" }],
+        audioDevices: [
+          {
+            card: "hw:CARD=Other,DEV=0",
+            name: "Other",
+            description: "Other",
+            usb: false,
+          },
+        ],
         mpdRunning: true,
       })[0],
     ).toMatchObject({
@@ -121,7 +128,14 @@ describe("buildStatusItems", () => {
       buildStatusItems({
         ...base,
         audioStatus: { card: "hw:CARD=OK,DEV=0", name: "Speakers" },
-        audioDevices: [{ card: "hw:CARD=OK,DEV=0", name: "Speakers" }],
+        audioDevices: [
+          {
+            card: "hw:CARD=OK,DEV=0",
+            name: "Speakers",
+            description: "Speakers",
+            usb: false,
+          },
+        ],
         mpdRunning: false,
       })[0],
     ).toMatchObject({ id: "audio-engine", tone: "error" });
