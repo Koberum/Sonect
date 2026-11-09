@@ -117,6 +117,29 @@ describe("system storage routes", () => {
     });
   });
 
+  it("GET /system/storage/sources reports availability", async () => {
+    const readablePath = path.join(tmpDir, "Readable");
+    const missingPath = path.join(tmpDir, "Missing");
+    fs.mkdirSync(readablePath, { recursive: true });
+    storageDb.create({ name: "Readable", path: readablePath, enabled: true });
+    storageDb.create({ name: "Missing", path: missingPath, enabled: true });
+
+    const res = await request(makeApp())
+      .get("/system/storage/sources")
+      .set("Cookie", cookie);
+
+    expect(res.status).to.equal(200);
+    const byName = Object.fromEntries(
+      (res.body as Array<{ name: string }>).map((source) => [
+        source.name,
+        source,
+      ]),
+    );
+    expect(byName.Readable).to.include({ available: true });
+    expect(byName.Missing).to.include({ available: false });
+    expect(byName.Missing.error).to.be.a("string").and.not.empty;
+  });
+
   it("POST /system/storage/sources/:id/refresh-stats uses the catalog file count", async () => {
     const sourcePath = path.join(tmpDir, "Refresh");
     fs.mkdirSync(sourcePath, { recursive: true });

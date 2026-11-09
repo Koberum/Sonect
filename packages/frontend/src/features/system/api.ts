@@ -18,6 +18,8 @@ export interface StorageSource {
   file_count?: number;
   dir_count?: number;
   total_size?: number;
+  available?: boolean;
+  error?: string;
   created_at?: string;
   updated_at?: string;
 }

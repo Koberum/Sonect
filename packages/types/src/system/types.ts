@@ -1,3 +1,10 @@
+import type { DBStorageSource } from "../db/types.js";
+
+export type StorageSourceHealth = DBStorageSource & {
+  available: boolean;
+  error?: string;
+};
+
 export interface AudioDevice {
   card: string;
   name: string;
