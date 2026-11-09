@@ -11,7 +11,7 @@ import { ListSkeleton } from "@/components/ui/list-skeleton";
 import { QueryError } from "@/components/ui/query-error";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/features/auth/auth-context";
-import { likedQueries } from "@/features/liked/queries";
+import { apiSort, likedQueries } from "@/features/liked/queries";
 import { playLiked } from "@/features/liked/api";
 import { TrackTable } from "@/features/tracks/components/track-table";
 import {
@@ -20,12 +20,6 @@ import {
 } from "@/features/tracks/quality";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { formatDuration } from "@/lib/format";
-
-function apiSort(sort: QualitySort): string | undefined {
-  if (sort === "desc") return "quality-desc";
-  if (sort === "asc") return "quality-asc";
-  return undefined;
-}
 
 export default function LikedSongs() {
   const { t } = useTranslation();

@@ -1,10 +1,22 @@
 import { Request, Response } from "express";
+import type { LikedQualityFilter } from "@repo/db";
 import { likedSchemas } from "@repo/types/schemas";
 import { getLikedService } from "@services/factory";
-import { parseQualityKey } from "@services/library/likedService";
 import { resolvePlayerRouter } from "@services/player/playerRouter.js";
 import { asyncHandler } from "@middleware/asyncHandler";
 import { NotFoundError, ValidationError } from "@middleware/errorHandler";
+
+function parseQualityKey(
+  value: string | undefined,
+): LikedQualityFilter | undefined {
+  if (!value) return undefined;
+  const [bitsPart, ratePart] = value.split(":");
+  if (bitsPart === undefined || ratePart === undefined) return undefined;
+  return {
+    bitsPerSample: bitsPart === "" ? null : Number(bitsPart),
+    sampleRate: ratePart === "" ? null : Number(ratePart),
+  };
+}
 
 function shuffled<T>(items: T[]): T[] {
   const result = [...items];

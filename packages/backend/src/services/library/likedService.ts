@@ -14,18 +14,6 @@ export type LikedServiceListOptions = {
   sort?: LikedSort;
 };
 
-export function parseQualityKey(
-  value: string | undefined,
-): LikedQualityFilter | undefined {
-  if (!value) return undefined;
-  const [bitsPart, ratePart] = value.split(":");
-  if (bitsPart === undefined || ratePart === undefined) return undefined;
-  return {
-    bitsPerSample: bitsPart === "" ? null : Number(bitsPart),
-    sampleRate: ratePart === "" ? null : Number(ratePart),
-  };
-}
-
 export interface LikedService {
   list(profileId: string, options?: LikedServiceListOptions): LikedTracksPage;
   ids(profileId: string): number[];

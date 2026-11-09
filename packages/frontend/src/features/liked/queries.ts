@@ -5,7 +5,7 @@ import { getLiked, getLikedIds } from "./api";
 
 export const LIKED_PAGE_SIZE = 100;
 
-function apiSort(sort: QualitySort): string | undefined {
+export function apiSort(sort: QualitySort): string | undefined {
   if (sort === "desc") return "quality-desc";
   if (sort === "asc") return "quality-asc";
   return undefined;

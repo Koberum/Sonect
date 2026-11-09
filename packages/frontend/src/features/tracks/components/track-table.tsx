@@ -96,6 +96,8 @@ export function TrackTable<T extends TrackWithRelations>({
       : setClientFilter;
   const setQualitySort =
     qualityMode.kind === "server" ? qualityMode.onSortChange : setClientSort;
+  // A single quality value makes sort/filter a no-op; keep the column but
+  // suppress the controls until there is something to choose between.
   const qualityControlsEnabled =
     qualityMode.kind !== "none" && qualityOptions.length > 1;
 
