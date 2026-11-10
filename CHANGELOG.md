@@ -1,5 +1,72 @@
 # Changelog
 
+## [0.1.7](https://github.com/Koberum/Sonect/compare/sonect-v0.1.6...sonect-v0.1.7) (2026-11-09)
+
+
+### Features
+
+* **catalog:** persist MPD audio format per track ([45c4ee4](https://github.com/Koberum/Sonect/commit/45c4ee4682e7ec9d4049b83ea0d8ba220af7fdd3))
+* **frontend:** add Graphite and Ocean theme templates ([6d910b6](https://github.com/Koberum/Sonect/commit/6d910b61ec83aa9ec1437ccddd4e0dfb6c16adbc))
+* **frontend:** add mobile track info dialog ([c853495](https://github.com/Koberum/Sonect/commit/c853495a5b014f7a4f128950341d850eb0d0fec1))
+* **frontend:** add theme template picker to Appearance ([025bbb3](https://github.com/Koberum/Sonect/commit/025bbb3a7098795fa8c5e91e358fa15e60756de8))
+* **frontend:** add theme template state to ThemeProvider ([0cc3352](https://github.com/Koberum/Sonect/commit/0cc3352f916774b78f3a36a912a92f5173687c86))
+* **frontend:** add track quality column and filter ([a653525](https://github.com/Koberum/Sonect/commit/a653525202d7b4f479cc2870b0a0068178798a44))
+* **frontend:** extract Sonect tokens into a theme sheet ([f5b2c2a](https://github.com/Koberum/Sonect/commit/f5b2c2a0adfd2261e63e90c403efcf78b3ec60b0))
+* **frontend:** show track info from the desktop menu ([ffccca2](https://github.com/Koberum/Sonect/commit/ffccca23c4044bfd019e2dcb747cc68d00484f42))
+* **likes:** filter and sort liked tracks by audio quality ([c9f04b5](https://github.com/Koberum/Sonect/commit/c9f04b5b4f6c9c42bef3238e46652f78c915c57a))
+* **likes:** wire quality filter and sort into the liked list ([4b4b4d7](https://github.com/Koberum/Sonect/commit/4b4b4d77d8a7d725dcc3d2920f448c53f234d86c))
+* **nav:** add centered mobile search ([6e6cedc](https://github.com/Koberum/Sonect/commit/6e6cedc11fd7fe4f4ad62bfd5a1b9980864e0184))
+* **nav:** move playlists to a dedicated section ([48c8c65](https://github.com/Koberum/Sonect/commit/48c8c653c1de440775024ed6cb0bc101da6de475))
+* **nav:** rename home to discover ([597d9ae](https://github.com/Koberum/Sonect/commit/597d9ae5c4106281f893063c0ae5d9b20fb5a2dd))
+* **player:** add hover volume popover ([b11ca0a](https://github.com/Koberum/Sonect/commit/b11ca0a3ca46564bb4b5d740a1a2ab28c10828cb))
+* **player:** add MPD shuffle and repeat commands ([a2b4e67](https://github.com/Koberum/Sonect/commit/a2b4e67ca337d417c3a62c917dddee435b884515))
+* **player:** add MPD-compatible play order engine ([11c7473](https://github.com/Koberum/Sonect/commit/11c747392d4570d94ce1582d08110a180459c7be))
+* **player:** add ordered bulk queue endpoint ([a30818f](https://github.com/Koberum/Sonect/commit/a30818f8c5d8d5283dedfe8ba63aa83549161d27))
+* **player:** add queue move and clear operations ([b8d53be](https://github.com/Koberum/Sonect/commit/b8d53be7a1b666e4f1e7d042b983beed69b7e266))
+* **player:** add queue section and redesign mobile full player ([de8f5c4](https://github.com/Koberum/Sonect/commit/de8f5c439934d2ff7f9e2a9506c20484cba9b33c))
+* **player:** add three-state repeat mode type ([f23904d](https://github.com/Koberum/Sonect/commit/f23904d45fc73802f407eda2e9bccdda86ec56ec))
+* **player:** align mobile player text and add inline volume slider ([869962b](https://github.com/Koberum/Sonect/commit/869962b76eb42e10fc20bfff2bd7c4714a9d38bd))
+* **player:** apply a perceptual volume curve ([1ed41b3](https://github.com/Koberum/Sonect/commit/1ed41b3c52d89ebadede736f14c8575599c7e760))
+* **player:** carry shuffle and repeat across output modes ([acefc09](https://github.com/Koberum/Sonect/commit/acefc09e5c1495cd4701d9ceac466f74f4c331be))
+* **player:** cycle repeat controls through all and one ([429d758](https://github.com/Koberum/Sonect/commit/429d758fdf6af2cb7eb735dceb3d7236d9fb2e8d))
+* **player:** implement shuffle and repeat in browser sessions ([06922d0](https://github.com/Koberum/Sonect/commit/06922d01ce8f768e4b4076d6be6d95459cc89f08))
+* **player:** persist browser volume and mute locally ([ce14d66](https://github.com/Koberum/Sonect/commit/ce14d66495470b777db7a57c9b2b1ad3869afda5))
+* **status:** add sidebar status center ([4992c66](https://github.com/Koberum/Sonect/commit/4992c6643e2275087e95b2691c0d0a3bbaec6e1f))
+* **status:** add status model and data plumbing ([e14b1f4](https://github.com/Koberum/Sonect/commit/e14b1f40eef6f820ed5323bcbd0e46852b8f6f08))
+* **status:** aggregate status sources ([6a9aeed](https://github.com/Koberum/Sonect/commit/6a9aeed67a86568c1575b7bc826395036b459a56))
+* **storage:** report source availability ([28e42a1](https://github.com/Koberum/Sonect/commit/28e42a1ea0769b8560ea1cca0547f4c979c2ab5b))
+
+
+### Bug Fixes
+
+* **frontend:** drop stale detail placeholders ([e5ed423](https://github.com/Koberum/Sonect/commit/e5ed4239a1a57b0b3aaa12e67e5675681c232828))
+* **frontend:** guard browser audio deck transitions ([62c300c](https://github.com/Koberum/Sonect/commit/62c300cb4ba662bedd407a1f6fefffdf70eaaf2d))
+* **frontend:** improve keyboard and screen-reader access ([5f08cb3](https://github.com/Koberum/Sonect/commit/5f08cb32550ce2cd88669b64472a9a6568583cf9))
+* **frontend:** keep derived playback state in sync ([8c526da](https://github.com/Koberum/Sonect/commit/8c526da51abc643c7bc0f4fbf7b98f4964f188a7))
+* **frontend:** keep volume and playback reports in sync ([1b84f22](https://github.com/Koberum/Sonect/commit/1b84f22ecd5d8bb98e9f6cf0a5e54d3bbfeb9dbf))
+* **frontend:** label playlist and password dialogs ([00ad8cc](https://github.com/Koberum/Sonect/commit/00ad8ccc7ff0449be72993b6485e9dfdaa727c68))
+* **frontend:** localize language and number formatting ([fcb05ee](https://github.com/Koberum/Sonect/commit/fcb05ee9c41044c350d069c1f345faaf5da7ac0a))
+* **frontend:** polish setup and player affordances ([097c61d](https://github.com/Koberum/Sonect/commit/097c61dcbaf4d24f69502b5add53d88fe9042a14))
+* **frontend:** remove nested actions from media cards ([c3e60be](https://github.com/Koberum/Sonect/commit/c3e60be095b83e52fbb4ebb3a00b23fc28425237))
+* **frontend:** report playback command failures ([d588557](https://github.com/Koberum/Sonect/commit/d588557524201ca9ed7977d4e37edfa936fa434f))
+* **frontend:** scope player caches per profile ([34ba4d2](https://github.com/Koberum/Sonect/commit/34ba4d24ab262b83a471bfcb5824f1eab3a30fec))
+* **frontend:** surface query and render errors ([f427e73](https://github.com/Koberum/Sonect/commit/f427e7304baf652760144d6908f0f7d23fa31d68))
+* **player:** align shuffle and repeat edge cases with MPD ([864ec13](https://github.com/Koberum/Sonect/commit/864ec13199c81d3c303b8bafd7e585c2199b5f60))
+* **player:** order MPD statuses with epoch and revision ([d9a3b3f](https://github.com/Koberum/Sonect/commit/d9a3b3ff259172744e1771e286b953537cee6773))
+* **player:** refresh the MPD output lock while visible ([4621374](https://github.com/Koberum/Sonect/commit/46213747e8eb2f63cdb8b4d3ee5a1bc548c5cbbf))
+* **player:** restart the current track for repeat one ([8137cf7](https://github.com/Koberum/Sonect/commit/8137cf7abb8cc225ec03f72361fa248ce5879bdf))
+* **player:** serve /player page without shadowing the API ([0cf9c70](https://github.com/Koberum/Sonect/commit/0cf9c70940bb47aba1b9a1bc4727ea3fa4810300))
+* **status:** clarify status-center trigger labels ([f292e6c](https://github.com/Koberum/Sonect/commit/f292e6c0d17ea9ada16f8cd04d37f1583e6ec26a))
+* **status:** disable retry while a scan is running ([0d76cac](https://github.com/Koberum/Sonect/commit/0d76cacb5e4700d6c1a0ed6128f2c41c7f65acb2))
+* **status:** polish empty state and popover labeling ([ede0a16](https://github.com/Koberum/Sonect/commit/ede0a16490bbbf144cfa5fa9a99b516699e69d38))
+
+
+### Performance Improvements
+
+* **frontend:** lazy-load login and enforce bundle budget ([fa7f57d](https://github.com/Koberum/Sonect/commit/fa7f57d4e16362d1377c5e449fdd5e2e97725c3c))
+* **frontend:** shrink fallback art and waveform redraws ([8fa5e6d](https://github.com/Koberum/Sonect/commit/8fa5e6d2890f85895a3879b0c7362ac0f83a0f0a))
+* **search:** cap command palette results at source ([e4cfce7](https://github.com/Koberum/Sonect/commit/e4cfce7960c0aa8e295cfaf69611fa199430696f))
+
 ## [0.1.6](https://github.com/Koberum/Sonect/compare/sonect-v0.1.5...sonect-v0.1.6) (2026-11-05)
 
 
